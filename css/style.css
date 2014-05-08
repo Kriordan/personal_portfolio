@@ -1,0 +1,127 @@
+
+/* Resume*/
+h4 {
+  font-weight: bold;
+}
+.date {
+  font-size: 0.8em;
+}
+.button {
+  background-color: #5E7CF9;
+}
+
+
+/* Hover Effects */
+.top-bar-section li:not(.has-form) a:not(.button):hover, .app_logo:hover {
+  background: #5E7CF9;
+}
+#about a:hover, button:hover, button:focus, .button:hover, .button:focus {
+  background: #112060;
+}
+
+
+
+/* Clearfix */
+.group:before,
+.group:after {
+  content: "";
+  display: table;
+}
+.group:after {
+  clear: both;
+}
+.group {
+  zoom: 1;
+}
+
+
+/* NavBar */
+.top-bar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+.top-bar, .top-bar.expanded .title-area, .top-bar-section li:not(.has-form) a:not(.button) {
+  background: #112060;
+}
+
+
+/* Hero */
+#job_title {
+  text-align: center;
+  margin-top: 80px;
+  margin-bottom: 20px;
+  height: 140px;
+}
+#job_title h1 {
+  color: #5E7CF9;
+  font-family: serif;
+}
+
+
+/* About */
+#about div {
+  text-align: center;
+  margin: 15px 0;
+  height: 50px;
+}
+#about a {
+  color: white;
+  background: #5E7CF9;
+  padding: 16px 120px;
+  border-radius: 8px;
+}
+#about .second-about {
+  padding: 16px 115px;
+}
+#about .third-about {
+  padding: 16px 129px;
+}
+
+
+/* Web Apps */
+.app_logo {
+  background: #3048AD;
+  margin-bottom: 40px;
+}
+.app_logo h1 {
+  text-align: center;
+  color: white;
+  margin-bottom: 0;
+}
+.app-img {
+  margin-top: 50px;
+}
+
+
+/* Footer */
+footer {
+  background: #DDD;
+  padding-bottom: 5px;
+}
+footer img {
+  height: 200px;
+  width: 200px;
+  border-radius: 50%;
+  margin: 40px 0;
+}
+footer section {
+  text-align: center;
+}
+footer p {
+  text-align: left;
+  max-width: 600px;
+}
+footer div {
+  width: 55%;
+  margin: auto;
+  text-align: center;
+}
+.copyright {
+  text-align: center;
+}
+.copyright h6 {
+  font-size: 0.8em;
+}
+
