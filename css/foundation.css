@@ -1183,10 +1183,10 @@ meta.foundation-mq-topbar {
       margin: 0; }
       .top-bar .name h1 a {
         font-weight: normal;
-        color: white;
+        color: black;
         width: 50%;
         display: block;
-        padding: 0 15px; }
+        padding: 17px 15px; }
   .top-bar .toggle-topbar {
     position: absolute;
     right: 0;

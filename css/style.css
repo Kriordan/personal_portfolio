@@ -12,11 +12,16 @@ h4 {
 
 
 /* Hover Effects */
-.top-bar-section li:not(.has-form) a:not(.button):hover, .app_logo:hover {
-  background: #5E7CF9;
+.top-bar-section li:not(.has-form) a:not(.button):hover,
+.app_logo:hover {
+  background: #EEE;
 }
-#about a:hover, button:hover, button:focus, .button:hover, .button:focus {
-  background: #112060;
+#about a:hover,
+button:hover,
+button:focus,
+.button:hover,
+.button:focus {
+  background: #DDD;
 }
 
 
@@ -35,15 +40,44 @@ h4 {
 }
 
 
+/* Wrapper */
+.container {
+  margin: auto;
+  background: #FFF;
+  max-width: 960px;
+}
+
+
 /* NavBar */
 .top-bar {
   position: fixed;
   top: 0;
   width: 100%;
   z-index: 10;
+  height: 80px;
+  border-bottom: 1px solid #000;
 }
-.top-bar, .top-bar.expanded .title-area, .top-bar-section li:not(.has-form) a:not(.button) {
-  background: #112060;
+.top-bar,
+.top-bar.expanded .title-area,
+.top-bar-section li:not(.has-form) a:not(.button) {
+  background: #FFF;
+  color: black;
+}
+.top-bar-section li:not(.has-form) a:not(.button) {
+  padding: 17px 15px;
+}
+h1.replace {
+  width: 150px;
+  height: 150px;
+  background: url(../img/me2.jpg);
+  background-size: contain;
+  border-radius: 50%;
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  top: -22px;
+  left: -22px;
 }
 
 
@@ -55,8 +89,8 @@ h4 {
   height: 140px;
 }
 #job_title h1 {
-  color: #5E7CF9;
-  font-family: serif;
+  color: #000;
+  font-family: "Abril Fatface", serif;
 }
 
 
@@ -67,10 +101,12 @@ h4 {
   height: 50px;
 }
 #about a {
-  color: white;
-  background: #5E7CF9;
+  color: #000;
+  background: #EEE;
   padding: 16px 120px;
-  border-radius: 8px;
+  border-radius: 4px;
+  border: 1px solid #000;
+  font-family: Alegreya;
 }
 #about .second-about {
   padding: 16px 115px;
@@ -82,13 +118,15 @@ h4 {
 
 /* Web Apps */
 .app_logo {
-  background: #3048AD;
+  background: #DDD;
   margin-bottom: 40px;
+  border-radius: 8px 0;
 }
 .app_logo h1 {
   text-align: center;
-  color: white;
+  color: #000;
   margin-bottom: 0;
+  font-family: "Playfair Display";
 }
 .app-img {
   margin-top: 50px;
@@ -97,17 +135,8 @@ h4 {
 
 /* Footer */
 footer {
-  background: #DDD;
+  background: #AAA;
   padding-bottom: 5px;
-}
-footer img {
-  height: 200px;
-  width: 200px;
-  border-radius: 50%;
-  margin: 40px 0;
-}
-footer section {
-  text-align: center;
 }
 footer p {
   text-align: left;
