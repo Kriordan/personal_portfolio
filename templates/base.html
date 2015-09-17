@@ -9,7 +9,7 @@
     <link href='http://fonts.googleapis.com/css?family=Alegreya' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-    <script src="js/modernizr.js"></script>
+    <script src="{{ url_for('static', filename='js/modernizr.js') }}"></script>
     <style type="text/css">
       h1 {
         color: #fff;
@@ -30,8 +30,8 @@
 
     {% block body %}{% endblock %}
 
-    <script src="js/jquery.js"></script>
-    <script src="js/foundation.min.js"></script>
+    <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/foundation.min.js') }}"></script>
     <script>
       $(document).foundation();
     </script>
