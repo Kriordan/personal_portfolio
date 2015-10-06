@@ -2,100 +2,110 @@
 
 {% block body %}
     <div class="row">
-      <div id="job_title"class="large-12 columns">
-        <h1>Keith Riordan</h1>
-        <a href="keith_riordan_resume.pdf" class="large radius button">PDF Version</a><br/>
-      </div>
+        <div id="job_title"class="large-12 columns">
+            <h1>Keith Riordan</h1>
+            <a
+                class="large radius button"
+                download
+                href="{{ url_for('static', filename='downloads/keith_riordan_resume.pdf') }}"
+            >
+                PDF Version
+            </a>
+            <br/>
+        </div>
     </div>
 
     <div class="row">
-      <div class="large-2 columns">
-        <h4>Technical Skills</h4>
-      </div>
-      <div class="large-10 columns">
-        <div class="panel">
-          <div class="row">
-            <div class="large-4 medium-4 columns">
-              <h4>Languages</h4>
-              <p>Ruby, HTML, CSS, SQL</p>
-            </div>
-            <div class="large-4 medium-4 columns">
-              <h4>Frameworks/Tools</h4>
-              <p>Foundation, Rails, Git, GitHub, JQuery, Heroku, AWS S3, Sublime Text, Agile Methodologies</p>
-            </div>
-            <div class="large-4 medium-4 columns">
-              <h4>Databases</h4>
-              <p>PostgreSQL</p>
-            </div>
-          </div>
+        <div class="large-2 columns">
+            <h4>Technical Skills</h4>
         </div>
-      </div>
-    </div>
-
-    <hr />
-
-    <div class="row">
-      <div class="large-2 columns">
-        <h4>Professional Experience</h4>
-      </div>
-      <div class="large-10 columns">
-        <div class="panel">
-          <div class="row">
-            <div class="large-4 medium-4 columns">
-            <h4>Launch Academy</h4>
-            <p class="date">November '13 - January '14</p>
-            <h5>Ruby on Rails Apprentice</h5>
-            <ul>
-              <li>Developed Rails app, AppAppHooray, utilizing Devise, Carrierwave, AWS S3, MailCatcher, Simple_form and Foundation. Deployed on Heroku</li>
-              <li>Built Rails app for company outside of Launch Academy in team of four to receive guests at co-working space and forward SMS to the guests’ hosts. Integrated Twilio API to handle sending SMSs from application</li>
-              <li>Built several micro apps to practice employing TDD, BDD, Agile methodologies, pair programming, outside-in development and database theory</li>
-            </ul>
+        <div class="large-10 columns">
+            <div class="panel">
+                <div class="row">
+                    <div class="large-4 medium-4 columns">
+                        <h4>Languages</h4>
+                        <p>Python, JS, HTML, CSS, SQL</p>
+                    </div>
+                    <div class="large-4 medium-4 columns">
+                        <h4>Frameworks/Tools</h4>
+                        <p>Foundation, Django, Flask, Git, GitHub, Stash, JQuery, Heroku, Sublime Text, Vim, Yaml, Agile Methodologies</p>
+                    </div>
+                    <div class="large-4 medium-4 columns">
+                        <h4>Databases</h4>
+                        <p>PostgreSQL</p>
+                    </div>
+                </div>
             </div>
-            <div class="large-4 medium-4 columns">
-            <h4>Bandwdth</h4>
-            <p class="date">September '12 - November '13</p>
-            <h5>Mobile Application Publisher</h5>
-            <ul>
-              <li>Managed remote team for project with $135,000 budget from concept to production stage</li>
-              <li>Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform</li>
-              <li>Developed and maintained strong healthcare and tech industry knowledge</li>
-            </ul>
-            </div>
-            <div class="large-4 medium-4 columns">
-              <h4>Socialbomb</h4>
-              <p class="date">July '12 - August '12</p>
-              <h5>Freelancer</h5>
-              <ul>
-                <li>Entered data for Red Bull mobile app</li>
-              </ul>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
 
     <hr />
 
     <div class="row">
-      <div class="large-2 columns">
-        <h4>Education</h4>
-      </div>
-      <div class="large-10 columns">
-        <div class="panel">
-          <div class="row">
-            <div class="large-6 medium-6 columns">
-              <h4>American University of Paris</h4>
-              <p class="date">2007 - 2010</p>
-              <p>International and Comparative Politics</p>
-            </div>
-            <div class="large-6 medium-6 columns">
-              <h4>NOLS</h4>
-              <p class="date">2005</p>
-              <p>Leadership and Wilderness Survival Skills</p>
-            </div>
-          </div>
+        <div class="large-2 columns">
+            <h4>Professional Experience</h4>
         </div>
-      </div>
+        <div class="large-10 columns">
+            <div class="panel">
+                <div class="row">
+                    <div class="large-4 medium-4 columns">
+                        <h4>Handshake</h4>
+                        <p class="date">June '14 - September '15</p>
+                        <h5>Marketing Engineer</h5>
+                        <ul>
+                            <li>Developed and maintained marketing assets in line with brand guidelines</li>
+                            <li>Independently converted core marketing website to fully responsive build</li>
+                            <li>Provided consultation for technical best practices</li>
+                            <li>Improved pipe of inbound leads for sales team through implementation of analytics pixels and development of campaign specific landing pages</li>
+                        </ul>
+                    </div>
+                    <div class="large-4 medium-4 columns">
+                        <h4>Launch Academy</h4>
+                        <p class="date">November '13 - January '14</p>
+                        <h5>Ruby on Rails Apprentice</h5>
+                        <ul>
+                            <li>Developed Rails app, AppAppHooray, utilizing Devise, Carrierwave, AWS S3, MailCatcher, Simple_form and Foundation. Deployed on Heroku</li>
+                            <li>Built Rails app for company outside of Launch Academy in team of four to receive guests at co-working space and forward SMS to the guests’ hosts. Integrated Twilio API to handle sending SMSs from application</li>
+                            <li>Built several micro apps to practice employing TDD, BDD, Agile methodologies, pair programming, outside-in development and database theory</li>
+                        </ul>
+                    </div>
+                    <div class="large-4 medium-4 columns">
+                        <h4>Bandwdth</h4>
+                        <p class="date">September '12 - November '13</p>
+                        <h5>Mobile Application Publisher</h5>
+                        <ul>
+                            <li>Managed remote team for project with $135,000 budget from concept to production stage</li>
+                            <li>Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform</li>
+                            <li>Developed and maintained strong healthcare and tech industry knowledge</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row">
+        <div class="large-2 columns">
+            <h4>Education</h4>
+        </div>
+        <div class="large-10 columns">
+            <div class="panel">
+                <div class="row">
+                    <div class="large-6 medium-6 columns">
+                        <h4>American University of Paris</h4>
+                        <p class="date">2007 - 2010</p>
+                        <p>International and Comparative Politics</p>
+                    </div>
+                    <div class="large-6 medium-6 columns">
+                        <h4>NOLS</h4>
+                        <p class="date">2005</p>
+                        <p>Leadership and Wilderness Survival Skills</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 {% endblock %}
