@@ -1,44 +1,18 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<!-- *************************** NAVIGATION **************************** -->
-    <nav class="top-bar" data-topbar>
-        <ul class="title-area">
-            <li class="name">
-                <h1 class="replace">
-                    <a href="#">Keith Riordan</a>
-                </h1>
-            </li>
-            <li class="toggle-topbar menu-icon">
-                <a href="#">More</a>
-            </li>
-        </ul>
-
-        <section class="top-bar-section">
-            <ul class="right">
-                <li>
-                    <a href="#apps">Web Apps</a>
-                </li>
-                <li>
-                    <a href="{{ url_for( 'resume' ) }}">Resume</a>
-                </li>
-            </ul>
-        </section>
-    </nav>
-<!-- *************************** END NAVIGATION ***************************** -->
-
     <div class="container"><!-- wrapper -->
 
-<!-- ****************************** HERO ******************************** -->
+    <!-- ****************************** HERO ******************************** -->
         <div class="row">
             <div id="job_title" class="large-12 columns">
                 <h1>Web Developer!</h1>
             </div>
         </div>
-<!-- ****************************** END HERO ****************************** -->
+    <!-- ****************************** END HERO ****************************** -->
 
 
-<!-- ******************************** ABOUT ****************************** -->
+    <!-- ******************************** ABOUT ****************************** -->
         <div id="about" class="row">
             <div class="large-6 columns">
                 <a href="http://github.com/kriordan">GitHub</a>
@@ -47,10 +21,10 @@
                 <a class="second-about" href="http://linkedin.com/pub/keith-riordan/12/9a1/b62/">LinkedIn</a>
             </div>
         </div>
-<!-- *************************** END ABOUT ****************************** -->
+    <!-- *************************** END ABOUT ****************************** -->
 
 
-<!-- ***************************** APPS ********************************* -->
+    <!-- ***************************** APPS ********************************* -->
         <div id="apps">
             <div class="row">
                 <div class="large-12 large-centered columns app-img">
@@ -70,13 +44,7 @@
                 </div>
             </div>
         </div>
-<!-- ********************************** END APPS **************************** -->
+    <!-- ********************************** END APPS **************************** -->
 
     </div><!-- endwrapper -->
-
-    <footer>
-        <div class="copyright">
-            <h6>&copy; 2014 Keith Riordan</h6>
-        </div>
-    </footer>
 {% endblock %}
