@@ -26,23 +26,18 @@
 
     <!-- ***************************** APPS ********************************* -->
         <div id="apps">
+        {% for project in projects %}
             <div class="row">
                 <div class="large-12 large-centered columns app-img">
-                    <img src="{{ url_for('static', filename='img/hooray.jpg') }}">
+                    <img src="{{ url_for('static', filename='img/home/') }}{{ project.image }}">
                 </div>
                 <div class="small-12 small-centered columns app_logo">
-                    <a href="http://appapphooray.herokuapp.com" target="_blank"><h1>AppAppHooray!</h1></a>
+                    <a href="{{ project.link }}" target="_blank">
+                        <h1>{{ project.name }}</h1>
+                    </a>
                 </div>
             </div>
-
-            <div class="row app_img">
-                <div class="large-12 large-centered columns">
-                    <img src="{{ url_for('static', filename='img/tentacles.jpg') }}">
-                </div>
-                <div class="small-12 small-centered columns app_logo">
-                    <a href="http://fathomless-caverns-5983.herokuapp.com/" target="_blank"><h1>TweetTweetHooray!</h1></a>
-                </div>
-            </div>
+        {% endfor %}
         </div>
     <!-- ********************************** END APPS **************************** -->
 

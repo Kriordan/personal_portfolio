@@ -1,0 +1,18 @@
+-
+    github_repo:
+    has_github_repo: false
+    image: handshake_logo.jpg
+    link: https://www.handshake.com
+    name: Handshake
+-
+    github_repo: https://github.com/Kriordan/wiggletwo
+    has_github_repo: true
+    image: erica_whiteside_logo.png
+    link: https://www.ericawhiteside.com
+    name: Erica Whiteside
+-
+    github_repo: https://github.com/Kriordan/appapphooray
+    has_github_repo: true
+    image: hooray.jpg
+    link: https://www.appapphooray.herokuapp.com
+    name: AppAppHooray!

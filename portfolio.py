@@ -1,9 +1,13 @@
 from flask import Flask, render_template
+import yaml
 app = Flask(__name__)
+
+PROJECTS = yaml.load( open( 'yamlfiles/projects.yml' ) )
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    projects = PROJECTS
+    return render_template('home.html', projects=projects)
 
 @app.route('/resume')
 def resume():
