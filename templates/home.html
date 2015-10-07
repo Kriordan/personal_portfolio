@@ -1,45 +1,39 @@
 {% extends 'base.html' %}
 
 {% block body %}
-    <div class="container"><!-- wrapper -->
+    <div class="home-container">
 
-    <!-- ****************************** HERO ******************************** -->
-        <div class="row">
-            <div id="job_title" class="large-12 columns">
-                <h1>Web Developer!</h1>
-            </div>
-        </div>
-    <!-- ****************************** END HERO ****************************** -->
+        <section class="home-about">
+            <a href="http://github.com/kriordan">GitHub</a>
+            <a href="http://linkedin.com/pub/keith-riordan/12/9a1/b62/">LinkedIn</a>
+        </section>
 
+        <div class="home-horizontal-rule"></div>
 
-    <!-- ******************************** ABOUT ****************************** -->
-        <div id="about" class="row">
-            <div class="large-6 columns">
-                <a href="http://github.com/kriordan">GitHub</a>
-            </div>
-            <div class="large-6 columns">
-                <a class="second-about" href="http://linkedin.com/pub/keith-riordan/12/9a1/b62/">LinkedIn</a>
-            </div>
-        </div>
-    <!-- *************************** END ABOUT ****************************** -->
-
-
-    <!-- ***************************** APPS ********************************* -->
-        <div id="apps">
+        <section class="home-projects">
         {% for project in projects %}
-            <div class="row">
-                <div class="large-12 large-centered columns app-img">
-                    <img src="{{ url_for('static', filename='img/home/') }}{{ project.image }}">
-                </div>
-                <div class="small-12 small-centered columns app_logo">
-                    <a href="{{ project.link }}" target="_blank">
-                        <h1>{{ project.name }}</h1>
+            <div class="home-projects-block">
+                <a href="{{ project.link }}" target="_blank">
+                    <img
+                        class="home-projects-block-image {{ project.clean_name }}"
+                        src="{{ url_for('static', filename='img/home/') }}{{ project.image }}"
+                    >
+                </a>
+                <p class="home-projects-block-description">{{ project.description }}</p>
+                <p class="home-projects-block-techstack">{{ project.tech_stack }}</p>
+                {% if project.has_github_repo %}
+                    <a
+                        class="home-projects-block-githublogo"
+                        href="{{ project.github_repo }}"
+                        target="_blank"
+                    >
+                        <img src="{{ url_for('static', filename='img/home/iconmonstr-github-icon-64.png') }}">
                     </a>
-                </div>
+                {% endif %}
             </div>
+            <div class="home-horizontal-rule"></div>
         {% endfor %}
-        </div>
-    <!-- ********************************** END APPS **************************** -->
+        </section>
 
-    </div><!-- endwrapper -->
+    </div>
 {% endblock %}

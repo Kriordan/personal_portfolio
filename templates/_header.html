@@ -1,23 +1,25 @@
-<nav class="top-bar" data-topbar>
-    <ul class="title-area">
-        <li class="name">
-            <h1 class="replace">
-                <a href="{{ url_for( 'home' )}}">Keith Riordan</a>
-            </h1>
-        </li>
-        <li class="toggle-topbar menu-icon">
-            <a href="#">More</a>
-        </li>
-    </ul>
+<header class="header">
+    <div class="header-about">
+        <img src="{{ url_for( 'static', filename='img/header/logo.png')}}">
+        <a href="{{ url_for( 'home' )}}">
+            <h1>Keith Riordan</h1>
+        </a>
+    </div>
 
-    <section class="top-bar-section">
-        <ul class="right">
-            <li>
-                <a href="{{ url_for( 'home' )}}#apps">Web Apps</a>
-            </li>
-            <li>
-                <a href="{{ url_for( 'resume' ) }}">Resume</a>
-            </li>
-        </ul>
-    </section>
-</nav>
+    <nav class="header-nav">
+        <p class="header-nav-tagline">Boston-based web developer</p>
+        <a
+            {% if request.path == '/' %}class="active"{% endif %}
+            href="{{ url_for( 'home' )}}"
+        >
+            Projects
+        </a>
+        <a
+            {% if request.path == '/resume' %}class="active"{% endif %}
+            href="{{ url_for( 'resume' )}}"
+        >
+            Resume
+        </a>
+    </nav>
+
+</header>

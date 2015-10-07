@@ -1,18 +1,45 @@
 -
+    clean_name: handshake
+    description: "Developed and maintained Django web app used for marketing and lead generation at Handshake. Independently converted from fixed width to fully responsive."
     github_repo:
     has_github_repo: false
     image: handshake_logo.jpg
     link: https://www.handshake.com
     name: Handshake
+    tech_stack: "Django 1.5, jQuery, LESS, Virtualenv, Yaml, Fabric, Grunt"
 -
+    clean_name: erica-whiteside
+    description: "Built personal portfolio up from scratch for client. Ongoing: Look for projects and project detail templates soon."
     github_repo: https://github.com/Kriordan/wiggletwo
     has_github_repo: true
     image: erica_whiteside_logo.png
-    link: https://www.ericawhiteside.com
+    link: http://www.ericawhiteside.com
     name: Erica Whiteside
+    tech_stack: "Django 1.8, jQuery, LESS, Heroku"
 -
+    clean_name: handshake-blog
+    description: "Developed and maintained WP web app used for marketing and lead generation at Handshake."
+    github_repo:
+    has_github_repo: false
+    image: handshake_blog.jpg
+    link: https://www.handshake.com/blog
+    name: Handshake Blog
+    tech_stack: "Wordpress, jQuery, LESS, Flightplan, Gulp"
+-
+    clean_name: personal-portfolio
+    description: "This website."
+    github_repo: https://github.com/Kriordan/personal_portfolio
+    has_github_repo: true
+    image: logo.png
+    link: http://www.keithriordan.com
+    name: Personal Portfolio
+    tech_stack: "Flask, jQuery, LESS, Heroku"
+-
+    clean_name: appapphooray
+    description: "First rails app I built."
     github_repo: https://github.com/Kriordan/appapphooray
     has_github_repo: true
     image: hooray.jpg
-    link: https://www.appapphooray.herokuapp.com
+    link: http://appapphooray.herokuapp.com
     name: AppAppHooray!
+    tech_stack: "Rails, SASS, Devise, Simple Form, Carrierwave, PostgreSQL, Heroku"

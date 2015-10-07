@@ -1,0 +1,129 @@
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a {
+  font-family: 'Playfair Display', serif;
+}
+p,
+ul,
+li {
+  font-family: 'Fauna One', serif;
+}
+.header {
+  padding-top: 25px;
+  text-align: center;
+}
+.header-about img {
+  vertical-align: middle;
+  width: 35px;
+}
+.header-about a {
+  display: inline-block;
+  padding-left: 10px;
+  vertical-align: middle;
+}
+.header-nav {
+  border-bottom: 1px solid #e9e9e9;
+}
+.header-nav-tagline {
+  border-bottom: 1px solid #e9e9e9;
+  margin: 0;
+  padding: 15px 0;
+}
+.header-nav .active {
+  color: #000;
+  text-decoration: underline;
+}
+.header-nav a {
+  display: inline-block;
+  padding: 15px 20px;
+}
+.footer {
+  background: #AAA;
+  text-align: center;
+}
+.footer h6 {
+  font-size: 0.8em;
+  padding: 20px 0;
+}
+.home-container {
+  min-width: 320px;
+  margin: auto;
+  max-width: 960px;
+  width: 100%;
+}
+.home-hero {
+  margin-top: 30px;
+  text-align: center;
+}
+.home-about {
+  padding: 50px 0;
+  text-align: center;
+}
+.home-about a {
+  background-color: #b3b3b3;
+  border-radius: 4px;
+  color: #fff;
+  display: block;
+  font-size: 30px;
+  margin: 20px auto;
+  max-width: 300px;
+  padding: 10px 0;
+  text-transform: uppercase;
+  width: 100%;
+}
+@media (min-width: 650px) {
+  .home-about a {
+    display: inline-block;
+    vertical-align: top;
+  }
+}
+.home-about a:hover {
+  background-color: #cccccc;
+}
+.home-projects-block {
+  margin: 60px 0;
+  text-align: center;
+}
+.home-projects-block-image {
+  max-width: 500px;
+  padding: 0 20px;
+  width: 100%;
+}
+.home-projects-block-image.personal-portfolio {
+  max-width: 150px;
+}
+.home-projects-block-description,
+.home-projects-block-techstack {
+  margin: 0 auto;
+  max-width: 500px;
+  padding: 30px 20px 0;
+  text-align: left;
+}
+.home-projects-block-githublogo img {
+  padding-top: 40px;
+}
+.home-horizontal-rule {
+  height: 1px;
+  border-top: 1px solid #e9e9e9;
+  margin: auto;
+  width: 80%;
+}
+.resume-container {
+  margin-top: 80px;
+}
+.resume-container h4 {
+  font-weight: bold;
+}
+.resume-container .date {
+  font-size: 0.8em;
+}
+.resume-hero {
+  text-align: center;
+}
+.resume-hero-button {
+  background-color: #5E7CF9;
+}

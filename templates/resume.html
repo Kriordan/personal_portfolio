@@ -1,18 +1,17 @@
 {% extends 'base.html' %}
 
 {% block body %}
-    <div class="row">
-        <div id="job_title"class="large-12 columns">
-            <h1>Keith Riordan</h1>
-            <a
-                class="large radius button"
-                download
-                href="{{ url_for('static', filename='downloads/keith_riordan_resume.pdf') }}"
-            >
-                PDF Version
-            </a>
-            <br/>
-        </div>
+<div class="resume-container">
+
+    <div class="resume-hero">
+        <h1>Keith Riordan</h1>
+        <a
+            class="resume-hero-button large radius button"
+            download
+            href="{{ url_for('static', filename='downloads/keith_riordan_resume.pdf') }}"
+        >
+            PDF Version
+        </a>
     </div>
 
     <div class="row">
@@ -108,4 +107,5 @@
         </div>
     </div>
 
+</div>
 {% endblock %}
