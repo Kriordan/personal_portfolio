@@ -1,0 +1,25 @@
+{
+  "name": "personal_portfolio",
+  "version": "0.0.0",
+  "description": "Personal portfolio",
+  "main": "index.js",
+  "dependencies": {
+    "gulp": "^3.9.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Kriordan/personal_portfolio.git"
+  },
+  "author": "Kriordan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kriordan/personal_portfolio/issues"
+  },
+  "homepage": "https://github.com/Kriordan/personal_portfolio"
+}
