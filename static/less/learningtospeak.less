@@ -3,7 +3,23 @@
     padding: 20px;
     text-align: center;
   }
-  &-chapterTitle {
-    font-size:
+  &-disclaimer {
+    display: block;
+    margin-bottom: 20px;
+  }
+  &-toggleTakes {
+    background: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    color: black;
+    margin-top: 20px;
+  }
+  &-takes {
+    height: 0;
+    overflow: hidden;
+    transition: all 1s;
+    &.is-open {
+      height: 100px;
+    }
   }
 }

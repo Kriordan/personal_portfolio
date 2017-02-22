@@ -127,3 +127,26 @@ li {
 .resume-hero-button {
   background-color: #5E7CF9;
 }
+.Bookshelf-container {
+  padding: 20px;
+  text-align: center;
+}
+.Bookshelf-disclaimer {
+  display: block;
+  margin-bottom: 20px;
+}
+.Bookshelf-toggleTakes {
+  background: white;
+  border: 1px solid black;
+  border-radius: 5px;
+  color: black;
+  margin-top: 20px;
+}
+.Bookshelf-takes {
+  height: 0;
+  overflow: hidden;
+  transition: all 1s;
+}
+.Bookshelf-takes.is-open {
+  height: 100px;
+}

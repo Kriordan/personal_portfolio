@@ -4,11 +4,17 @@
   <main class="Bookshelf">
     <div class="Bookshelf-container">
       <h2 class="Bookshelf-title">Bedside chats with Misty</h2>
+      <small class="Bookshelf-disclaimer">*Very hastily made</small>
       <section class="Bookshelf-book">
         <h3 class="Bookshelf-bookTitle">Cat's Cradle</h3>
         <section class="Bookshelf-chapter">
           <h4 class="Bookshelf-chapterTitle">1: The Day the World Ended</h4>
           <audio src="{{ url_for('static', filename='audio/c1t1.mp3') }}" controls></audio>
+          <button class="Bookshelf-toggleTakes takes">Takes</button>
+          <div class="Bookshelf-takes">
+            <audio src="{{ url_for('static', filename='audio/c1t2.mp3') }}" controls></audio>
+            <audio src="{{ url_for('static', filename='audio/c1t3.mp3') }}" controls></audio>
+          </div>
         </section>
       </section>
     </div>
