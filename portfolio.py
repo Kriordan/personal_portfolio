@@ -13,5 +13,9 @@ def home():
 def resume():
     return render_template('resume.html')
 
+@app.route('/learningtospeak')
+def learningtospeak():
+    return render_template('learningtospeak.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

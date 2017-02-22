@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block body %}
+  <main class="Bookshelf">
+    <div class="Bookshelf-container">
+      <h2 class="Bookshelf-title">Bedside chats with Misty</h2>
+      <section class="Bookshelf-book">
+        <h3 class="Bookshelf-bookTitle">Cat's Cradle</h3>
+        <section class="Bookshelf-chapter">
+          <h4 class="Bookshelf-chapterTitle">1: The Day the World Ended</h4>
+          <audio src="{{ url_for('static', filename='audio/c1t1.mp3') }}" controls></audio>
+        </section>
+      </section>
+    </div>
+  </main>
+{% endblock %}
