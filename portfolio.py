@@ -1,6 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+from forms import ContactForm
 import yaml
+
 app = Flask(__name__)
+
+app.secret_key = 'keyforflaskwtf'
 
 PROJECTS = yaml.load( open( 'yamlfiles/projects.yml' ) )
 
@@ -12,6 +16,13 @@ def home():
 @app.route('/resume')
 def resume():
     return render_template('resume.html')
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    form = ContactForm()
+    if form.validate_on_submit():
+        return 'Form posted.'
+    return render_template('contact.html', form=form)
 
 @app.route('/learningtospeak')
 def learningtospeak():

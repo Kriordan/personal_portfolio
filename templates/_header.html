@@ -20,6 +20,12 @@
         >
             Resume
         </a>
+        <a
+            {% if request.path == '/contact' %}class="active"{% endif %}
+            href="{{ url_for( 'contact' )}}"
+        >
+            Contact
+        </a>
     </nav>
 
 </header>
