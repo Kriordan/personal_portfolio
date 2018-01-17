@@ -3,19 +3,20 @@ from forms import ContactForm
 from flask_mail import Message, Mail
 from datetime import datetime
 import yaml
+import os
 
 mail = Mail()
 app = Flask(__name__)
 
-app.secret_key = 'keyforflaskwtf'
+app.secret_key = "\xea\x06\x9b'kT\x9b\x1c\x11\x89\xbd{\x11\x93\x8apJ\xa8Y6\xb3\xf6\x94\x88"
 
 PROJECTS = yaml.load( open( 'yamlfiles/projects.yml' ) )
 
 # email configuration
 app.config["MAIL_SERVER"] = "smtp.sendgrid.net"
 app.config["MAIL_PORT"] = 587
-app.config["MAIL_USERNAME"] = 'app42252860@heroku.com'
-app.config["MAIL_PASSWORD"] = '74oqyarq3851'
+app.config["MAIL_USERNAME"] = os.environ.get('SENDGRID_USERNAME')
+app.config["MAIL_PASSWORD"] = os.environ.get('SENDGRID_PASSWORD')
 
 mail.init_app(app)
 
