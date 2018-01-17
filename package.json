@@ -3,9 +3,7 @@
   "version": "0.0.0",
   "description": "Personal portfolio",
   "main": "index.js",
-  "dependencies": {
-    "gulp": "^3.9.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "browser-sync": "^2.11.1",
     "gulp": "^3.9.1",

@@ -1,3 +1,6 @@
+body {
+  padding: 0 0 100px;
+}
 h1,
 h2,
 h3,
@@ -43,6 +46,10 @@ li {
 }
 .footer {
   background: #AAA;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   text-align: center;
 }
 .footer h6 {
@@ -149,4 +156,31 @@ li {
 }
 .Bookshelf-takes.is-open {
   height: 100px;
+}
+.Contact {
+  padding: 15px;
+}
+.Contact-title {
+  text-align: center;
+}
+.Contact-form {
+  margin: auto;
+  max-width: 650px;
+}
+.Contact-inputGroup {
+  margin-bottom: 10px;
+}
+.Contact-inputGroup .Contact-input {
+  margin-bottom: 0;
+}
+.Contact-submit {
+  background-color: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  height: 40px;
+  width: 100%;
+}
+.Contact-submit:hover {
+  background-color: #000;
+  color: #fff;
 }
