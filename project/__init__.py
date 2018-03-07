@@ -1,14 +1,14 @@
 import datetime
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
+from sparkpost import SparkPost
+from sparkpost.exceptions import SparkPostAPIException
 
 
 app = Flask(__name__)
 app.config.from_pyfile('_config.py')
 db = SQLAlchemy(app)
-mail = Mail()
-mail.init_app(app)
+sp = SparkPost()
 
 
 from project.foyer.views import foyer_blueprint
