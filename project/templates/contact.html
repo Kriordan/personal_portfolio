@@ -6,7 +6,7 @@
   {% if success %}
     <p>Thank you for your message. I'll be getting back to you shortly!</p>
   {% else %}
-    <form class="Contact-form" action="{{ url_for('contact') }}" method="POST">
+    <form class="Contact-form" action="{{ url_for('foyer.contact') }}" method="POST">
       {{ form.csrf_token }}
 
       <div class="Contact-inputGroup">

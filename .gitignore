@@ -1,5 +1,6 @@
 .DS_Store
 *.pyc
+/env
 /node_modules
 *.log
 *.swp
