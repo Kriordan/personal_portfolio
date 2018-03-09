@@ -12,10 +12,10 @@ sp = SparkPost()
 
 
 from project.foyer.views import foyer_blueprint
-# from project.jobs.views import jobs_blueprint
+from project.jobwizard.views import jobwizard_blueprint
 
 app.register_blueprint(foyer_blueprint)
-# app.register_blueprint(jobs_blueprint)
+app.register_blueprint(jobwizard_blueprint)
 
 
 @app.context_processor

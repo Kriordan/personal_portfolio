@@ -2,7 +2,7 @@ from flask import render_template, request, Blueprint
 import os
 import yaml
 
-from .forms import ContactForm, PdfForm
+from .forms import ContactForm
 from project import sp
 
 

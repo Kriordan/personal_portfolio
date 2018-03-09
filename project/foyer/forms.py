@@ -9,7 +9,3 @@ class ContactForm(FlaskForm):
   message = TextAreaField("Message", validators=[InputRequired("Please enter a message.")])
   submit = SubmitField("Send")
 
-
-class PdfForm(FlaskForm):
-    url = StringField("URL", validators=[InputRequired("Enter a valid url")])
-    submit = SubmitField("Create PDF")

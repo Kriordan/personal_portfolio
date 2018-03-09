@@ -1,0 +1,7 @@
+<h1>I am the Job Wizard</h1>
+{% for job in jobs %}
+  <p>{{ job.title }}</p>
+  <p>{{ job.company_name }}</p>
+  <a href={{ job.listing_url }}>{{ job.listing_url}}</a>
+  <img src={{ job.listing_image }} style="width: 50%; display: block;"/>
+{% endfor %}
