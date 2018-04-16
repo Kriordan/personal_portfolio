@@ -1,7 +1,48 @@
-<h1>I am the Job Wizard</h1>
-{% for job in jobs %}
-  <p>{{ job.title }}</p>
-  <p>{{ job.company_name }}</p>
-  <a href={{ job.listing_url }}>{{ job.listing_url}}</a>
-  <img src={{ job.listing_image }} style="width: 50%; display: block;"/>
-{% endfor %}
+{% extends 'base.html' %}
+
+{% block title %}Jobwizard{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block body %}
+  <h1 class="Jobwizard-title">Job Stash</h1>
+  <div class="Jobwizard-joblist">
+    {% for job in jobs %}
+      <div class="Jobwizard-joblisting">
+        <h4 class="Jobwizard-job-title">{{ job.title }}</h4>
+        <p class="Jobwizard-job-company">{{ job.company_name }}</p>
+        <a class="Jobwizard-job-link" href={{ job.listing_url }} target="_blank">link</a>
+        <img class="Jobwizard-job-screenshot" src={{ job.listing_image }} style="width: 50%; display: block;"/>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form class="Jobwizard-form" action="{{ url_for('jobwizard.add_job') }}" method="POST">
+    {{ form.csrf_token }}
+
+    <div class="Jobwizard-inputGroup">
+      {{ form.title.label}}
+      {{ form.title(class_="Jobwizard-input") }}
+      {% for error in form.title.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    <div class="Jobwizard-inputGroup">
+      {{ form.company_name.label }}
+      {{ form.company_name(class_="Jobwizard-input") }}
+      {% for error in form.company_name.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    <div class="Jobwizard-inputGroup">
+      {{ form.listing_url.label }}
+      {{ form.listing_url(class_="Jobwizard-input") }}
+      {% for error in form.listing_url.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    {{ form.submit(class_="Jobwizard-submit") }}
+  </form>
+{% endblock %}
+
+{% block footer %}{% endblock %}

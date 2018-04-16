@@ -3,6 +3,7 @@ import os
 import datetime
 from urllib.parse import urlencode
 from urllib.request import urlretrieve
+from flask import current_app
 
 from project import db
 
@@ -30,14 +31,14 @@ class Job(db.Model):
         apileap_url = "https://apileap.com/api/screenshot/v1/urltoimage?"
         params = urlencode({
             "url": self.listing_url,
-            "access_key": APILEAP_API_KEY,
+            "access_key": "c7c8f00cc7c04572a06748cc3541fad1",
             "full_page": "true"
         })
-        url_hash = hashlib.md5(self.listing_url).hexdigest()
-        image_dir = os.path.join(app.config['BASEDIR'],
+        url_hash = hashlib.md5(self.listing_url.encode('utf-8')).hexdigest()
+        image_dir = os.path.join(current_app.config['BASEDIR'],
                                  'static/img/job_listings')
         filename = f'listing-screenshot-{url_hash}.jpeg'
         file_destination = os.path.join(image_dir, filename)
 
         urlretrieve(apileap_url + params, file_destination)
-        self.listing_image = "img/job_listings/" + filename
+        self.listing_image = "/static/img/job_listings/" + filename

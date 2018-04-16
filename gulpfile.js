@@ -13,9 +13,9 @@ gulp.task('serve', ['less'], function() {
 });
 
 gulp.task('less', function() {
-    return gulp.src("static/less/main.less")
+    return gulp.src("project/static/less/main.less")
         .pipe(less())
-        .pipe(gulp.dest("static/css"))
+        .pipe(gulp.dest("project/static/css"))
         .pipe(browserSync.stream());
 });
 

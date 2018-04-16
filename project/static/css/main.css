@@ -184,3 +184,25 @@ li {
   background-color: #000;
   color: #fff;
 }
+.Jobwizard-title {
+  margin: 20px;
+}
+.Jobwizard-joblist {
+  display: flex;
+}
+.Jobwizard-joblisting {
+  border: 1px solid #ddd;
+  margin: 20px;
+  padding: 20px;
+}
+.Jobwizard-job-company {
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 20px;
+}
+.Jobwizard-job-link {
+  display: block;
+  margin-bottom: 5px;
+}
+.Jobwizard-form {
+  padding: 20px;
+}

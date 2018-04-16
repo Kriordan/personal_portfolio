@@ -48,11 +48,11 @@
     </head>
     <body>
 
-        {% include "_header.html" %}
+        {% block header %}{% include "_header.html" %}{% endblock %}
 
         {% block body %}{% endblock %}
 
-        {% include "_footer.html" %}
+        {% block footer %}{% include "_footer.html" %}{% endblock %}
 
         <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
         <script src="{{ url_for('static', filename='js/foundation.min.js') }}"></script>

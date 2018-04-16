@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField
+from wtforms import StringField, IntegerField, SubmitField
 from wtforms.validators import InputRequired, URL
 
 
@@ -19,3 +19,4 @@ class AddJobForm(FlaskForm):
             URL("This url is no good")
         ]
     )
+    submit = SubmitField("Upload")
