@@ -184,24 +184,38 @@ li {
   background-color: #000;
   color: #fff;
 }
+.Jobwizard-container {
+  margin: auto;
+  max-width: 960px;
+}
 .Jobwizard-title {
   margin: 20px;
 }
 .Jobwizard-joblist {
   padding: 20px;
 }
-.Jobwizard-joblisting {
+.Jobwizard-job {
   border: 1px solid #ddd;
+  display: flex;
   margin-bottom: 20px;
+}
+.Jobwizard-joblink {
+  display: block;
+  flex-basis: 75%;
   padding: 20px;
 }
-.Jobwizard-job-company {
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 20px;
+.Jobwizard-jobcompany {
+  color: #777;
+  margin-bottom: 0;
 }
-.Jobwizard-job-link {
-  display: block;
-  margin-bottom: 5px;
+.Jobwizard-joblistinglink {
+  align-items: center;
+  background-color: #e4e4e4;
+  box-shadow: inset 4px 0px 2px 0px #ddd;
+  color: #777;
+  display: flex;
+  flex-basis: 25%;
+  justify-content: center;
 }
 .Jobwizard-form {
   padding: 20px;
@@ -216,22 +230,10 @@ li {
 @media screen and (min-width: 720px) {
   .Jobwizard-joblist {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 20px;
+    flex-direction: column;
   }
-  .Jobwizard-joblisting {
+  .Jobwizard-job {
     border: 1px solid #ddd;
-    flex-basis: 23%;
     margin-bottom: 20px;
-    padding: 20px;
-  }
-  .Jobwizard-job-company {
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px;
-  }
-  .Jobwizard-job-link {
-    display: block;
-    margin-bottom: 5px;
   }
 }

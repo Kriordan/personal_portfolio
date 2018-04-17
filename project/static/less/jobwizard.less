@@ -1,23 +1,35 @@
 .Jobwizard {
+    &-container {
+        margin: auto;
+        max-width: 960px;
+    }
     &-title {
         margin: 20px;
     }
     &-joblist {
         padding: 20px;
     }
-    &-joblisting {
-        border: 1px solid #ddd;
-        margin-bottom: 20px;
-        padding: 20px;
-    }
     &-job {
-        &-company {
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px
-        }
-        &-link {
+        border: 1px solid #ddd;
+        display: flex;
+        margin-bottom: 20px;
+        &link {
             display: block;
-            margin-bottom: 5px;
+            flex-basis: 75%;
+            padding: 20px;
+        }
+        &company {
+            color: #777;
+            margin-bottom: 0;
+        }
+        &listinglink {
+            align-items: center;
+            background-color: #e4e4e4;
+            box-shadow: inset 4px 0px 2px 0px #ddd;
+            color: #777;
+            display: flex;
+            flex-basis: 25%;
+            justify-content: center;
         }
     }
     &-form {
@@ -33,25 +45,11 @@
     @media screen and (min-width: 720px) {
         &-joblist {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            padding: 20px;
-        }
-        &-joblisting {
-            border: 1px solid #ddd;
-            flex-basis: 23%;
-            margin-bottom: 20px;
-            padding: 20px;
+            flex-direction: column;
         }
         &-job {
-            &-company {
-                border-bottom: 1px solid #ddd;
-                margin-bottom: 20px
-            }
-            &-link {
-                display: block;
-                margin-bottom: 5px;
-            }
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
         }
     }
 }

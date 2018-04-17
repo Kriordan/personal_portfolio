@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job.title }} - {{ job.company_name }}{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block body %}
+  <h2 class="Job-title">{{ job.title }}</h2>
+  <h3 class="Job-company">{{ job.company_name }}</h3>
+  <a href="{{ job.listing_url }}" class="Job-sourcelink" target="_blank">original listing</a>
+  <a href="https://jobwizard-test.s3.amazonaws.com/{{ job.listing_image }}">
+    <img src="https://jobwizard-test.s3.amazonaws.com/{{ job.listing_image }}" alt="{{ job.company_name }} {{ job.title }} Screenshot" class="Job-screenshot">
+  </a>
+{% endblock %}
+
+{% block footer %}{% endblock %}

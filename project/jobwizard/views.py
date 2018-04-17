@@ -18,7 +18,6 @@ def home():
         jobs=jobs
     )
 
-
 @jobwizard_blueprint.route('/jobwizard/add/', methods=['GET', 'POST'])
 def add_job():
     error = None
@@ -40,4 +39,11 @@ def add_job():
         error=error
     )
 
+@jobwizard_blueprint.route('/jobwizard/<job_id>', methods=['GET'])
+def get_single_job(job_id):
+    job = Job.query.filter_by(id=int(job_id)).first()
+    return render_template(
+        'job.html',
+        job=job
+    )
 
