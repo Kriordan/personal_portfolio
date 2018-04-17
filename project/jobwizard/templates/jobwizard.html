@@ -12,7 +12,7 @@
         <h4 class="Jobwizard-job-title">{{ job.title }}</h4>
         <p class="Jobwizard-job-company">{{ job.company_name }}</p>
         <a class="Jobwizard-job-link" href={{ job.listing_url }} target="_blank">link</a>
-        <img class="Jobwizard-job-screenshot" src={{ job.listing_image }} style="width: 50%; display: block;"/>
+        <img class="Jobwizard-job-screenshot" src="https://jobwizard-test.s3.amazonaws.com/{{ job.listing_image }}" style="width: 50%; display: block;"/>
       </div>
     {% endfor %}
   </div>

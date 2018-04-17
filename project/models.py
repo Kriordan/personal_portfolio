@@ -1,11 +1,10 @@
-import hashlib
-import os
+import uuid
 import datetime
+import requests
 from urllib.parse import urlencode
-from urllib.request import urlretrieve
 from flask import current_app
 
-from project import db
+from project import db, s3
 
 
 class Job(db.Model):
@@ -34,11 +33,17 @@ class Job(db.Model):
             "access_key": "c7c8f00cc7c04572a06748cc3541fad1",
             "full_page": "true"
         })
-        url_hash = hashlib.md5(self.listing_url.encode('utf-8')).hexdigest()
-        image_dir = os.path.join(current_app.config['BASEDIR'],
-                                 'static/img/job_listings')
-        filename = f'listing-screenshot-{url_hash}.jpeg'
-        file_destination = os.path.join(image_dir, filename)
+        apileap_image_response = requests.get(apileap_url + params, stream=True)
+        apileap_image_response_object = apileap_image_response.raw
+        apileap_image_response_data = apileap_image_response_object.read()
 
-        urlretrieve(apileap_url + params, file_destination)
-        self.listing_image = "/static/img/job_listings/" + filename
+        unique_filename_hex = uuid.uuid4().hex
+        screenshot_filename = f'{unique_filename_hex}.jpeg'
+        self.listing_image = screenshot_filename
+
+        s3.Bucket(current_app.config['S3_BUCKET']).put_object(
+            Key=screenshot_filename,
+            Body=apileap_image_response_data,
+            ContentType='image/jpeg',
+            ACL='public-read'
+        )

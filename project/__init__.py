@@ -1,4 +1,5 @@
 import datetime
+import boto3
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sparkpost import SparkPost
@@ -9,6 +10,7 @@ app = Flask(__name__)
 app.config.from_pyfile('_config.py')
 db = SQLAlchemy(app)
 sp = SparkPost()
+s3 = boto3.resource('s3')
 
 
 from project.foyer.views import foyer_blueprint

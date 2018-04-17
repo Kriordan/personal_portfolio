@@ -188,11 +188,11 @@ li {
   margin: 20px;
 }
 .Jobwizard-joblist {
-  display: flex;
+  padding: 20px;
 }
 .Jobwizard-joblisting {
   border: 1px solid #ddd;
-  margin: 20px;
+  margin-bottom: 20px;
   padding: 20px;
 }
 .Jobwizard-job-company {
@@ -205,4 +205,33 @@ li {
 }
 .Jobwizard-form {
   padding: 20px;
+}
+.Jobwizard-submit {
+  background-color: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  height: 40px;
+  width: 100%;
+}
+@media screen and (min-width: 720px) {
+  .Jobwizard-joblist {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px;
+  }
+  .Jobwizard-joblisting {
+    border: 1px solid #ddd;
+    flex-basis: 23%;
+    margin-bottom: 20px;
+    padding: 20px;
+  }
+  .Jobwizard-job-company {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+  }
+  .Jobwizard-job-link {
+    display: block;
+    margin-bottom: 5px;
+  }
 }
