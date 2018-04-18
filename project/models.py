@@ -1,3 +1,4 @@
+import os
 import uuid
 import datetime
 import requests
@@ -30,7 +31,7 @@ class Job(db.Model):
         apileap_url = "https://apileap.com/api/screenshot/v1/urltoimage?"
         params = urlencode({
             "url": self.listing_url,
-            "access_key": "c7c8f00cc7c04572a06748cc3541fad1",
+            "access_key": os.getenv('APILEAP_ACCESS_KEY'),
             "full_page": "true"
         })
         apileap_image_response = requests.get(apileap_url + params, stream=True)
@@ -41,7 +42,7 @@ class Job(db.Model):
         screenshot_filename = f'{unique_filename_hex}.jpeg'
         self.listing_image = screenshot_filename
 
-        s3.Bucket(current_app.config['S3_BUCKET']).put_object(
+        s3.Bucket(os.getenv('S3_BUCKET')).put_object(
             Key=screenshot_filename,
             Body=apileap_image_response_data,
             ContentType='image/jpeg',

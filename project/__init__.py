@@ -4,14 +4,20 @@ from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sparkpost import SparkPost
 from sparkpost.exceptions import SparkPostAPIException
+from dotenv import load_dotenv, find_dotenv
 
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
+
 app.config.from_pyfile('_config.py')
+
 db = SQLAlchemy(app)
 sp = SparkPost()
 s3 = boto3.resource('s3')
-
 
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
