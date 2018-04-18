@@ -1,1 +1,1 @@
-web: gunicorn portfolio:app --log-file=-
+web: python run.py --log-file=-
