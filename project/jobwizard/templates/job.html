@@ -7,10 +7,8 @@
 {% block body %}
   <h2 class="Job-title">{{ job.title }}</h2>
   <h3 class="Job-company">{{ job.company_name }}</h3>
-  <a href="{{ job.listing_url }}" class="Job-sourcelink" target="_blank">original listing</a>
-  <a href="https://jobwizard-test.s3.amazonaws.com/{{ job.listing_image }}">
-    <img src="https://jobwizard-test.s3.amazonaws.com/{{ job.listing_image }}" alt="{{ job.company_name }} {{ job.title }} Screenshot" class="Job-screenshot">
-  </a>
+  <a class="Job-sourcelink" href="{{ job.listing_url }}" target="_blank">original listing</a>
+  <a class="Job-screenshotLink" href="https://jobwizard-test.s3.amazonaws.com/{{job.listing_image}}">screenshot</a>
 {% endblock %}
 
 {% block footer %}{% endblock %}

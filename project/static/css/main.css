@@ -1,6 +1,10 @@
 body {
   padding: 0 0 100px;
 }
+.container {
+  margin: auto;
+  max-width: 960px;
+}
 h1,
 h2,
 h3,
@@ -122,9 +126,6 @@ li {
 .resume-container {
   margin-top: 80px;
 }
-.resume-container h4 {
-  font-weight: bold;
-}
 .resume-container .date {
   font-size: 0.8em;
 }
@@ -236,4 +237,18 @@ li {
     border: 1px solid #ddd;
     margin-bottom: 20px;
   }
+}
+.Job-screenshot {
+  max-width: 400px;
+}
+.Job-screenshotLink {
+  display: inline-block;
+  height: 400px;
+  width: 400px;
+}
+.Job-screenshotZoom {
+  border: 1px solid black;
+  display: inline-block;
+  height: 400px;
+  width: 400px;
 }

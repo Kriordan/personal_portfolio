@@ -5,49 +5,47 @@
 {% block header %}{% endblock %}
 
 {% block body %}
-  <div class="Jobwizard-container">
-    <h1 class="Jobwizard-title">Job Stash</h1>
+  <h1 class="Jobwizard-title">Job Stash</h1>
 
-    <form class="Jobwizard-form" action="{{ url_for('jobwizard.add_job') }}" method="POST">
-      {{ form.csrf_token }}
+  <form class="Jobwizard-form" action="{{ url_for('jobwizard.add_job') }}" method="POST">
+    {{ form.csrf_token }}
 
-      <div class="Jobwizard-inputGroup">
-        {{ form.title.label}}
-        {{ form.title(class_="Jobwizard-input") }}
-        {% for error in form.title.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-      <div class="Jobwizard-inputGroup">
-        {{ form.company_name.label }}
-        {{ form.company_name(class_="Jobwizard-input") }}
-        {% for error in form.company_name.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-      <div class="Jobwizard-inputGroup">
-        {{ form.listing_url.label }}
-        {{ form.listing_url(class_="Jobwizard-input") }}
-        {% for error in form.listing_url.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-      {{ form.submit(class_="Jobwizard-submit") }}
-    </form>
-
-    <div class="Jobwizard-joblist">
-      {% for job in jobs %}
-        <div class="Jobwizard-job">
-          <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_single_job', job_id = job.id) }}">
-            <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
-            <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
-          </a>
-          <a class="Jobwizard-joblistinglink" href={{ job.listing_url }} target="_blank">
-            <span>link</span>
-          </a>
-        </div>
+    <div class="Jobwizard-inputGroup">
+      {{ form.title.label}}
+      {{ form.title(class_="Jobwizard-input") }}
+      {% for error in form.title.errors %}
+        <small style="color: red;">{{ error }}</small>
       {% endfor %}
     </div>
+    <div class="Jobwizard-inputGroup">
+      {{ form.company_name.label }}
+      {{ form.company_name(class_="Jobwizard-input") }}
+      {% for error in form.company_name.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    <div class="Jobwizard-inputGroup">
+      {{ form.listing_url.label }}
+      {{ form.listing_url(class_="Jobwizard-input") }}
+      {% for error in form.listing_url.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    {{ form.submit(class_="Jobwizard-submit") }}
+  </form>
+
+  <div class="Jobwizard-joblist">
+    {% for job in jobs %}
+      <div class="Jobwizard-job">
+        <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_single_job', job_id = job.id) }}">
+          <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
+          <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
+        </a>
+        <a class="Jobwizard-joblistinglink" href={{ job.listing_url }} target="_blank">
+          <span>link</span>
+        </a>
+      </div>
+    {% endfor %}
   </div>
 {% endblock %}
 
