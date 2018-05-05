@@ -9,7 +9,7 @@
         <link href='https://fonts.googleapis.com/css?family=Playfair+Display' rel='stylesheet' type='text/css'/>
         <link href='https://fonts.googleapis.com/css?family=Fauna+One' rel='stylesheet' type='text/css'/>
 
-        <link href="{{ url_for('static', filename='css/foundation.min.css') }}" rel="stylesheet"/>
+        <link href="{{ url_for('static', filename='css/normalize.css') }}" rel="stylesheet"/>
         <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet"/>
 
         <script>
@@ -43,8 +43,6 @@
         {% block footer %}{% include "_footer.html" %}{% endblock %}
 
         <script src="{{ url_for('static', filename='js/vendor/jquery-3.3.1.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/vendor/foundation.min.js') }}"></script>
-
         <script src="{{ url_for('static', filename='js/portfolio.js') }}"></script>
     </body>
 </html>

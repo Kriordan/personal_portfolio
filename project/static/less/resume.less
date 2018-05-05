@@ -1,15 +1,37 @@
-.resume {
-  &-container {
-    margin-top: 80px;
-    .date {
-      font-size: 0.8em;
+.Resume {
+  &-date {
+    font-size: 0.8em;
+  }
+  &-pdfLink {
+    border: 2px solid #333;
+    border-radius: 2px;
+    color: #333;
+    display: block;
+    height: 60px;
+    line-height: 60px;
+    margin: 20px auto 40px;
+    text-align: center;
+    width: 270px;
+    &:hover {
+      background-color: #eee;
     }
   }
-
-  &-hero {
-    text-align: center;
-    &-button {
-      background-color: #5E7CF9;
+  &-block {
+    margin-bottom: 40px;
+  }
+  &-columns {
+    @media(min-width: 640px) {
+      display: grid;
+      grid-gap: 30px;
+      grid-template-columns: repeat(3, 1fr);
     }
+  }
+  &-header {
+    border: 1px solid #777;
+    display: inline-block;
+    padding: 10px;
+  }
+  &-jobtitle {
+    margin-bottom: 0;
   }
 }

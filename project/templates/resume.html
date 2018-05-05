@@ -1,111 +1,83 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<div class="resume-container">
+<div class="Resume-container">
 
-    <div class="resume-hero">
-        <h1>Keith Riordan</h1>
-        <a
-            class="resume-hero-button large radius button"
-            download
-            href="{{ url_for('static', filename='downloads/keith_riordan_resume.pdf') }}"
-        >
-            PDF Version
-        </a>
+  <a class="Resume-pdfLink" download
+    href="{{ url_for('static', filename='downloads/keith_riordan_resume.pdf') }}">
+    ⬇ Download Resume
+  </a>
+
+  <div class="Resume-block">
+    <h2 class="Resume-header">Technical Skills</h2>
+    <div class="Resume-columns">
+      <div>
+        <h3>Languages</h3>
+        <p>Python, JS, HTML, CSS, SQL, PHP</p>
+      </div>
+      <div>
+        <h3>Libs/Frameworks/Tools</h3>
+        <p>Flask, Django, React, Sass, Git, Heroku, AWS, Docker, Wordpress, JQuery, Yaml, Agile</p>
+      </div>
+      <div>
+        <h3>Databases</h3>
+        <p>PostgreSQL</p>
+      </div>
     </div>
+  </div>
 
-    <div class="row">
-        <div class="large-2 columns">
-            <h4>Technical Skills</h4>
-        </div>
-        <div class="large-10 columns">
-            <div class="panel">
-                <div class="row">
-                    <div class="large-4 medium-4 columns">
-                        <h4>Languages</h4>
-                        <p>Python, PHP, JS, HTML, CSS, SQL</p>
-                    </div>
-                    <div class="large-4 medium-4 columns">
-                        <h4>Frameworks/Tools</h4>
-                        <p>Foundation, Django, Flask, Git, GitHub, Stash, JQuery, Heroku, Sublime Text, Vim, Yaml, Agile Methodologies</p>
-                    </div>
-                    <div class="large-4 medium-4 columns">
-                        <h4>Databases</h4>
-                        <p>PostgreSQL</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="Resume-block">
+    <h2 class="Resume-header">Professional Experience</h2>
+    <div class="Resume-columns">
+      <div>
+        <h3>Wayfair</h3>
+        <p class="Resume-jobtitle">Web Developer</p>
+        <p class="Resume-date">November '15 - Present</p>
+        <ul>
+          <li>Styled multiple application flows for the B2B division</li>
+          <li>Contributed to the transition of a massive codebase from legacy CSS and inconsistent designs to a scalable SCSS infrastructure leveraging componentized blocks of code</li>
+          <li>Provided consulation on the frontend best practices for multi-phase projects</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Handshake</h3>
+        <p class="Resume-jobtitle">Marketing Engineer</p>
+        <p class="Resume-date">May '14 - September '15</p>
+        <ul>
+          <li>Developed and maintained marketing assets in line with brand guidelines</li>
+          <li>Independently converted core marketing website to fully responsive build</li>
+          <li>Provided consultation for technical best practices</li>
+          <li>Improved pipe of inbound leads for sales team through implementation of analytics pixels and development of campaign specific landing pages</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Bandwdth</h3>
+        <p class="Resume-jobtitle">Mobile Application Publisher</p>
+        <p class="Resume-date">September '12 - November '13</p>
+        <ul>
+          <li>Managed remote team for project with $135,000 budget from concept to production stage</li>
+          <li>Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform</li>
+          <li>Developed and maintained strong healthcare and tech industry knowledge</li>
+        </ul>
+      </div>
     </div>
+  </div>
 
-    <hr />
-
-    <div class="row">
-        <div class="large-2 columns">
-            <h4>Professional Experience</h4>
-        </div>
-        <div class="large-10 columns">
-            <div class="panel">
-                <div class="row">
-                    <div class="large-4 medium-4 columns">
-                        <h4>Wayfair</h4>
-                        <p class="date">November '15 - Present</p>
-                        <h5>Web Developer</h5>
-                        <ul>
-                            <li>Styled multiple application flows for the B2B division</li>
-                            <li>Contributed to the transition of a massive codebase from legacy CSS and inconsistent designs to a scalable SCSS infrastructure leveraging componentized blocks of code</li>
-                            <li>Provided consulation on the frontend best practices for multi-phase projects</li>
-                        </ul>
-                    </div>
-                    <div class="large-4 medium-4 columns">
-                        <h4>Handshake</h4>
-                        <p class="date">May '14 - September '15</p>
-                        <h5>Marketing Engineer</h5>
-                        <ul>
-                            <li>Developed and maintained marketing assets in line with brand guidelines</li>
-                            <li>Independently converted core marketing website to fully responsive build</li>
-                            <li>Provided consultation for technical best practices</li>
-                            <li>Improved pipe of inbound leads for sales team through implementation of analytics pixels and development of campaign specific landing pages</li>
-                        </ul>
-                    </div>
-                    <div class="large-4 medium-4 columns">
-                        <h4>Bandwdth</h4>
-                        <p class="date">September '12 - November '13</p>
-                        <h5>Mobile Application Publisher</h5>
-                        <ul>
-                            <li>Managed remote team for project with $135,000 budget from concept to production stage</li>
-                            <li>Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform</li>
-                            <li>Developed and maintained strong healthcare and tech industry knowledge</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="Resume-block">
+    <h2 class="Resume-header">Education</h2>
+    <div class="Resume-columns">
+      <div>
+        <h3>American University of Paris</h3>
+        <p class="Resume-date">2007 - 2010</p>
+        <p>International and Comparative Politics</p>
+      </div>
+      <div>
+        <h3>NOLS</h3>
+        <p class="Resume-date">2005</p>
+        <p>Leadership and Wilderness Survival Skills</p>
+      </div>
     </div>
-
-    <hr />
-
-    <div class="row">
-        <div class="large-2 columns">
-            <h4>Education</h4>
-        </div>
-        <div class="large-10 columns">
-            <div class="panel">
-                <div class="row">
-                    <div class="large-6 medium-6 columns">
-                        <h4>American University of Paris</h4>
-                        <p class="date">2007 - 2010</p>
-                        <p>International and Comparative Politics</p>
-                    </div>
-                    <div class="large-6 medium-6 columns">
-                        <h4>NOLS</h4>
-                        <p class="date">2005</p>
-                        <p>Leadership and Wilderness Survival Skills</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 
 </div>
 {% endblock %}

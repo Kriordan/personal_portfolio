@@ -4,6 +4,7 @@ body {
 .container {
   margin: auto;
   max-width: 960px;
+  padding: 20px;
 }
 h1,
 h2,
@@ -19,18 +20,243 @@ ul,
 li {
   font-family: 'Fauna One', serif;
 }
+div,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+pre,
+form,
+p,
+blockquote,
+th,
+td {
+  margin: 0;
+  padding: 0;
+}
+a {
+  text-decoration: none;
+  line-height: inherit;
+}
+a img {
+  border: none;
+}
+p {
+  font-weight: normal;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  text-rendering: optimizeLegibility;
+}
+p aside {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  font-style: italic;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-style: normal;
+  color: #222;
+  text-rendering: optimizeLegibility;
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+h1 small,
+h2 small,
+h3 small,
+h4 small,
+h5 small,
+h6 small {
+  font-size: 60%;
+  color: #6f6f6f;
+  line-height: 0;
+}
+h1 {
+  font-size: 2.125rem;
+}
+h2 {
+  font-size: 1.6875rem;
+}
+h3 {
+  font-size: 1.375rem;
+}
+h4 {
+  font-size: 1.125rem;
+}
+h5 {
+  font-size: 1.125rem;
+}
+h6 {
+  font-size: 1rem;
+}
+hr {
+  border: solid #ddd;
+  border-width: 1px 0 0;
+  clear: both;
+  margin: 1.25rem 0 1.1875rem;
+  height: 0;
+}
+em,
+i {
+  font-style: italic;
+  line-height: inherit;
+}
+strong,
+b {
+  font-weight: bold;
+  line-height: inherit;
+}
+small {
+  font-size: 60%;
+  line-height: inherit;
+}
+code {
+  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-weight: bold;
+  color: #910b0e;
+}
+ul,
+ol,
+dl {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  list-style-position: outside;
+  font-family: inherit;
+}
+ul {
+  margin-left: 1.1rem;
+}
+ul li ul,
+ul li ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+ol {
+  margin-left: 1.4rem;
+}
+ol li ul,
+ol li ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0;
+}
+dl dt {
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+}
+dl dd {
+  margin-bottom: 0.75rem;
+}
+abbr,
+acronym {
+  text-transform: uppercase;
+  font-size: 90%;
+  color: #222;
+  border-bottom: 1px dotted #ddd;
+  cursor: help;
+}
+abbr {
+  text-transform: none;
+}
+blockquote {
+  margin: 0 0 1.25rem;
+  padding: 0.5625rem 1.25rem 0 1.1875rem;
+  border-left: 1px solid #ddd;
+}
+blockquote cite {
+  display: block;
+  font-size: 0.8125rem;
+  color: #555;
+}
+blockquote cite:before {
+  content: "\2014 \0020";
+}
+blockquote cite a,
+blockquote cite a:visited {
+  color: #555;
+}
+blockquote,
+blockquote p {
+  line-height: 1.6;
+  color: #6f6f6f;
+}
+@media only screen and (min-width: 40.063em) {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.4;
+  }
+  h1 {
+    font-size: 2.75rem;
+  }
+  h2 {
+    font-size: 2.3125rem;
+  }
+  h3 {
+    font-size: 1.6875rem;
+  }
+  h4 {
+    font-size: 1.4375rem;
+  }
+}
 .header {
   padding-top: 25px;
   text-align: center;
-}
-.header-about img {
-  vertical-align: middle;
-  width: 35px;
 }
 .header-about a {
   display: inline-block;
   padding-left: 10px;
   vertical-align: middle;
+}
+.header-logo {
+  display: inline-block;
+  height: 50px;
+  perspective: 1000px;
+  vertical-align: middle;
+  width: 50px;
+}
+.header-logo:hover .header-logo-flipper {
+  transform: rotateY(180deg);
+}
+.header-logo-flipper {
+  transition: 0.6s;
+  transform-style: preserve-3d;
+  position: relative;
+}
+.header-logo-front,
+.header-logo-back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 50px;
+  width: 50px;
+}
+.header-logo-front {
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+.header-logo-back {
+  transform: rotateY(180deg);
 }
 .header-nav {
   border-bottom: 1px solid #e9e9e9;
@@ -45,8 +271,12 @@ li {
   text-decoration: underline;
 }
 .header-nav a {
+  color: #333;
   display: inline-block;
   padding: 15px 20px;
+}
+.header-nav a:hover {
+  background-color: #eee;
 }
 .footer {
   background: #AAA;
@@ -123,17 +353,40 @@ li {
   margin: auto;
   width: 80%;
 }
-.resume-container {
-  margin-top: 80px;
-}
-.resume-container .date {
+.Resume-date {
   font-size: 0.8em;
 }
-.resume-hero {
+.Resume-pdfLink {
+  border: 2px solid #333;
+  border-radius: 2px;
+  color: #333;
+  display: block;
+  height: 60px;
+  line-height: 60px;
+  margin: 20px auto 40px;
   text-align: center;
+  width: 270px;
 }
-.resume-hero-button {
-  background-color: #5E7CF9;
+.Resume-pdfLink:hover {
+  background-color: #eee;
+}
+.Resume-block {
+  margin-bottom: 40px;
+}
+@media (min-width: 640px) {
+  .Resume-columns {
+    display: grid;
+    grid-gap: 30px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.Resume-header {
+  border: 1px solid #777;
+  display: inline-block;
+  padding: 10px;
+}
+.Resume-jobtitle {
+  margin-bottom: 0;
 }
 .Bookshelf-container {
   padding: 20px;

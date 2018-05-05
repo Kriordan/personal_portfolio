@@ -1,31 +1,27 @@
 <header class="header">
-    <div class="header-about">
-        <img src="{{ url_for( 'static', filename='img/header/logo.png')}}">
-        <a href="{{ url_for( 'foyer.home' )}}">
-            <h1>Keith Riordan</h1>
-        </a>
+  <div class="header-about">
+    <div class="header-logo">
+      <div class="header-logo-flipper">
+        <img class="header-logo-front" src="{{ url_for( 'static', filename='img/header/logo1.png')}}">
+        <img class="header-logo-back" src="{{ url_for( 'static', filename='img/header/logo2.png')}}">
+      </div>
     </div>
 
-    <nav class="header-nav">
-        <p class="header-nav-tagline">Boston-based web developer</p>
-        <a
-            {% if request.path == '/' %}class="active"{% endif %}
-            href="{{ url_for( 'foyer.home' )}}"
-        >
-            Projects
-        </a>
-        <a
-            {% if request.path == '/resume' %}class="active"{% endif %}
-            href="{{ url_for( 'foyer.resume' )}}"
-        >
-            Resume
-        </a>
-        <a
-            {% if request.path == '/contact' %}class="active"{% endif %}
-            href="{{ url_for( 'foyer.contact' )}}"
-        >
-            Contact
-        </a>
-    </nav>
+    <a href="{{ url_for( 'foyer.home' )}}">
+        <h1>Keith Riordan</h1>
+    </a>
+  </div>
 
+  <nav class="header-nav">
+    <p class="header-nav-tagline">Boston-based web developer</p>
+    <a
+      {% if request.path == '/' %}class="active"{% endif %}
+      href="{{ url_for( 'foyer.home' )}}">Projects</a>
+    <a
+      {% if request.path == '/resume' %}class="active"{% endif %}
+      href="{{ url_for( 'foyer.resume' )}}">Resume</a>
+    <a
+      {% if request.path == '/contact' %}class="active"{% endif %}
+      href="{{ url_for( 'foyer.contact' )}}">Contact</a>
+  </nav>
 </header>
