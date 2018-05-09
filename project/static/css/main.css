@@ -1,24 +1,16 @@
-body {
-  padding: 0 0 100px;
+/* apply a natural box layout model to all elements, but allowing components to change */
+html {
+  box-sizing: border-box;
+}
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
 }
 .container {
   margin: auto;
   max-width: 960px;
   padding: 20px;
-}
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-a {
-  font-family: 'Playfair Display', serif;
-}
-p,
-ul,
-li {
-  font-family: 'Fauna One', serif;
 }
 div,
 dl,
@@ -46,9 +38,6 @@ a {
   text-decoration: none;
   line-height: inherit;
 }
-a img {
-  border: none;
-}
 p {
   font-weight: normal;
   font-size: 1rem;
@@ -61,17 +50,32 @@ p aside {
   line-height: 1.35;
   font-style: italic;
 }
+p,
+ul,
+li,
+input {
+  font-family: 'Fauna One', serif;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a,
+label {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-style: normal;
+  color: #222;
+  text-rendering: optimizeLegibility;
+}
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
-  font-weight: 300;
-  font-style: normal;
-  color: #222;
-  text-rendering: optimizeLegibility;
   margin-top: 0.2rem;
   margin-bottom: 0.5rem;
   line-height: 1.4;
@@ -196,7 +200,7 @@ blockquote p {
   line-height: 1.6;
   color: #6f6f6f;
 }
-@media only screen and (min-width: 40.063em) {
+@media only screen and (min-width: 640px) {
   h1,
   h2,
   h3,
@@ -218,148 +222,146 @@ blockquote p {
     font-size: 1.4375rem;
   }
 }
-.header {
+.Header {
   padding-top: 25px;
   text-align: center;
 }
-.header-about a {
-  display: inline-block;
-  padding-left: 10px;
-  vertical-align: middle;
-}
-.header-logo {
-  display: inline-block;
-  height: 50px;
+.Header-logo {
+  height: 100px;
+  margin: 0 auto;
   perspective: 1000px;
-  vertical-align: middle;
-  width: 50px;
+  width: 100px;
 }
-.header-logo:hover .header-logo-flipper {
+.Header-logo:hover .Header-logo-flipper {
   transform: rotateY(180deg);
 }
-.header-logo-flipper {
+.Header-logo-flipper {
   transition: 0.6s;
   transform-style: preserve-3d;
   position: relative;
 }
-.header-logo-front,
-.header-logo-back {
+.Header-logo-front,
+.Header-logo-back {
   backface-visibility: hidden;
   position: absolute;
   top: 0;
   left: 0;
-  height: 50px;
-  width: 50px;
+  height: 100px;
+  width: 100px;
 }
-.header-logo-front {
+.Header-logo-front {
   z-index: 2;
   transform: rotateY(0deg);
 }
-.header-logo-back {
+.Header-logo-back {
   transform: rotateY(180deg);
 }
-.header-nav {
+.Header-nav {
   border-bottom: 1px solid #e9e9e9;
 }
-.header-nav-tagline {
+.Header-nav-tagline {
   border-bottom: 1px solid #e9e9e9;
   margin: 0;
   padding: 15px 0;
 }
-.header-nav .active {
+.Header-nav .active {
   color: #000;
   text-decoration: underline;
 }
-.header-nav a {
+.Header-nav a {
   color: #333;
   display: inline-block;
   padding: 15px 20px;
 }
-.header-nav a:hover {
+.Header-nav a:hover {
   background-color: #eee;
 }
 .footer {
   background: #AAA;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  height: 80px;
   text-align: center;
 }
 .footer h6 {
-  font-size: 0.8em;
-  padding: 20px 0;
+  line-height: 80px;
 }
-.home-container {
-  min-width: 320px;
-  margin: auto;
-  max-width: 960px;
-  width: 100%;
-}
-.home-hero {
-  margin-top: 30px;
+.Home-social {
+  margin-bottom: 20px;
   text-align: center;
 }
-.home-about {
-  padding: 50px 0;
-  text-align: center;
+.Home-social-link {
+  display: inline-block;
+  margin: 20px 30px;
+  vertical-align: middle;
 }
-.home-about a {
-  background-color: #b3b3b3;
-  border-radius: 4px;
-  color: #fff;
-  display: block;
-  font-size: 30px;
-  margin: 20px auto;
-  max-width: 300px;
-  padding: 10px 0;
-  text-transform: uppercase;
-  width: 100%;
+.Home-social-img {
+  width: 50px;
 }
-@media (min-width: 650px) {
-  .home-about a {
-    display: inline-block;
-    vertical-align: top;
-  }
-}
-.home-about a:hover {
-  background-color: #cccccc;
-}
-.home-projects-block {
-  margin: 60px 0;
-  text-align: center;
-}
-.home-projects-block-image {
-  max-width: 500px;
-  padding: 0 20px;
-  width: 100%;
-}
-.home-projects-block-image.personal-portfolio {
-  max-width: 150px;
-}
-.home-projects-block-description,
-.home-projects-block-techstack {
+.Home-projects {
   margin: 0 auto;
-  max-width: 500px;
-  padding: 30px 20px 0;
-  text-align: left;
+  max-width: 600px;
 }
-.home-projects-block-githublogo img {
-  padding-top: 40px;
+.Home-projects-title {
+  border: 1px solid #777;
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px;
 }
-.home-horizontal-rule {
-  height: 1px;
-  border-top: 1px solid #e9e9e9;
-  margin: auto;
-  width: 80%;
+.Home-projects-block {
+  border: 1px solid #ddd;
+  box-shadow: #ddd 0px 0px 3px 1px;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+.Home-projects-projectlink,
+.Home-projects-companyname {
+  display: inline-block;
+  vertical-align: middle;
+}
+.Home-projects-projectlink {
+  margin: 20px 0;
+  width: 28%;
+}
+.Home-projects-companyname {
+  letter-spacing: .125rem;
+  font-weight: 500;
+  line-height: 1.1;
+  text-transform: uppercase;
+  width: 70%;
+}
+.Home-projects-image {
+  max-width: 64px;
+}
+.Home-projects-sectiontitle {
+  font-size: 1rem;
+  margin-bottom: 0;
+  padding-left: 20px;
+  position: relative;
+}
+.Home-projects-sectiontitle:before {
+  content: '';
+  height: 15px;
+  left: 0px;
+  position: absolute;
+  top: 2px;
+  width: 15px;
+}
+.Home-projects-sectiontitle.tools:before {
+  background: url(/static/img/icons/wrench.svg) no-repeat;
+}
+.Home-projects-sectiontitle.summary:before {
+  background: url(/static/img/icons/file.svg) no-repeat;
+}
+.Home-projects-githublink {
+  text-decoration: underline;
 }
 .Resume-date {
   font-size: 0.8em;
 }
 .Resume-pdfLink {
-  border: 2px solid #333;
+  background-color: #222;
+  border: 2px solid #222;
   border-radius: 2px;
-  color: #333;
+  color: #fff;
   display: block;
   height: 60px;
   line-height: 60px;
@@ -368,7 +370,7 @@ blockquote p {
   width: 270px;
 }
 .Resume-pdfLink:hover {
-  background-color: #eee;
+  background-color: #333;
 }
 .Resume-block {
   margin-bottom: 40px;
@@ -419,24 +421,27 @@ blockquote p {
 }
 .Contact-form {
   margin: auto;
-  max-width: 650px;
+  max-width: 640px;
 }
 .Contact-inputGroup {
   margin-bottom: 10px;
 }
-.Contact-inputGroup .Contact-input {
-  margin-bottom: 0;
+.Contact-label {
+  display: block;
+}
+.Contact-input {
+  height: 2.3rem;
+  width: 100%;
 }
 .Contact-submit {
-  background-color: #fff;
-  border: 1px solid #000;
-  border-radius: 4px;
-  height: 40px;
+  background-color: #222;
+  border-radius: 2px;
+  color: #fff;
+  height: 60px;
   width: 100%;
 }
 .Contact-submit:hover {
-  background-color: #000;
-  color: #fff;
+  background-color: #333;
 }
 .Jobwizard-container {
   margin: auto;

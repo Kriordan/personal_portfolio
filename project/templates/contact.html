@@ -10,7 +10,7 @@
       {{ form.csrf_token }}
 
       <div class="Contact-inputGroup">
-        {{ form.name.label }}
+        {{ form.name.label(class_="Contact-label") }}
         {{ form.name(class_="Contact-input") }}
         {% for error in form.name.errors %}
           <small style="color: red;">{{ error }}</small>
@@ -18,7 +18,7 @@
       </div>
 
       <div class="Contact-inputGroup">
-        {{ form.email.label }}
+        {{ form.email.label(class_="Contact-label") }}
         {{ form.email(class_="Contact-input") }}
         {% for error in form.email.errors %}
           <small style="color: red;">{{ error }}</small>
@@ -26,7 +26,7 @@
       </div>
 
       <div class="Contact-inputGroup">
-        {{ form.subject.label }}
+        {{ form.subject.label(class_="Contact-label") }}
         {{ form.subject(class_="Contact-input") }}
         {% for error in form.subject.errors %}
           <small style="color: red;">{{ error }}</small>
@@ -34,7 +34,7 @@
       </div>
 
       <div class="Contact-inputGroup">
-        {{ form.message.label }}
+        {{ form.message.label(class_="Contact-label") }}
         {{ form.message(class_="Contact-input") }}
         {% for error in form.message.errors %}
           <small style="color: red;">{{ error }}</small>

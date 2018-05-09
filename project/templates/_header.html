@@ -1,19 +1,19 @@
-<header class="header">
-  <div class="header-about">
-    <div class="header-logo">
-      <div class="header-logo-flipper">
-        <img class="header-logo-front" src="{{ url_for( 'static', filename='img/header/logo1.png')}}">
-        <img class="header-logo-back" src="{{ url_for( 'static', filename='img/header/logo2.png')}}">
+<header class="Header">
+  <div class="Header-about">
+    <div class="Header-logo">
+      <div class="Header-logo-flipper">
+        <img class="Header-logo-front" src="{{ url_for( 'static', filename='img/logos/keith-riordan-logo-100.png')}}">
+        <img class="Header-logo-back" src="{{ url_for( 'static', filename='img/logos/keith-riordan-logo-inverted-100.png')}}">
       </div>
     </div>
 
-    <a href="{{ url_for( 'foyer.home' )}}">
+    <a class="Header-title" href="{{ url_for( 'foyer.home' )}}">
         <h1>Keith Riordan</h1>
     </a>
   </div>
 
-  <nav class="header-nav">
-    <p class="header-nav-tagline">Boston-based web developer</p>
+  <nav class="Header-nav">
+    <p class="Header-nav-tagline">Boston-based web developer</p>
     <a
       {% if request.path == '/' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.home' )}}">Projects</a>

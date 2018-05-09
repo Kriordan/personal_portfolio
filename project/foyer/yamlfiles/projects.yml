@@ -3,7 +3,7 @@
     description: "Developed and maintained Django web app used for marketing and lead generation at Handshake. Independently converted from fixed width to fully responsive."
     github_repo:
     has_github_repo: false
-    image: handshake_logo.jpg
+    image: handshake-logo.png
     link: https://www.handshake.com
     name: Handshake
     tech_stack: "Django 1.5, jQuery, LESS, Virtualenv, Yaml, Fabric, Grunt"
@@ -12,7 +12,7 @@
     description: "Built personal portfolio up from scratch for client. Ongoing: Look for projects and project detail templates soon."
     github_repo: https://github.com/Kriordan/wiggletwo
     has_github_repo: true
-    image: erica_whiteside_logo.png
+    image: erica-whiteside-logo.png
     link: http://www.ericawhiteside.com
     name: Erica Whiteside
     tech_stack: "Django 1.8, jQuery, LESS, Heroku"
@@ -21,7 +21,7 @@
     description: "Developed and maintained WP web app used for marketing and lead generation at Handshake."
     github_repo:
     has_github_repo: false
-    image: handshake_blog.jpg
+    image: handshake-blog-logo.png
     link: https://www.handshake.com/blog
     name: Handshake Blog
     tech_stack: "Wordpress, jQuery, LESS, Flightplan, Gulp"
@@ -30,7 +30,7 @@
     description: "This website."
     github_repo: https://github.com/Kriordan/personal_portfolio
     has_github_repo: true
-    image: logo.png
+    image: keith-riordan-logo-100.png
     link: http://www.keithriordan.com
     name: Personal Portfolio
     tech_stack: "Flask, jQuery, LESS, Heroku"

@@ -1,19 +1,11 @@
-.header {
+.Header {
   padding-top: 25px;
   text-align: center;
-  &-about {
-    a {
-      display: inline-block;
-      padding-left: 10px;
-      vertical-align: middle;
-    }
-  }
   &-logo {
-    display: inline-block;
-    height: 50px;
+    height: 100px;
+    margin: 0 auto;
     perspective: 1000px;
-    vertical-align: middle;
-    width: 50px;
+    width: 100px;
     &:hover &-flipper {
       transform: rotateY(180deg);
     }
@@ -28,8 +20,8 @@
       position: absolute;
       top: 0;
       left: 0;
-      height: 50px;
-      width: 50px;
+      height: 100px;
+      width: 100px;
     }
     &-front {
       z-index: 2;

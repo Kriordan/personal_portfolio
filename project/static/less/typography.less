@@ -8,10 +8,6 @@ a {
     line-height: inherit
 }
 
-a img {
-    border: none
-}
-
 p {
     font-weight: normal;
     font-size: 1rem;
@@ -26,17 +22,34 @@ p aside {
     font-style: italic
 }
 
+p,
+ul,
+li,
+input {
+    font-family: 'Fauna One', serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a,
+label {
+    font-family: "Helvetica Neue","Helvetica",Helvetica,Arial,sans-serif;
+    font-weight: 300;
+    font-style: normal;
+    color: #222;
+    text-rendering: optimizeLegibility;
+}
+
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-    font-family: "Helvetica Neue","Helvetica",Helvetica,Arial,sans-serif;
-    font-weight: 300;
-    font-style: normal;
-    color: #222;
-    text-rendering: optimizeLegibility;
     margin-top: 0.2rem;
     margin-bottom: 0.5rem;
     line-height: 1.4
@@ -188,7 +201,7 @@ blockquote p {
     color: #6f6f6f
 }
 
-@media only screen and (min-width: 40.063em) {
+@media only screen and (min-width: 640px) {
     h1,h2,h3,h4,h5,h6 {
         line-height:1.4
     }
