@@ -1,4 +1,13 @@
 -
+    clean_name: wayfair
+    description: "Styled multiple application flows for the B2B division. Contributed to the transition of a massive codebase from legacy CSS and inconsistent designs to a scalable SCSS infrastructure leveraging componentized blocks of code. Provided consulation on the frontend best practices for multi-phase projects."
+    github_repo:
+    has_github_repo: false
+    image: wayfair-logo.png
+    link: https://www.wayfair.com
+    name: Wayfair
+    tech_stack: "PHP7, React, Sass"
+-
     clean_name: handshake
     description: "Developed and maintained Django web app used for marketing and lead generation at Handshake. Independently converted from fixed width to fully responsive."
     github_repo:
