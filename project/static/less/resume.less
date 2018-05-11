@@ -11,10 +11,21 @@
     height: 60px;
     line-height: 60px;
     margin: 20px auto 40px;
+    position: relative;
     text-align: center;
     width: 270px;
     &:hover {
       background-color: #333;
+    }
+    &:before {
+      background: url(/static/img/icons/arrow-down-white.png) no-repeat;
+      background-size: contain;
+      content: '';
+      height: 25px;
+      left: 30px;
+      position: absolute;
+      top: 20px;
+      width: 25px;
     }
   }
   &-block {
