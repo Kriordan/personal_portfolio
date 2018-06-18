@@ -21,9 +21,11 @@ s3 = boto3.resource('s3')
 
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
+from project.ranch.views import ranch_blueprint
 
 app.register_blueprint(foyer_blueprint)
 app.register_blueprint(jobwizard_blueprint)
+app.register_blueprint(ranch_blueprint)
 
 
 @app.context_processor

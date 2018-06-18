@@ -1,0 +1,24 @@
+.RanchHeader {
+    display: flex;
+    flex-direction: column;
+    margin-left: 5%;
+    padding: 2.3em 0;
+    &-navlist {
+        list-style-type: none;
+        margin: 0;
+    }
+    &-navitem {
+        display: inline-block;
+    }
+    &-navlink {
+        display: block;
+        padding: 1em 45px 1em 0;
+    }
+}
+
+@media screen and (min-width: 600px) {
+    .RanchHeader {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}

@@ -522,3 +522,26 @@ blockquote p {
   height: 400px;
   width: 400px;
 }
+.RanchHeader {
+  display: flex;
+  flex-direction: column;
+  margin-left: 5%;
+  padding: 2.3em 0;
+}
+.RanchHeader-navlist {
+  list-style-type: none;
+  margin: 0;
+}
+.RanchHeader-navitem {
+  display: inline-block;
+}
+.RanchHeader-navlink {
+  display: block;
+  padding: 1em 45px 1em 0;
+}
+@media screen and (min-width: 600px) {
+  .RanchHeader {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
