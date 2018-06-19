@@ -15,25 +15,7 @@
     image: handshake-logo.png
     link: https://www.handshake.com
     name: Handshake
-    tech_stack: "Django 1.5, jQuery, LESS, Virtualenv, Yaml, Fabric, Grunt"
--
-    clean_name: erica-whiteside
-    description: "Built personal portfolio up from scratch for client. Ongoing: Look for projects and project detail templates soon."
-    github_repo: https://github.com/Kriordan/wiggletwo
-    has_github_repo: true
-    image: erica-whiteside-logo.png
-    link: http://www.ericawhiteside.com
-    name: Erica Whiteside
-    tech_stack: "Django 1.8, jQuery, LESS, Heroku"
--
-    clean_name: handshake-blog
-    description: "Developed and maintained WP web app used for marketing and lead generation at Handshake."
-    github_repo:
-    has_github_repo: false
-    image: handshake-blog-logo.png
-    link: https://www.handshake.com/blog
-    name: Handshake Blog
-    tech_stack: "Wordpress, jQuery, LESS, Flightplan, Gulp"
+    tech_stack: "Django, jQuery, LESS, Yaml, Fabric, Grunt"
 -
     clean_name: personal-portfolio
     description: "This website."
@@ -44,6 +26,24 @@
     name: Personal Portfolio
     tech_stack: "Flask, jQuery, LESS, Heroku"
 -
+    clean_name: erica-whiteside
+    description: "Built personal portfolio up from scratch for client."
+    github_repo:
+    has_github_repo: false
+    image: erica-whiteside-logo.png
+    link: http://www.ericawhiteside.com
+    name: Erica Whiteside
+    tech_stack: "WordPress, jQuery, LESS, Heroku"
+-
+    clean_name: handshake-blog
+    description: "Developed and maintained WP web app used for marketing and lead generation at Handshake."
+    github_repo:
+    has_github_repo: false
+    image: handshake-blog-logo.png
+    link: https://www.handshake.com/blog
+    name: Handshake Blog
+    tech_stack: "WordPress, jQuery, LESS, Flightplan, Gulp"
+-
     clean_name: appapphooray
     description: "First rails app I built."
     github_repo: https://github.com/Kriordan/appapphooray
@@ -51,4 +51,4 @@
     image: hooray.jpg
     link: http://appapphooray.herokuapp.com
     name: AppAppHooray!
-    tech_stack: "Rails, SASS, Devise, Simple Form, Carrierwave, PostgreSQL, Heroku"
+    tech_stack: "Rails, Sass, Devise, Simple Form, Carrierwave, PostgreSQL, Heroku"
