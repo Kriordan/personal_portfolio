@@ -42,9 +42,33 @@ class Job(db.Model):
         screenshot_filename = f'{unique_filename_hex}.jpeg'
         self.listing_image = screenshot_filename
 
-        s3.Bucket(os.getenv('S3_BUCKET')).put_object(
+        s3.Bucket(os.getenv('JOBS_S3_BUCKET')).put_object(
             Key=screenshot_filename,
             Body=apileap_image_response_data,
             ContentType='image/jpeg',
             ACL='public-read'
         )
+
+
+class Image(db.Model):
+    __tablename__ = 'images'
+
+    id = db.Column(db.Integer, primary_key=True)
+    image_filename = db.Column(db.String, nullable=False)
+    posted_date = db.Column(db.DateTime, default=datetime.datetime.utcnow())
+
+    def __init__(self, posted_date):
+        self.posted_date = posted_date
+
+    def store_image(self, image_data):
+        unique_filename_hex = uuid.uuid4().hex
+        full_filename = f'{unique_filename_hex}.jpg'
+        self.image_filename = full_filename
+
+        s3.Bucket(os.getenv('IMAGES_S3_BUCKET')).put_object(
+            Key=full_filename,
+            Body=image_data,
+            ContentType='image/jpg',
+            ACL='public-read'
+        )
+
