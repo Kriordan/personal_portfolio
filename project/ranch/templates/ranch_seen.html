@@ -9,15 +9,26 @@
 
     <h2 class="RanchSeen-header">~ Insert quote about photos ~</h2>
 
-    <div class="Ranch-seenRoll">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
-      <img src="http://via.placeholder.com/150x150" alt="" class="Ranch-seenImg">
+    <div class="RanchSeen-images">
+      <form
+        class="RanchSeen-form"
+        action="{{ url_for('ranch.add_seen') }}"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        {{ form.csrf_token }}
+        <div class="RanchSeen-inputGroup">
+          {{ form.image.label }}
+          {{ form.image(class_="RanchSeen-input") }}
+          {% for error in form.image.errors %}
+            <small style="color: red;">{{ error }}</small>
+          {% endfor %}
+          <input type="submit" value="Upload">
+        </div>
+      </form>
+      {% for image in images %}
+        <img class="RanchSeen-image" src="https://ranch-images.s3.amazonaws.com/{{image.image_filename}}" />
+      {% endfor %}
     </div>
 
   </div>
