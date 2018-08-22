@@ -2,10 +2,10 @@
 
 {% block body %}
 <div class="Contact">
-  <h2 class="Contact-title">Get In Touch</h2>
   {% if success %}
-    <p>Thank you for your message. I'll be getting back to you shortly!</p>
+    <p>Thanks for your message. I'll be getting back to you shortly!</p>
   {% else %}
+    <h2 class="Contact-title">Let's discuss your next project!</h2>
     <form class="Contact-form" action="{{ url_for('foyer.contact') }}" method="POST">
       {{ form.csrf_token }}
 
