@@ -1,0 +1,51 @@
+.RanchImages {
+    &-quote {
+        @media(min-width: 500px) { margin-left: 10px; }
+    }
+    &-images {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    &-link {
+        @media(min-width: 500px) {
+            margin: 10px 0;
+            padding: 0 10px;
+            width: 50%;
+        }
+        @media(min-width: 700px) { width: 33%; }
+        @media(min-width: 900px) { width: 25%; }
+    }
+    &-image {
+        width: 100%;
+    }
+    &-form {
+        @media(min-width: 500px) { margin-left: 10px; }
+    }
+    &-fileLabel {
+        font-family: 'Fauna One', serif;
+        text-align: center;
+        &.file-added {
+            background-color: #9FC2BA;
+        }
+    }
+    &-fileLabel,
+    &-submit {
+        background: #ffffff;
+        border: 2px solid black;
+        cursor: pointer;
+        display: inline-block;
+        height: 50px;
+        line-height: 50px;
+        margin-bottom: 20px;
+        width: 100%;
+        @media(min-width: 500px) {
+            vertical-align: top;
+            width: 200px;
+        }
+    }
+    &-input {
+        &--file {
+            display: none;
+        }
+    }
+}

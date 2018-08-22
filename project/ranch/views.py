@@ -19,9 +19,18 @@ def ranch_home():
 def ranch_seen():
     images = db.session.query(Image)
     return render_template(
-        'ranch_seen.html',
+        'ranch_images.html',
         form = AddImageForm(CombinedMultiDict((request.files, request.form))),
         images=images
+    )
+
+
+@ranch_blueprint.route('/seen/<image_id>', methods=['GET'])
+def get_seen(image_id):
+    image = Image.query.filter_by(id=int(image_id)).first()
+    return render_template(
+        'ranch_image.html',
+        image=image
     )
 
 
@@ -38,4 +47,12 @@ def add_seen():
         db.session.add(new_image)
         db.session.commit()
 
+    return redirect(url_for('.ranch_seen'))
+
+
+@ranch_blueprint.route('/seen/<int:image_id>/delete', methods=('POST',))
+def delete_seen(image_id):
+    image = Image.query.filter_by(id=image_id).first()
+    db.session.delete(image)
+    db.session.commit()
     return redirect(url_for('.ranch_seen'))

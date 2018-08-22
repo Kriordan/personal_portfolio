@@ -545,6 +545,68 @@ blockquote p {
     justify-content: space-between;
   }
 }
-.RanchSeen-image {
-  width: 100px;
+@media (min-width: 500px) {
+  .RanchImages-quote {
+    margin-left: 10px;
+  }
+}
+.RanchImages-images {
+  display: flex;
+  flex-wrap: wrap;
+}
+@media (min-width: 500px) {
+  .RanchImages-link {
+    margin: 10px 0;
+    padding: 0 10px;
+    width: 50%;
+  }
+}
+@media (min-width: 700px) {
+  .RanchImages-link {
+    width: 33%;
+  }
+}
+@media (min-width: 900px) {
+  .RanchImages-link {
+    width: 25%;
+  }
+}
+.RanchImages-image {
+  width: 100%;
+}
+@media (min-width: 500px) {
+  .RanchImages-form {
+    margin-left: 10px;
+  }
+}
+.RanchImages-fileLabel {
+  font-family: 'Fauna One', serif;
+  text-align: center;
+}
+.RanchImages-fileLabel.file-added {
+  background-color: #9FC2BA;
+}
+.RanchImages-fileLabel,
+.RanchImages-submit {
+  background: #ffffff;
+  border: 2px solid black;
+  cursor: pointer;
+  display: inline-block;
+  height: 50px;
+  line-height: 50px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+@media (min-width: 500px) {
+  .RanchImages-fileLabel,
+  .RanchImages-submit {
+    vertical-align: top;
+    width: 200px;
+  }
+}
+.RanchImages-input--file {
+  display: none;
+}
+.RanchImage-image {
+  width: 100%;
 }

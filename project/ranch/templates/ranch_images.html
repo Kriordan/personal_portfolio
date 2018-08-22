@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Misty Mantis Ranch{% endblock %}
+
+{% block header %}{% include '_ranch_header.html' %}{% endblock %}
+
+{% block body %}
+  <div class="RanchImages">
+
+    <blockquote class="RanchImages-quote">And then they leapt into a fountain, because fuck it why not.</blockquote>
+
+    <form
+      class="RanchImages-form"
+      action="{{ url_for('ranch.add_seen') }}"
+      method="post"
+      enctype="multipart/form-data"
+    >
+      {{ form.csrf_token }}
+      <div class="RanchImages-inputGroup">
+        {{ form.image.label(class_="RanchImages-fileLabel", text="Choose") }}
+        {{ form.image(class_="RanchImages-input RanchImages-input--file") }}
+        {% for error in form.image.errors %}
+          <small style="color: red;">{{ error }}</small>
+        {% endfor %}
+        <input class="RanchImages-submit" type="submit" value="Upload">
+      </div>
+    </form>
+
+    <div class="RanchImages-images">
+      {% for image in images %}
+        <a href="{{ url_for('ranch.get_seen', image_id = image.id) }}" class="RanchImages-link">
+          <img class="RanchImages-image" src="https://ranch-images.s3.amazonaws.com/{{image.image_filename}}" />
+        </a>
+      {% endfor %}
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/ranch.js') }}"></script>
+{% endblock scripts %}

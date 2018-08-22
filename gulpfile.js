@@ -8,7 +8,7 @@ gulp.task('serve', ['less'], function() {
         proxy: "localhost:5000"
     });
 
-    gulp.watch("static/less/*.less", ['less']);
+    gulp.watch("project/static/less/**/*.less", ['less']);
     gulp.watch("templates/*.html").on("change", browserSync.reload);
 });
 
@@ -17,6 +17,10 @@ gulp.task('less', function() {
         .pipe(less())
         .pipe(gulp.dest("project/static/css"))
         .pipe(browserSync.stream());
+});
+
+gulp.task('watch', ['less'], function() {
+    gulp.watch("project/static/less/**/*.less", ['less']);
 });
 
 gulp.task('default', ['serve']);
