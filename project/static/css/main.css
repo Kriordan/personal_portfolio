@@ -53,7 +53,8 @@ p aside {
 p,
 ul,
 li,
-input {
+input,
+textarea {
   font-family: 'Fauna One', serif;
 }
 h1,
@@ -277,12 +278,8 @@ blockquote p {
   background-color: #eee;
 }
 .footer {
-  background: #AAA;
-  height: 80px;
+  margin: 50px 0;
   text-align: center;
-}
-.footer h6 {
-  line-height: 80px;
 }
 .Home-social {
   margin-bottom: 20px;
@@ -300,17 +297,12 @@ blockquote p {
   margin: 0 auto;
   max-width: 600px;
 }
-.Home-projects-title {
-  border: 1px solid #777;
-  display: inline-block;
-  margin-bottom: 20px;
-  padding: 10px;
-}
 .Home-projects-block {
-  border: 1px solid #ddd;
-  box-shadow: #ddd 0px 0px 3px 1px;
   margin-bottom: 20px;
-  padding: 20px;
+  padding: 20px 0;
+}
+.Home-projects-block p {
+  margin-bottom: 10px;
 }
 .Home-projects-projectlink,
 .Home-projects-companyname {
@@ -318,15 +310,12 @@ blockquote p {
   vertical-align: middle;
 }
 .Home-projects-projectlink {
-  margin: 20px 0;
-  width: 28%;
+  margin-right: 10px;
 }
 .Home-projects-companyname {
   letter-spacing: .125rem;
   font-weight: 500;
-  line-height: 1.1;
   text-transform: uppercase;
-  width: 70%;
 }
 .Home-projects-image {
   max-width: 64px;
@@ -394,11 +383,6 @@ blockquote p {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-.Resume-header {
-  border: 1px solid #777;
-  display: inline-block;
-  padding: 10px;
-}
 .Resume-jobtitle {
   margin-bottom: 0;
 }
@@ -440,20 +424,30 @@ blockquote p {
 }
 .Contact-label {
   display: block;
+  margin-bottom: 5px;
 }
-.Contact-input {
+.Contact-input,
+.Contact-submit {
   height: 2.3rem;
+}
+.Contact-textarea {
+  height: 10rem;
+}
+.Contact-input,
+.Contact-textarea {
+  border: 1px solid #e9e9e9;
+  padding-left: 5px;
   width: 100%;
 }
 .Contact-submit {
   background-color: #222;
-  border-radius: 2px;
+  border: none;
   color: #fff;
-  height: 60px;
+  cursor: pointer;
   width: 100%;
 }
 .Contact-submit:hover {
-  background-color: #333;
+  background-color: #444;
 }
 .Jobwizard-container {
   margin: auto;

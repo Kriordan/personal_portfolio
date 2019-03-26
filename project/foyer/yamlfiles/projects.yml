@@ -23,7 +23,7 @@
     has_github_repo: true
     image: keith-riordan-logo-100.png
     link: http://www.keithriordan.com
-    name: Personal Portfolio
+    name: This.
     tech_stack: "Flask, jQuery, LESS, Heroku"
 -
     clean_name: erica-whiteside
