@@ -35,7 +35,7 @@
 
       <div class="Contact-inputGroup">
         {{ form.message.label(class_="Contact-label") }}
-        {{ form.message(class_="Contact-input") }}
+        {{ form.message(class_="Contact-textarea") }}
         {% for error in form.message.errors %}
           <small style="color: red;">{{ error }}</small>
         {% endfor %}
