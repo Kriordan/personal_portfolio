@@ -1,4 +1,13 @@
 -
+    clean_name: enevo
+    description: "Developed and maintained portal for all Waste Services customers. Designed, developed, and maintained support ticketing feature within customer portal service using Teamwork Desk API to improve communication and transparency between customers and customer support. Provided direction for multi-phase projects."
+    github_repo:
+    has_github_repo: false
+    image: enevo-logo.svg
+    link: https://www.enevo.com
+    name: Enevo
+    tech_stack: "Angular, Flask, Docker, Material UI"
+-
     clean_name: wayfair
     description: "Styled multiple application flows for the B2B division. Contributed to the transition of a massive codebase from legacy CSS and inconsistent designs to a scalable SCSS infrastructure leveraging componentized blocks of code. Provided consulation on the frontend best practices for multi-phase projects."
     github_repo:
@@ -30,7 +39,7 @@
     description: "Built personal portfolio up from scratch for client."
     github_repo:
     has_github_repo: false
-    image: erica-whiteside-logo.png
+    image: whiteside-logo.png
     link: http://www.ericawhiteside.com
     name: Erica Whiteside
     tech_stack: "WordPress, jQuery, LESS, Heroku"
