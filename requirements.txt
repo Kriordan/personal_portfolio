@@ -5,4 +5,3 @@ sparkpost
 python-dotenv
 pyyaml
 flask_wtf
-gunicorn
