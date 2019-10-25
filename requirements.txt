@@ -5,3 +5,4 @@ sparkpost
 python-dotenv
 pyyaml
 flask_wtf
+psycopg2
