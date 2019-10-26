@@ -1,9 +1,11 @@
-from flask import render_template, request, Blueprint
 import os
 import yaml
 
+from flask import render_template, request, Blueprint, jsonify
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Content, Subject, To, From, MimeType
+
 from .forms import ContactForm
-from project import sp
 
 
 foyer_blueprint = Blueprint('foyer', __name__)
@@ -27,20 +29,20 @@ def resume():
 def contact():
     form = ContactForm()
     if form.validate_on_submit():
+        message = Mail()
+        message.from_email = From(form.email.data, form.name.data)
+        message.to = To("keith.riordan@gmail.com", "Keith Riordan", p=0)
+        message.subject = Subject(form.subject.data)
+        message.content = Content(MimeType.html, form.message.data)
         try:
-            sp.transmissions.send(
-                recipients=['keith.riordan@gmail.com'],
-                html=f'''
-                <p>{form.name.data}</p>
-                <p>{form.email.data}</p>
-                <p>{form.message.data}</p>
-                ''',
-                from_email='inquiry@keithriordan.com',
-                subject=form.subject.data
-            )
+            sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+            response = sg.send(message)
+            print(f'The response status code was: {response.status_code}')
+            print(f'The response body was: {response.body}')
+            print(f'The response headers were: {response.headers}')
             return render_template('contact.html', success=True)
-        except SparkPostAPIException as err:
-            return "<br>".join(err.errors)
+        except Exception as err:
+            print(f'There was an error sending the contact email: {err}')
 
     return render_template('contact.html', form=form)
 

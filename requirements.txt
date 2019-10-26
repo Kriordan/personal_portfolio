@@ -1,7 +1,7 @@
 boto3
 flask
 flask_sqlalchemy
-sparkpost
+sendgrid
 python-dotenv
 pyyaml
 flask_wtf
