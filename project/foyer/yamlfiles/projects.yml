@@ -1,4 +1,22 @@
 -
+    clean_name: tomtom
+    description: "Created internal fullstack tool using React, Material-UI, Express, Puppeteer, and PostgreSQL to allow users to scrape and track values on a variety of webpages. Collaborated with management to identify the best solution for their immediate technical needs."
+    github_repo:
+    has_github_repo: false
+    image: tomtom-logo.png
+    link: https://www.tomtom.com
+    name: TomTom
+    tech_stack: "React, Material UI, Express, Puppeteer, PostgreSQL"
+-
+    clean_name: leantaas
+    description: "Developed interfaces for hospital management to monitor inpatient beds using Angular 9, Material UI, Docker, and GraphQL."
+    github_repo:
+    has_github_repo: false
+    image: leantaas-logo.png
+    link: https://www.leantaas.com
+    name: LeanTaaS
+    tech_stack: "Angular, Material UI, Docker, GraphQL"
+-
     clean_name: enevo
     description: "Developed and maintained portal for all Waste Services customers. Designed, developed, and maintained support ticketing feature within customer portal service using Teamwork Desk API to improve communication and transparency between customers and customer support. Provided direction for multi-phase projects."
     github_repo:
