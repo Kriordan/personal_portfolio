@@ -2,6 +2,7 @@ import os
 import yaml
 
 from flask import render_template, request, Blueprint, jsonify
+import requests
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Content, Subject, To, From, MimeType
 
