@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block body %}
+    <section class="Home-social">
+      <a class="Home-social-link" href="http://github.com/kriordan" target="_blank">
+        <img class="Home-social-img" src="{{ url_for('static', filename='img/logos/github-logo-64.png') }}" />
+      </a>
+      <a class="Home-social-link" href="http://linkedin.com/pub/keith-riordan/12/9a1/b62/" target="_blank">
+        <img class="Home-social-img" src="{{ url_for('static', filename='img/logos/linkedin-logo-64.png') }}" />
+      </a>
+    </section>
+
+    <section class="Home-projects">
+      <h2 class="Home-projects-title">Projects</h2>
+      {% for project in projects %}
+        <div class="Home-projects-block">
+          <div class="Home-projects-companydetails">
+            <a class="Home-projects-projectlink" href="{{ project.link }}" target="_blank">
+              <img
+                  class="Home-projects-image {{ project.clean_name }}"
+                  src="{{ url_for('static', filename='img/logos/') }}{{ project.image }}" />
+            </a>
+            <h3 class="Home-projects-companyname">{{ project.name }}</h3>
+          </div>
+          <h3 class="Home-projects-sectiontitle tools">Built with:</h3>
+          <p class="Home-projects-techstack">{{ project.tech_stack }}</p>
+          <h3 class="Home-projects-sectiontitle summary">Summary:</h3>
+          <p class="Home-projects-description">{{ project.description }}</p>
+          {% if project.has_github_repo %}
+            <a class="Home-projects-githublink" href="{{ project.github_repo }}" target="_blank">View source</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </section>
+
+{% endblock %}

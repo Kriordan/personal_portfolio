@@ -47,6 +47,11 @@ def contact():
     return render_template('contact.html', form=form)
 
 
+@foyer_blueprint.route('/media')
+def media():
+    return render_template('media.html')
+
+
 @foyer_blueprint.route('/learningtospeak')
 def learningtospeak():
     return render_template('learningtospeak.html')

@@ -42,6 +42,7 @@
         {% block footer %}{% include "_footer.html" %}{% endblock %}
 
         <script src="{{ url_for('static', filename='js/vendor/jquery-3.3.1.min.js') }}"></script>
+        {% block scripts %}{ % endblock %}
         <script src="{{ url_for('static', filename='js/portfolio.js') }}"></script>
     </body>
 </html>
