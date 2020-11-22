@@ -313,7 +313,7 @@ blockquote p {
   margin-right: 10px;
 }
 .Home-projects-companyname {
-  letter-spacing: .125rem;
+  letter-spacing: 0.125rem;
   font-weight: 500;
   text-transform: uppercase;
 }
@@ -515,4 +515,23 @@ blockquote p {
   display: inline-block;
   height: 400px;
   width: 400px;
+}
+.Media-youtubePlayer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 0px;
+  opacity: 0;
+  transition: 1s all;
+}
+.Media-youtubeCardContainer {
+  display: flex;
+  flex-wrap: wrap;
+}
+.Media-youtubeCard {
+  flex-basis: 33%;
+  padding: 5px;
+}
+.Media-youtubeCard img {
+  width: 100%;
 }

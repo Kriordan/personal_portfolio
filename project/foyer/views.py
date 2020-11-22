@@ -1,5 +1,7 @@
 import os
 import yaml
+import json
+from pathlib import Path
 
 from flask import render_template, request, Blueprint, jsonify
 import requests
@@ -11,13 +13,10 @@ from .forms import ContactForm
 
 foyer_blueprint = Blueprint('foyer', __name__)
 
-foyerdir = os.path.abspath(os.path.dirname(__file__))
-PROJECTS = yaml.load( open( os.path.join(foyerdir, 'yamlfiles/projects.yml' )))
-
 
 @foyer_blueprint.route('/')
 def home():
-    projects = PROJECTS
+    projects = yaml.load( open(Path(__file__).resolve().parent.parent / 'data' / 'yamlfiles' / "projects.yml"))
     return render_template('home.html', projects=projects)
 
 
@@ -50,7 +49,26 @@ def contact():
 
 @foyer_blueprint.route('/media')
 def media():
-    return render_template('media.html')
+    path = Path(__file__).resolve().parent.parent / 'data' / 'jsonfiles' / "youtube-playlist-data.json"
+    with open(path) as json_file:
+        playlist_data = json.loads(json_file.read())['playlists']
+    
+    template_data = {}
+    template_data['playlists'] = []
+    for playlist in playlist_data:
+        temp_dict = dict(
+            id=playlist['items'][0]['id'],
+            title=playlist['items'][0]['snippet']['title']
+        )
+        if 'standard' in playlist['items'][0]['snippet']['thumbnails'].keys():
+            temp_dict['thumbnail'] = playlist['items'][0]['snippet']['thumbnails']['standard']['url']
+        elif 'high' in playlist['items'][0]['snippet']['thumbnails'].keys():
+            temp_dict['thumbnail'] = playlist['items'][0]['snippet']['thumbnails']['high']['url']
+        else:
+            temp_dict['thumbnail'] = 'http://placecorgi.com/640/480'
+        template_data['playlists'].append(temp_dict)
+    
+    return render_template('media.html', template_data = template_data)
 
 
 @foyer_blueprint.route('/learningtospeak')

@@ -1,12 +1,25 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<section class="Media">
-  <h2 class="Media-title">Media</h2>
-  <div class="playlists"></div>
-</section>
+  <div class="Media">
+    <h2 class="Media-title">Media</h2>
+    <p class="Media-description">The consumption I've enjoyed</p>
+    <section class="Media-category youtube">
+      <div class="Media-youtubePlayer"></div>
+      <div class="Media-youtubeCardContainer">
+        {% for playlist in template_data.playlists %}
+        <article class="Media-youtubeCard" data-youtubeid="{{ playlist.id }}">
+          <img class="Media-youtubeCard-image" src="{{ playlist.thumbnail }}" alt="">
+          <h3 class="Media-youtubeCard-title">{{playlist.title}}</h3>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    <div class="playlists"></div>
+  </div>
 {% endblock %}
 
 {% block scripts %}
-    <script src="{{ url_for('static', filename='js/media.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='js/media.js') }}"></script>
 {% endblock %}

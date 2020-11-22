@@ -1,10 +1,14 @@
 import datetime
-import boto3
+import atexit
 
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 
+import boto3
 from dotenv import load_dotenv, find_dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
+
+from .jobs.getyoutubedata import get_yt_playlist_data
 
 
 ENV_FILE = find_dotenv()
@@ -17,6 +21,11 @@ app.config.from_pyfile('_config.py')
 
 db = SQLAlchemy(app)
 s3 = boto3.resource('s3')
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=get_yt_playlist_data, trigger='interval', days=1)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
 
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint

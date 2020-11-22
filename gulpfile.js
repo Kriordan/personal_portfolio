@@ -1,22 +1,25 @@
-var gulp = require('gulp');
-var browserSync = require('browser-sync').create();
-var less = require('gulp-less');
+var gulp = require("gulp");
+var browserSync = require("browser-sync").create();
+var less = require("gulp-less");
 
-gulp.task('serve', ['less'], function() {
+const paths = {
+  styles: {
+    srcMain: "project/static/less/main.less",
+    src: "project/static/less/*.less",
+    dest: "project/static/css",
+  },
+};
 
-    browserSync.init({
-        proxy: "localhost:5000"
-    });
+function css() {
+  return gulp
+    .src(paths.styles.srcMain)
+    .pipe(less())
+    .pipe(gulp.dest(paths.styles.dest));
+}
 
-    gulp.watch("static/less/*.less", ['less']);
-    gulp.watch("templates/*.html").on("change", browserSync.reload);
-});
+function watch() {
+  gulp.watch(paths.styles.src, css);
+}
 
-gulp.task('less', function() {
-    return gulp.src("project/static/less/main.less")
-        .pipe(less())
-        .pipe(gulp.dest("project/static/css"))
-        .pipe(browserSync.stream());
-});
-
-gulp.task('default', ['serve']);
+exports.css = css;
+exports.default = watch;
