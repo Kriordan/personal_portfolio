@@ -6,3 +6,4 @@ python-dotenv
 pyyaml
 flask_wtf
 psycopg2-binary
+apscheduler
