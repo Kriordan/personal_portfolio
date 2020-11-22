@@ -8,7 +8,7 @@ def get_yt_playlist_data():
     print('Requesting youtube playlist data...')
     playlist_ids_path = Path(__file__).resolve().parent.parent / 'data' / 'jsonfiles' / "youtube-ids.json"
     playlist_data_path = Path(__file__).resolve().parent.parent / 'data' / 'jsonfiles' / "youtube-playlist-data.json"
-    # clean_playlist_data_path = Path(__file__).resolve().parent.parent / 'data' / 'jsonfiles' / "clean-youtube-playlist-data.json"
+    clean_playlist_data_path = Path(__file__).resolve().parent.parent / 'data' / 'jsonfiles' / "clean-youtube-playlist-data.json"
     
     playlist_data = {}
     playlist_data['playlists'] = []
@@ -29,23 +29,30 @@ def get_yt_playlist_data():
     with open(playlist_data_path, mode='w') as json_file:
         json.dump(playlist_data, json_file)
         
-    # clean_playlist_data = clean_yt_data(playlist_data)
+    clean_playlist_data = clean_yt_data(playlist_data)
         
-    # with open(clean_playlist_data_path, mode='w') as json_file:
-    #     json.dump(clean_playlist_data, json_file)
+    with open(clean_playlist_data_path, mode='w') as json_file:
+        json.dump(clean_playlist_data, json_file)
 
     print('Finished gathering youtube playlist data')
 
-# def clean_yt_data(data):
-#     some_fucking_dict = {}
-#     some_fucking_dict['playlists'] = []
+def clean_yt_data(playlist_data):
+    template_data = {}
+    template_data['playlists'] = []
+    print(playlist_data)
+    for playlist in playlist_data['playlists']:
+        temp_dict = dict(
+            id=playlist['items'][0]['id'],
+            title=playlist['items'][0]['snippet']['title'],
+            channelTitle=playlist['items'][0]['snippet']['channelTitle']
+        )
+        if 'standard' in playlist['items'][0]['snippet']['thumbnails'].keys():
+            temp_dict['thumbnail'] = playlist['items'][0]['snippet']['thumbnails']['standard']['url']
+        elif 'high' in playlist['items'][0]['snippet']['thumbnails'].keys():
+            temp_dict['thumbnail'] = playlist['items'][0]['snippet']['thumbnails']['high']['url']
+        else:
+            temp_dict['thumbnail'] = 'http://placecorgi.com/640/480'
+        template_data['playlists'].append(temp_dict)
     
-#     for playlist in data['playlists']:
-#         other_fucking_dict = {}
-#         other_fucking_dict['id'] = playlist['items'][0]['id']
-#         other_fucking_dict['thumbnailUrl'] = playlist['items'][0]['snippet']['thumbnails']['standard']['url']
-        
-#         some_fucking_dict['playlists'].append(some_fucking_dict)
-        
-#     return some_fucking_dict
+    return template_data
     

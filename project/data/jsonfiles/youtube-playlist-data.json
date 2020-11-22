@@ -2,94 +2,715 @@
   "playlists": [
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "iRHL6iXXnGtWDtsFt56mwpgV7-Q",
+      "etag": "oxxm2rpM5SP1Pzp-4knzFXL8itM",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
           "kind": "youtube#playlist",
-          "etag": "A7Nzw83gh6OKOJu4J_gzz2C8z6M",
-          "id": "PLab2z9g2ELk6tNQ3kZYJwH__iNrGISXk7",
+          "etag": "gjiSyyCkaENie-tu8jMrN519FS0",
+          "id": "PLSeCUELt2zI7--4fyn0R9oW0AFYVeP0Gb",
           "snippet": {
-            "publishedAt": "2019-10-02T17:07:57Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "for a laugh",
+            "publishedAt": "2017-01-23T15:40:58Z",
+            "channelId": "UCJi9y4qCF8qWFOa_0zVrFCQ",
+            "title": "Malcolm X Speeches",
             "description": "",
             "thumbnails": {
               "default": {
-                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/default.jpg",
+                "url": "https://i.ytimg.com/vi/7kf7fujM4ag/default.jpg",
                 "width": 120,
                 "height": 90
               },
               "medium": {
-                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/mqdefault.jpg",
+                "url": "https://i.ytimg.com/vi/7kf7fujM4ag/mqdefault.jpg",
                 "width": 320,
                 "height": 180
               },
               "high": {
-                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/hqdefault.jpg",
+                "url": "https://i.ytimg.com/vi/7kf7fujM4ag/hqdefault.jpg",
                 "width": 480,
                 "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              },
-              "maxres": {
-                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/maxresdefault.jpg",
-                "width": 1280,
-                "height": 720
               }
             },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "for a laugh", "description": "" }
+            "channelTitle": "tek_take0ff",
+            "localized": { "title": "Malcolm X Speeches", "description": "" }
           }
         }
       ]
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "xs1J2XVE0n_dq0ayDfMcDm6gAvU",
+      "etag": "ArTkggKsFQ7XKdiucDM00JL_nOU",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
           "kind": "youtube#playlist",
-          "etag": "XNBdTTgXZYO4kT7YGg-4TuioEjI",
-          "id": "PLab2z9g2ELk7tWWRvUCiUGHwr7eKRvTcM",
+          "etag": "E7Q9Rnwufn0B7ZCvMB7KsHunEPI",
+          "id": "PLFxhbK66evJEw864cIxD4W19yC9Y_j5EL",
           "snippet": {
-            "publishedAt": "2019-02-10T23:42:25Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "recipes",
+            "publishedAt": "2017-09-05T16:44:10Z",
+            "channelId": "UC6loMaNXL85aUfbSOzSOUcg",
+            "title": "Famous Speeches",
             "description": "",
             "thumbnails": {
               "default": {
-                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/default.jpg",
+                "url": "https://i.ytimg.com/vi/BLmiOEk59n8/default.jpg",
                 "width": 120,
                 "height": 90
               },
               "medium": {
-                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/mqdefault.jpg",
+                "url": "https://i.ytimg.com/vi/BLmiOEk59n8/mqdefault.jpg",
                 "width": 320,
                 "height": 180
               },
               "high": {
-                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/hqdefault.jpg",
+                "url": "https://i.ytimg.com/vi/BLmiOEk59n8/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              }
+            },
+            "channelTitle": "Rachel Eversole",
+            "localized": { "title": "Famous Speeches", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "U-9xwNwA6g5QykUaISuYOl_x0j8",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "Q-C1tgcRAqf_bK1DPIex5rghvZE",
+          "id": "PLLVLl07BgiJYSCSdl1fd34s4SzILbMxp9",
+          "snippet": {
+            "publishedAt": "2019-01-27T14:35:31Z",
+            "channelId": "UCC2tuLXCjCJcNoBoHGFQI-Q",
+            "title": "Greatest Movie Speeches",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/5i0u4jFmE78/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/5i0u4jFmE78/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/5i0u4jFmE78/hqdefault.jpg",
                 "width": 480,
                 "height": 360
               },
               "standard": {
-                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/sddefault.jpg",
+                "url": "https://i.ytimg.com/vi/5i0u4jFmE78/sddefault.jpg",
                 "width": 640,
                 "height": 480
               },
               "maxres": {
-                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/maxresdefault.jpg",
+                "url": "https://i.ytimg.com/vi/5i0u4jFmE78/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Paul Henry",
+            "localized": {
+              "title": "Greatest Movie Speeches",
+              "description": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "4m1Yh8EcEKsKNpsN--FXZnxY9Yk",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "mvwzSHOp6liuWe6R7TEyTB_NA24",
+          "id": "PLddIBIpn5hjsOsb2jrZbCxRt9NGE03EM0",
+          "snippet": {
+            "publishedAt": "2018-07-22T17:02:28Z",
+            "channelId": "UChNHTS1OpfFb0hxqpSX9UCA",
+            "title": "Famous Speeches",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/BvA0J_2ZpIQ/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/BvA0J_2ZpIQ/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/BvA0J_2ZpIQ/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              }
+            },
+            "channelTitle": "efl20",
+            "localized": { "title": "Famous Speeches", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "yxjMNpKEA18Gtvd7d6g00zoW0B8",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "loTsiBKNDc_x-IVu-9uDxaD05QI",
+          "id": "PL6mpdDsiT31g0kMDnaMsX0MRu424Lom5O",
+          "snippet": {
+            "publishedAt": "2015-09-23T22:24:47Z",
+            "channelId": "UC3b7XJCfxroI1fuNTlbnxyw",
+            "title": "VINTAGE FAMOUS SPEECHES",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/gbrcRKqLSRw/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/gbrcRKqLSRw/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/gbrcRKqLSRw/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              }
+            },
+            "channelTitle": "Ricky Porter",
+            "localized": {
+              "title": "VINTAGE FAMOUS SPEECHES",
+              "description": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "zfkuflz0hqW6PRwYbcRFdZYCf-w",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "rv23Mc_YYLYmO2d3bkVGgkRClW4",
+          "id": "PL_c9BZzLwBRLVh9OdCBYFEql6esA6aRsi",
+          "snippet": {
+            "publishedAt": "2013-08-17T18:55:26Z",
+            "channelId": "UCZUyPT9DkJWmS_DzdOi7RIA",
+            "title": "JavaScript",
+            "description": "This playlist is an introductory course to the concepts behind JavaScript!  This series will better help you understand how JavaScript works behind the scenes.",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/9M4XKi25I2M/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/9M4XKi25I2M/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/9M4XKi25I2M/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/9M4XKi25I2M/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/9M4XKi25I2M/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Caleb Curry",
+            "localized": {
+              "title": "JavaScript",
+              "description": "This playlist is an introductory course to the concepts behind JavaScript!  This series will better help you understand how JavaScript works behind the scenes."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "SJuO_6WgtICe1POafR88qgmWQGU",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "0XbeU6iZRWaY6KeGDnlOfPT4XIg",
+          "id": "PL_c9BZzLwBRLpDEpYRFXKBN-2ZCsAx0ps",
+          "snippet": {
+            "publishedAt": "2020-05-16T16:18:13Z",
+            "channelId": "UCZUyPT9DkJWmS_DzdOi7RIA",
+            "title": "Data Structures and Algorithms",
+            "description": "Learn Data Structures, Algorithms, big O and time complexity, searching, sorting, traveling salesman, classes, objects, graphs, trees, and more.",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/4RLhuZ3N9nc/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/4RLhuZ3N9nc/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/4RLhuZ3N9nc/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/4RLhuZ3N9nc/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/4RLhuZ3N9nc/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Caleb Curry",
+            "localized": {
+              "title": "Data Structures and Algorithms",
+              "description": "Learn Data Structures, Algorithms, big O and time complexity, searching, sorting, traveling salesman, classes, objects, graphs, trees, and more."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "y4tgxXf4JtiBxJtDXmBEsxMakK4",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "EoLYAakowXayG-xRZGCerMSouGU",
+          "id": "PL_c9BZzLwBRLqDDWav6L6I34rZSaZrX9-",
+          "snippet": {
+            "publishedAt": "2019-09-25T14:14:09Z",
+            "channelId": "UCZUyPT9DkJWmS_DzdOi7RIA",
+            "title": "Cryptocurrency",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/VSU0-8Rfo4I/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/VSU0-8Rfo4I/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/VSU0-8Rfo4I/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/VSU0-8Rfo4I/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/VSU0-8Rfo4I/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Caleb Curry",
+            "localized": { "title": "Cryptocurrency", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "NtTKmifq6YDuGxfG7jevrDGAob4",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "74f0vec8jsfu0X3xQcWPluuFLaE",
+          "id": "PL_c9BZzLwBRK4df4kteynpwAedXdw9rul",
+          "snippet": {
+            "publishedAt": "2013-02-11T19:32:25Z",
+            "channelId": "UCZUyPT9DkJWmS_DzdOi7RIA",
+            "title": "Music Theory Complete Series!",
+            "description": "This is a course that will explain a ton of topics in music theory.  It will start from the very begininng and bring you very far.  Playing an instrument or singing is not a requirement to watch this series.",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/Nh6k498Xd18/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/Nh6k498Xd18/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/Nh6k498Xd18/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/Nh6k498Xd18/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/Nh6k498Xd18/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Caleb Curry",
+            "localized": {
+              "title": "Music Theory Complete Series!",
+              "description": "This is a course that will explain a ton of topics in music theory.  It will start from the very begininng and bring you very far.  Playing an instrument or singing is not a requirement to watch this series."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "6TxvfSJia6aS-lJubB9H85VstWw",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "L3Ea4Hp1GtClHqVCo6kon1wdgFU",
+          "id": "PLw9t0oA3fHkxx1PgYpiXrMUPXaOiwh6KU",
+          "snippet": {
+            "publishedAt": "2016-08-31T17:12:15Z",
+            "channelId": "UCLKqj9NLaPAYFoowQw3S16g",
+            "title": "Dr. B Music Theory",
+            "description": "Learn music theory:\n1) Lessons 1-27 = first semester Music Theory I course\n2) Lessons 28-47 = second semester Music Theory II course\n3) Ask Dr. B About Music Theory = I answer questions from subscribers",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/ICDPWP6HUbk/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/ICDPWP6HUbk/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/ICDPWP6HUbk/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/ICDPWP6HUbk/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/ICDPWP6HUbk/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Christopher Brellochs",
+            "localized": {
+              "title": "Dr. B Music Theory",
+              "description": "Learn music theory:\n1) Lessons 1-27 = first semester Music Theory I course\n2) Lessons 28-47 = second semester Music Theory II course\n3) Ask Dr. B About Music Theory = I answer questions from subscribers"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "Dw3ALg4UQGtwmDEI1m3DlJFb36k",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "XhJcAmFhWg9WaQBbD2DesaAClKo",
+          "id": "PLjVGRnK0sar-psMeDzuLApBDCfgIQ8W-o",
+          "snippet": {
+            "publishedAt": "2015-08-03T10:32:34Z",
+            "channelId": "UCtL5WjEYhlHzmOan57lJgnw",
+            "title": "Fundamentals of Music Theory (Coursera)",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/BRzjQHYWbSs/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/BRzjQHYWbSs/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/BRzjQHYWbSs/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/BRzjQHYWbSs/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              }
+            },
+            "channelTitle": "Lilia Vernigora",
+            "localized": {
+              "title": "Fundamentals of Music Theory (Coursera)",
+              "description": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "ZRTa0xwicIEOvjpP-1vfaGPSt24",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "o_TPsdQHxQInjL1ODJnemUvKx4U",
+          "id": "PL5j5H06QkhxE0RK-Ormp3zgf5SGJ28zsj",
+          "snippet": {
+            "publishedAt": "2014-03-16T20:24:43Z",
+            "channelId": "UC8yI8P7Zi3yYTsypera-IQg",
+            "title": "Music Theory",
+            "description": "Learn music theory online with our comprehensive courses. Suitable for candidates preparing for ABRSM exams. Visit our website for more videos and information - http://www.mmcourses.co.uk",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/6zyv0O7kfcc/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/6zyv0O7kfcc/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/6zyv0O7kfcc/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/6zyv0O7kfcc/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/6zyv0O7kfcc/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Music Matters",
+            "localized": {
+              "title": "Music Theory",
+              "description": "Learn music theory online with our comprehensive courses. Suitable for candidates preparing for ABRSM exams. Visit our website for more videos and information - http://www.mmcourses.co.uk"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "JQBN7JHVM3w6bNsjTBny5rCMt6s",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "0LgqKMWbHeJ7lZPHGYUmfBKUg7A",
+          "id": "PL9LXrs9vCXK56qtyK4qcqwHrbf0em_81r",
+          "snippet": {
+            "publishedAt": "2013-12-14T00:13:14Z",
+            "channelId": "UCf-fMvfQnrWMIcygmBSA4JA",
+            "title": "Yale Music Theory Course",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/t4echOq29d0/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/t4echOq29d0/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/t4echOq29d0/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/t4echOq29d0/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              }
+            },
+            "channelTitle": "larryjohnny",
+            "localized": {
+              "title": "Yale Music Theory Course",
+              "description": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "tYq_-4gPuLEIZQzVgxtOMCXMYvE",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "bVFU-08jT9Da4aFLtZYMPgR7vWo",
+          "id": "PLab2z9g2ELk4I91_zSClRMjtIncJ7bdDb",
+          "snippet": {
+            "publishedAt": "2015-08-13T18:01:10Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "athletic training / fitness",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              }
+            },
+            "channelTitle": "Keith Riordan",
+            "localized": {
+              "title": "athletic training / fitness",
+              "description": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "J5YgaGQbIlm0mU4JARLQLIZ-BN8",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "h9JEEZDyTH5V2gin4HoigCXSjBs",
+          "id": "PLab2z9g2ELk5ZGR98vFTsSNXIo_DtIFkC",
+          "snippet": {
+            "publishedAt": "2019-08-09T20:02:31Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "billiards",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              }
+            },
+            "channelTitle": "Keith Riordan",
+            "localized": { "title": "billiards", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "DtifpwQ3iIUK6yIG8GxqQqNz1n4",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "s_ZAAMWAz4Gm3dy8MAMKeXj6G58",
+          "id": "PLab2z9g2ELk6zX8KtCVAIypF5xERn6gaV",
+          "snippet": {
+            "publishedAt": "2017-05-13T04:02:05Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "mobility / flexibility",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/maxresdefault.jpg",
                 "width": 1280,
                 "height": 720
               }
             },
             "channelTitle": "Keith Riordan",
-            "localized": { "title": "recipes", "description": "" }
+            "localized": {
+              "title": "mobility / flexibility",
+              "description": ""
+            }
           }
         }
       ]
@@ -138,7 +759,143 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "BTZ7jqPt0GFJrln17egU0iwLX0M",
+      "etag": "kiq0V37ECpvAkInBsZih30zfJ7s",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "7_-3t1METAju4DW-E_Zgzr0TVKY",
+          "id": "PLab2z9g2ELk450LJoPwJPvowweKKs-5ml",
+          "snippet": {
+            "publishedAt": "2019-07-08T15:59:15Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "the property",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              }
+            },
+            "channelTitle": "Keith Riordan",
+            "localized": { "title": "the property", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "iRHL6iXXnGtWDtsFt56mwpgV7-Q",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "A7Nzw83gh6OKOJu4J_gzz2C8z6M",
+          "id": "PLab2z9g2ELk6tNQ3kZYJwH__iNrGISXk7",
+          "snippet": {
+            "publishedAt": "2019-10-02T17:07:57Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "for a laugh",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/vIjTxxD3M4U/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Keith Riordan",
+            "localized": { "title": "for a laugh", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "KE_N1GusijSqIs2nf56w6_EVR_8",
+      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
+      "items": [
+        {
+          "kind": "youtube#playlist",
+          "etag": "XNBdTTgXZYO4kT7YGg-4TuioEjI",
+          "id": "PLab2z9g2ELk7tWWRvUCiUGHwr7eKRvTcM",
+          "snippet": {
+            "publishedAt": "2019-02-10T23:42:25Z",
+            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
+            "title": "recipes",
+            "description": "",
+            "thumbnails": {
+              "default": {
+                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/default.jpg",
+                "width": 120,
+                "height": 90
+              },
+              "medium": {
+                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/mqdefault.jpg",
+                "width": 320,
+                "height": 180
+              },
+              "high": {
+                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/hqdefault.jpg",
+                "width": 480,
+                "height": 360
+              },
+              "standard": {
+                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/sddefault.jpg",
+                "width": 640,
+                "height": 480
+              },
+              "maxres": {
+                "url": "https://i.ytimg.com/vi/JJoJGgqzevU/maxresdefault.jpg",
+                "width": 1280,
+                "height": 720
+              }
+            },
+            "channelTitle": "Keith Riordan",
+            "localized": { "title": "recipes", "description": "" }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "youtube#playlistListResponse",
+      "etag": "nFZiNrejwTjceVo4PUJo9qX3AtM",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -232,7 +989,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "cUMkzl1IsOdbLEUxhxCH4JBd_dY",
+      "etag": "ZZm5JSXbWecC3OaOy-5tBEwGqVA",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -277,7 +1034,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "-I-9wTREUyu_Aa1G3jDRMVbKSSw",
+      "etag": "5EZ592zXHmOpGYh3iiBfTpQGGC8",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -324,7 +1081,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ir43kDi65VcEUc7AYNqXryFbpdE",
+      "etag": "6Q403p4bRQDUKz9EA155kSMhY-k",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -414,7 +1171,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "MU65DN5IdweWVM90b-ioLpZwmK4",
+      "etag": "gtNrK2_BLOW4NUK_sxWfQ4MfHzY",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -605,7 +1362,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "P7Eq-X82Q-A9Ur-Hvvajrn6y1mg",
+      "etag": "1oF4dzIkbxevbf5aYBB9Whv7Z9Q",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -705,7 +1462,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "49YAsFlDJfrmUghEKLDM211bOpI",
+      "etag": "3DGkpTMCk0gIJpfkzfUQPSgRDqA",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -755,7 +1512,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "Vm0ujTgzr5QsfNdvGefeQosI11Q",
+      "etag": "jTdO4Oxw0QhQMLzgAuZuZvVhxy0",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -882,7 +1639,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "mw64vNQMy1z-E6DrIxiimV7-5qU",
+      "etag": "2AaQEEhwdKLuJlJdyohKzZsTYlQ",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -918,95 +1675,6 @@
             },
             "channelTitle": "Keith Riordan",
             "localized": { "title": "home construction", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "x3IGelarZVRF_ZfVkO7FGO5O8qQ",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "hIQ0YJQgOcPtUz1FRdYgPcokXv0",
-          "id": "PLab2z9g2ELk6zX8KtCVAIypF5xERn6gaV",
-          "snippet": {
-            "publishedAt": "2017-05-13T04:02:05Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "mobility",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              },
-              "maxres": {
-                "url": "https://i.ytimg.com/vi/khC5J1lkC7s/maxresdefault.jpg",
-                "width": 1280,
-                "height": 720
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "mobility", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "kiq0V37ECpvAkInBsZih30zfJ7s",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "7_-3t1METAju4DW-E_Zgzr0TVKY",
-          "id": "PLab2z9g2ELk450LJoPwJPvowweKKs-5ml",
-          "snippet": {
-            "publishedAt": "2019-07-08T15:59:15Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "the property",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/wPfZNTSuY7E/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "the property", "description": "" }
           }
         }
       ]
@@ -1110,7 +1778,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ZYjDszPiVw7glpc0AMov1BJqb9U",
+      "etag": "eH1alNV8siH9pHe9V7AL3mOMET0",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1160,7 +1828,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "4IdrKrgV3Nq2BqDgwV-6qkCDVDw",
+      "etag": "PyT2b5Wy1fdj9gmSrio5aWI9ryw",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1242,7 +1910,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "osRumXsnkQrcDUe99U_9Mehukc4",
+      "etag": "Af6tyGdDREfmFShPRurNcBa8tSs",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1339,7 +2007,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "eg42c_B5ytphfyi0ah1M5m7Ykt4",
+      "etag": "1r-eF9IRU6Wr7yExUy-S-VMJeDo",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1386,54 +2054,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "QLpIOFAeSs8tYtMzMQ5G0vLvY5g",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "gnqaku1poNhD8nXa4SBOHz9wWiY",
-          "id": "PLab2z9g2ELk6-CQV26WlAQ1nDq8V2qVPC",
-          "snippet": {
-            "publishedAt": "2020-05-16T20:03:05Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "garden & farming",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/ExJ1-nQeZ68/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/ExJ1-nQeZ68/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/ExJ1-nQeZ68/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/ExJ1-nQeZ68/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              },
-              "maxres": {
-                "url": "https://i.ytimg.com/vi/ExJ1-nQeZ68/maxresdefault.jpg",
-                "width": 1280,
-                "height": 720
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "garden & farming", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "aLw_e9pyEc_38Ci8_YBkUVIb1ek",
+      "etag": "5h372V0uD60VZA-zHVhhSirUfZs",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1483,7 +2104,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ZiuJptkAjZ-cqHzUS00GdGcK5y8",
+      "etag": "j49aqGMunBr3Wpa0dwMqpNLjlQI",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1527,48 +2148,6 @@
               "title": "Framing Tips",
               "description": "A wealth of building knowledge all recorded \"ON SITE,\" as we frame one-of-a-kind homes for our clients. Learn about everything from layout, to specialty tools, to lumber selection. You won't regret digging into these videos if you want to build anything!"
             }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "ghUuy-JQ79zo1NXsJU8Rz94iOYY",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "A0PZJsLD3B0mdY82L6iGw6uL90I",
-          "id": "PLab2z9g2ELk56C0dhxHkdm74l9eAJ5DR-",
-          "snippet": {
-            "publishedAt": "2015-08-13T16:29:13Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "stretches",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/g70Jq2NjQwY/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/g70Jq2NjQwY/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/g70Jq2NjQwY/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/g70Jq2NjQwY/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "stretches", "description": "" }
           }
         }
       ]
@@ -1665,7 +2244,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "vH0S70L_Jyg4FDtGUkpJ-NQ_rNw",
+      "etag": "NCU_1wSVK9u9fqmxGZRo2Rabgyk",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -1812,80 +2391,6 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "QU3tc2tiTSCiFnIwE0HD8sBD-_E",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "pWY778ITy6WCXkMWPSUMt0hgHJI",
-          "id": "PLab2z9g2ELk4I91_zSClRMjtIncJ7bdDb",
-          "snippet": {
-            "publishedAt": "2015-08-13T18:01:10Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "sports training",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/DycV8UE5Ua0/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "sports training", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "sd0rGgCjMoCdZi2ol7QHOE7udJM",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "P6EzdDMLo4nrm4M3nTJ9n065jdo",
-          "id": "PLab2z9g2ELk5ZGR98vFTsSNXIo_DtIFkC",
-          "snippet": {
-            "publishedAt": "2019-08-09T20:02:31Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "pool",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/HqAb4mWEkps/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "pool", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
       "etag": "NMt9nm3ExfjxiiCkFwRWXvfG3ec",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
@@ -1971,7 +2476,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ftVQJ1-bDNubQrNHx7rmte8aUos",
+      "etag": "XMjolgTqhSPOY3Ui7rYYtUKF0AE",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2018,7 +2523,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "27CFlszXoYVwEhDjQUk6QL2yD88",
+      "etag": "chgQZc9mQH0jTjIVnNBPFIjupTo",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2100,7 +2605,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "zF7b3Nnw-wP4RtgwLnpmxq2NyY4",
+      "etag": "V2lB7OUNAkeW5Lku8Z4EWknlxG4",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2147,7 +2652,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "P2oFNz-pDVJZUPnchAjDkEBY9pk",
+      "etag": "7smPqZ5eGfgMA-bwK_1chKJcbac",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2197,7 +2702,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "w5Nneu-wqFfIUxCFHPfM1JLCa5c",
+      "etag": "83LxKqUlw_6V_hBzLxmPBX6KwII",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2242,7 +2747,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "DeDMj-OSOBS1RJZMT62W89T38bQ",
+      "etag": "LYREltKr-HghWPciWi49-lK8fIw",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2292,53 +2797,6 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "kUhZoKyDAdhmJEwBYuY2zWWKPLs",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "l4iGwW9iBf9MQZEpKUGnBpYBjKc",
-          "id": "PLab2z9g2ELk7rKcYHaGI-S-mrOkCRv2Ef",
-          "snippet": {
-            "publishedAt": "2019-10-18T03:03:10Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "fitness",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/emxEhfwori4/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/emxEhfwori4/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/emxEhfwori4/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/emxEhfwori4/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              },
-              "maxres": {
-                "url": "https://i.ytimg.com/vi/emxEhfwori4/maxresdefault.jpg",
-                "width": 1280,
-                "height": 720
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "fitness", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
       "etag": "iIsdpSg4jIb2beI2sr2RZJGgsNk",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
@@ -2381,44 +2839,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "GrTWTPVaU5SjTrmcJ4vN0NmnPuI",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "cl6FheWO09_5o_RoJeLcZO2icuo",
-          "id": "PLab2z9g2ELk5cGI5QdbvnxoW6UbCRdPiO",
-          "snippet": {
-            "publishedAt": "2019-10-18T02:31:41Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "compilations",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/K88BC1FkPjo/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/K88BC1FkPjo/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/K88BC1FkPjo/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "compilations", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "iI4Ra2lss0W_bwysc0EIAu3PaRE",
+      "etag": "E2c-hWkXA6Eu2JF1blxubhehwh0",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2465,7 +2886,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "pPU1a-d0_JYz2E3r58EfKwyQ33s",
+      "etag": "KP9sVgHxBvTxLMcF1TdPY5YFcRw",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2512,7 +2933,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "fMNdqm1Bg_DBSe2kdd8mzwEg_vs",
+      "etag": "6e1b7hlCyzM1tjdKgGPR4bvwtmk",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2559,7 +2980,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "fczKkQpq4vdfe2146ESXPnPk0EA",
+      "etag": "6ouovAFt1n3h5lCFp1p9DPqtRsw",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2604,12 +3025,12 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "dmwJZKWl1w9iIEFH0Rpm-u9DHe8",
+      "etag": "zHR2n2wJMitvjGX9EN9KrSPojzo",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
           "kind": "youtube#playlist",
-          "etag": "AMoY75Up6kRvE9v3pGCEGN46FxQ",
+          "etag": "Uf8C48izyDicPz30aqEJJyFzZYs",
           "id": "PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl",
           "snippet": {
             "publishedAt": "2018-06-21T14:23:45Z",
@@ -2618,17 +3039,17 @@
             "description": "Bloomberg's Aki Ito travels the world in search for the jobs of the future.",
             "thumbnails": {
               "medium": {
-                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_mqdefault.jpg?sqp=CMi85v0Fir7X7AMGCPLprtkF&rs=AOn4CLAD5xZ7AgBB5XHFjUWYHiCk1OxR6Q&v=1529591026",
+                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_mqdefault.jpg?sqp=CNiw6_0Fir7X7AMGCPLprtkF&rs=AOn4CLAbo1CLutbpuxWNo_9j6EoIdPQObQ&v=1529591026",
                 "width": 320,
                 "height": 180
               },
               "standard": {
-                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_sddefault.jpg?sqp=CMi85v0Fir7X7AMGCPLprtkF&rs=AOn4CLCI-cIp7CZpvAjz-03b5f05n0NXAQ&v=1529591026",
+                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_sddefault.jpg?sqp=CNiw6_0Fir7X7AMGCPLprtkF&rs=AOn4CLD3v-A0bEfIz-Vs-XmVS8Fm0A-Vlg&v=1529591026",
                 "width": 800,
                 "height": 450
               },
               "maxres": {
-                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_maxresdefault.jpg?sqp=CMi85v0Fir7X7AMGCPLprtkF&rs=AOn4CLCDMKk_yvPTzkRXWJEWAYvEuKFE5A&v=1529591026",
+                "url": "https://i9.ytimg.com/s_p/PLqq4LnWs3olUF4RKAPDYMhIGRQkt0k1Xl/landscape_maxresdefault.jpg?sqp=CNiw6_0Fir7X7AMGCPLprtkF&rs=AOn4CLBn7Axeq_LdWY4oQyDzr64WcF1KwQ&v=1529591026",
                 "width": 2560,
                 "height": 1440
               }
@@ -2691,44 +3112,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "vpf0cR1J_4Poq4vu7W8QIQLoMkk",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "Fnf9xrn4arPD7MrZJYaKDAfSgyE",
-          "id": "PLab2z9g2ELk5QD4PaDoZ-Jp3xNpI6EoAv",
-          "snippet": {
-            "publishedAt": "2016-01-09T17:24:53Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "doubles tennis",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/ayGv33lMVj8/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/ayGv33lMVj8/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/ayGv33lMVj8/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "doubles tennis", "description": "" }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "X6R6KaB_vOcNWH7EQT-QHA_Zsns",
+      "etag": "W_mZZ_ksEXuLEJBzvbN_sAsYuRs",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2770,7 +3154,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "lq9KZ07OcCLzE0WyUH3eZNzwjHc",
+      "etag": "eCWbx7gtgb-nsUJ7VlTx6JwvkqM",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -2964,7 +3348,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "O4nEnq3REgpLlRK09cqhYLNHD9o",
+      "etag": "WmYK1E6Kj4G0kpK0wNzG406rCqY",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3014,7 +3398,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "0PV2mOph_d9V4DKAfNlfy5X_vXI",
+      "etag": "M_DYLgl_S6BCXEm-Q6v_YBc0Q50",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3061,7 +3445,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ngCWcvM8R3W5MNuPDpcVWOP5uko",
+      "etag": "vz_pdZUPTNpVy2TMIovlAa6Suuo",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3101,7 +3485,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "sSSz6h5CgTY2lUlXdwIYHPGTNwU",
+      "etag": "IxZb1LiKSZZdl8zE6WdWoi5cXvU",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3198,7 +3582,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "f_sQmCBhewINPzz1eIcOLfj5Kd8",
+      "etag": "pguFmv3SNzLKzTiov4Z5IGtqHbI",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3248,7 +3632,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "NGaRuB1YqSmOyiQHL7iHFt6ok6M",
+      "etag": "N57F_z9GQOh9IWGVDtlhwC37cxo",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3293,7 +3677,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "ItCGXVAorT9B0-tjPZcuHCLFFfY",
+      "etag": "CbRaBKVbGtqFx2Inrn2a1J-i62c",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3338,7 +3722,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "TGuhmkUdqpEkT0cgtVizkSU_avI",
+      "etag": "917emGfOeHy7g_3lO-0jZKg5nEw",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3388,7 +3772,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "gvLXNbCPgj0frulZGfVQpSUq7fQ",
+      "etag": "-rHetIFpgWytnqKIFfCcbxUSogY",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3435,7 +3819,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "wngdGLC1sCLyibErw6-CmMaWbLw",
+      "etag": "V2BgQEDONmZg5sqN9o5eP1dr50g",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3485,7 +3869,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "Tl2KBSXx54z6yGkeGJaCpTKavZo",
+      "etag": "a9i56qwYl0g_cEQbxLH6fK-pi20",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3535,7 +3919,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "49RrO7edBuM_Wut0td0KTUIycEg",
+      "etag": "5PreBehqr_pL-Ij61gsNZ-k-xv4",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3585,7 +3969,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "DI9TDJUlImCtWQB7Qc-fmiBfS1w",
+      "etag": "3G5SsjVyM9uPWi7VhMjWYya5s-I",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3782,7 +4166,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "HAxsuBKSiSjGdU8PSeFxcxedW7o",
+      "etag": "xg9h03jKyBPv3r4DxueBXb3UJ8g",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -3932,7 +4316,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "0mAX6-2mfV-5JUS_XVPIglCicgM",
+      "etag": "vfToY440ebh3IT59Eykeu0N2hTE",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -4032,7 +4416,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "kYFsP6LFKkZPqQYB95CzLHy8ERQ",
+      "etag": "P2boFy5CUuiSU85wzhU18SBSwbA",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -4179,7 +4563,7 @@
     },
     {
       "kind": "youtube#playlistListResponse",
-      "etag": "sM34pyMN8yYMK7iEMjjTNXWaFPI",
+      "etag": "kyPNll8psrvf_SMqPexkzcwCjFg",
       "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
       "items": [
         {
@@ -4223,53 +4607,6 @@
               "title": "real python",
               "description": "http://www.realpython.com\r\n\r\nlearn python through practical, real world examples. \r\n\r\nstart with the basic syntax, then move on to web programming!"
             }
-          }
-        }
-      ]
-    },
-    {
-      "kind": "youtube#playlistListResponse",
-      "etag": "Yn8C3_MSQwl93lhfZrLEBgaUa74",
-      "pageInfo": { "totalResults": 1, "resultsPerPage": 5 },
-      "items": [
-        {
-          "kind": "youtube#playlist",
-          "etag": "HqgA--EdtjDTeDRkHKojOypX2c0",
-          "id": "PLab2z9g2ELk5mSVRdmkCYnEhlW2_oEJuK",
-          "snippet": {
-            "publishedAt": "2015-09-08T20:51:06Z",
-            "channelId": "UC0tJyvRLTTNbySSsdCI_EMQ",
-            "title": "robots",
-            "description": "",
-            "thumbnails": {
-              "default": {
-                "url": "https://i.ytimg.com/vi/bc-b6Ze0We0/default.jpg",
-                "width": 120,
-                "height": 90
-              },
-              "medium": {
-                "url": "https://i.ytimg.com/vi/bc-b6Ze0We0/mqdefault.jpg",
-                "width": 320,
-                "height": 180
-              },
-              "high": {
-                "url": "https://i.ytimg.com/vi/bc-b6Ze0We0/hqdefault.jpg",
-                "width": 480,
-                "height": 360
-              },
-              "standard": {
-                "url": "https://i.ytimg.com/vi/bc-b6Ze0We0/sddefault.jpg",
-                "width": 640,
-                "height": 480
-              },
-              "maxres": {
-                "url": "https://i.ytimg.com/vi/bc-b6Ze0We0/maxresdefault.jpg",
-                "width": 1280,
-                "height": 720
-              }
-            },
-            "channelTitle": "Keith Riordan",
-            "localized": { "title": "robots", "description": "" }
           }
         }
       ]

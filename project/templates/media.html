@@ -7,7 +7,7 @@
     <section class="Media-category youtube">
       <div class="Media-youtubePlayer"></div>
       <div class="Media-youtubeCardContainer">
-        {% for playlist in template_data.playlists %}
+        {% for playlist in playlist_data %}
         <article class="Media-youtubeCard" data-youtubeid="{{ playlist.id }}">
           <img class="Media-youtubeCard-image" src="{{ playlist.thumbnail }}" alt="">
           <h3 class="Media-youtubeCard-title">{{playlist.title}}</h3>
