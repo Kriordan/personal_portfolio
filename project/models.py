@@ -1,9 +1,11 @@
+import logging
 import os
 import uuid
 import datetime
 import requests
 from urllib.parse import urlencode
 from flask import current_app
+from botocore.exceptions import ClientError
 
 from project import db, s3
 
@@ -36,15 +38,16 @@ class Job(db.Model):
         })
         apileap_image_response = requests.get(apileap_url + params, stream=True)
         apileap_image_response_object = apileap_image_response.raw
-        apileap_image_response_data = apileap_image_response_object.read()
 
         unique_filename_hex = uuid.uuid4().hex
         screenshot_filename = f'{unique_filename_hex}.jpeg'
         self.listing_image = screenshot_filename
+        
+        bucket = os.getenv('JOBWIZARD_S3_BUCKET')
 
-        s3.Bucket(os.getenv('S3_BUCKET')).put_object(
-            Key=screenshot_filename,
-            Body=apileap_image_response_data,
-            ContentType='image/jpeg',
-            ACL='public-read'
-        )
+        try:
+            response = s3.upload_fileobj(apileap_image_response_object, bucket, screenshot_filename)
+        except ClientError as e:
+            logging.error(e)
+            return False
+        return True
