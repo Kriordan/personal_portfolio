@@ -16,7 +16,7 @@ foyer_blueprint = Blueprint('foyer', __name__)
 
 @foyer_blueprint.route('/')
 def home():
-    projects = yaml.load( open(Path(__file__).resolve().parent.parent / 'data' / 'yamlfiles' / "projects.yml"))
+    projects = yaml.safe_load( open(Path(__file__).resolve().parent.parent / 'data' / 'yamlfiles' / "projects.yml"))
     return render_template('home.html', projects=projects)
 
 
