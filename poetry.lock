@@ -449,8 +449,8 @@ email = ["email-validator"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.10"
-content-hash = "be237fb2b2c4292df5e50bd1585bde5ad62e5b3ac3e8addb8e77413ba6bc48b4"
+python-versions = "3.10.5"
+content-hash = "38ea93f94e9876f8f79a135a12017bcb8a031f90854eca743674b13bc1acddc4"
 
 [metadata.files]
 apscheduler = []
