@@ -1,5 +1,6 @@
 import datetime
 import atexit
+import os
 
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
@@ -20,7 +21,11 @@ app = Flask(__name__)
 app.config.from_pyfile('_config.py')
 
 db = SQLAlchemy(app)
-s3 = boto3.resource('s3')
+if os.getenv('ENV') == 'development':
+    session = boto3.Session(profile_name='personalportfolio')
+    s3 = session.client('s3')
+else:
+    s3 = boto3.client('s3')
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=get_yt_playlist_data, trigger='interval', days=1)
