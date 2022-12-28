@@ -1,5 +1,5 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import login_user
+from flask_login import login_user, logout_user, login_required
 
 from project import db
 from ..models import User
@@ -27,3 +27,10 @@ def login():
             flash("Invalid email or password", "error")
             print("tis wrong")
     return render_template("account/login.html", form=form)
+
+
+@account_blueprint.route("/logout", methods=["GET"])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("foyer.home"))
