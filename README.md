@@ -1,5 +1,9 @@
-## Upgrading dependencies
+## Running Locally
+```python
+flask --app project run
+```
 
+## Upgrading dependencies
 ### Python dependencies
 ```python
 # Check for outdated packages
