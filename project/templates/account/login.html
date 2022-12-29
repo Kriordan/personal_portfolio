@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
-
 {% block body %}
-  <section>
-    <form method="POST" action="/login">
-      {{ form.csrf_token }}
-      {{ form.email.label }} {{ form.email }}
-      {{ form.password.label(class_="Login-label") }} {{ form.password(class_="Login-input") }}
-      <button type="submit">Log In</button>
-    </form>
-  </section>
+    <section class="Login">
+        <form class="Login-form" method="POST" action="/login">
+            {{ form.csrf_token }}
+            {{ form.email.label(class_="Login-label") }}
+            {{ form.email(class_="Login-input") }}
+            {{ form.password.label(class_="Login-label") }}
+            {{ form.password(class_="Login-input") }}
+            <button class="Login-submit" type="submit">Log In</button>
+        </form>
+    </section>
 {% endblock %}

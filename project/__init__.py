@@ -34,6 +34,7 @@ bcrypt = Bcrypt(app)
 migrate = Migrate(app, db)
 
 login_manager = LoginManager()
+login_manager.login_view = "account.login"
 login_manager.init_app(app)
 
 scheduler = BackgroundScheduler()
