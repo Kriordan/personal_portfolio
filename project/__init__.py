@@ -44,10 +44,12 @@ atexit.register(lambda: scheduler.shutdown())
 
 from project.foyer.views import foyer_blueprint
 from project.account.views import account_blueprint
+from project.crm.views import crm_blueprint
 from project.jobwizard.views import jobwizard_blueprint
 
 app.register_blueprint(foyer_blueprint)
 app.register_blueprint(account_blueprint)
+app.register_blueprint(crm_blueprint)
 app.register_blueprint(jobwizard_blueprint)
 
 
@@ -57,7 +59,7 @@ def inject_now():
 
 
 @app.errorhandler(404)
-def not_found(error):
+def handle_page_not_found(error):
     if app.debug is not True:
         now = datetime.datetime.now()
         r = request.url

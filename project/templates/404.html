@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
-
-{% block content %}
-
-  <h1>404</h1>
-  <p>Oops. There's nothing here.</p>
-  <a href="{{ url_for('foyer.home') }}">Return home</a>
-
+{% block body %}
+    <h1>404</h1>
+    <p>Oops. There's nothing here.</p>
+    <a href="{{ url_for('foyer.home') }}">Return home</a>
 {% endblock %}
