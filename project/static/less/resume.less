@@ -1,4 +1,8 @@
 .Resume {
+  &-container {
+    margin: 0 auto;
+    max-width: 700px;
+  }
   &-date {
     font-size: 0.8em;
   }
@@ -32,13 +36,13 @@
   &-block {
     margin-bottom: 40px;
   }
-  &-columns {
-    @media(min-width: 640px) {
-      display: grid;
-      grid-gap: 30px;
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
+  // &-columns {
+  //   @media(min-width: 640px) {
+  //     display: grid;
+  //     grid-gap: 30px;
+  //     grid-template-columns: repeat(3, 1fr);
+  //   }
+  // }
   &-jobtitle {
     margin-bottom: 0;
   }

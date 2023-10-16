@@ -1,3 +1,18 @@
+## Running locally
+
+### Frontend
+The frontend uses gulp to watch the less files and compile them to css.
+
+[gulp-less](https://github.com/gulp-community/gulp-less)
+
+To run gulp:
+`gulp`
+
+### Backend
+The backend is a Flask app.
+Ensure the virtual environment is active, then run:
+`flask`
+
 ## Upgrading dependencies
 
 ### Python dependencies

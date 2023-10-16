@@ -295,7 +295,7 @@ blockquote p {
 }
 .Home-projects {
   margin: 0 auto;
-  max-width: 600px;
+  max-width: 700px;
 }
 .Home-projects-block {
   margin-bottom: 20px;
@@ -343,6 +343,10 @@ blockquote p {
 .Home-projects-githublink {
   text-decoration: underline;
 }
+.Resume-container {
+  margin: 0 auto;
+  max-width: 700px;
+}
 .Resume-date {
   font-size: 0.8em;
 }
@@ -375,13 +379,6 @@ blockquote p {
 }
 .Resume-block {
   margin-bottom: 40px;
-}
-@media (min-width: 640px) {
-  .Resume-columns {
-    display: grid;
-    grid-gap: 30px;
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 .Resume-jobtitle {
   margin-bottom: 0;
