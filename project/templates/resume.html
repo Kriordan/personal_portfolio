@@ -29,95 +29,18 @@
   <div class="Resume-block">
     <h2 class="Resume-header">Professional Experience</h2>
     <div class="Resume-columns">
-      <div>
-        <h3>Keith Riordan</h3>
-        <p class="Resume-jobtitle">Owner | Web Developer</p>
-        <p class="Resume-date">May '14 - Present</p>
-        <ul>
-          <li>Collaborate with clients to help them identify their web-based needs which range from just needing domain names, to hosting, design, development, or all of the above</li>
-          <li>Design and develop sites with custom CMS &amp; DB admin, WordPress, or HTML, CSS and JS</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Lightmatter</h3>
-        <p class="Resume-jobtitle">Senior Software Engineer</p>
-        <p class="Resume-date">May '14 - Present</p>
-        <ul>
-          <li>Collaborated closely with stakeholders to ensure project success in the health space. Conducted research and scoped exercises, planned architecture for HIPAA compliance, made recommendations for team size/structure, and delivered outstanding customer outcomes.</li>
-          <li>Facilitated technical discussions with stakeholders, presented new features, aligned on project objectives, addressed changing needs, and countered potential delays.</li>
-          <li>Architected complex, customized systems from inception to deployment across various programming stacks, including Python with Django / DRF, HTMX/Alpine, React (JavaScript &amp; TypeScript), React Native, Postgres, AWS, Docker, iOS, etc.</li>
-          <li>Troubleshot and resolved complex technical issues, proactively identified and mitigated potential roadblocks to project success. Actively assisted in day-to-day pair programming, code review, and committed code to ensure the project remained on timeline.</li>
-          <li>Prioritized team performance, focused on uplifting underperforming members to meet team standards. Established regular mentorship through 1-1 sessions, offered career guidance, constructive feedback, and tailored growth plans.</li>
-          <li>Led teams of engineers, while managing external contractors, to build, launch, and refine intricate software products, consistently achieved punctual deliverables.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>TomTom</h3>
-        <p class="Resume-jobtitle">Software Engineer</p>
-        <p class="Resume-date">July '20 - September '20</p>
-        <ul>
-          <li>Created internal fullstack tool using React, Material-UI, Express, Puppeteer, and PostgreSQL to allow users to track values on</li>
-          <li>Collaborated with management to identify the best solution for their immediate technical needs</li>
-        </ul>
-      </div>
-      <div>
-        <h3>LeanTaaS</h3>
-        <p class="Resume-jobtitle">Software Engineer (Frontend)</p>
-        <p class="Resume-date">February '20 - May '20</p>
-        <ul>
-          <li>Developed interfaces for hospital management to monitor inpatient beds using Angular 9, Material UI, Docker, and GraphQL</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Enevo</h3>
-        <p class="Resume-jobtitle">Frontend Engineer</p>
-        <p class="Resume-date">September '18 - June '19</p>
-        <ul>
-          <li>Developed web-based applications with AngularJS, Angular 7, Flask, and Docker containers to support companies with waste management</li>
-          <li>Updated customer-facing web application from Angular 4 to 7</li>
-          <li>Developed support ticketing feature for Angular 7 application to prevent customers from redirecting to external web app and improve Google Analytics feedback</li>
-          <li>Leveraged RxJS’s observables and operators to consume API of Teamwork Desk’s ticket management system proxied through Enevo’s Flask API</li>
-          <li>Built UI with HTML, CSS, SCSS, and Material Design pattern library</li>
-          <li>Integrated Basecamp’s Trix rich text editor to improve UX for customers when they are creating support tickets</li>
-          <li>Utilized Jira and Slack to scope out and communicate about features and tickets</li>
-          <li>Used VSCode, zsh, and Sequel Pro for development</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Wayfair</h3>
-        <p class="Resume-jobtitle">UI Developer</p>
-        <p class="Resume-date">November '15 - April '17</p>
-        <ul>
-          <li>Used HTML, PHP 7, React components, and SCSS mixins, extends, and variables to style application flows for the B2B and Trade programs across multiple brands</li>
-          <li>Used Photoshop and Sketch files for design guidance during development</li>
-          <li>Contributed to the transition of a large codebase from legacy CSS and inconsistent design patterns to a scalable SCSS infrastructure leveraging componentized blocks of code</li>
-          <li>Used Slack to communicate on tickets in Engineering department of 800+</li>
-          <li>Used in-house ticketing system to scope, track, and develop tickets during 2-week sprint development intervals</li>
-          <li>Implemented styling for A/B tests to increase lead generation and to identify conversion funnel chokepoints</li>
-          <li>Optimized accessibility/SEO by using semantic HTML</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Handshake</h3>
-        <p class="Resume-jobtitle">Marketing Engineer</p>
-        <p class="Resume-date">May '14 - September '15</p>
-        <ul>
-          <li>Developed and maintained the Handshake brochure site and blog inline with branding guidelines using Django 1.5, LESS, and jQuery</li>
-          <li>Converted all marketing sites to fully responsive builds by using CSS media queries and relative units to improve mobile UX and increase mobile conversions</li>
-          <li>Rapidly deployed custom landing pages and other lead generation supporting content with HTML, LESS, and ES6 from Photoshop and Sketch files</li>
-          <li>Implemented forms, tracking pixels and A/B testing for lead gen with Pardot, Crazyegg, and Optimizely to identify conversion funnel chokepoints</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Bandwdth</h3>
-        <p class="Resume-jobtitle">Mobile Application Publisher</p>
-        <p class="Resume-date">September '12 - November '13</p>
-        <ul>
-          <li>Managed remote team for project with $135,000 budget from concept to production stage</li>
-          <li>Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform</li>
-          <li>Developed and maintained strong healthcare and tech industry knowledge</li>
-        </ul>
-      </div>
+      {% for job in jobs %}
+        <div>
+          <h3>{{ job.company_name }}</h3>
+          <p class="Resume-jobtitle">{{ job.position_title }}</p>
+          <p class="Resume-date">{{ job.start_date }} - {{ job.end_date }}</p>
+          <ul class="Resume-description">
+            {% for bullet in job.description %}
+              <li>{{ bullet }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
     </div>
   </div>
 

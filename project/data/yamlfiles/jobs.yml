@@ -1,0 +1,80 @@
+- company_name: "Keith Riordan"
+  position_title: "Owner | Web Developer"
+  start_date: "May '14"
+  end_date: "Present"
+  description:
+    - "Collaborate with clients to help them identify their web-based needs which range from just needing domain names, to hosting, design, development, or all of the above"
+    - "Design and develop sites with custom CMS & DB admin, WordPress, or HTML, CSS and JS"
+
+- company_name: "Lightmatter"
+  position_title: "Senior Software Engineer"
+  start_date: "May '14"
+  end_date: "Present"
+  description:
+    - "Collaborated closely with stakeholders to ensure project success in the health space. Conducted research and scoped exercises, planned architecture for HIPAA compliance, made recommendations for team size/structure, and delivered outstanding customer outcomes."
+    - "Facilitated technical discussions with stakeholders, presented new features, aligned on project objectives, addressed changing needs, and countered potential delays."
+    - "Architected complex, customized systems from inception to deployment across various programming stacks, including Python with Django / DRF, HTMX/Alpine, React (JavaScript & TypeScript), React Native, Postgres, AWS, Docker, iOS, etc."
+    - "Troubleshot and resolved complex technical issues, proactively identified and mitigated potential roadblocks to project success. Actively assisted in day-to-day pair programming, code review, and committed code to ensure the project remained on timeline."
+    - "Prioritized team performance, focused on uplifting underperforming members to meet team standards. Established regular mentorship through 1-1 sessions, offered career guidance, constructive feedback, and tailored growth plans."
+    - "Led teams of engineers, while managing external contractors, to build, launch, and refine intricate software products, consistently achieved punctual deliverables."
+
+- company_name: "TomTom"
+  position_title: "Software Engineer"
+  start_date: "July '20"
+  end_date: "September '20"
+  description:
+    - "Created internal fullstack tool using React, Material-UI, Express, Puppeteer, and PostgreSQL to allow users to track values on"
+    - "Collaborated with management to identify the best solution for their immediate technical needs"
+
+- company_name: "LeanTaaS"
+  position_title: "Software Engineer (Frontend)"
+  start_date: "February '20"
+  end_date: "May '20"
+  description:
+    - "Developed interfaces for hospital management to monitor inpatient beds using Angular 9, Material UI, Docker, and GraphQL"
+
+- company_name: "Enevo"
+  position_title: "Frontend Engineer"
+  start_date: "September '18"
+  end_date: "June '19"
+  description:
+    - "Developed web-based applications with AngularJS, Angular 7, Flask, and Docker containers to support companies with waste management"
+    - "Updated customer-facing web application from Angular 4 to 7"
+    - "Developed support ticketing feature for Angular 7 application to prevent customers from redirecting to external web app and improve Google Analytics feedback"
+    - "Leveraged RxJS’s observables and operators to consume API of Teamwork Desk’s ticket management system proxied through Enevo’s Flask API"
+    - "Built UI with HTML, CSS, SCSS, and Material Design pattern library"
+    - "Integrated Basecamp’s Trix rich text editor to improve UX for customers when they are creating support tickets"
+    - "Utilized Jira and Slack to scope out and communicate about features and tickets"
+    - "Used VSCode, zsh, and Sequel Pro for development"
+
+- company_name: "Wayfair"
+  position_title: "UI Developer"
+  start_date: "November '15"
+  end_date: "April '17"
+  description:
+    - "Used HTML, PHP 7, React components, and SCSS mixins, extends, and variables to style application flows for the B2B and Trade programs across multiple brands"
+    - "Used Photoshop and Sketch files for design guidance during development"
+    - "Contributed to the transition of a large codebase from legacy CSS and inconsistent design patterns to a scalable SCSS infrastructure leveraging componentized blocks of code"
+    - "Used Slack to communicate on tickets in Engineering department of 800+"
+    - "Used in-house ticketing system to scope, track, and develop tickets during 2-week sprint development intervals"
+    - "Implemented styling for A/B tests to increase lead generation and to identify conversion funnel chokepoints"
+    - "Optimized accessibility/SEO by using semantic HTML"
+
+- company_name: "Handshake"
+  position_title: "Marketing Engineer"
+  start_date: "May '14"
+  end_date: "September '15"
+  description:
+    - "Developed and maintained the Handshake brochure site and blog inline with branding guidelines using Django 1.5, LESS, and jQuery"
+    - "Converted all marketing sites to fully responsive builds by using CSS media queries and relative units to improve mobile UX and increase mobile conversions"
+    - "Rapidly deployed custom landing pages and other lead generation supporting content with HTML, LESS, and ES6 from Photoshop and Sketch files"
+    - "Implemented forms, tracking pixels and A/B testing for lead gen with Pardot, Crazyegg, and Optimizely to identify conversion funnel chokepoints"
+
+- company_name: "Bandwdth"
+  position_title: "Mobile Application Publisher"
+  start_date: "September '12"
+  end_date: "November '13"
+  description:
+    - "Managed remote team for project with $135,000 budget from concept to production stage"
+    - "Conceptualized, drafted, and iterated company business plan during transition from general iOS consultation to a concentration on an in-house mobile healthcare platform"
+    - "Developed and maintained strong healthcare and tech industry knowledge"

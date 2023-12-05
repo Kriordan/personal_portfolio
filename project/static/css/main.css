@@ -383,6 +383,9 @@ blockquote p {
 .Resume-jobtitle {
   margin-bottom: 0;
 }
+.Resume-description li {
+  margin-bottom: 15px;
+}
 .Bookshelf-container {
   padding: 20px;
   text-align: center;
