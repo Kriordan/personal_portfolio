@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1>My Wishlist</h1>
+  {% if wishlist is defined %}
+    <ul>
+      {% for item in wishlist %}
+        <li>
+          <h2>{{ item.name }}</h2>
+          <p>{{ item.description }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No items in wishlist.</p>
+  {% endif %}
+{% endblock body %}

@@ -1,3 +1,17 @@
+"""
+This module initializes the Flask application and its configurations.
+
+It sets up the database connection using SQLAlchemy, configures the S3 client 
+for AWS, and schedules a background job to fetch YouTube playlist data every day.
+
+It also registers blueprints for the 'foyer' and 'jobwizard' modules, and 
+defines error handlers for 404 and 500 status codes.
+
+Functions:
+    inject_now: Injects the current year into the context for templates.
+    not_found: Handles 404 errors.
+    internal_error: Handles 500 errors.
+"""
 import atexit
 import datetime
 import os
@@ -41,10 +55,12 @@ atexit.register(lambda: scheduler.shutdown())
 from project.account.views import account_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
+from project.wishlist.views import wishlist_blueprint
 
 app.register_blueprint(account_blueprint)
 app.register_blueprint(foyer_blueprint)
 app.register_blueprint(jobwizard_blueprint)
+app.register_blueprint(wishlist_blueprint)
 
 
 @app.context_processor
