@@ -234,10 +234,10 @@ blockquote p {
   width: 100px;
 }
 .Header-logo:hover .Header-logo-flipper {
-  transform: rotateY(180deg);
+  transform: rotateY(2160deg);
 }
 .Header-logo-flipper {
-  transition: 0.6s;
+  transition: 3s ease-in-out;
   transform-style: preserve-3d;
   position: relative;
 }
