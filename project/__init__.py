@@ -7,6 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, render_template, request
 from flask_login import LoginManager
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 from .jobs.getyoutubedata import get_yt_playlist_data
@@ -20,6 +21,8 @@ app = Flask(__name__)
 app.config.from_pyfile("_config.py")
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 if os.getenv("ENV") == "development":
     session = boto3.Session(profile_name="personalportfolio")
     s3 = session.client("s3")
