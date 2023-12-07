@@ -33,6 +33,7 @@ import requests
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from botocore.exceptions import ClientError
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from project import db, s3
 
@@ -62,6 +63,27 @@ class User(db.Model):
 
     def __repr__(self) -> str:
         return f"<User {self.username}>"
+
+    def set_password(self, password: str) -> None:
+        """
+        Sets the password of the user.
+
+        Args:
+            password: The password to set.
+        """
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """
+        Checks if the password is correct.
+
+        Args:
+            password: The password to check.
+
+        Returns:
+            True if the password is correct, otherwise False.
+        """
+        return check_password_hash(self.password_hash, password)
 
 
 class WishlistItem(db.Model):
