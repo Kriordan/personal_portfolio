@@ -1,7 +1,31 @@
-import datetime
+"""
+This module defines the data models used in the application.
+
+Classes:
+    User: Represents a user in the system.
+    WishlistItem: Represents an item in a user's wishlist.
+
+Imports:
+    logging: For logging errors and other messages.
+    os: For interacting with the operating system.
+    uuid: For generating unique identifiers.
+    datetime: For working with dates and times.
+    timezone: For working with time zones.
+    Optional: For optional type hinting.
+    urlencode: For encoding URL parameters.
+    requests: For making HTTP requests.
+    sqlalchemy: For interacting with SQL databases.
+    sqlalchemy.orm: For mapping Python classes to database tables.
+    botocore.exceptions: For handling exceptions from the botocore library.
+    project: The main application package.
+    db: The SQLAlchemy database instance.
+    s3: The boto3 S3 client instance.
+"""
+
 import logging
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -9,12 +33,22 @@ import requests
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from botocore.exceptions import ClientError
-from flask import current_app
 
 from project import db, s3
 
 
 class User(db.Model):
+    """
+    The User model represents a user in the system.
+
+    Attributes:
+        id: A unique identifier for the user.
+        username: The username of the user.
+        email: The email address of the user.
+        password_hash: The hashed password of the user.
+        wishlist_items: A list of items in the user's wishlist.
+    """
+
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     username: orm.Mapped[str] = orm.mapped_column(
         sa.String(64), index=True, unique=True
@@ -22,11 +56,49 @@ class User(db.Model):
     email: orm.Mapped[str] = orm.mapped_column(sa.String(120), index=True, unique=True)
     password_hash: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(256))
 
+    wishlist_items: orm.WriteOnlyMapped["WishlistItem"] = orm.relationship(
+        "WishlistItem", back_populates="author"
+    )
+
     def __repr__(self) -> str:
         return f"<User {self.username}>"
 
 
+class WishlistItem(db.Model):
+    """
+    The WishlistItem model represents an item in a user's wishlist.
+
+    Attributes:
+        id: A unique identifier for the wishlist item.
+        body: The body text of the wishlist item.
+        timestamp: The time the wishlist item was created.
+        user_id: The id of the user who owns the wishlist item.
+        author: The user who owns the wishlist item.
+    """
+
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    body: orm.Mapped[str] = orm.mapped_column(sa.String(140))
+    timestamp: orm.Mapped[datetime] = orm.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc)
+    )
+    user_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(User.id), index=True)
+
+    author: orm.Mapped[User] = orm.relationship("User", back_populates="wishlist_items")
+
+
 class Job(db.Model):
+    """
+    The Job model represents a job listing.
+
+    Attributes:
+        id: A unique identifier for the job.
+        title: The title of the job.
+        company_name: The name of the company offering the job.
+        listing_url: The URL of the job listing.
+        listing_image: The image URL of the job listing.
+        posted_date: The date the job was posted.
+    """
+
     __tablename__ = "jobs"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -34,7 +106,7 @@ class Job(db.Model):
     company_name = db.Column(db.String, nullable=False)
     listing_url = db.Column(db.String, nullable=False)
     listing_image = db.Column(db.String, default="")
-    posted_date = db.Column(db.DateTime, default=datetime.datetime.utcnow())
+    posted_date = db.Column(db.DateTime, default=datetime.utcnow())
 
     def __init__(self, title, company_name, listing_url, posted_date):
         self.title = title
