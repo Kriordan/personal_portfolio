@@ -33,12 +33,13 @@ import requests
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from botocore.exceptions import ClientError
+from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from project import db, s3
+from project import db, login_manager, s3
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """
     The User model represents a user in the system.
 
@@ -84,6 +85,11 @@ class User(db.Model):
             True if the password is correct, otherwise False.
         """
         return check_password_hash(self.password_hash, password)
+
+
+@login_manager.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
 
 
 class WishlistItem(db.Model):

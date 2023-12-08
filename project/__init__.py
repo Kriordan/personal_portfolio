@@ -31,15 +31,18 @@ else:
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = "account.login"
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=get_yt_playlist_data, trigger="interval", days=1)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
+from project.account.views import account_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
 
+app.register_blueprint(account_blueprint)
 app.register_blueprint(foyer_blueprint)
 app.register_blueprint(jobwizard_blueprint)
 
