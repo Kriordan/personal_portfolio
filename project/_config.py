@@ -1,9 +1,8 @@
 import os
 
-
 WTF_CSRF_ENABLED = True
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 db_uri = os.getenv("DATABASE_URL")
 if db_uri.startswith("postgres://"):

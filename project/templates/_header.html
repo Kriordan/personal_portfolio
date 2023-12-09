@@ -10,6 +10,15 @@
     <a class="Header-title" href="{{ url_for( 'foyer.home' )}}">
         <h1>Keith Riordan</h1>
     </a>
+
+    {% if not current_user.is_anonymous %}
+      <div class="Header-user">
+        <ul>
+          <li><a href="{{ url_for( 'jobwizard.home' )}}">Job Listings</a></li>
+          <li><a href="{{ url_for( 'account.logout' )}}">Logout</a></li>
+        </ul>
+      </div>
+    {% endif %}
   </div>
 
   <nav class="Header-nav">
