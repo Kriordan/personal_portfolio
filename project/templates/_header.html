@@ -7,22 +7,18 @@
       </div>
     </div>
 
-    <a class="Header-title" href="{{ url_for( 'foyer.home' )}}">
-        <h1>Keith Riordan</h1>
-    </a>
+    <h1 class="Header-title">Keith Riordan</h1>
 
     {% if not current_user.is_anonymous %}
       <div class="Header-user">
-        <ul>
-          <li><a href="{{ url_for( 'jobwizard.home' )}}">Job Listings</a></li>
-          <li><a href="{{ url_for( 'account.logout' )}}">Logout</a></li>
-        </ul>
+        <a href="{{ url_for( 'account.logout' )}}">Logout</a>
       </div>
     {% endif %}
   </div>
 
+  <p class="Header-tagline">Hudson Valley-based web developer</p>
+
   <nav class="Header-nav">
-    <p class="Header-nav-tagline">Hudson Valley-based web developer</p>
     <a
       {% if request.path == '/' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.home' )}}">Projects</a>
@@ -32,5 +28,13 @@
     <a
       {% if request.path == '/contact' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.contact' )}}">Contact</a>
+    {% if not current_user.is_anonymous %}
+      <a
+        {% if request.path == '/jobwizard' %}class="active"{% endif %}
+        href="{{ url_for( 'jobwizard.home' )}}">Jobwizard</a>
+      <a
+        {% if request.path == '/wishlist' %}class="active"{% endif %}
+        href="{{ url_for( 'foyer.home' )}}">Wishlist</a>
+    {% endif %}
   </nav>
 </header>

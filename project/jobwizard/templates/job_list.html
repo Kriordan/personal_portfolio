@@ -1,13 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}Jobwizard{% endblock %}
-
-{% block header %}{% endblock %}
-
 {% block body %}
-  <h1 class="Jobwizard-title">Job Stash</h1>
+  <h1 class="Jobwizard-title">Jobwizard</h1>
 
-  <form class="Jobwizard-form" action="{{ url_for('jobwizard.add_job') }}" method="POST">
+  <form class="Jobwizard-form" action="{{ url_for('jobwizard.create_job') }}" method="POST">
     {{ form.csrf_token }}
 
     <div class="Jobwizard-inputGroup">
@@ -37,7 +33,7 @@
   <div class="Jobwizard-joblist">
     {% for job in jobs %}
       <div class="Jobwizard-job">
-        <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_single_job', job_id = job.id) }}">
+        <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
           <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
           <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
         </a>

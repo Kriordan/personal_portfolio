@@ -15,11 +15,11 @@ jobwizard_blueprint = Blueprint("jobwizard", __name__, template_folder="template
 @login_required
 def home():
     jobs = db.session.query(Job)
-    return render_template("jobwizard.html", form=AddJobForm(request.form), jobs=jobs)
+    return render_template("job_list.html", form=AddJobForm(request.form), jobs=jobs)
 
 
 @jobwizard_blueprint.route("/jobwizard/add/", methods=["GET", "POST"])
-def add_job():
+def create_job():
     error = None
     form = AddJobForm(request.form)
     if form.validate_on_submit():
@@ -37,6 +37,6 @@ def add_job():
 
 
 @jobwizard_blueprint.route("/jobwizard/<job_id>", methods=["GET"])
-def get_single_job(job_id):
+def get_job(job_id):
     job = Job.query.filter_by(id=int(job_id)).first()
     return render_template("job.html", job=job)

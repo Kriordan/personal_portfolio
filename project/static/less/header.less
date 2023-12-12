@@ -1,5 +1,6 @@
 .Header {
   padding-top: 25px;
+  position: relative;
   text-align: center;
   &-logo {
     height: 100px;
@@ -31,13 +32,13 @@
       transform: rotateY(180deg);
     }
   }
+  &-tagline {
+    margin: 0;
+    padding: 15px 0;
+  }
   &-nav {
     border-bottom: 1px solid #e9e9e9;
-    &-tagline {
-      border-bottom: 1px solid #e9e9e9;
-      margin: 0;
-      padding: 15px 0;
-    }
+    border-top: 1px solid #e9e9e9;
     .active {
       color: #000;
       text-decoration: underline;
@@ -50,5 +51,10 @@
           background-color: #eee;
       }
     }
+  }
+  &-user {
+    position: absolute;
+    right: 20px;
+    top: 20px;
   }
 }

@@ -225,6 +225,7 @@ blockquote p {
 }
 .Header {
   padding-top: 25px;
+  position: relative;
   text-align: center;
 }
 .Header-logo {
@@ -257,13 +258,13 @@ blockquote p {
 .Header-logo-back {
   transform: rotateY(180deg);
 }
-.Header-nav {
-  border-bottom: 1px solid #e9e9e9;
-}
-.Header-nav-tagline {
-  border-bottom: 1px solid #e9e9e9;
+.Header-tagline {
   margin: 0;
   padding: 15px 0;
+}
+.Header-nav {
+  border-bottom: 1px solid #e9e9e9;
+  border-top: 1px solid #e9e9e9;
 }
 .Header-nav .active {
   color: #000;
@@ -276,6 +277,11 @@ blockquote p {
 }
 .Header-nav a:hover {
   background-color: #eee;
+}
+.Header-user {
+  position: absolute;
+  right: 20px;
+  top: 20px;
 }
 .footer {
   margin: 50px 0;
@@ -454,7 +460,8 @@ blockquote p {
   max-width: 960px;
 }
 .Jobwizard-title {
-  margin: 20px;
+  margin: 20px 0;
+  text-align: center;
 }
 .Jobwizard-joblist {
   padding: 20px;
@@ -483,14 +490,31 @@ blockquote p {
   justify-content: center;
 }
 .Jobwizard-form {
+  margin: auto;
+  max-width: 540px;
   padding: 20px;
+}
+.Jobwizard-inputGroup {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.Jobwizard-input {
+  height: 50px;
+  margin: 5px 0 20px;
+  padding: 0 10px;
 }
 .Jobwizard-submit {
   background-color: #fff;
   border: 1px solid #000;
   border-radius: 4px;
-  height: 40px;
+  height: 60px;
+  margin-top: 60px;
   width: 100%;
+}
+.Jobwizard-submit:hover {
+  background-color: #000;
+  color: #fff;
 }
 @media screen and (min-width: 720px) {
   .Jobwizard-joblist {
@@ -534,4 +558,35 @@ blockquote p {
 }
 .Media-youtubeCard img {
   width: 100%;
+}
+.Login-form {
+  width: 540px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+}
+.Login-input {
+  width: 100%;
+  height: 40px;
+  margin-bottom: 20px;
+  padding: 0 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+}
+.Login-submit {
+  width: 100%;
+  height: 60px;
+  margin-bottom: 20px;
+  padding: 0 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  cursor: pointer;
+}
+.Login-submit:hover {
+  background-color: #222;
+  color: #eee;
 }
