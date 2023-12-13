@@ -5,6 +5,10 @@
   <form class="Wishlist-form" method="POST">
     {{ form.hidden_tag() }}
     <div>
+        {{ form.title.label }}<br>
+        {{ form.title(class_="Wishlist-input") }}
+    </div>
+    <div>
         {{ form.body.label }}<br>
         {{ form.body(class_="Wishlist-textInput") }}
     </div>
