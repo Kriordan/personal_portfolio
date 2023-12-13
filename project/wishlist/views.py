@@ -13,8 +13,8 @@ wishlist_blueprint = Blueprint(
 
 @wishlist_blueprint.route("/")
 def wishlist_home():
-    # Logic to show wishlist
-    return render_template("wishlist.html", gifts=gifts)
+    form = GiftForm()
+    return render_template("wishlist.html", gifts=gifts, form=form)
 
 
 @wishlist_blueprint.route("/gifts", methods=["POST"])

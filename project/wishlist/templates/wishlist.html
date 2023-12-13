@@ -2,19 +2,11 @@
 
 {% block body %}
   <h1 class="Wishlist-title">My Wishlist</h1>
-  <form method="POST">
+  <form class="Wishlist-form" method="POST">
     {{ form.hidden_tag() }}
     <div>
-        {{ form.name.label }}<br>
-        {{ form.name(size=30) }}
-    </div>
-    <div>
-        {{ form.description.label }}<br>
-        {{ form.description(rows=4, cols=30) }}
-    </div>
-    <div>
-        {{ form.image_url.label }}<br>
-        {{ form.image_url(size=30) }}
+        {{ form.body.label }}<br>
+        {{ form.body(class_="Wishlist-textInput") }}
     </div>
     <input type="submit" value="Submit">
   </form>

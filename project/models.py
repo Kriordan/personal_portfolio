@@ -3,7 +3,7 @@ This module defines the data models used in the application.
 
 Classes:
     User: Represents a user in the system.
-    WishlistItem: Represents an item in a user's wishlist.
+    Gift: Represents an item in a user's wishlist.
 
 Imports:
     logging: For logging errors and other messages.
@@ -48,7 +48,7 @@ class User(UserMixin, db.Model):
         username: The username of the user.
         email: The email address of the user.
         password_hash: The hashed password of the user.
-        wishlist_items: A list of items in the user's wishlist.
+        gifts: A list of items in the user's wishlist.
     """
 
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -58,8 +58,8 @@ class User(UserMixin, db.Model):
     email: orm.Mapped[str] = orm.mapped_column(sa.String(120), index=True, unique=True)
     password_hash: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(256))
 
-    wishlist_items: orm.WriteOnlyMapped["WishlistItem"] = orm.relationship(
-        "WishlistItem", back_populates="author"
+    gifts: orm.WriteOnlyMapped["Gift"] = orm.relationship(
+        "Gift", back_populates="author"
     )
 
     def __repr__(self) -> str:
@@ -92,16 +92,16 @@ def load_user(id):
     return db.session.get(User, int(id))
 
 
-class WishlistItem(db.Model):
+class Gift(db.Model):
     """
-    The WishlistItem model represents an item in a user's wishlist.
+    The Gift model represents an item in a user's wishlist.
 
     Attributes:
-        id: A unique identifier for the wishlist item.
-        body: The body text of the wishlist item.
-        timestamp: The time the wishlist item was created.
-        user_id: The id of the user who owns the wishlist item.
-        author: The user who owns the wishlist item.
+        id: A unique identifier for the gift.
+        body: The body text of the gift.
+        timestamp: The time the gift was created.
+        user_id: The id of the user who owns the gift.
+        author: The user who owns the gift.
     """
 
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -111,7 +111,7 @@ class WishlistItem(db.Model):
     )
     user_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(User.id), index=True)
 
-    author: orm.Mapped[User] = orm.relationship("User", back_populates="wishlist_items")
+    author: orm.Mapped[User] = orm.relationship("User", back_populates="gifts")
 
 
 class Job(db.Model):
