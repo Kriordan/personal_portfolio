@@ -1,0 +1,19 @@
+.Wishlist {
+  &-title {
+    text-align: center;
+  }
+  &-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+  &-item {
+    padding: 10px;
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+  &-image {
+    max-width: 100%;
+    height: auto;
+  }
+}

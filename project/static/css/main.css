@@ -590,3 +590,20 @@ blockquote p {
   background-color: #222;
   color: #eee;
 }
+.Wishlist-title {
+  text-align: center;
+}
+.Wishlist-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+.Wishlist-item {
+  padding: 10px;
+}
+.Wishlist-item:hover {
+  background-color: #f5f5f5;
+}
+.Wishlist-image {
+  max-width: 100%;
+  height: auto;
+}

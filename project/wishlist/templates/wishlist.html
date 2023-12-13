@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1 class="Wishlist-title">My Wishlist</h1>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.name.label }}<br>
+        {{ form.name(size=30) }}
+    </div>
+    <div>
+        {{ form.description.label }}<br>
+        {{ form.description(rows=4, cols=30) }}
+    </div>
+    <div>
+        {{ form.image_url.label }}<br>
+        {{ form.image_url(size=30) }}
+    </div>
+    <input type="submit" value="Submit">
+  </form>
+  {% if gifts is defined %}
+    <section class="Wishlist-list">
+      {% for item in gifts %}
+        <div class="Wishlist-item">
+          <img class="Wishlist-image" src="https://placehold.co/600x400" alt="">
+          <p class="Wishlist-name">{{ item.name }}</p>
+          <p class="Wishlist-description">{{ item.description }}</p>
+        </div>
+      {% endfor %}
+    </section>
+  {% else %}
+    <p>No items in wishlist.</p>
+  {% endif %}
+{% endblock body %}
