@@ -2,25 +2,19 @@
 
 {% block body %}
   <h1 class="Wishlist-title">My Wishlist</h1>
-  <form class="Wishlist-form" method="POST">
-    {{ form.hidden_tag() }}
-    <div>
-        {{ form.title.label }}<br>
-        {{ form.title(class_="Wishlist-input") }}
-    </div>
-    <div>
-        {{ form.body.label }}<br>
-        {{ form.body(class_="Wishlist-textInput") }}
-    </div>
-    <input type="submit" value="Submit">
-  </form>
+  <button id="openModal" class="Wishlist-modal" onClick="openModal('GiftForm')">+</button>
+  {% include "modal.html" %}
   {% if gifts is defined %}
     <section class="Wishlist-list">
       {% for item in gifts %}
         <div class="Wishlist-item">
-          <img class="Wishlist-image" src="https://placehold.co/600x400" alt="">
-          <p class="Wishlist-name">{{ item.name }}</p>
-          <p class="Wishlist-description">{{ item.description }}</p>
+          {% if item.image_url %}
+            <img class="Wishlist-image" src="{{ item.image_url }}" alt="{{ item.title }}">
+          {% else %}
+            <img class="Wishlist-image" src="{{ url_for('static', filename='img/icons/question.svg') }}" alt="{{ item.title }}">
+          {% endif %}
+          <p class="Wishlist-name">{{ item.title }}</p>
+          <p class="Wishlist-description">{{ item.body }}</p>
         </div>
       {% endfor %}
     </section>

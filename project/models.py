@@ -107,6 +107,9 @@ class Gift(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     title: orm.Mapped[str] = orm.mapped_column(sa.String(140))
     body: orm.Mapped[str] = orm.mapped_column(sa.String(140))
+    image_url: orm.Mapped[Optional[str]] = orm.mapped_column(
+        sa.String(140), nullable=True
+    )
     timestamp: orm.Mapped[datetime] = orm.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc)
     )
