@@ -7,21 +7,12 @@ window.onclick = function (event) {
   }
 };
 
-function openModal(formName) {
+function openModal() {
   modal.style.display = "block";
   document.body.style.overflow = "hidden";
+}
 
-  fetch("/get-form?form=" + formName)
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.text();
-    })
-    .then(function (html) {
-      document.getElementById("modal-body").innerHTML = html;
-    })
-    .catch(function (error) {
-      console.error("Problem with fetch operation:", error);
-    });
+function closeModal() {
+  modal.style.display = "none";
+  document.body.style.overflow = "auto";
 }

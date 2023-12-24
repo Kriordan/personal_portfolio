@@ -2,7 +2,7 @@
 
 {% block body %}
   <h1 class="Wishlist-title">My Wishlist</h1>
-  <button id="openModal" class="Wishlist-modal" onClick="openModal('GiftForm')">+</button>
+  <button id="openModal" class="Wishlist-modal" onclick="openModal()">+</button>
   {% include "modal.html" %}
   {% if gifts is defined %}
     <section class="Wishlist-list">

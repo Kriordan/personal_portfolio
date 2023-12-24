@@ -74,8 +74,6 @@
 
     {% block footer %}{% include "_footer.html" %}{% endblock %}
     
-    {% include "modal.html" %}
-
     <script src="{{ url_for('static', filename='js/vendor/jquery-3.3.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
