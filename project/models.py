@@ -39,6 +39,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from project import db, login_manager, s3
 
 
+@login_manager.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
+
+
 class User(UserMixin, db.Model):
     """
     The User model represents a user in the system.
@@ -85,11 +90,6 @@ class User(UserMixin, db.Model):
             True if the password is correct, otherwise False.
         """
         return check_password_hash(self.password_hash, password)
-
-
-@login_manager.user_loader
-def load_user(id):
-    return db.session.get(User, int(id))
 
 
 class Gift(db.Model):

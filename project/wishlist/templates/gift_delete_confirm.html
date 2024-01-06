@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1>Are you sure you want to delete {{ gift.title }}?</h1>
+  {% if gift.image_url %}
+    <img class="Wishlist-image" src="{{ gift.image_url }}" alt="{{ gift.title }}">
+  {% else %}
+    <img class="Wishlist-image" src="{{ url_for('static', filename='img/icons/question.svg') }}" alt="{{ gift.title }}">
+  {% endif %}
+  <p>{{ gift.body }}</p>
+  <form action="{{ url_for( 'wishlist.gift_delete', item_id=gift['id']) }}" method="post">
+    <input type="submit" value="Delete" />
+  </form>
+{% endblock body %}

@@ -8,6 +8,7 @@
     <section class="Wishlist-list">
       {% for item in gifts %}
         <div class="Wishlist-item">
+        <a href="{{ url_for( 'wishlist.gift_delete', item_id=item['id'] ) }}" class="Wishlist-delete">X</a>
           {% if item.image_url %}
             <img class="Wishlist-image" src="{{ item.image_url }}" alt="{{ item.title }}">
           {% else %}

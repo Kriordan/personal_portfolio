@@ -3,7 +3,7 @@ import os
 
 import boto3
 from botocore.exceptions import NoCredentialsError
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from project import db
@@ -71,7 +71,13 @@ def gift_update(item_id):
     return "Item updated in wishlist"
 
 
-@wishlist_blueprint.route("/gifts/<int:item_id>", methods=["DELETE"])
+@wishlist_blueprint.route("/gifts/<int:item_id>/delete", methods=["GET", "POST"])
 def gift_delete(item_id):
-    # Logic to remove item from wishlist
-    return "Item removed from wishlist"
+    gift = db.get_or_404(Gift, item_id)
+
+    if request.method == "POST":
+        db.session.delete(gift)
+        db.session.commit()
+        return redirect(url_for("wishlist.wishlist_home"))
+
+    return render_template("gift_delete_confirm.html", gift=gift)

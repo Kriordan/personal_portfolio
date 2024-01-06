@@ -1,5 +1,6 @@
 .Wishlist {
   &-title {
+    margin: 20px 0;
     text-align: center;
   }
   &-modal {
@@ -23,13 +24,23 @@
   &-list {
     display: flex;
     flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 40px;
   }
   &-item {
-    flex-basis: calc(33%);
+    background-color: #f5f5f5;
+    flex: 1 1 calc((100% / 3) - 10px);
     padding: 10px;
-    &:hover {
-      background-color: #f5f5f5;
-    }
+    position: relative;
+  }
+  &-delete {
+    border-radius: 50%;
+    display: block;
+    height: 30px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 30px;
   }
   &-image {
     width: 100%;
