@@ -224,6 +224,54 @@ blockquote p {
     font-size: 1.4375rem;
   }
 }
+.Button {
+  background-color: #ccc;
+  border: none;
+  border-radius: 5px;
+  height: 40px;
+  width: 120px;
+}
+.Button:hover,
+.Button:focus {
+  cursor: pointer;
+  background-color: #222;
+  color: #eee;
+}
+.Button.fullwidth {
+  width: 100%;
+}
+.Button.outlined {
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+.Button.outlined:hover,
+.Button.outlined:focus {
+  background-color: #eee;
+  color: #ccc;
+}
+.Form {
+  max-width: 540px;
+  padding: 20px;
+}
+.Form-input,
+.Form-textInput {
+  width: 100%;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+}
+.Form-input {
+  height: 40px;
+  padding: 0 10px;
+}
+.Form-textInput {
+  height: 100px;
+  padding: 10px;
+}
+.Form-fileInput {
+  margin-bottom: 20px;
+}
 .Header {
   padding-top: 25px;
   position: relative;
@@ -416,7 +464,9 @@ blockquote p {
 .Bookshelf-takes.is-open {
   height: 100px;
 }
-.Contact {
+.Contact-container {
+  margin: auto;
+  max-width: 700px;
   padding: 15px;
 }
 .Contact-title {
@@ -657,61 +707,15 @@ blockquote p {
   max-width: 540px;
   overflow: hidden;
 }
-.Modal-form {
-  margin: 0 auto;
-}
 .Modal-title {
   margin-bottom: 20px;
   padding-left: 20px;
   padding-top: 20px;
 }
-.Modal-inputGroup {
-  padding: 0 20px;
-}
-.Modal-input,
-.Modal-textInput {
-  width: 100%;
-  margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #fff;
-}
-.Modal-input {
-  height: 40px;
-  padding: 0 10px;
-}
-.Modal-textInput {
-  height: 100px;
-  padding: 10px;
-}
-.Modal-fileInput {
-  margin-bottom: 20px;
-}
 .Modal-actions {
   background-color: #eee;
   display: flex;
+  gap: 20px;
   justify-content: flex-end;
   padding: 20px;
-}
-.Modal-close {
-  background-color: #fff;
-}
-.Modal-submit {
-  margin-left: 20px;
-  background-color: #ccc;
-}
-.Modal-close,
-.Modal-submit {
-  border: none;
-  border-radius: 5px;
-  height: 40px;
-  width: 120px;
-}
-.Modal-close:hover,
-.Modal-submit:hover,
-.Modal-close:focus,
-.Modal-submit:focus {
-  cursor: pointer;
-  background-color: #222;
-  color: #eee;
 }

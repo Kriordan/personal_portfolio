@@ -1,0 +1,3 @@
+{% macro button(label, classes, onclick, type="button") %}
+  <button class="Button {{ classes }}" type="{{ type }}" onclick={{ onclick }}>{{ label }}</button>
+{% endmacro %}

@@ -1,0 +1,27 @@
+{% from "_button.html" import button with context %}
+
+{% macro render_form(form, action, method, external_submit=False) %}
+  <form class="Form" action="{{ action }}" method="{{ method }}" enctype="multipart/form-data">
+  {{ form.csrf_token }}
+  {% for field in form if not field.name == 'csrf_token' %}
+    <div class="Form-inputGroup">
+      {% if field.type != 'CSRFTokenField' %}
+        {{ field.label }}
+      {% endif %}
+      {% if field.type == 'TextAreaField' %}
+        {{ field(class_="Form-textInput") }}
+      {% elif field.type == 'FileField' %}
+        {{ field(class_="Form-fileInput") }}
+      {% elif field.type == "StringField" %}
+        {{ field(class_="Form-input") }}
+      {% endif %}
+      {% for error in field.errors %}
+        <small style="color: red;">{{ error }}</small>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  {% if not external_submit %}
+    {{ button('Submit', 'Button-submit') }}
+  {% endif%}
+  </form>
+{% endmacro %}

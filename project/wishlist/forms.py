@@ -8,4 +8,3 @@ class GiftForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
     body = TextAreaField("Body", validators=[DataRequired()])
     image = FileField("Image", validators=[FileAllowed(["jpg", "jpeg", "png"])])
-    submit = SubmitField("Submit")

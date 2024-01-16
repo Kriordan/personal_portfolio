@@ -1,0 +1,25 @@
+.Button {
+  background-color: #ccc;
+  border: none;
+  border-radius: 5px;
+  height: 40px;
+  width: 120px;
+  &:hover,
+  &:focus {
+    cursor: pointer;
+    background-color: #222;
+    color: #eee;
+  }
+  &.fullwidth {
+    width: 100%;
+  }
+  &.outlined {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    &:hover,
+    &:focus {
+      background-color: #eee;
+      color: #ccc;
+    }
+  }
+}

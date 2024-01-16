@@ -1,33 +1,15 @@
+{% from "_form.html" import render_form with context %}
+{% from "_button.html" import button with context %}
+
 <div id="modal" class="Modal">
   <div class="Modal-content">
     <div class="Modal-body">
       <h2 class="Modal-title">{{ form_title }}</h2>
-      <form class="Modal-form" method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
-        {% for field in form if not field.name == "csrf_token" %}
-          {% if field.type == "TextAreaField" %}
-            <div class="Modal-inputGroup">
-              {{ field.label }}<br>
-              {{ field(class_="Modal-textInput") }}
-            </div>
-          {% elif field.type == "FileField" %}
-            <div class="Modal-inputGroup">
-              {{ field.label }}<br>
-              {{ field(class_="Modal-fileInput") }}
-            </div>
-          {% elif field.type == "StringField" %}
-            <div class="Modal-inputGroup">
-              {{ field.label }}<br>
-              {{ field(class_="Modal-input") }}
-            </div>
-          {% elif field.type == "SubmitField" %}
-          {% endif %}
-        {% endfor %}
-        <div class="Modal-actions">
-          <button type="button" class="Modal-close" onclick="closeModal()">Cancel</button>
-          {{ form.submit(class_="Modal-submit") }}
-        </div>
-      </form>
+      {{ render_form(form, method="POST", external_submit=True) }}
+      <div class="Modal-actions">
+        {{ button('Cancel', 'outlined', onclick="closeModal()") }}
+        {{ button('Submit') }}
+      </div>
     </div>
   </div>
 </div>

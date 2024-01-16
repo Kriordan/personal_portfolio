@@ -65,17 +65,17 @@
         a.appendChild(r);
       })(window, document, "//static.hotjar.com/c/hotjar-", ".js?sv=");
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.1/dist/cdn.min.js"></script>
   </head>
   <body>
     {% block header %}{% include "_header.html" %}{% endblock %}
-
+    
     <div class="container">{% block body %}{% endblock %}</div>
-
+    
     {% block footer %}{% include "_footer.html" %}{% endblock %}
     
     <script src="{{ url_for('static', filename='js/vendor/jquery-3.3.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     {% block scripts %}{% endblock %}
   </body>
 </html>

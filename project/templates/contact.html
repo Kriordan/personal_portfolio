@@ -1,41 +1,41 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<div class="Contact">
+<div class="Contact-container">
   {% if success %}
     <p>Thanks for your message. I'll be getting back to you shortly!</p>
   {% else %}
     <h2 class="Contact-title">Let's discuss your next project!</h2>
-    <form class="Contact-form" action="{{ url_for('foyer.contact') }}" method="POST">
+    <form class="Form" action="{{ url_for('foyer.contact') }}" method="POST">
       {{ form.csrf_token }}
 
-      <div class="Contact-inputGroup">
-        {{ form.name.label(class_="Contact-label") }}
-        {{ form.name(class_="Contact-input") }}
+      <div class="Form-inputGroup">
+        {{ form.name.label(class_="Form-label") }}
+        {{ form.name(class_="Form-input") }}
         {% for error in form.name.errors %}
           <small style="color: red;">{{ error }}</small>
         {% endfor %}
       </div>
 
-      <div class="Contact-inputGroup">
-        {{ form.email.label(class_="Contact-label") }}
-        {{ form.email(class_="Contact-input") }}
+      <div class="Form-inputGroup">
+        {{ form.email.label(class_="Form-label") }}
+        {{ form.email(class_="Form-input") }}
         {% for error in form.email.errors %}
           <small style="color: red;">{{ error }}</small>
         {% endfor %}
       </div>
 
-      <div class="Contact-inputGroup">
-        {{ form.subject.label(class_="Contact-label") }}
-        {{ form.subject(class_="Contact-input") }}
+      <div class="Form-inputGroup">
+        {{ form.subject.label(class_="Form-label") }}
+        {{ form.subject(class_="Form-input") }}
         {% for error in form.subject.errors %}
           <small style="color: red;">{{ error }}</small>
         {% endfor %}
       </div>
 
-      <div class="Contact-inputGroup">
-        {{ form.message.label(class_="Contact-label") }}
-        {{ form.message(class_="Contact-textarea") }}
+      <div class="Form-inputGroup">
+        {{ form.message.label(class_="Form-label") }}
+        {{ form.message(class_="Form-textInput") }}
         {% for error in form.message.errors %}
           <small style="color: red;">{{ error }}</small>
         {% endfor %}

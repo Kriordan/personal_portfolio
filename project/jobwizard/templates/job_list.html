@@ -1,47 +1,23 @@
+{% from "_form.html" import render_form with context %}
 {% extends 'base.html' %}
 
 {% block body %}
-  <h1 class="Jobwizard-title">Jobwizard</h1>
-
-  <form class="Jobwizard-form" action="{{ url_for('jobwizard.create_job') }}" method="POST">
-    {{ form.csrf_token }}
-
-    <div class="Jobwizard-inputGroup">
-      {{ form.title.label}}
-      {{ form.title(class_="Jobwizard-input") }}
-      {% for error in form.title.errors %}
-        <small style="color: red;">{{ error }}</small>
+  <div class="JobList-container">
+    <h1 class="Jobwizard-title">Jobwizard</h1>
+    {{ render_form(form, action=url_for('jobwizard.create_job')) }}
+    <div class="Jobwizard-joblist">
+      {% for job in jobs %}
+        <div class="Jobwizard-job">
+          <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
+            <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
+            <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
+          </a>
+          <a class="Jobwizard-joblistinglink" href={{ job.listing_url }} target="_blank">
+            <span>link</span>
+          </a>
+        </div>
       {% endfor %}
     </div>
-    <div class="Jobwizard-inputGroup">
-      {{ form.company_name.label }}
-      {{ form.company_name(class_="Jobwizard-input") }}
-      {% for error in form.company_name.errors %}
-        <small style="color: red;">{{ error }}</small>
-      {% endfor %}
-    </div>
-    <div class="Jobwizard-inputGroup">
-      {{ form.listing_url.label }}
-      {{ form.listing_url(class_="Jobwizard-input") }}
-      {% for error in form.listing_url.errors %}
-        <small style="color: red;">{{ error }}</small>
-      {% endfor %}
-    </div>
-    {{ form.submit(class_="Jobwizard-submit") }}
-  </form>
-
-  <div class="Jobwizard-joblist">
-    {% for job in jobs %}
-      <div class="Jobwizard-job">
-        <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
-          <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
-          <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
-        </a>
-        <a class="Jobwizard-joblistinglink" href={{ job.listing_url }} target="_blank">
-          <span>link</span>
-        </a>
-      </div>
-    {% endfor %}
   </div>
 {% endblock %}
 
