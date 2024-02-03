@@ -1,3 +1,4 @@
+{% from "_form.html" import render_form with context %}
 {% extends 'base.html' %}
 
 {% block body %}
@@ -6,43 +7,7 @@
     <p>Thanks for your message. I'll be getting back to you shortly!</p>
   {% else %}
     <h2 class="Contact-title">Let's discuss your next project!</h2>
-    <form class="Form" action="{{ url_for('foyer.contact') }}" method="POST">
-      {{ form.csrf_token }}
-
-      <div class="Form-inputGroup">
-        {{ form.name.label(class_="Form-label") }}
-        {{ form.name(class_="Form-input") }}
-        {% for error in form.name.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-
-      <div class="Form-inputGroup">
-        {{ form.email.label(class_="Form-label") }}
-        {{ form.email(class_="Form-input") }}
-        {% for error in form.email.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-
-      <div class="Form-inputGroup">
-        {{ form.subject.label(class_="Form-label") }}
-        {{ form.subject(class_="Form-input") }}
-        {% for error in form.subject.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-
-      <div class="Form-inputGroup">
-        {{ form.message.label(class_="Form-label") }}
-        {{ form.message(class_="Form-textInput") }}
-        {% for error in form.message.errors %}
-          <small style="color: red;">{{ error }}</small>
-        {% endfor %}
-      </div>
-
-      {{ form.submit(class_="Contact-submit") }}
-    </form>
+    {{ render_form(form, action=url_for('foyer.contact')) }}
   {% endif %}
 </div>
 {% endblock %}

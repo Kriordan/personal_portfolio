@@ -263,6 +263,7 @@ blockquote p {
 .Form {
   max-width: 540px;
   padding: 20px;
+  width: 100%;
 }
 .Form-input, .Form-textInput {
   width: 100%;
@@ -479,6 +480,9 @@ blockquote p {
 }
 
 .Contact-container {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
   margin: auto;
   max-width: 700px;
   padding: 15px;
