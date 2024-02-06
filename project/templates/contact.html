@@ -7,7 +7,7 @@
     <p>Thanks for your message. I'll be getting back to you shortly!</p>
   {% else %}
     <h2 class="Contact-title">Let's discuss your next project!</h2>
-    {{ render_form(form, action=url_for('foyer.contact')) }}
+    {{ render_form(form, action=url_for('foyer.contact'), method="POST") }}
   {% endif %}
 </div>
 {% endblock %}

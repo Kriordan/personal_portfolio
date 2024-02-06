@@ -12,6 +12,7 @@ Functions:
     not_found: Handles 404 errors.
     internal_error: Handles 500 errors.
 """
+
 import atexit
 import datetime
 import os
@@ -28,7 +29,7 @@ from .jobs.getyoutubedata import get_yt_playlist_data
 
 ENV_FILE = find_dotenv()
 if ENV_FILE:
-    load_dotenv(ENV_FILE)
+    load_dotenv(ENV_FILE, override=True)
 
 app = Flask(__name__)
 

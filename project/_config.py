@@ -10,4 +10,6 @@ if db_uri.startswith("postgres://"):
 SQLALCHEMY_DATABASE_URI = db_uri
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
 DEBUG = False

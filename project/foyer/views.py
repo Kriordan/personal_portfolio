@@ -1,14 +1,14 @@
 """This file defines the routes for the foyer blueprint."""
+
 import json
-import os
 from pathlib import Path
 
 import yaml
-from flask import Blueprint, render_template
-from python_http_client import exceptions
+from flask import Blueprint, current_app, render_template
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Content, From, Mail, MimeType, Subject, To
+from sendgrid.helpers.mail import Mail
 
+from .email_templates import get_contact_email_content
 from .forms import ContactForm
 
 foyer_blueprint = Blueprint("foyer", __name__)
@@ -40,19 +40,23 @@ def contact():
     form = ContactForm()
 
     if form.validate_on_submit():
-        message = Mail()
-        message.from_email = From(form.email.data, form.name.data)
-        message.to = To("keith.riordan@gmail.com", "Keith Riordan", p=0)
-        message.subject = Subject(form.subject.data)
-        message.content = Content(MimeType.html, form.message.data)
+        name = form.name.data
+        email = form.email.data
+        message = form.message.data
+
+        html_content = get_contact_email_content(name, email, message)
+
+        message = Mail(
+            from_email="hello@keithriordan.com",
+            to_emails="hello@keithriordan.com",
+            subject=f"New message from {name} at {email}",
+            html_content=html_content,
+        )
         try:
-            sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-            response = sg.send(message)
-            print(f"The response status code was: {response.status_code}")
-            print(f"The response body was: {response.body}")
-            print(f"The response headers were: {response.headers}")
+            sg = SendGridAPIClient(current_app.config["SENDGRID_API_KEY"])
+            sg.send(message)
             return render_template("contact.html", success=True)
-        except exceptions.BadRequestsError as err:
+        except Exception as err:
             print(f"There was an error sending the contact email: {err}")
 
     return render_template("contact.html", form=form)
