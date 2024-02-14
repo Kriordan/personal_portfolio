@@ -2,17 +2,17 @@
 {% extends 'base.html' %}
 
 {% block body %}
-  <div class="JobList-container">
-    <h1 class="Jobwizard-title">Jobwizard</h1>
+  <div class="Joblist-container">
+    <h1 class="Joblist-title">Jobwizard</h1>
     {{ render_form(form, action=url_for('jobwizard.create_job')) }}
-    <div class="Jobwizard-joblist">
+    <div class="Joblist-joblist">
       {% for job in jobs %}
-        <div class="Jobwizard-job">
-          <a class="Jobwizard-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
-            <h4 class="Jobwizard-jobtitle">{{ job.title }}</h4>
-            <p class="Jobwizard-jobcompany">{{ job.company_name }}</p>
+        <div class="Joblist-job">
+          <a class="Joblist-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
+            <h4 class="Joblist-jobtitle">{{ job.title }}</h4>
+            <p class="Joblist-jobcompany">{{ job.company_name }}</p>
           </a>
-          <a class="Jobwizard-joblistinglink" href={{ job.listing_url }} target="_blank">
+          <a class="Joblist-joblistinglink" href={{ job.listing_url }} target="_blank">
             <span>link</span>
           </a>
         </div>

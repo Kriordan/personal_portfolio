@@ -1,7 +1,11 @@
-.Jobwizard {
+.Joblist {
     &-container {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
         margin: auto;
-        max-width: 960px;
+        max-width: 700px;
+        padding: 15px;
     }
     &-title {
         margin: 20px 0;

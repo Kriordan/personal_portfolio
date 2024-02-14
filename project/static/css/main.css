@@ -523,32 +523,36 @@ blockquote p {
   background-color: #444;
 }
 
-.Jobwizard-container {
+.Joblist-container {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
   margin: auto;
-  max-width: 960px;
+  max-width: 700px;
+  padding: 15px;
 }
-.Jobwizard-title {
+.Joblist-title {
   margin: 20px 0;
   text-align: center;
 }
-.Jobwizard-joblist {
+.Joblist-joblist {
   padding: 20px;
 }
-.Jobwizard-job {
+.Joblist-job {
   border: 1px solid #ddd;
   display: flex;
   margin-bottom: 20px;
 }
-.Jobwizard-joblink {
+.Joblist-joblink {
   display: block;
   flex-basis: 75%;
   padding: 20px;
 }
-.Jobwizard-jobcompany {
+.Joblist-jobcompany {
   color: #777;
   margin-bottom: 0;
 }
-.Jobwizard-joblistinglink {
+.Joblist-joblistinglink {
   align-items: center;
   background-color: #e4e4e4;
   box-shadow: inset 4px 0px 2px 0px #ddd;
@@ -557,22 +561,22 @@ blockquote p {
   flex-basis: 25%;
   justify-content: center;
 }
-.Jobwizard-form {
+.Joblist-form {
   margin: auto;
   max-width: 540px;
   padding: 20px;
 }
-.Jobwizard-inputGroup {
+.Joblist-inputGroup {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
-.Jobwizard-input {
+.Joblist-input {
   height: 50px;
   margin: 5px 0 20px;
   padding: 0 10px;
 }
-.Jobwizard-submit {
+.Joblist-submit {
   background-color: #fff;
   border: 1px solid #000;
   border-radius: 4px;
@@ -580,16 +584,16 @@ blockquote p {
   margin-top: 60px;
   width: 100%;
 }
-.Jobwizard-submit:hover {
+.Joblist-submit:hover {
   background-color: #000;
   color: #fff;
 }
 @media screen and (min-width: 720px) {
-  .Jobwizard-joblist {
+  .Joblist-joblist {
     display: flex;
     flex-direction: column;
   }
-  .Jobwizard-job {
+  .Joblist-job {
     border: 1px solid #ddd;
     margin-bottom: 20px;
   }
