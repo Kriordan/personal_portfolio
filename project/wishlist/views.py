@@ -4,7 +4,7 @@ import os
 import boto3
 from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, redirect, render_template, request, url_for
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from project import db
 from project.models import Gift
@@ -29,6 +29,7 @@ def upload_image_to_s3(file):
 
 
 @wishlist_blueprint.route("/", methods=["GET", "POST"])
+@login_required
 def wishlist_home():
     form = GiftForm()
     if form.validate_on_submit():
@@ -55,23 +56,27 @@ def wishlist_home():
 
 
 @wishlist_blueprint.route("/gifts", methods=["POST"])
+@login_required
 def gift_create():
     return "Item added to wishlist"
 
 
 @wishlist_blueprint.route("/gifts/<int:item_id>", methods=["GET"])
+@login_required
 def gift_detail(item_id):
     # Logic to read a single wishlist item
     return "Item read from wishlist"
 
 
 @wishlist_blueprint.route("/gifts/<int:item_id>", methods=["PUT"])
+@login_required
 def gift_update(item_id):
     # Logic to update item in wishlist
     return "Item updated in wishlist"
 
 
 @wishlist_blueprint.route("/gifts/<int:item_id>/delete", methods=["GET", "POST"])
+@login_required
 def gift_delete(item_id):
     gift = db.get_or_404(Gift, item_id)
 
