@@ -24,6 +24,7 @@ from flask import Flask, render_template, request
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from flask_talisman import Talisman
 
 from .jobs.getyoutubedata import get_yt_playlist_data
 
@@ -37,6 +38,8 @@ app.config.from_pyfile("_config.py")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+Talisman(app)
 
 if os.getenv("ENV") == "development":
     session = boto3.Session(profile_name="personalportfolio")
