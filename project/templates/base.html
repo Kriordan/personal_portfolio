@@ -4,11 +4,11 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
 
-    <title>Keith Riordan | {% block title %}Portfolio{% endblock %}</title>
+    <title>Keith Riordan | {% block title %}Portfolio{% endblock title %}</title>
 
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename="img/icons/apple-touch-icon.png") }}" />
+    <link rel="shortcut icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename="img/icons/favicon-32x32.png") }}" />
+    <link rel="shortcut icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename="img/icons/favicon-16x16.png") }}" />
 
     <link
       href="https://fonts.googleapis.com/css?family=Fauna+One"
@@ -48,15 +48,15 @@
     </script>
   </head>
   <body>
-    {% block header %}{% include "_header.html" %}{% endblock %}
+    {% block header %}{% include "_header.html" %}{% endblock header %}
     
-    <div class="container">{% block body %}{% endblock %}</div>
+    <div class="container">{% block body %}{% endblock body %}</div>
     
-    {% block footer %}{% include "_footer.html" %}{% endblock %}
+    {% block footer %}{% include "_footer.html" %}{% endblock footer %}
     
     <script src="{{ url_for('static', filename='js/vendor/jquery-3.3.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-    {% block scripts %}{% endblock %}
+    {% block scripts %}{% endblock scripts %}
   </body>
 </html>
