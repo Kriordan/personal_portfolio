@@ -3,7 +3,7 @@ import datetime
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import login_required
 
-from project import db
+from project.database import db
 from project.models import Job
 
 from .forms import AddJobForm

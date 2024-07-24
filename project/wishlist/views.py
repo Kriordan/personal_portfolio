@@ -6,7 +6,7 @@ from botocore.exceptions import NoCredentialsError
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from project import db
+from project.database import db
 from project.models import Gift
 
 from .forms import GiftForm
@@ -47,7 +47,9 @@ def wishlist_home():
 
         return redirect(url_for("wishlist.wishlist_home"))
 
-    gifts = db.session.execute(db.select(Gift)).scalars()
+    gifts = db.session.execute(
+        db.select(Gift).filter_by(user_id=current_user.id)
+    ).scalars()
     form_title = "Add a gift"
 
     return render_template(

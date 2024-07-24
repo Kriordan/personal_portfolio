@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlencode
 
+import boto3
 import requests
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -36,12 +37,7 @@ from botocore.exceptions import ClientError
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from project import db, login_manager, s3
-
-
-@login_manager.user_loader
-def load_user(id):
-    return db.session.get(User, int(id))
+from project.database import db
 
 
 class User(UserMixin, db.Model):
@@ -150,6 +146,12 @@ class Job(db.Model):
         return "<Job %r>" % self.company_name
 
     def render_screenshot(self):
+        if os.getenv("ENV") == "development":
+            session = boto3.Session(profile_name="personalportfolio")
+            s3 = session.client("s3")
+        else:
+            s3 = boto3.client("s3")
+
         apileap_url = "https://apileap.com/api/screenshot/v1/urltoimage?"
         params = urlencode(
             {

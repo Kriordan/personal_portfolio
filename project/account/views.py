@@ -6,8 +6,8 @@ import sqlalchemy as sa
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
 
-from project import db
 from project.account.forms import LoginForm
+from project.database import db
 from project.models import User
 
 account_blueprint = Blueprint("account", __name__, template_folder="templates")
