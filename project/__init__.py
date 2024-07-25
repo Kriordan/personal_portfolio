@@ -13,10 +13,11 @@ Functions:
     internal_error: Handles 500 errors.
 """
 
-import atexit
 import datetime
 import os
+from http import HTTPStatus
 
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, render_template, request
@@ -27,9 +28,9 @@ from project.jobwizard.views import jobwizard_blueprint
 from project.wishlist.views import wishlist_blueprint
 
 from .commands import create_user
+from .csp import csp
 from .database import db
-from .extensions import login_manager, migrate, talisman
-from .jobs.getyoutubedata import get_yt_playlist_data
+from .extensions import login_manager, migrate, scheduler, talisman
 from .models import User
 
 ENV_FILE = find_dotenv()
@@ -49,12 +50,9 @@ def create_app(test_config=None):
     register_blueprints(app)
     register_commands(app)
     register_jinja_env(app)
-    # register_errorhandlers(app)
-
-    # scheduler = BackgroundScheduler()
-    # scheduler.add_job(func=get_yt_playlist_data, trigger="interval", days=1)
-    # scheduler.start()
-    # atexit.register(lambda: scheduler.shutdown())
+    register_errorhandlers(app)
+    register_tasks()
+    register_events()
 
     return app
 
@@ -70,31 +68,7 @@ def register_extensions(app):
         return db.session.get(User, int(id))
 
     migrate.init_app(app, db)
-
-    csp = {
-        "default-src": ["'self'"],
-        "style-src": ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
-        "script-src": [
-            "'self'",
-            "https://www.googletagmanager.com",
-            "https://*.hotjar.com",
-            "https://cdn.jsdelivr.net",  # Add this line for AlpineJS CDN
-            "'unsafe-inline'",
-        ],
-        "img-src": [
-            "'self'",
-            f'https://{os.getenv("WISHLIST_S3_BUCKET")}.s3.amazonaws.com',
-        ],
-        "font-src": ["'self'", "https://fonts.gstatic.com"],
-        "connect-src": [
-            "'self'",
-            "https://*.google-analytics.com",
-            "https://stats.g.doubleclick.net",
-            "https://*.hotjar.com",
-            "https://*.hotjar.io",
-            "wss://*.hotjar.com",
-        ],
-    }
+    scheduler.init_app(app)
     talisman.init_app(app, content_security_policy=csp)
 
 
@@ -117,27 +91,25 @@ def register_jinja_env(app):
     )
 
 
-# @app.context_processor
-# def inject_now():
-#     return {"now": datetime.datetime.now().strftime("%Y")}
+def register_tasks():
+    from . import tasks  # noqa
 
-# @app.errorhandler(404)
-# def not_found(error):
-#     if app.debug is not True:
-#         now = datetime.datetime.now()
-#         r = request.url
-#         with open("error.log", "a") as f:
-#             current_timestamp = now.strftime("%d-%m-%Y %H:%M:%S")
-#             f.write("\n404 error at {}: {}".format(current_timestamp, r))
-#     return render_template("404.html"), 404
+    scheduler.start()
 
-# @app.errorhandler(500)
-# def internal_error(error):
-#     db.session.rollback()
-#     if app.debug is not True:
-#         now = datetime.datetime.now()
-#         r = request.url
-#         with open("error.log", "a") as f:
-#             current_timestamp = now.strftime("%d-%m-%Y %H:%M:%S")
-#             f.write("\n500 error at {}: {}".format(current_timestamp, r))
-#     return render_template("500.html"), 500
+
+def register_events():
+    from . import events
+
+
+def register_errorhandlers(app):
+    """Register error handlers with the Flask application."""
+
+    def render_error(e):
+        return render_template("%s.html" % e.code), e.code
+
+    for e in [
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        HTTPStatus.NOT_FOUND,
+        HTTPStatus.UNAUTHORIZED,
+    ]:
+        app.errorhandler(e)(render_error)
