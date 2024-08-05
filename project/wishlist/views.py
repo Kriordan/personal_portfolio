@@ -18,7 +18,7 @@ wishlist_blueprint = Blueprint(
 
 def upload_image_to_s3(file):
     s3 = boto3.client("s3")
-    bucket_name = os.environ.get("WISHLIST_S3_BUCKET")
+    bucket_name = os.getenv("WISHLIST_S3_BUCKET")
 
     try:
         s3.upload_fileobj(file, bucket_name, file.filename)

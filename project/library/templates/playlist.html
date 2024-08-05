@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Playlist | {{ playlist.title }}{% endblock title %}
+
+{% block body %}
+  <h1>{{ playlist.title }}</h1>
+  <img src="{{ playlist.thumbnail_url }}" alt="Playlist thumbnail">
+  <p>{{ playlist.description }}</p>
+  <h2>Videos</h2>
+  <ul>
+      {% for video in videos %}
+      <li>
+          <img src="{{ video.thumbnail_url }}" alt="Video thumbnail">
+          <a href="{{ url_for('view_video', video_id=video.id) }}">{{ video.title }}</a>
+      </li>
+      {% endfor %}
+  </ul>
+  <a href="{{ url_for('view_playlists') }}">Back to Playlists</a>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

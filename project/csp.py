@@ -12,7 +12,7 @@ csp = {
     ],
     "img-src": [
         "'self'",
-        f'https://{os.getenv("WISHLIST_S3_BUCKET")}.s3.amazonaws.com',
+        f"https://{os.getenv('WISHLIST_S3_BUCKET')}.s3.amazonaws.com",
     ],
     "font-src": ["'self'", "https://fonts.gstatic.com"],
     "connect-src": [

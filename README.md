@@ -32,3 +32,23 @@ npm update
 // Update to latest version of a package
 npm install <packagename>@latest
 ```
+
+### Utilities
+
+## Collect playlist IDs on playlists page
+```javascript
+const playlistLinks = document.querySelectorAll('a[href^="/playlist?list="]');
+const playlistIds = [];
+
+playlistLinks.forEach(link => {
+    const href = link.getAttribute('href');
+
+    const id = href.split('list=')[1];
+
+    if (id) {
+        playlistIds.push(id);
+    }
+});
+
+console.log(playlistIds);
+```

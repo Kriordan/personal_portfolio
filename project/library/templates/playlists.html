@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Playlists{% endblock title %}
+
+{% block header %}{% endblock header %}
+
+{% block body %}
+  <h1>Playlists</h1>
+  <ul>
+      {% for playlist in playlists %}
+      <li>
+          <a href="{{ url_for('view_playlist', playlist_id=playlist.id) }}">{{ playlist.title }}</a>
+      </li>
+      {% endfor %}
+  </ul>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

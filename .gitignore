@@ -7,4 +7,5 @@ __pycache__/
 *.swp
 .vscode/
 .env
+client_secret.json
 project/data/jsonfiles

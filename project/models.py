@@ -1,27 +1,3 @@
-"""
-This module defines the data models used in the application.
-
-Classes:
-    User: Represents a user in the system.
-    Gift: Represents an item in a user's wishlist.
-
-Imports:
-    logging: For logging errors and other messages.
-    os: For interacting with the operating system.
-    uuid: For generating unique identifiers.
-    datetime: For working with dates and times.
-    timezone: For working with time zones.
-    Optional: For optional type hinting.
-    urlencode: For encoding URL parameters.
-    requests: For making HTTP requests.
-    sqlalchemy: For interacting with SQL databases.
-    sqlalchemy.orm: For mapping Python classes to database tables.
-    botocore.exceptions: For handling exceptions from the botocore library.
-    project: The main application package.
-    db: The SQLAlchemy database instance.
-    s3: The boto3 S3 client instance.
-"""
-
 import logging
 import os
 import uuid
@@ -41,17 +17,6 @@ from project.database import db
 
 
 class User(UserMixin, db.Model):
-    """
-    The User model represents a user in the system.
-
-    Attributes:
-        id: A unique identifier for the user.
-        username: The username of the user.
-        email: The email address of the user.
-        password_hash: The hashed password of the user.
-        gifts: A list of items in the user's wishlist.
-    """
-
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     username: orm.Mapped[str] = orm.mapped_column(
         sa.String(64), index=True, unique=True
@@ -67,39 +32,13 @@ class User(UserMixin, db.Model):
         return f"<User {self.username}>"
 
     def set_password(self, password: str) -> None:
-        """
-        Sets the password of the user.
-
-        Args:
-            password: The password to set.
-        """
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:
-        """
-        Checks if the password is correct.
-
-        Args:
-            password: The password to check.
-
-        Returns:
-            True if the password is correct, otherwise False.
-        """
         return check_password_hash(self.password_hash, password)
 
 
 class Gift(db.Model):
-    """
-    The Gift model represents an item in a user's wishlist.
-
-    Attributes:
-        id: A unique identifier for the gift.
-        body: The body text of the gift.
-        timestamp: The time the gift was created.
-        user_id: The id of the user who owns the gift.
-        author: The user who owns the gift.
-    """
-
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     title: orm.Mapped[str] = orm.mapped_column(sa.String(140))
     body: orm.Mapped[str] = orm.mapped_column(sa.String(140))
@@ -115,18 +54,6 @@ class Gift(db.Model):
 
 
 class Job(db.Model):
-    """
-    The Job model represents a job listing.
-
-    Attributes:
-        id: A unique identifier for the job.
-        title: The title of the job.
-        company_name: The name of the company offering the job.
-        listing_url: The URL of the job listing.
-        listing_image: The image URL of the job listing.
-        posted_date: The date the job was posted.
-    """
-
     __tablename__ = "jobs"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -170,10 +97,58 @@ class Job(db.Model):
         bucket = os.getenv("JOBWIZARD_S3_BUCKET")
 
         try:
-            response = s3.upload_fileobj(
+            s3.upload_fileobj(
                 apileap_image_response_object, bucket, screenshot_filename
             )
         except ClientError as e:
             logging.error(e)
             return False
         return True
+
+
+class Playlist(db.Model):
+    id: orm.Mapped[str] = orm.mapped_column(primary_key=True)
+    title: orm.Mapped[str] = orm.mapped_column(
+        sa.String(255), nullable=False, index=True
+    )
+    description: orm.Mapped[Optional[str]] = orm.mapped_column(sa.Text, nullable=True)
+    published_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
+    updated_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
+    thumbnail_url: orm.Mapped[Optional[str]] = orm.mapped_column(
+        sa.String(255), nullable=True
+    )
+    created_at: orm.Mapped[datetime] = orm.mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    videos: orm.WriteOnlyMapped["Video"] = orm.relationship(
+        "Video", back_populates="playlist"
+    )
+
+
+class Video(db.Model):
+    id: orm.Mapped[str] = orm.mapped_column(primary_key=True)
+    playlist_id: orm.Mapped[str] = orm.mapped_column(
+        sa.ForeignKey("playlist.id"), nullable=False, index=True
+    )
+    title: orm.Mapped[str] = orm.mapped_column(
+        sa.String(255), nullable=False, index=True
+    )
+    description: orm.Mapped[Optional[str]] = orm.mapped_column(sa.Text, nullable=True)
+    published_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
+    thumbnail_url: orm.Mapped[Optional[str]] = orm.mapped_column(
+        sa.String(255), nullable=True
+    )
+    embed_url: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
+    watched: orm.Mapped[bool] = orm.mapped_column(default=False)
+    created_at: orm.Mapped[datetime] = orm.mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: orm.Mapped[datetime] = orm.mapped_column(
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    playlist: orm.Mapped["Playlist"] = orm.relationship(
+        "Playlist", back_populates="videos"
+    )

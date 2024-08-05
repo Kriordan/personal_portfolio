@@ -14,20 +14,19 @@ Functions:
 """
 
 import datetime
-import os
 from http import HTTPStatus
 
-import requests
-from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import find_dotenv, load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 
 from project.account.views import account_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
+from project.library.views import library_blueprint
+from project.oauth.views import oauth_blueprint
 from project.wishlist.views import wishlist_blueprint
 
-from .commands import create_user
+from .commands import create_user, reset_db, sync_yt_subs
 from .csp import csp
 from .database import db
 from .extensions import login_manager, migrate, scheduler, talisman
@@ -76,11 +75,15 @@ def register_blueprints(app):
     app.register_blueprint(account_blueprint)
     app.register_blueprint(foyer_blueprint)
     app.register_blueprint(jobwizard_blueprint)
+    app.register_blueprint(library_blueprint)
+    app.register_blueprint(oauth_blueprint)
     app.register_blueprint(wishlist_blueprint)
 
 
 def register_commands(app):
     app.cli.add_command(create_user)
+    app.cli.add_command(reset_db)
+    app.cli.add_command(sync_yt_subs)
 
 
 def register_jinja_env(app):
