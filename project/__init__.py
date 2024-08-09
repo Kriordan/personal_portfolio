@@ -38,6 +38,16 @@ if ENV_FILE:
 
 
 def create_app(test_config=None):
+    """
+    Create and configure the Flask application.
+
+    Args:
+        test_config (dict, optional): Configuration dictionary for testing
+        purposes. Defaults to None.
+
+    Returns:
+        Flask: The configured Flask application.
+    """
     app = Flask(__name__)
 
     if test_config is None:
@@ -50,13 +60,22 @@ def create_app(test_config=None):
     register_commands(app)
     register_jinja_env(app)
     register_errorhandlers(app)
-    register_tasks()
-    register_events()
+    # register_tasks()
+    # register_events()
 
     return app
 
 
 def register_extensions(app):
+    """
+    Register extensions for the Flask app.
+
+    Args:
+        app: The Flask app instance.
+
+    Returns:
+        None
+    """
     db.init_app(app)
 
     login_manager.init_app(app)
@@ -72,6 +91,15 @@ def register_extensions(app):
 
 
 def register_blueprints(app):
+    """
+    Register blueprints with the Flask application.
+
+    Args:
+        app (Flask): The Flask application object.
+
+    Returns:
+        None
+    """
     app.register_blueprint(account_blueprint)
     app.register_blueprint(foyer_blueprint)
     app.register_blueprint(jobwizard_blueprint)
@@ -81,12 +109,30 @@ def register_blueprints(app):
 
 
 def register_commands(app):
+    """
+    Registers custom commands for the Flask application.
+
+    Args:
+        app (Flask): The Flask application instance.
+
+    Returns:
+        None
+    """
     app.cli.add_command(create_user)
     app.cli.add_command(reset_db)
     app.cli.add_command(sync_yt_subs)
 
 
 def register_jinja_env(app):
+    """
+    Registers a custom Jinja environment for the Flask app.
+
+    Args:
+        app (Flask): The Flask app instance.
+
+    Returns:
+        None
+    """
     app.jinja_env.globals.update(
         {
             "now": datetime.datetime.now().strftime("%Y"),
@@ -94,21 +140,23 @@ def register_jinja_env(app):
     )
 
 
-def register_tasks():
-    from . import tasks  # noqa
+# Uncomment to create and import scheduled tasks
+# def register_tasks():
+#     from . import tasks  # noqa
 
-    scheduler.start()
+#     scheduler.start()
 
 
-def register_events():
-    from . import events
+# Uncomment for scheduled task events or to add additional events
+# def register_events():
+#     from . import events
 
 
 def register_errorhandlers(app):
     """Register error handlers with the Flask application."""
 
     def render_error(e):
-        return render_template("%s.html" % e.code), e.code
+        return render_template(f"{e.code}.html")
 
     for e in [
         HTTPStatus.INTERNAL_SERVER_ERROR,

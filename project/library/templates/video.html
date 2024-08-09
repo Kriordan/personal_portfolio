@@ -6,7 +6,7 @@
   <h1>{{ video.title }}</h1>
   <iframe width="560" height="315" src="{{ video.embed_url }}" frameborder="0" allowfullscreen></iframe>
   <p>{{ video.description }}</p>
-  <a href="{{ url_for('view_playlist', playlist_id=video.playlist_id) }}">Back to Playlist</a>
+  <a href="{{ url_for('library.view_playlist', playlist_id=video.playlist_id) }}">Back to Playlist</a>
 {% endblock body %}
 
 {% block footer %}{% endblock footer %}

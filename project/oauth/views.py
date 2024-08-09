@@ -1,4 +1,7 @@
-# Python
+"""
+This module handles OAuth 2.0 authentication
+"""
+
 # -*- coding: utf-8 -*-
 import json
 
@@ -13,9 +16,6 @@ oauth_blueprint = Blueprint(
     "oauth", __name__, template_folder="templates", url_prefix="/oauth"
 )
 
-
-# This variable specifies the name of a file that contains the OAuth 2.0
-# information for this application, including its client_id and client_secret.
 CLIENT_SECRETS_FILE = "client_secret.json"
 
 # This OAuth 2.0 access scope allows for full read/write access to the
@@ -27,15 +27,26 @@ GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
 
 @oauth_blueprint.route("/")
 def index():
+    """
+    This function returns the index table by calling the print_index_table function.
+    """
     return print_index_table()
 
 
 @oauth_blueprint.route("/test")
 def test_api_request():
+    """
+    This function sends an API request to the YouTube Data API to fetch channel
+    details and playlists.
+    It requires the user to have authorized the application and stored the credentials
+    in the session.
+
+    Returns:
+        A JSON response containing the fetched playlists details.
+    """
     if "credentials" not in flask.session:
         return flask.redirect("authorize")
 
-    # Load credentials from the session.
     credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
 
     youtube_service = googleapiclient.discovery.build(
@@ -43,14 +54,35 @@ def test_api_request():
         GOOGLE_CLIENT_API_SERVICE_VERSION,
         credentials=credentials,
     )
-    # Request to get the authenticated user's channel details
+    print_channel_details(youtube_service)
+    playlists = fetch_playlists_details(youtube_service)
 
+    # Save credentials back to session in case access token was refreshed.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    flask.session["credentials"] = credentials_to_dict(credentials)
+
+    if not isinstance(playlists, dict):
+        playlists = {"playlists": playlists}
+
+    return flask.jsonify(**playlists)
+
+
+def print_channel_details(youtube_service):
+    """
+    Prints the details of the authenticated user's YouTube channel.
+
+    Args:
+        youtube_service: An instance of the YouTube service.
+
+    Returns:
+        None
+    """
     channel_request = youtube_service.channels().list(
         part="snippet,contentDetails,statistics", mine=True
     )
     channel_response = channel_request.execute()
 
-    # Print channel details
     for item in channel_response["items"]:
         print("Channel Title:", item["snippet"]["title"])
         print("Channel ID:", item["id"])
@@ -59,13 +91,23 @@ def test_api_request():
         print("Total Views:", item["statistics"]["viewCount"])
         print("-" * 50)
 
+
+def fetch_playlists_details(youtube_service):
+    """
+    Fetches details of playlists from the YouTube service.
+
+    Args:
+        youtube_service: The YouTube service object.
+
+    Returns:
+        A list of playlist details.
+    """
     playlists = []
 
-    # Request to get the list of your playlists
     playlist_request = youtube_service.playlists().list(
         part="snippet,contentDetails",
         mine=True,
-        maxResults=50,  # You can set this value as needed
+        maxResults=50,
     )
     playlist_response = playlist_request.execute()
     playlists.extend(playlist_response.get("items", []))
@@ -80,19 +122,17 @@ def test_api_request():
         response = request.execute()
         playlists.extend(response.get("items", []))
 
-    # Save credentials back to session in case access token was refreshed.
-    # ACTION ITEM: In a production app, you likely want to save these
-    #              credentials in a persistent database instead.
-    flask.session["credentials"] = credentials_to_dict(credentials)
-
-    if not isinstance(playlists, dict):
-        playlists = {"playlists": playlists}
-
-    return flask.jsonify(**playlists)
+    return playlists
 
 
 @oauth_blueprint.route("/authorize")
 def authorize():
+    """
+    Initiates the OAuth 2.0 Authorization Grant Flow for the application.
+
+    Returns:
+        A redirect response to the authorization URL.
+    """
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE, scopes=SCOPES
@@ -120,8 +160,17 @@ def authorize():
 
 @oauth_blueprint.route("/oauth2callback")
 def oauth2callback():
+    """
+    Callback function for handling OAuth 2.0 authorization response.
+
+    This function is responsible for fetching the OAuth 2.0 tokens from the
+    authorization server's response and storing the credentials in the session.
+
+    Returns:
+        A redirect response to the "oauth.test_api_request" endpoint.
+    """
     # Specify the state when creating the flow in the callback so that it can
-    # verified in the authorization server response.
+    # be verified in the authorization server response.
     state = flask.session["state"]
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
@@ -144,6 +193,16 @@ def oauth2callback():
 
 @oauth_blueprint.route("/revoke")
 def revoke():
+    """
+    Revoke the credentials for the current user.
+
+    If the user has not authorized the application, a message is returned
+    prompting the user to authorize before testing the code to revoke credentials.
+
+    Returns:
+        str: A message indicating whether the credentials were successfully revoked
+        or if an error occurred.
+    """
     if "credentials" not in flask.session:
         return (
             'You need to <a href="/authorize">authorize</a> before '
@@ -156,6 +215,7 @@ def revoke():
         "https://oauth2.googleapis.com/revoke",
         params={"token": credentials.token},
         headers={"content-type": "application/x-www-form-urlencoded"},
+        timeout=10,
     )
 
     status_code = getattr(revoke, "status_code")
@@ -167,12 +227,28 @@ def revoke():
 
 @oauth_blueprint.route("/clear")
 def clear_credentials():
+    """
+    Clears the credentials stored in the session.
+
+    Returns:
+        str: A message indicating that the credentials have been cleared.
+    """
     if "credentials" in flask.session:
         del flask.session["credentials"]
     return "Credentials have been cleared.<br><br>" + print_index_table()
 
 
 def credentials_to_dict(credentials):
+    """
+    Converts the given credentials object to a dictionary.
+
+    Args:
+        credentials: An object containing the credentials information.
+
+    Returns:
+        A dictionary containing the token, refresh_token, token_uri, client_id,
+        client_secret, and scopes from the credentials object.
+    """
     return {
         "token": credentials.token,
         "refresh_token": credentials.refresh_token,
@@ -184,6 +260,12 @@ def credentials_to_dict(credentials):
 
 
 def print_index_table():
+    """
+    Returns an HTML table containing links and descriptions for different API requests.
+
+    Returns:
+        str: HTML table containing links and descriptions.
+    """
     return (
         "<table>"
         + '<tr><td><a href="/test">Test an API request</a></td>'

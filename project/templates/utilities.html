@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<h1>Utilities</h1>
+<form action="{{ url_for('library.sync_playlists') }}" method="post">
+  <button type="submit">Sync Playlists</button>
+</form>
+{% endblock body %}

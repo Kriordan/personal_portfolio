@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: ed8948ebb947
+Revision ID: 7596e4ae82a2
 Revises: 
-Create Date: 2024-07-30 16:27:49.905793
+Create Date: 2024-08-08 14:40:48.739787
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ed8948ebb947'
+revision = '7596e4ae82a2'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -70,6 +70,7 @@ def upgrade():
     op.create_table('video',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('playlist_id', sa.String(), nullable=False),
+    sa.Column('video_url_id', sa.String(length=255), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('published_at', sa.DateTime(), nullable=False),
@@ -79,7 +80,8 @@ def upgrade():
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['playlist_id'], ['playlist.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('video_url_id')
     )
     with op.batch_alter_table('video', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_video_playlist_id'), ['playlist_id'], unique=False)

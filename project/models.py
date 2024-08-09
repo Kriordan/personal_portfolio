@@ -131,6 +131,7 @@ class Video(db.Model):
     playlist_id: orm.Mapped[str] = orm.mapped_column(
         sa.ForeignKey("playlist.id"), nullable=False, index=True
     )
+    video_url_id: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
     title: orm.Mapped[str] = orm.mapped_column(
         sa.String(255), nullable=False, index=True
     )

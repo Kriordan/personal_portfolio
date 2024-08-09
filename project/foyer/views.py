@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 from flask import Blueprint, current_app, render_template
+from flask_login import login_required
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -62,7 +63,16 @@ def contact():
     return render_template("contact.html", form=form)
 
 
+@foyer_blueprint.route("/utilities")
+@login_required
+def utilities():
+    """Render the utilities page"""
+
+    return render_template("utilities.html")
+
+
 @foyer_blueprint.route("/media")
+@login_required
 def media():
     """Render the media page with a list of playlists."""
     path = (
@@ -78,6 +88,7 @@ def media():
 
 
 @foyer_blueprint.route("/learningtospeak")
+@login_required
 def learningtospeak():
     """Render the learningtospeak page."""
     return render_template("learningtospeak.html")

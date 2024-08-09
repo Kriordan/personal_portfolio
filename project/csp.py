@@ -23,4 +23,14 @@ csp = {
         "https://*.hotjar.io",
         "wss://*.hotjar.com",
     ],
+    "frame-src": [
+        "'self'",
+        "https://www.youtube.com",
+        "https://www.youtube-nocookie.com",
+    ],
+    "media-src": [
+        "'self'",
+        "https://www.youtube.com",
+        "https://www.youtube-nocookie.com",
+    ],
 }
