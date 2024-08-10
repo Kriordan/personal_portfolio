@@ -4,6 +4,7 @@ This module handles OAuth 2.0 authentication
 
 # -*- coding: utf-8 -*-
 import json
+import os
 
 import flask
 import google.oauth2.credentials
@@ -16,13 +17,24 @@ oauth_blueprint = Blueprint(
     "oauth", __name__, template_folder="templates", url_prefix="/oauth"
 )
 
-CLIENT_SECRETS_FILE = "client_secret.json"
 
 # This OAuth 2.0 access scope allows for full read/write access to the
 # authenticated user's account and requires requests to use an SSL connection.
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 GOOGLE_CLIENT_API_SERVICE_NAME = "youtube"
 GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
+
+client_config = {
+    "web": {
+        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+        "project_id": os.getenv("GOOGLE_PROJECT_ID"),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "redirect_uris": ["http://127.0.0.1:5000/oauth"],
+    }
+}
 
 
 @oauth_blueprint.route("/")
@@ -48,6 +60,9 @@ def test_api_request():
         return flask.redirect("authorize")
 
     credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
+
+    if credentials.expired:
+        return flask.redirect("authorize")
 
     youtube_service = googleapiclient.discovery.build(
         GOOGLE_CLIENT_API_SERVICE_NAME,
@@ -133,9 +148,10 @@ def authorize():
     Returns:
         A redirect response to the authorization URL.
     """
+
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=SCOPES
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        client_config, scopes=SCOPES
     )
 
     # The URI created here must exactly match one of the authorized redirect URIs
@@ -173,8 +189,8 @@ def oauth2callback():
     # be verified in the authorization server response.
     state = flask.session["state"]
 
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=SCOPES, state=state
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        client_config, scopes=SCOPES, state=state
     )
     flow.redirect_uri = flask.url_for("oauth.oauth2callback", _external=True)
 
