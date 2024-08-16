@@ -32,10 +32,12 @@ def get_youtube_service():
         Any exceptions that may occur during the authentication process.
     """
     print('Building YouTube service object')
+
     if "credentials" not in flask.session:
         return flask.redirect("authorize")
 
     credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
+
     return build(
         GOOGLE_CLIENT_API_SERVICE_NAME,
         GOOGLE_CLIENT_API_SERVICE_VERSION,
