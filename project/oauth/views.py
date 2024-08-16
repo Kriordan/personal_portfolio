@@ -205,6 +205,7 @@ def oauth2callback():
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url
+    print(f"The authorization response is {flask.request.url}")
     flow.fetch_token(authorization_response=authorization_response)
 
     # Store credentials in the session.
