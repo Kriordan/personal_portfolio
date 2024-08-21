@@ -12,6 +12,7 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import requests
 from flask import Blueprint
+from flask_login import login_required
 
 oauth_blueprint = Blueprint(
     "oauth", __name__, template_folder="templates", url_prefix="/oauth"
@@ -43,6 +44,7 @@ client_config = {
 
 
 @oauth_blueprint.route("/")
+@login_required
 def index():
     """
     This function returns the index table by calling the print_index_table function.
@@ -51,6 +53,7 @@ def index():
 
 
 @oauth_blueprint.route("/test")
+@login_required
 def test_api_request():
     """
     This function sends an API request to the YouTube Data API to fetch channel
@@ -146,6 +149,7 @@ def fetch_playlists_details(youtube_service):
 
 
 @oauth_blueprint.route("/authorize")
+@login_required
 def authorize():
     """
     Initiates the OAuth 2.0 Authorization Grant Flow for the application.
@@ -184,6 +188,7 @@ def authorize():
 
 
 @oauth_blueprint.route("/oauth2callback")
+@login_required
 def oauth2callback():
     """
     Callback function for handling OAuth 2.0 authorization response.
@@ -222,6 +227,7 @@ def oauth2callback():
 
 
 @oauth_blueprint.route("/revoke")
+@login_required
 def revoke():
     """
     Revoke the credentials for the current user.
@@ -256,6 +262,7 @@ def revoke():
 
 
 @oauth_blueprint.route("/clear")
+@login_required
 def clear_credentials():
     """
     Clears the credentials stored in the session.
