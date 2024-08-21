@@ -1,4 +1,13 @@
 -
+    clean_name: lightmatter
+    description: "Scoped, architected, developed, troubleshot, and managed a variety of projects primarily in the healthcare sector."
+    github_repo: https://github.com/Lightmatter
+    has_github_repo: false
+    image: lightmatter-logo.jpg
+    link: https://lightmatter.com/
+    name: Lightmatter
+    tech_stack: "Django, Alpine.js, htmx, Next.js, PostgreSQL, Material UI, React Native"
+-
     clean_name: tomtom
     description: "Created internal fullstack tool using React, Material-UI, Express, Puppeteer, and PostgreSQL to allow users to scrape and track values on a variety of webpages. Collaborated with management to identify the best solution for their immediate technical needs."
     github_repo:
