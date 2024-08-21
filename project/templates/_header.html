@@ -36,6 +36,9 @@
       <a
         {% if request.path == '/wishlist' %}class="active"{% endif %}
         href="{{ url_for( 'wishlist.wishlist_home' )}}">Wishlist</a>
+      <a
+        {% if request.path == '/lib' %}class="active"{% endif %}
+        href="{{ url_for( 'library.library_home' )}}">Library</a>
     {% endif %}
   </nav>
 </header>
