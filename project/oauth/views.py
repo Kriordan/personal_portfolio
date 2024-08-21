@@ -164,7 +164,9 @@ def authorize():
     # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
     # error.
     flow.redirect_uri = flask.url_for(
-        "oauth.oauth2callback", _external=True, _scheme="https"
+        "oauth.oauth2callback",
+        _external=True,
+        _scheme="https" if not flask.current_app.config["DEBUG"] else None,
     )
 
     authorization_url, state = flow.authorization_url(
@@ -199,8 +201,11 @@ def oauth2callback():
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         client_config, scopes=SCOPES, state=state
     )
+
     flow.redirect_uri = flask.url_for(
-        "oauth.oauth2callback", _external=True, _scheme="https"
+        "oauth.oauth2callback",
+        _external=True,
+        _scheme="https" if not flask.current_app.config["DEBUG"] else None,
     )
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
