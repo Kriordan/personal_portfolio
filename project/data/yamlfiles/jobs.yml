@@ -1,10 +1,11 @@
-- company_name: "Keith Riordan"
-  position_title: "Owner | Web Developer"
-  start_date: "May '14"
+- company_name: "Cactus"
+  position_title: "Engineering Manager"
+  start_date: "Dec '24"
   end_date: "Present"
   description:
-    - "Collaborate with clients to help them identify their web-based needs which range from just needing domain names, to hosting, design, development, or all of the above"
-    - "Design and develop sites with custom CMS & DB admin, WordPress, or HTML, CSS and JS"
+    - "Collaborate with Strategy, Design, Product, and Architecture teams to accurately scope client work from a technical perspective"
+    - "Oversee the development of web and mobile apps, APIs, integrations with third party tools, health-tech specific integrations, and digital transformation projects for enterprise clients"
+    - "Contribute hands-on by participating in ticket scoping, writing code, reviewing pull requests, and debugging a React Native app."
 
 - company_name: "Lightmatter"
   position_title: "Senior Software Engineer"
