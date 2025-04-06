@@ -7,25 +7,37 @@ from urllib.parse import urlencode
 
 import boto3
 import requests
-import sqlalchemy as sa
-import sqlalchemy.orm as orm
 from botocore.exceptions import ClientError
 from flask_login import UserMixin
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from project.database import db
 
+list_shares = Table(
+    "list_shares",
+    db.metadata,
+    Column("list_id", Integer, ForeignKey("custom_list.id")),
+    Column("user_id", Integer, ForeignKey("user.id")),
+)
+
 
 class User(UserMixin, db.Model):
-    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
-    username: orm.Mapped[str] = orm.mapped_column(
-        sa.String(64), index=True, unique=True
-    )
-    email: orm.Mapped[str] = orm.mapped_column(sa.String(120), index=True, unique=True)
-    password_hash: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(256))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), index=True, unique=True)
+    email: Mapped[str] = mapped_column(String(120), index=True, unique=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(256))
 
-    gifts: orm.WriteOnlyMapped["Gift"] = orm.relationship(
-        "Gift", back_populates="author"
+    gifts: Mapped["Gift"] = relationship("Gift", back_populates="author")
+    custom_lists: Mapped[list["CustomList"]] = relationship(
+        "CustomList", back_populates="owner", lazy="dynamic"
+    )
+    shared_lists: Mapped[list["CustomList"]] = relationship(
+        "CustomList",
+        secondary=list_shares,
+        back_populates="shared_with",
+        lazy="dynamic",
     )
 
     def __repr__(self) -> str:
@@ -38,19 +50,68 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
-class Gift(db.Model):
-    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
-    title: orm.Mapped[str] = orm.mapped_column(sa.String(140))
-    body: orm.Mapped[str] = orm.mapped_column(sa.String(140))
-    image_url: orm.Mapped[Optional[str]] = orm.mapped_column(
-        sa.String(140), nullable=True
+class CustomList(db.Model):
+    __tablename__ = "custom_list"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(128), nullable=False)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    # Back reference to the owner.
+    owner: Mapped["User"] = relationship("User", back_populates="custom_lists")
+    # Categories within the list.
+    categories: Mapped[list["ListCategory"]] = relationship(
+        "ListCategory", back_populates="custom_list", lazy="dynamic"
     )
-    timestamp: orm.Mapped[datetime] = orm.mapped_column(
+    # Users with whom this list is shared.
+    shared_with: Mapped[list["User"]] = relationship(
+        "User", secondary=list_shares, back_populates="shared_lists", lazy="dynamic"
+    )
+
+
+class ListCategory(db.Model):
+    __tablename__ = "list_category"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    ordering: Mapped[int] = mapped_column(Integer, default=0)
+    custom_list_id: Mapped[int] = mapped_column(ForeignKey("custom_list.id"))
+    # Back reference to the parent list.
+    custom_list: Mapped["CustomList"] = relationship(
+        "CustomList", back_populates="categories"
+    )
+    # Items under this category.
+    items: Mapped[list["ListItem"]] = relationship(
+        "ListItem", back_populates="category", lazy="dynamic"
+    )
+
+
+class ListItem(db.Model):
+    __tablename__ = "list_item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    quantity: Mapped[str] = mapped_column(String(32))
+    notes: Mapped[str] = mapped_column(Text)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    ordering: Mapped[int] = mapped_column(Integer, default=0)
+    category_id: Mapped[int] = mapped_column(ForeignKey("list_category.id"))
+    # Back reference to the category.
+    category: Mapped["ListCategory"] = relationship(
+        "ListCategory", back_populates="items"
+    )
+
+
+class Gift(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(140))
+    body: Mapped[str] = mapped_column(String(140))
+    image_url: Mapped[Optional[str]] = mapped_column(String(140), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc)
     )
-    user_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(User.id), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey(User.id), index=True)
 
-    author: orm.Mapped[User] = orm.relationship("User", back_populates="gifts")
+    author: Mapped[User] = relationship("User", back_populates="gifts")
 
 
 class Job(db.Model):
@@ -107,49 +168,37 @@ class Job(db.Model):
 
 
 class Playlist(db.Model):
-    id: orm.Mapped[str] = orm.mapped_column(primary_key=True)
-    title: orm.Mapped[str] = orm.mapped_column(
-        sa.String(255), nullable=False, index=True
-    )
-    description: orm.Mapped[Optional[str]] = orm.mapped_column(sa.Text, nullable=True)
-    published_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
-    updated_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
-    thumbnail_url: orm.Mapped[Optional[str]] = orm.mapped_column(
-        sa.String(255), nullable=True
-    )
-    created_at: orm.Mapped[datetime] = orm.mapped_column(
+    id: Mapped[str] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    published_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc)
     )
 
-    videos: orm.WriteOnlyMapped["Video"] = orm.relationship(
-        "Video", back_populates="playlist"
-    )
+    videos: Mapped[list["Video"]] = relationship("Video", back_populates="playlist")
 
 
 class Video(db.Model):
-    id: orm.Mapped[str] = orm.mapped_column(primary_key=True)
-    playlist_id: orm.Mapped[str] = orm.mapped_column(
-        sa.ForeignKey("playlist.id"), nullable=False, index=True
+    id: Mapped[str] = mapped_column(primary_key=True)
+    playlist_id: Mapped[str] = mapped_column(
+        ForeignKey("playlist.id"), nullable=False, index=True
     )
-    video_url_id: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
-    title: orm.Mapped[str] = orm.mapped_column(
-        sa.String(255), nullable=False, index=True
-    )
-    description: orm.Mapped[Optional[str]] = orm.mapped_column(sa.Text, nullable=True)
-    published_at: orm.Mapped[datetime] = orm.mapped_column(nullable=False, index=True)
-    thumbnail_url: orm.Mapped[Optional[str]] = orm.mapped_column(
-        sa.String(255), nullable=True
-    )
-    embed_url: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
-    watched: orm.Mapped[bool] = orm.mapped_column(default=False)
-    created_at: orm.Mapped[datetime] = orm.mapped_column(
+    video_url_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    published_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    embed_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    watched: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc)
     )
-    updated_at: orm.Mapped[datetime] = orm.mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    playlist: orm.Mapped["Playlist"] = orm.relationship(
-        "Playlist", back_populates="videos"
-    )
+    playlist: Mapped["Playlist"] = relationship("Playlist", back_populates="videos")
