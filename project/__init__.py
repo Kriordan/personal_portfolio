@@ -1,10 +1,10 @@
 """
 This module initializes the Flask application and its configurations.
 
-It sets up the database connection using SQLAlchemy, configures the S3 client 
+It sets up the database connection using SQLAlchemy, configures the S3 client
 for AWS, and schedules a background job to fetch YouTube playlist data every day.
 
-It also registers blueprints for the 'foyer' and 'jobwizard' modules, and 
+It also registers blueprints for the 'foyer' and 'jobwizard' modules, and
 defines error handlers for 404 and 500 status codes.
 
 Functions:
@@ -23,6 +23,7 @@ from project.account.views import account_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
 from project.library.views import library_blueprint
+from project.lists.views import lists_blueprint
 from project.oauth.views import oauth_blueprint
 from project.wishlist.views import wishlist_blueprint
 
@@ -106,6 +107,7 @@ def register_blueprints(app):
     app.register_blueprint(library_blueprint)
     app.register_blueprint(oauth_blueprint)
     app.register_blueprint(wishlist_blueprint)
+    app.register_blueprint(lists_blueprint)
 
 
 def register_commands(app):

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>My Lists</h1>
+
+<!-- Form to create a new list -->
+<form method="POST" action="{{ url_for('lists.create_list') }}">
+  {{ form.hidden_tag() }}
+  {{ form.title.label }} {{ form.title() }}
+  {{ form.submit() }}
+</form>
+
+{% if my_lists %}
+<h2>My Lists</h2>
+<ul>
+  {% for list in my_lists %}
+  <li>
+    <a href="{{ url_for('lists.view_list', list_id=list.id) }}">{{ list.title }}</a>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if shared_lists %}
+<h2>Shared With Me</h2>
+<ul>
+  {% for list in shared_lists %}
+  <li>
+    <a href="{{ url_for('lists.view_list', list_id=list.id) }}">{{ list.title }}</a>
+    <span class="shared-by">(shared by {{ list.owner.username }})</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if not my_lists and not shared_lists %}
+<p>You don't have any lists yet. Create one above!</p>
+{% endif %}
+{% endblock body %} 

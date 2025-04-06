@@ -1,0 +1,135 @@
+{# myapp/lists/templates/list_view.html #}
+{% extends "base.html" %}
+{% block body %}
+<h1>{{ custom_list.title }}</h1>
+
+<!-- Form to add a new category -->
+<form method="POST">
+  {{ cat_form.hidden_tag() }}
+  {{ cat_form.name.label }} {{ cat_form.name() }}
+  {{ cat_form.submit() }}
+</form>
+
+<div id="categories">
+  {% for category in custom_list.categories.order_by('ordering').all() %}
+  <div class="category" data-id="{{ category.id }}">
+    <h2>{{ category.name }}</h2>
+    
+    <!-- Active items list -->
+    <ul class="item-list" id="category-{{ category.id }}">
+      {% for item in category.items.order_by('ordering').filter_by(completed=False).all() %}
+        <li data-id="{{ item.id }}">
+          <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}">
+          <strong>{{ item.name }}</strong>
+          {% if item.quantity %}- {{ item.quantity }}{% endif %}
+          {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    
+    <!-- Form to add a new item to this category -->
+    <form method="POST" action="{{ url_for('lists.add_item', list_id=custom_list.id) }}">
+      {{ item_form.csrf_token }}
+      {{ item_form.category_id(type="hidden", value=category.id) }}
+      {{ item_form.name.label }} {{ item_form.name() }}
+      {{ item_form.quantity.label }} {{ item_form.quantity() }}
+      {{ item_form.notes.label }} {{ item_form.notes() }}
+      {{ item_form.submit() }}
+    </form>
+    
+    <!-- Completed items list -->
+    <h3>Completed</h3>
+    <ul class="completed-list" id="completed-{{ category.id }}">
+      {% for item in category.items.order_by('ordering').filter_by(completed=True).all() %}
+        <li data-id="{{ item.id }}">
+          <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}" checked>
+          <strong>{{ item.name }}</strong>
+          {% if item.quantity %}- {{ item.quantity }}{% endif %}
+          {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+
+{% if custom_list.owner_id == current_user.id %}
+<!-- Share list form -->
+<div class="share-list">
+  <h3>Share List</h3>
+  <form method="POST" action="{{ url_for('lists.share_list', list_id=custom_list.id) }}">
+    <input type="email" name="email" placeholder="Enter email to share with">
+    <button type="submit">Share</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock body %}
+
+{% block scripts %}
+<!-- Include SortableJS from a CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+// Toggle an item's completed state
+document.querySelectorAll('.toggle-item').forEach(function(checkbox){
+  checkbox.addEventListener('change', function(){
+    const itemId = this.dataset.itemId;
+    fetch('{{ url_for("lists.toggle_item", list_id=custom_list.id, item_id=0) }}'.replace('/0', '/' + itemId), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload(); // Reload to reflect changes.
+      }
+    });
+  });
+});
+
+// Initialize Sortable for active and completed item lists.
+document.querySelectorAll('.item-list, .completed-list').forEach(function(listEl) {
+  new Sortable(listEl, {
+    group: 'items',
+    animation: 150,
+    onEnd: function(evt) {
+      const items = Array.from(evt.to.children).map((li, index) => ({
+        id: li.dataset.id,
+        ordering: index + 1,
+        category_id: li.parentElement.id.split('-')[1]
+      }));
+      fetch('{{ url_for("lists.reorder_items", list_id=custom_list.id) }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
+        },
+        body: JSON.stringify({ items: items })
+      });
+    }
+  });
+});
+
+// Enable drag-and-drop reordering of categories.
+new Sortable(document.getElementById('categories'), {
+  animation: 150,
+  onEnd: function(evt) {
+    const categories = Array.from(document.querySelectorAll('.category')).map((div, index) => ({
+      id: div.dataset.id,
+      ordering: index + 1
+    }));
+    fetch('{{ url_for("lists.reorder_categories", list_id=custom_list.id) }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
+      },
+      body: JSON.stringify({ categories: categories })
+    });
+  }
+});
+</script>
+{% endblock scripts %}
