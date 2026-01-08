@@ -12,7 +12,7 @@ const paths = {
 
 gulp.task("browser-sync", function () {
   browserSync.init({
-    proxy: "127.0.0.1:5000",
+    proxy: "127.0.0.1:5001",
     open: "external",
     port: 3000,
   });

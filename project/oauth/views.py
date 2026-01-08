@@ -34,8 +34,9 @@ client_config = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
         "redirect_uris": [
-            "http://127.0.0.1:5000/oauth",
-            "http://127.0.0.1:5000/oauth/oauth2callback",
+            "http://127.0.0.1:5001/oauth",
+            "http://127.0.0.1:5001/oauth/oauth2callback",
+            "http://localhost:5001/oauth/oauth2callback",
             "https://www.keithriordan.com/oauth/oauth2callback",
             "https://www.keithriordan.com/oauth",
         ],
@@ -194,14 +195,31 @@ def oauth2callback():
     Callback function for handling OAuth 2.0 authorization response.
 
     This function is responsible for fetching the OAuth 2.0 tokens from the
-    authorization server's response and storing the credentials in the session.
+    authorization server's response and storing the credentials in the session
+    and in a token file for CLI access.
 
     Returns:
         A redirect response to the "oauth.test_api_request" endpoint.
     """
-    # Specify the state when creating the flow in the callback so that it can
-    # be verified in the authorization server response.
-    state = flask.session["state"]
+    from project.library.jobs import save_credentials_to_file
+
+    # Get state from URL (returned by Google)
+    url_state = flask.request.args.get("state")
+    # Get expected state from session (stored during authorize)
+    session_state = flask.session.get("state")
+
+    # Validate state parameter to prevent CSRF
+    if not url_state:
+        return "OAuth state missing from callback URL.", 400
+
+    if not session_state:
+        return "OAuth session expired. Please try authorizing again: <a href='/oauth/authorize'>Authorize</a>", 400
+
+    if url_state != session_state:
+        return "OAuth state mismatch. Possible CSRF attack. Please try authorizing again: <a href='/oauth/authorize'>Authorize</a>", 400
+
+    # Use the validated state
+    state = url_state
 
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         client_config, scopes=SCOPES, state=state
@@ -218,10 +236,12 @@ def oauth2callback():
     flow.fetch_token(authorization_response=authorization_response_url)
 
     # Store credentials in the session.
-    # ACTION ITEM: In a production app, you likely want to save these
-    #              credentials in a persistent database instead.
     credentials = flow.credentials
-    flask.session["credentials"] = credentials_to_dict(credentials)
+    creds_dict = credentials_to_dict(credentials)
+    flask.session["credentials"] = creds_dict
+
+    # Also save to token file for CLI commands
+    save_credentials_to_file(creds_dict)
 
     return flask.redirect(flask.url_for("oauth.test_api_request"))
 

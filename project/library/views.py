@@ -1,9 +1,9 @@
 # Python
 
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import login_required
 
-from project.library.jobs import sync_playlists_and_videos
+from project.library.jobs import export_subscriptions_to_json, sync_playlists_and_videos
 from project.models import Playlist, Video
 
 library_blueprint = Blueprint(
@@ -43,5 +43,30 @@ def view_video(video_id):
 def sync_playlists():
     """Synchronizes playlists and videos."""
     sync_playlists_and_videos()
+
+    return redirect(url_for("foyer.utilities"))
+
+
+@library_blueprint.route("/export_subscriptions", methods=["POST"])
+@login_required
+def export_subscriptions():
+    """Exports YouTube channel subscriptions to a JSON file."""
+    try:
+        result = export_subscriptions_to_json()
+        flash(
+            f"Successfully exported {result['total_subscriptions']} subscriptions to youtube-subscriptions.json",
+            "success",
+        )
+    except ValueError as e:
+        # Handle authentication errors
+        if "credentials not found" in str(e).lower():
+            flash(
+                "YouTube authorization required. Please authorize the app first.",
+                "error",
+            )
+            return redirect(url_for("oauth.authorize"))
+        flash(f"Error: {str(e)}", "error")
+    except Exception as e:
+        flash(f"Error exporting subscriptions: {str(e)}", "error")
 
     return redirect(url_for("foyer.utilities"))

@@ -2,18 +2,53 @@
 
 ### Frontend
 
+Install dependencies
+`npm i`
+
 The frontend uses gulp to watch the less files and compile them to css.
 
 [gulp-less](https://github.com/gulp-community/gulp-less)
 
 To run gulp:
-`gulp`
+`npm run dev`
 
 ### Backend
 
 The backend is a Flask app.
 Ensure the virtual environment is active, then run:
-`flask --app project --debug`
+`flask --app project run --port 5001 --debug`
+
+## User Management
+
+### Creating a user from the command line
+
+To create a new user, use the `create-user` command. The command will interactively prompt for credentials:
+
+```bash
+flask --app project create-user
+```
+
+You can also provide the credentials directly via command-line options:
+
+```bash
+flask --app project create-user --email user@example.com --username myuser --password mypassword
+```
+
+**Note:** When using the interactive prompt, the password input will be hidden and you'll be asked to confirm it.
+
+### Resetting a user's password
+
+To reset the password for an existing user, use the `reset-password` command:
+
+```bash
+flask --app project reset-password
+```
+
+You can also provide the email and password directly:
+
+```bash
+flask --app project reset-password --email user@example.com --password newpassword
+```
 
 ## Upgrading dependencies
 

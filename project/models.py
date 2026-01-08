@@ -90,8 +90,8 @@ class ListItem(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
-    quantity: Mapped[str] = mapped_column(String(32))
-    notes: Mapped[str] = mapped_column(Text)
+    quantity: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     ordering: Mapped[int] = mapped_column(Integer, default=0)
     category_id: Mapped[int] = mapped_column(ForeignKey("list_category.id"))

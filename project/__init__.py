@@ -27,7 +27,7 @@ from project.lists.views import lists_blueprint
 from project.oauth.views import oauth_blueprint
 from project.wishlist.views import wishlist_blueprint
 
-from .commands import create_user, reset_db, sync_yt_subs
+from .commands import create_user, reset_db, reset_password, sync_yt_subs
 from .csp import csp
 from .database import db
 from .extensions import login_manager, migrate, scheduler, talisman
@@ -121,6 +121,7 @@ def register_commands(app):
         None
     """
     app.cli.add_command(create_user)
+    app.cli.add_command(reset_password)
     app.cli.add_command(reset_db)
     app.cli.add_command(sync_yt_subs)
 

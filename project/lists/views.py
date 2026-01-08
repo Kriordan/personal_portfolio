@@ -137,15 +137,11 @@ def add_item(list_id):
         return redirect(url_for("lists.list_lists"))
 
     form = ItemForm()
-    print("Form data:", form.data)  # Debug print
-    print("Form errors:", form.errors)  # Debug print
-    print("Request form:", request.form)  # Debug print
 
     if form.validate_on_submit():
         try:
             # Get the category_id from request.form directly since it might be more reliable
             category_id = int(request.form.get("category_id"))
-            print("Category ID:", category_id)  # Debug print
 
             category = ListCategory.query.filter_by(
                 id=category_id, custom_list_id=list_id
@@ -169,11 +165,9 @@ def add_item(list_id):
             db.session.add(new_item)
             db.session.commit()
             flash("Item added successfully.", "success")
-        except (ValueError, TypeError) as e:
-            print("Error:", str(e))  # Debug print
+        except (ValueError, TypeError):
             flash(f"Invalid category ID: {request.form.get('category_id')}", "danger")
-        except Exception as e:
-            print("Unexpected error:", str(e))  # Debug print
+        except Exception:
             flash("Error adding item.", "danger")
             db.session.rollback()
     else:

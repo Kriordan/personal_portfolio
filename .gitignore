@@ -9,3 +9,4 @@ __pycache__/
 .env
 client_secret.json
 project/data/jsonfiles
+project/data/youtube_token.json

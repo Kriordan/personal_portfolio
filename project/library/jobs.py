@@ -1,9 +1,12 @@
 import json
 import logging
+import os
 from datetime import datetime, timezone
 
 import flask
 import google.oauth2.credentials
+from flask import has_request_context
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 from project.database import db
@@ -12,9 +15,59 @@ from project.models import Playlist, Video
 logger = logging.getLogger(__name__)
 
 CLIENT_SECRETS_FILE = "client_secret.json"
+TOKEN_FILE = "project/data/youtube_token.json"
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 GOOGLE_CLIENT_API_SERVICE_NAME = "youtube"
 GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
+
+
+def save_credentials_to_file(credentials):
+    """
+    Save OAuth credentials to a JSON file for use by CLI commands.
+
+    Args:
+        credentials: Google OAuth2 credentials object or dict.
+    """
+    if isinstance(credentials, dict):
+        creds_dict = credentials
+    else:
+        creds_dict = {
+            "token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_uri": credentials.token_uri,
+            "client_id": credentials.client_id,
+            "client_secret": credentials.client_secret,
+            "scopes": credentials.scopes,
+        }
+
+    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(creds_dict, f, indent=2)
+    print(f"Credentials saved to {TOKEN_FILE}")
+
+
+def load_credentials_from_file():
+    """
+    Load OAuth credentials from a JSON file.
+
+    Returns:
+        Google OAuth2 credentials object, or None if file doesn't exist.
+    """
+    if not os.path.exists(TOKEN_FILE):
+        return None
+
+    with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+        creds_dict = json.load(f)
+
+    credentials = google.oauth2.credentials.Credentials(**creds_dict)
+
+    # Refresh the token if it's expired
+    if credentials.expired and credentials.refresh_token:
+        print("Token expired, refreshing...")
+        credentials.refresh(Request())
+        save_credentials_to_file(credentials)
+
+    return credentials
 
 
 def get_youtube_service():
@@ -25,18 +78,37 @@ def get_youtube_service():
     the necessary credentials to access the YouTube API. It then creates and returns
     a YouTube service object that can be used to interact with the YouTube API.
 
+    When called from a web request context, credentials are loaded from the session.
+    When called from a CLI command (outside request context), credentials are loaded
+    from a token file.
+
     Returns:
         A YouTube service object.
 
     Raises:
+        ValueError: If credentials are not found in session or token file.
         Any exceptions that may occur during the authentication process.
     """
     print('Building YouTube service object')
 
-    if "credentials" not in flask.session:
-        return flask.redirect("authorize")
+    credentials = None
 
-    credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
+    # Try to get credentials from session if in request context
+    if has_request_context() and "credentials" in flask.session:
+        print("Loading credentials from session")
+        credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
+    else:
+        # Try to load from token file (for CLI commands)
+        print("Loading credentials from token file")
+        credentials = load_credentials_from_file()
+
+    if credentials is None:
+        error_msg = (
+            "YouTube credentials not found. "
+            "Please authorize the app first by visiting /oauth/authorize in your browser."
+        )
+        print(f"ERROR: {error_msg}")
+        raise ValueError(error_msg)
 
     return build(
         GOOGLE_CLIENT_API_SERVICE_NAME,
@@ -135,6 +207,117 @@ def check_video_availability(video):
     return True
 
 
+def fetch_subscriptions(youtube_service):
+    """
+    Fetches all YouTube channel subscriptions for the authenticated user.
+
+    Args:
+        youtube_service: Authenticated YouTube API service object.
+
+    Returns:
+        list: A list of subscription items containing channel information.
+    """
+    subscriptions = []
+
+    print("""
+    ##########################
+    Fetching subscriptions
+    ##########################
+    """)
+
+    try:
+        request = youtube_service.subscriptions().list(  # pylint: disable=no-member
+            part="snippet,contentDetails", mine=True, maxResults=50
+        )
+        
+        while request is not None:
+            print(f"Making API request... (currently have {len(subscriptions)} subscriptions)")
+            response = request.execute()
+            items = response.get("items", [])
+            print(f"Received {len(items)} items in this batch")
+            subscriptions.extend(items)
+            request = youtube_service.subscriptions().list_next(  # pylint: disable=no-member
+                request, response
+            )
+        
+        print(f"Fetched {len(subscriptions)} total subscriptions")
+        return subscriptions
+    except Exception as e:
+        print(f"ERROR fetching subscriptions: {str(e)}")
+        logger.error(f"Error fetching subscriptions: {str(e)}")
+        raise
+
+
+def export_subscriptions_to_json():
+    """
+    Fetches YouTube channel subscriptions and exports them to a JSON file.
+
+    This function retrieves all channels the authenticated user is subscribed to
+    and saves the data to 'project/data/jsonfiles/youtube-subscriptions.json'.
+
+    The exported data includes:
+    - Channel ID
+    - Channel title
+    - Description
+    - Thumbnail URL
+    - Published date (when subscription was created)
+    - Total upload count
+
+    Returns:
+        dict: A dictionary containing the subscription data and metadata.
+
+    Raises:
+        Any exceptions that may occur during the API call or file write.
+    """
+    try:
+        print("Getting YouTube service...")
+        service = get_youtube_service()
+        
+        print("Fetching subscriptions...")
+        subscriptions = fetch_subscriptions(service)
+        
+        print(f"Processing {len(subscriptions)} subscriptions...")
+        # Format the data for export
+        formatted_subscriptions = []
+        for i, sub in enumerate(subscriptions):
+            try:
+                channel_info = {
+                    "channel_id": sub["snippet"]["resourceId"]["channelId"],
+                    "channel_title": sub["snippet"]["title"],
+                    "description": sub["snippet"].get("description", ""),
+                    "thumbnail_url": sub["snippet"].get("thumbnails", {}).get("default", {}).get("url"),
+                    "subscribed_at": sub["snippet"]["publishedAt"],
+                    "total_item_count": sub["contentDetails"].get("totalItemCount", 0),
+                }
+                formatted_subscriptions.append(channel_info)
+            except Exception as e:
+                print(f"Error processing subscription {i}: {str(e)}")
+                logger.error(f"Error processing subscription {i}: {str(e)}")
+                continue
+
+        # Create output dictionary with metadata
+        output_data = {
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "total_subscriptions": len(formatted_subscriptions),
+            "subscriptions": formatted_subscriptions,
+        }
+
+        # Write to JSON file
+        output_path = "project/data/jsonfiles/youtube-subscriptions.json"
+        print(f"Writing to {output_path}...")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(output_data, f, indent=2, ensure_ascii=False)
+
+        print(f"Successfully exported {len(formatted_subscriptions)} subscriptions to {output_path}")
+        logger.info(f"Exported {len(formatted_subscriptions)} YouTube subscriptions to {output_path}")
+        
+        return output_data
+    except Exception as e:
+        print(f"ERROR in export_subscriptions_to_json: {str(e)}")
+        logger.error(f"Error in export_subscriptions_to_json: {str(e)}")
+        raise
+
+
 def sync_playlists_and_videos():
     """
     Synchronizes playlists and videos from YouTube.
@@ -172,9 +355,9 @@ def sync_playlists_and_videos():
         playlist_id = playlist["id"]
         title = playlist["snippet"]["title"]
         description = playlist["snippet"].get("description")
-        published_at = datetime.strptime(
-            playlist["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%SZ"
-        )
+        published_at = datetime.fromisoformat(
+            playlist["snippet"]["publishedAt"].replace("Z", "+00:00")
+        ).replace(tzinfo=None)
         thumbnail_url = playlist["snippet"].get("thumbnails", {}).get("default", {}).get("url")
 
         existing_playlist = Playlist.query.get(playlist_id)
@@ -216,9 +399,9 @@ def sync_playlists_and_videos():
             video_url_id = video["contentDetails"]["videoId"]
             video_title = video["snippet"]["title"]
             video_description = video["snippet"].get("description")
-            video_published_at = datetime.strptime(
-                video["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%SZ"
-            )
+            video_published_at = datetime.fromisoformat(
+                video["snippet"]["publishedAt"].replace("Z", "+00:00")
+            ).replace(tzinfo=None)
             video_thumbnail_url = (
                 video["snippet"].get("thumbnails", {}).get("default", {}).get("url")
             )

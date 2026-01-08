@@ -10,7 +10,11 @@
     "sass": "^1.69.7"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "gulp": "gulp",
+    "sass": "gulp sass",
+    "watch": "gulp watch",
+    "dev": "gulp"
   },
   "repository": {
     "type": "git",

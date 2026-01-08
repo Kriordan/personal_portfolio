@@ -1,5 +1,4 @@
 import click
-from flask import current_app
 from flask.cli import with_appcontext
 from flask_migrate import upgrade
 
@@ -29,6 +28,27 @@ def create_user(email, username, password):
     click.echo(f"User {username} created successfully")
 
 
+@click.command(name="reset-password")
+@click.option("--email", prompt=True, help="The email of the user")
+@click.option(
+    "--password",
+    prompt=True,
+    hide_input=True,
+    confirmation_prompt=True,
+    help="The new password for the user",
+)
+@with_appcontext
+def reset_password(email, password):
+    """Reset password for an existing user"""
+    user = db.session.query(User).filter_by(email=email).first()
+    if user is None:
+        click.echo(f"Error: User with email {email} not found", err=True)
+        return
+    user.set_password(password)
+    db.session.commit()
+    click.echo(f"Password reset successfully for user {user.username}")
+
+
 @click.command(name="reset-db")
 @with_appcontext
 def reset_db():
@@ -40,8 +60,8 @@ def reset_db():
 
 
 @click.command(name="sync-yt-subs")
+@with_appcontext
 def sync_yt_subs():
     """Sync YouTube subscriptions and playlists"""
-    with current_app.app_context():
-        sync_playlists_and_videos()
-        click.echo("YouTube playlists and subs synced successfully.")
+    sync_playlists_and_videos()
+    click.echo("YouTube playlists and subs synced successfully.")
