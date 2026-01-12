@@ -50,6 +50,18 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+class PasswordResetAttempt(db.Model):
+    """Track password reset attempts for rate limiting."""
+
+    __tablename__ = "password_reset_attempt"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), index=True)
+    attempted_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class CustomList(db.Model):
     __tablename__ = "custom_list"
 
