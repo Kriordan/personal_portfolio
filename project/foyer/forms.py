@@ -18,3 +18,5 @@ class ContactForm(FlaskForm):
     message = TextAreaField(
         "Message", validators=[InputRequired("Please enter a message.")]
     )
+    # Honeypot field
+    website = StringField("Website")

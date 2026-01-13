@@ -4,6 +4,13 @@
   <form class="Form" action="{{ action }}" method="{{ method }}" enctype="multipart/form-data">
   {{ form.csrf_token }}
   {% for field in form if not field.name == 'csrf_token' %}
+    {# Honeypot field #}
+    {% if field.name == 'website' %}
+    <div class="Form-inputGroup" style="position: absolute; left: -9999px;" aria-hidden="true">
+      {{ field.label }}
+      {{ field(class_="Form-input", tabindex="-1", autocomplete="off") }}
+    </div>
+    {% else %}
     <div class="Form-inputGroup">
       {% if field.type != 'CSRFTokenField' %}
         {{ field.label }}
@@ -19,6 +26,7 @@
         <small style="color: red;">{{ error }}</small>
       {% endfor %}
     </div>
+    {% endif %}
   {% endfor %}
   {% if not external_submit %}
     {{ button('Submit', 'Button-submit', type="submit") }}

@@ -6,8 +6,7 @@ from pathlib import Path
 import yaml
 from flask import Blueprint, current_app, render_template
 from flask_login import login_required
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from mailersend import EmailBuilder, MailerSendClient
 
 from .email_templates import get_contact_email_content
 from .forms import ContactForm
@@ -41,21 +40,30 @@ def contact():
     form = ContactForm()
 
     if form.validate_on_submit():
+        # Check honeypot
+        if form.website.data:
+            # Silently "succeed" to not alert the bot
+            return render_template("contact.html", success=True)
+
         name = form.name.data
         email = form.email.data
-        message = form.message.data
+        message_content = form.message.data
 
-        html_content = get_contact_email_content(name, email, message)
+        html_content = get_contact_email_content(name, email, message_content)
+        contact_email = current_app.config["CONTACT_EMAIL"]
 
-        message = Mail(
-            from_email="hello@keithriordan.com",
-            to_emails="hello@keithriordan.com",
-            subject=f"New message from {name} at {email}",
-            html_content=html_content,
-        )
         try:
-            sg = SendGridAPIClient(current_app.config["SENDGRID_API_KEY"])
-            sg.send(message)
+            ms = MailerSendClient(api_key=current_app.config["MAILERSEND_API_KEY"])
+            email_message = (
+                EmailBuilder()
+                .from_email("noreply@keithriordan.com", "Keith Riordan Portfolio")
+                .to_many([{"email": contact_email, "name": "Keith"}])
+                .reply_to(email, name)
+                .subject(f"[Portfolio Contact] New message from {name}")
+                .html(html_content)
+                .build()
+            )
+            ms.emails.send(email_message)
             return render_template("contact.html", success=True)
         except Exception as err:
             print(f"There was an error sending the contact email: {err}")

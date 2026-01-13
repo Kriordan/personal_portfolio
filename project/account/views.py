@@ -14,8 +14,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_user, logout_user
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from mailersend import EmailBuilder, MailerSendClient
 
 from project.account.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm
 from project.account.tokens import generate_reset_token, verify_reset_token
@@ -107,16 +106,17 @@ def forgot_password():
             reset_url = url_for("account.reset_password", token=token, _external=True)
             html_content = get_password_reset_email_content(reset_url)
 
-            message = Mail(
-                from_email="hello@keithriordan.com",
-                to_emails=email,
-                subject="Password Reset Request",
-                html_content=html_content,
-            )
-
             try:
-                sg = SendGridAPIClient(current_app.config["SENDGRID_API_KEY"])
-                sg.send(message)
+                ms = MailerSendClient(api_key=current_app.config["MAILERSEND_API_KEY"])
+                email_message = (
+                    EmailBuilder()
+                    .from_email("noreply@keithriordan.com", "Keith Riordan Portfolio")
+                    .to_many([{"email": email, "name": "User"}])
+                    .subject("Password Reset Request")
+                    .html(html_content)
+                    .build()
+                )
+                ms.emails.send(email_message)
             except Exception as err:
                 print(f"Error sending password reset email: {err}")
 
