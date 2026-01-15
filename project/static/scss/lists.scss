@@ -1,0 +1,675 @@
+// Lists Feature Styles
+// ====================
+
+// Variables
+$list-border-color: #e0e0e0;
+$list-bg-color: #fff;
+$list-hover-bg: #f8f9fa;
+$completed-text-color: #999;
+$completed-bg-color: #f5f5f5;
+$drag-placeholder-bg: #e3f2fd;
+$drag-placeholder-border: #2196f3;
+$drag-over-bg: #e8f5e9;
+$transition-speed: 0.2s;
+
+// Container
+.Lists {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+
+    h1 {
+      margin: 0;
+    }
+  }
+
+  &-settings-btn {
+    background: none;
+    border: 1px solid $list-border-color;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-speed;
+
+    &:hover {
+      background-color: $list-hover-bg;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Category Form
+.category-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  padding: 15px;
+  background: $list-bg-color;
+  border: 1px solid $list-border-color;
+  border-radius: 8px;
+
+  input[type="text"] {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid $list-border-color;
+    border-radius: 4px;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: $drag-placeholder-border;
+    }
+  }
+
+  button {
+    padding: 10px 20px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color $transition-speed;
+
+    &:hover {
+      background: #555;
+    }
+  }
+}
+
+// Categories Container
+#categories {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// Individual Category
+.category {
+  background: $list-bg-color;
+  border: 1px solid $list-border-color;
+  border-radius: 8px;
+  padding: 20px;
+  transition: box-shadow $transition-speed, opacity $transition-speed;
+
+  &.is-dragging {
+    opacity: 0.5;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  &.is-touch-dragging {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  h2 {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $list-border-color;
+    cursor: grab;
+    user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  h3 {
+    margin: 20px 0 10px 0;
+    font-size: 0.9rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+// Category placeholder during drag
+.category.drag-placeholder {
+  background: $drag-placeholder-bg;
+  border: 2px dashed $drag-placeholder-border;
+  min-height: 100px;
+}
+
+// Item Lists
+.item-list,
+.completed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 40px;
+  transition: background-color $transition-speed;
+
+  &.drag-over {
+    background-color: $drag-over-bg;
+    border-radius: 4px;
+  }
+
+  &:empty {
+    &::after {
+      content: 'Drop items here';
+      display: block;
+      padding: 15px;
+      text-align: center;
+      color: #aaa;
+      font-style: italic;
+    }
+  }
+}
+
+// List Items
+.item-list li,
+.completed-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  background: $list-bg-color;
+  border: 1px solid $list-border-color;
+  border-radius: 6px;
+  cursor: grab;
+  transition: all $transition-speed;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    background: $list-hover-bg;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  &.is-dragging {
+    opacity: 0.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+  }
+
+  &.is-touch-dragging {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transform: scale(1.02);
+  }
+
+  &.is-toggling {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  &.is-moving {
+    transition: all 0.3s ease;
+  }
+
+  &.is-completed {
+    background: $completed-bg-color;
+    
+    strong {
+      color: $completed-text-color;
+      text-decoration: line-through;
+    }
+
+    p {
+      color: lighten($completed-text-color, 10%);
+    }
+  }
+
+  // Checkbox
+  .toggle-item {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: #4caf50;
+  }
+
+  // Item content
+  strong {
+    flex: 1;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 5px 0 0 32px;
+    font-size: 0.9rem;
+    color: #666;
+  }
+}
+
+// Drag placeholder for items
+li.drag-placeholder {
+  background: $drag-placeholder-bg;
+  border: 2px dashed $drag-placeholder-border;
+  border-radius: 6px;
+  opacity: 0.8;
+}
+
+// Completed list styling
+.completed-list {
+  li {
+    background: $completed-bg-color;
+    
+    strong {
+      color: $completed-text-color;
+      text-decoration: line-through;
+    }
+  }
+}
+
+// Item Form
+.item-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid $list-border-color;
+
+  label {
+    display: none;
+  }
+
+  input[type="text"],
+  textarea {
+    padding: 8px 12px;
+    border: 1px solid $list-border-color;
+    border-radius: 4px;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: $drag-placeholder-border;
+    }
+  }
+
+  input[name="name"] {
+    flex: 2;
+    min-width: 150px;
+  }
+
+  input[name="quantity"] {
+    flex: 1;
+    min-width: 80px;
+    max-width: 100px;
+  }
+
+  textarea {
+    flex-basis: 100%;
+    min-height: 60px;
+    resize: vertical;
+  }
+
+  button {
+    padding: 8px 16px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color $transition-speed;
+
+    &:hover {
+      background: #555;
+    }
+  }
+}
+
+// Share List Section
+.share-list {
+  margin-top: 40px;
+  padding: 20px;
+  background: $list-bg-color;
+  border: 1px solid $list-border-color;
+  border-radius: 8px;
+
+  h3 {
+    margin: 0 0 15px 0;
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="email"] {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid $list-border-color;
+    border-radius: 4px;
+
+    &:focus {
+      outline: none;
+      border-color: $drag-placeholder-border;
+    }
+  }
+
+  button {
+    padding: 10px 20px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      background: #555;
+    }
+  }
+}
+
+// Shared users list
+.shared-users {
+  margin-top: 15px;
+
+  h4 {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: $list-hover-bg;
+    border-radius: 4px;
+    margin-bottom: 5px;
+
+    .email {
+      font-size: 0.9rem;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #d32f2f;
+      cursor: pointer;
+      font-size: 0.8rem;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// Pending invitations
+.pending-invitations {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid $list-border-color;
+
+  h4 {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  li {
+    background: #fff3e0;
+    
+    .status {
+      font-size: 0.8rem;
+      color: #e65100;
+    }
+  }
+}
+
+// Global completed section (for global_section mode)
+.global-completed {
+  margin-top: 40px;
+  padding: 20px;
+  background: $completed-bg-color;
+  border: 1px solid $list-border-color;
+  border-radius: 8px;
+
+  h2 {
+    margin: 0 0 15px 0;
+    color: #666;
+  }
+
+  .global-completed-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-height: 40px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      background: #fff;
+      border: 1px solid $list-border-color;
+      border-radius: 6px;
+
+      strong {
+        color: $completed-text-color;
+        text-decoration: line-through;
+      }
+
+      .category-badge {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        color: #666;
+      }
+    }
+  }
+}
+
+// Settings Modal
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  &.is-open {
+    display: flex;
+  }
+
+  &-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+
+    h2 {
+      margin: 0;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+
+  &-section {
+    margin-bottom: 25px;
+
+    h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      color: #333;
+    }
+  }
+
+  // Radio button group
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 15px;
+      border: 1px solid $list-border-color;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all $transition-speed;
+
+      &:hover {
+        background: $list-hover-bg;
+      }
+
+      &.is-selected {
+        border-color: $drag-placeholder-border;
+        background: lighten($drag-placeholder-bg, 5%);
+      }
+
+      input[type="radio"] {
+        margin-top: 3px;
+      }
+
+      .option-content {
+        flex: 1;
+
+        .option-title {
+          font-weight: 500;
+          margin-bottom: 4px;
+        }
+
+        .option-desc {
+          font-size: 0.85rem;
+          color: #666;
+        }
+      }
+    }
+  }
+
+  &-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid $list-border-color;
+
+    button {
+      padding: 10px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all $transition-speed;
+
+      &.cancel-btn {
+        background: #fff;
+        border: 1px solid $list-border-color;
+        color: #333;
+
+        &:hover {
+          background: $list-hover-bg;
+        }
+      }
+
+      &.save-btn {
+        background: #333;
+        border: none;
+        color: #fff;
+
+        &:hover {
+          background: #555;
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 600px) {
+  .Lists {
+    padding: 15px;
+  }
+
+  .category {
+    padding: 15px;
+  }
+
+  .item-form {
+    flex-direction: column;
+
+    input[name="name"],
+    input[name="quantity"] {
+      width: 100%;
+      max-width: none;
+    }
+  }
+
+  .share-list form {
+    flex-direction: column;
+  }
+
+  .settings-modal-content {
+    padding: 20px;
+  }
+}
+
+// Print styles
+@media print {
+  .category-form,
+  .item-form,
+  .share-list,
+  .settings-modal,
+  .Lists-settings-btn {
+    display: none;
+  }
+
+  .category {
+    break-inside: avoid;
+    border: 1px solid #000;
+  }
+
+  .item-list li,
+  .completed-list li {
+    border: none;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0;
+  }
+}
+

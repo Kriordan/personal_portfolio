@@ -1,135 +1,249 @@
 {# myapp/lists/templates/list_view.html #}
 {% extends "base.html" %}
 {% block body %}
-<h1>{{ custom_list.title }}</h1>
+<div class="Lists">
+  <div class="Lists-header">
+    <h1>{{ custom_list.title }}</h1>
+    {% if custom_list.owner_id == current_user.id %}
+    <button type="button" class="Lists-settings-btn" id="settings-btn" aria-label="List settings">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+    {% endif %}
+  </div>
 
-<!-- Form to add a new category -->
-<form method="POST">
-  {{ cat_form.hidden_tag() }}
-  {{ cat_form.name.label }} {{ cat_form.name() }}
-  {{ cat_form.submit() }}
-</form>
+  <!-- Form to add a new category -->
+  <form method="POST" class="category-form">
+    {{ cat_form.hidden_tag() }}
+    {{ cat_form.name(placeholder="New category name...") }}
+    {{ cat_form.submit(class="Button") }}
+  </form>
 
-<div id="categories">
-  {% for category in custom_list.categories.order_by('ordering').all() %}
-  <div class="category" data-id="{{ category.id }}">
-    <h2>{{ category.name }}</h2>
-    
-    <!-- Active items list -->
-    <ul class="item-list" id="category-{{ category.id }}">
-      {% for item in category.items.order_by('ordering').filter_by(completed=False).all() %}
-        <li data-id="{{ item.id }}">
-          <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}">
-          <strong>{{ item.name }}</strong>
-          {% if item.quantity %}- {{ item.quantity }}{% endif %}
-          {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-    
-    <!-- Form to add a new item to this category -->
-    <form method="POST" action="{{ url_for('lists.add_item', list_id=custom_list.id) }}">
-      {{ item_form.csrf_token }}
-      {{ item_form.category_id(type="hidden", value=category.id) }}
-      {{ item_form.name.label }} {{ item_form.name() }}
-      {{ item_form.quantity.label }} {{ item_form.quantity() }}
-      {{ item_form.notes.label }} {{ item_form.notes() }}
-      {{ item_form.submit() }}
-    </form>
-    
-    <!-- Completed items list -->
-    <h3>Completed</h3>
-    <ul class="completed-list" id="completed-{{ category.id }}">
-      {% for item in category.items.order_by('ordering').filter_by(completed=True).all() %}
-        <li data-id="{{ item.id }}">
-          <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}" checked>
-          <strong>{{ item.name }}</strong>
-          {% if item.quantity %}- {{ item.quantity }}{% endif %}
-          {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
-        </li>
+  <div id="categories">
+    {% for category in custom_list.categories.order_by('ordering').all() %}
+    <div class="category" data-id="{{ category.id }}">
+      <h2>{{ category.name }}</h2>
+      
+      <!-- Active items list -->
+      <ul class="item-list" id="category-{{ category.id }}">
+        {% for item in category.items.order_by('ordering').filter_by(completed=False).all() %}
+          <li data-id="{{ item.id }}">
+            <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}">
+            <strong>{{ item.name }}</strong>
+            {% if item.quantity %}<span class="quantity">{{ item.quantity }}</span>{% endif %}
+            {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      
+      <!-- Form to add a new item to this category -->
+      <form method="POST" action="{{ url_for('lists.add_item', list_id=custom_list.id) }}" class="item-form">
+        {{ item_form.csrf_token }}
+        <input type="hidden" name="category_id" value="{{ category.id }}">
+        {{ item_form.name(placeholder="Item name...") }}
+        {{ item_form.quantity(placeholder="Qty") }}
+        {{ item_form.notes(placeholder="Notes (optional)...") }}
+        {{ item_form.submit(class="Button") }}
+      </form>
+      
+      <!-- Completed items list -->
+      {% if custom_list.completed_display_mode != 'global_section' %}
+      <h3>Completed</h3>
+      <ul class="completed-list" id="completed-{{ category.id }}">
+        {% for item in category.items.order_by('ordering').filter_by(completed=True).all() %}
+          <li data-id="{{ item.id }}" class="is-completed">
+            <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}" checked>
+            <strong>{{ item.name }}</strong>
+            {% if item.quantity %}<span class="quantity">{{ item.quantity }}</span>{% endif %}
+            {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if custom_list.completed_display_mode == 'global_section' %}
+  <!-- Global completed section -->
+  <div class="global-completed">
+    <h2>Completed Items</h2>
+    <ul class="global-completed-list" id="global-completed-list">
+      {% for category in custom_list.categories.all() %}
+        {% for item in category.items.filter_by(completed=True).all() %}
+          <li data-id="{{ item.id }}" data-original-category="{{ category.id }}" class="is-completed">
+            <input type="checkbox" class="toggle-item" data-item-id="{{ item.id }}" checked>
+            <strong>{{ item.name }}</strong>
+            {% if item.quantity %}<span class="quantity">{{ item.quantity }}</span>{% endif %}
+            <span class="category-badge">{{ category.name }}</span>
+            {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+          </li>
+        {% endfor %}
       {% endfor %}
     </ul>
   </div>
-  {% endfor %}
+  {% endif %}
+
+  {% if custom_list.owner_id == current_user.id %}
+  <!-- Share list section -->
+  <div class="share-list">
+    <h3>Share List</h3>
+    <form method="POST" action="{{ url_for('lists.share_list', list_id=custom_list.id) }}">
+      {{ cat_form.csrf_token }}
+      <input type="email" name="email" placeholder="Enter email to share with" required>
+      <button type="submit" class="Button">Share</button>
+    </form>
+    
+    {% if custom_list.shared_with.count() > 0 %}
+    <div class="shared-users">
+      <h4>Shared with:</h4>
+      <ul>
+        {% for user in custom_list.shared_with %}
+        <li>
+          <span class="email">{{ user.email }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% set pending_invitations = custom_list.invitations.filter_by(accepted_at=None).all() %}
+    {% if pending_invitations %}
+    <div class="pending-invitations">
+      <h4>Pending Invitations:</h4>
+      <ul>
+        {% for invitation in pending_invitations %}
+        {% if not invitation.is_expired %}
+        <li>
+          <span class="email">{{ invitation.email }}</span>
+          <span class="status">Pending</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 
+<!-- Settings Modal -->
 {% if custom_list.owner_id == current_user.id %}
-<!-- Share list form -->
-<div class="share-list">
-  <h3>Share List</h3>
-  <form method="POST" action="{{ url_for('lists.share_list', list_id=custom_list.id) }}">
-    <input type="email" name="email" placeholder="Enter email to share with">
-    <button type="submit">Share</button>
-  </form>
+<div class="settings-modal" id="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-modal-header">
+      <h2>List Settings</h2>
+      <button type="button" class="close-btn" id="close-settings">&times;</button>
+    </div>
+    
+    <form id="settings-form" method="POST" action="{{ url_for('lists.update_settings', list_id=custom_list.id) }}">
+      {{ cat_form.csrf_token }}
+      
+      <div class="settings-modal-section">
+        <h3>Completed Items Display</h3>
+        <div class="radio-group">
+          <label class="{% if custom_list.completed_display_mode == 'inline_bottom' %}is-selected{% endif %}">
+            <input type="radio" name="completed_display_mode" value="inline_bottom" 
+                   {% if custom_list.completed_display_mode == 'inline_bottom' %}checked{% endif %}>
+            <div class="option-content">
+              <div class="option-title">Inline at Bottom</div>
+              <div class="option-desc">Completed items stay in their category, grayed out at the bottom of the list.</div>
+            </div>
+          </label>
+          
+          <label class="{% if custom_list.completed_display_mode == 'category_section' or not custom_list.completed_display_mode %}is-selected{% endif %}">
+            <input type="radio" name="completed_display_mode" value="category_section"
+                   {% if custom_list.completed_display_mode == 'category_section' or not custom_list.completed_display_mode %}checked{% endif %}>
+            <div class="option-content">
+              <div class="option-title">Category Completed Section</div>
+              <div class="option-desc">Each category has its own "Completed" section below active items.</div>
+            </div>
+          </label>
+          
+          <label class="{% if custom_list.completed_display_mode == 'global_section' %}is-selected{% endif %}">
+            <input type="radio" name="completed_display_mode" value="global_section"
+                   {% if custom_list.completed_display_mode == 'global_section' %}checked{% endif %}>
+            <div class="option-content">
+              <div class="option-title">Global Completed Section</div>
+              <div class="option-desc">All completed items move to a single section at the bottom of the list.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      
+      <div class="settings-modal-actions">
+        <button type="button" class="cancel-btn" id="cancel-settings">Cancel</button>
+        <button type="submit" class="save-btn">Save Settings</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endif %}
 
 {% endblock body %}
 
 {% block scripts %}
-<!-- Include SortableJS from a CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/lists.js') }}"></script>
 <script>
-// Toggle an item's completed state
-document.querySelectorAll('.toggle-item').forEach(function(checkbox){
-  checkbox.addEventListener('change', function(){
-    const itemId = this.dataset.itemId;
-    fetch('{{ url_for("lists.toggle_item", list_id=custom_list.id, item_id=0) }}'.replace('/0', '/' + itemId), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        location.reload(); // Reload to reflect changes.
-      }
-    });
-  });
-});
-
-// Initialize Sortable for active and completed item lists.
-document.querySelectorAll('.item-list, .completed-list').forEach(function(listEl) {
-  new Sortable(listEl, {
-    group: 'items',
-    animation: 150,
-    onEnd: function(evt) {
-      const items = Array.from(evt.to.children).map((li, index) => ({
-        id: li.dataset.id,
-        ordering: index + 1,
-        category_id: li.parentElement.id.split('-')[1]
-      }));
-      fetch('{{ url_for("lists.reorder_items", list_id=custom_list.id) }}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
-        },
-        body: JSON.stringify({ items: items })
-      });
-    }
-  });
-});
-
-// Enable drag-and-drop reordering of categories.
-new Sortable(document.getElementById('categories'), {
-  animation: 150,
-  onEnd: function(evt) {
-    const categories = Array.from(document.querySelectorAll('.category')).map((div, index) => ({
-      id: div.dataset.id,
-      ordering: index + 1
-    }));
-    fetch('{{ url_for("lists.reorder_categories", list_id=custom_list.id) }}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ cat_form.csrf_token.current_token }}'
+  // Initialize the Lists module with configuration
+  document.addEventListener('DOMContentLoaded', function() {
+    ListsModule.init({
+      listId: {{ custom_list.id }},
+      csrfToken: '{{ cat_form.csrf_token.current_token }}',
+      urls: {
+        toggleItem: '{{ url_for("lists.toggle_item", list_id=custom_list.id, item_id=0) }}',
+        reorderItems: '{{ url_for("lists.reorder_items", list_id=custom_list.id) }}',
+        reorderCategories: '{{ url_for("lists.reorder_categories", list_id=custom_list.id) }}',
+        updateSettings: '{{ url_for("lists.update_settings", list_id=custom_list.id) if custom_list.owner_id == current_user.id else "" }}'
       },
-      body: JSON.stringify({ categories: categories })
+      completedDisplayMode: '{{ custom_list.completed_display_mode or "category_section" }}'
     });
-  }
-});
+
+    // Initialize WebSocket if available
+    if (typeof io !== 'undefined') {
+      ListsModule.initWebSocket();
+    }
+
+    // Settings modal handlers
+    {% if custom_list.owner_id == current_user.id %}
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+    const cancelSettings = document.getElementById('cancel-settings');
+    const radioLabels = document.querySelectorAll('.radio-group label');
+
+    settingsBtn.addEventListener('click', function() {
+      settingsModal.classList.add('is-open');
+    });
+
+    closeSettings.addEventListener('click', function() {
+      settingsModal.classList.remove('is-open');
+    });
+
+    cancelSettings.addEventListener('click', function() {
+      settingsModal.classList.remove('is-open');
+    });
+
+    settingsModal.addEventListener('click', function(e) {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove('is-open');
+      }
+    });
+
+    // Update selected state on radio change
+    radioLabels.forEach(label => {
+      const radio = label.querySelector('input[type="radio"]');
+      radio.addEventListener('change', function() {
+        radioLabels.forEach(l => l.classList.remove('is-selected'));
+        if (this.checked) {
+          label.classList.add('is-selected');
+        }
+      });
+    });
+    {% endif %}
+  });
 </script>
 {% endblock scripts %}

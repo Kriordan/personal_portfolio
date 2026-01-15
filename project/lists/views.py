@@ -1,10 +1,20 @@
 # myapp/lists/routes.py
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
-from sqlalchemy import and_
+from mailersend import EmailBuilder, MailerSendClient
 
+from project.foyer.email_templates import get_list_invitation_email_content
 from project.lists.forms import CategoryForm, ItemForm, ListForm
-from project.models import CustomList, ListCategory, ListItem, User, db
+from project.models import CustomList, ListCategory, ListInvitation, ListItem, User, db
 
 lists_blueprint = Blueprint("lists", __name__, template_folder="templates")
 
@@ -51,33 +61,150 @@ def create_list():
 @lists_blueprint.route("/lists/<int:list_id>/share", methods=["POST"])
 @login_required
 def share_list(list_id):
-    """Share a list with another user."""
+    """Share a list with another user or send an invitation."""
     custom_list = CustomList.query.get_or_404(list_id)
     if custom_list.owner_id != current_user.id:
         flash("You can only share lists you own.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
-    email = request.form.get("email", 0)
+    email = request.form.get("email", "").strip().lower()
     if not email:
         flash("Please provide an email address.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
-    user_to_share_with = User.query.filter_by(email=email).first()
-    if not user_to_share_with:
-        flash(f"No user found with email {email}.", "danger")
-        return redirect(url_for("lists.view_list", list_id=list_id))
-
-    if user_to_share_with.id == current_user.id:
+    if email == current_user.email.lower():
         flash("You can't share a list with yourself.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
-    if user_to_share_with in custom_list.shared_with:
-        flash(f"List is already shared with {email}.", "info")
+    user_to_share_with = User.query.filter_by(email=email).first()
+
+    if user_to_share_with:
+        if user_to_share_with in custom_list.shared_with:
+            flash(f"List is already shared with {email}.", "info")
+            return redirect(url_for("lists.view_list", list_id=list_id))
+
+        custom_list.shared_with.append(user_to_share_with)
+        db.session.commit()
+        flash(f"List shared with {email} successfully.", "success")
+    else:
+        existing_invitation = (
+            ListInvitation.query.filter_by(email=email, list_id=list_id)
+            .filter(ListInvitation.accepted_at.is_(None))
+            .first()
+        )
+
+        if existing_invitation and not existing_invitation.is_expired:
+            flash(f"An invitation has already been sent to {email}.", "info")
+            return redirect(url_for("lists.view_list", list_id=list_id))
+
+        invitation = ListInvitation.create_invitation(email=email, list_id=list_id)
+        db.session.add(invitation)
+        db.session.commit()
+
+        try:
+            invite_url = url_for(
+                "lists.accept_invitation",
+                token=invitation.token,
+                _external=True,
+            )
+            send_invitation_email(
+                email=email,
+                inviter_name=current_user.username,
+                list_title=custom_list.title,
+                invite_url=invite_url,
+            )
+            flash(
+                f"Invitation sent to {email}. They'll receive an email with instructions.",
+                "success",
+            )
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Failed to send invitation email: {str(e)}", "danger")
+
+    return redirect(url_for("lists.view_list", list_id=list_id))
+
+
+def send_invitation_email(email, inviter_name, list_title, invite_url):
+    """Send an invitation email to share a list."""
+    html_content = get_list_invitation_email_content(
+        inviter_name, list_title, invite_url
+    )
+
+    ms = MailerSendClient(api_key=current_app.config["MAILERSEND_API_KEY"])
+    email_message = (
+        EmailBuilder()
+        .from_email("noreply@keithriordan.com", "Keith Riordan Portfolio")
+        .to_many([{"email": email, "name": email.split("@")[0]}])
+        .subject(f"{inviter_name} invited you to collaborate on a list")
+        .html(html_content)
+        .build()
+    )
+    ms.emails.send(email_message)
+
+
+@lists_blueprint.route("/lists/invitation/<token>")
+def accept_invitation(token):
+    """Accept a list sharing invitation."""
+    invitation = ListInvitation.query.filter_by(token=token).first_or_404()
+
+    if invitation.is_expired:
+        flash("This invitation has expired.", "danger")
+        return redirect(url_for("foyer.home"))
+
+    if invitation.is_accepted:
+        flash("This invitation has already been accepted.", "info")
+        if current_user.is_authenticated:
+            return redirect(url_for("lists.view_list", list_id=invitation.list_id))
+        return redirect(url_for("account.login"))
+
+    if not current_user.is_authenticated:
+        from flask import session
+
+        session["pending_invitation_token"] = token
+        flash("Please log in or create an account to accept this invitation.", "info")
+        return redirect(url_for("account.login"))
+
+    if current_user.email.lower() != invitation.email.lower():
+        flash(
+            f"This invitation was sent to {invitation.email}. "
+            f"Please log in with that email address.",
+            "warning",
+        )
+        return redirect(url_for("account.login"))
+
+    custom_list = invitation.custom_list
+    if current_user not in custom_list.shared_with:
+        custom_list.shared_with.append(current_user)
+
+    invitation.accept()
+    db.session.commit()
+
+    flash(f"You now have access to '{custom_list.title}'!", "success")
+    return redirect(url_for("lists.view_list", list_id=invitation.list_id))
+
+
+@lists_blueprint.route("/lists/<int:list_id>/settings", methods=["POST"])
+@login_required
+def update_settings(list_id):
+    """Update list settings."""
+    custom_list = CustomList.query.get_or_404(list_id)
+
+    if custom_list.owner_id != current_user.id:
+        flash("Only the list owner can update settings.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
-    custom_list.shared_with.append(user_to_share_with)
-    db.session.commit()
-    flash(f"List shared with {email} successfully.", "success")
+    completed_display_mode = request.form.get("completed_display_mode")
+    if completed_display_mode in [
+        "inline_bottom",
+        "category_section",
+        "global_section",
+    ]:
+        custom_list.completed_display_mode = completed_display_mode
+        db.session.commit()
+        flash("Settings updated successfully.", "success")
+    else:
+        flash("Invalid display mode.", "danger")
+
     return redirect(url_for("lists.view_list", list_id=list_id))
 
 
@@ -86,7 +213,6 @@ def share_list(list_id):
 def view_list(list_id):
     """View a specific list."""
     custom_list = CustomList.query.get_or_404(list_id)
-    # Check if user has access to this list
     if (
         custom_list.owner_id != current_user.id
         and current_user not in custom_list.shared_with
@@ -97,9 +223,7 @@ def view_list(list_id):
     cat_form = CategoryForm()
     item_form = ItemForm()
 
-    # Handle adding a new category.
     if cat_form.validate_on_submit():
-        # Get the highest ordering value
         max_order = (
             db.session.query(db.func.max(ListCategory.ordering))
             .filter_by(custom_list_id=list_id)
@@ -128,7 +252,6 @@ def view_list(list_id):
 def add_item(list_id):
     """Add an item to a list."""
     custom_list = CustomList.query.get_or_404(list_id)
-    # Check if user has access to this list
     if (
         custom_list.owner_id != current_user.id
         and current_user not in custom_list.shared_with
@@ -140,14 +263,12 @@ def add_item(list_id):
 
     if form.validate_on_submit():
         try:
-            # Get the category_id from request.form directly since it might be more reliable
             category_id = int(request.form.get("category_id"))
 
             category = ListCategory.query.filter_by(
                 id=category_id, custom_list_id=list_id
             ).first_or_404()
 
-            # Set ordering to one more than the current maximum in the category.
             max_order = (
                 db.session.query(db.func.max(ListItem.ordering))
                 .filter_by(category_id=category.id)
@@ -184,13 +305,11 @@ def add_item(list_id):
 def toggle_item(list_id, item_id):
     """Toggle an item's completed status."""
     item = ListItem.query.get_or_404(item_id)
-    # Check if user has access to this list
     if (
         item.category.custom_list.owner_id != current_user.id
         and current_user not in item.category.custom_list.shared_with
     ):
         return jsonify({"success": False, "error": "Access denied"}), 403
-    # Flip the completion flag.
     item.completed = not item.completed
     db.session.commit()
     return jsonify({"success": True, "completed": item.completed})
@@ -201,13 +320,11 @@ def toggle_item(list_id, item_id):
 def reorder_items(list_id):
     """Reorder items in a list."""
     custom_list = CustomList.query.get_or_404(list_id)
-    # Check if user has access to this list
     if (
         custom_list.owner_id != current_user.id
         and current_user not in custom_list.shared_with
     ):
         return jsonify({"success": False, "error": "Access denied"}), 403
-    # Expect a JSON payload: { "items": [ { "id": 1, "ordering": 1, "category_id": 2 }, ... ] }
     data = request.get_json()
     for item_data in data.get("items", []):
         item = ListItem.query.get(item_data["id"])
@@ -215,7 +332,6 @@ def reorder_items(list_id):
             item.ordering = item_data.get("ordering", item.ordering)
             new_category_id = item_data.get("category_id")
             if new_category_id:
-                # Verify the new category belongs to this list
                 if ListCategory.query.filter_by(
                     id=new_category_id, custom_list_id=list_id
                 ).first():
@@ -229,13 +345,11 @@ def reorder_items(list_id):
 def reorder_categories(list_id):
     """Reorder categories in a list."""
     custom_list = CustomList.query.get_or_404(list_id)
-    # Check if user has access to this list
     if (
         custom_list.owner_id != current_user.id
         and current_user not in custom_list.shared_with
     ):
         return jsonify({"success": False, "error": "Access denied"}), 403
-    # Expect a JSON payload: { "categories": [ { "id": 1, "ordering": 1 }, ... ] }
     data = request.get_json()
     for cat_data in data.get("categories", []):
         category = ListCategory.query.get(cat_data["id"])
@@ -250,7 +364,6 @@ def reorder_categories(list_id):
 def debug_list(list_id):
     """Debug view to see list data."""
     custom_list = CustomList.query.get_or_404(list_id)
-    # Check if user has access to this list
     if (
         custom_list.owner_id != current_user.id
         and current_user not in custom_list.shared_with
@@ -258,7 +371,6 @@ def debug_list(list_id):
         flash("You don't have access to this list.", "danger")
         return redirect(url_for("lists.list_lists"))
 
-    # Get all categories with their items
     categories = ListCategory.query.filter_by(custom_list_id=list_id).all()
 
     debug_data = {"list_title": custom_list.title, "categories": []}

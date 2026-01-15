@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -14,6 +15,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from project.database import db
+
+COMPLETED_DISPLAY_MODES = {
+    "inline_bottom": "Inline at Bottom",
+    "category_section": "Category Completed Section",
+    "global_section": "Global Completed Section",
+}
 
 list_shares = Table(
     "list_shares",
@@ -68,15 +75,25 @@ class CustomList(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(128), nullable=False)
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    # Back reference to the owner.
+    completed_display_mode: Mapped[Optional[str]] = mapped_column(
+        String(32), nullable=True, default="category_section"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     owner: Mapped["User"] = relationship("User", back_populates="custom_lists")
-    # Categories within the list.
     categories: Mapped[list["ListCategory"]] = relationship(
         "ListCategory", back_populates="custom_list", lazy="dynamic"
     )
-    # Users with whom this list is shared.
     shared_with: Mapped[list["User"]] = relationship(
         "User", secondary=list_shares, back_populates="shared_lists", lazy="dynamic"
+    )
+    invitations: Mapped[list["ListInvitation"]] = relationship(
+        "ListInvitation", back_populates="custom_list", lazy="dynamic"
     )
 
 
@@ -87,11 +104,9 @@ class ListCategory(db.Model):
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     ordering: Mapped[int] = mapped_column(Integer, default=0)
     custom_list_id: Mapped[int] = mapped_column(ForeignKey("custom_list.id"))
-    # Back reference to the parent list.
     custom_list: Mapped["CustomList"] = relationship(
         "CustomList", back_populates="categories"
     )
-    # Items under this category.
     items: Mapped[list["ListItem"]] = relationship(
         "ListItem", back_populates="category", lazy="dynamic"
     )
@@ -107,10 +122,70 @@ class ListItem(db.Model):
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     ordering: Mapped[int] = mapped_column(Integer, default=0)
     category_id: Mapped[int] = mapped_column(ForeignKey("list_category.id"))
-    # Back reference to the category.
     category: Mapped["ListCategory"] = relationship(
         "ListCategory", back_populates="items"
     )
+
+
+class ListInvitation(db.Model):
+    """
+    Represents a pending invitation to share a list with a user who may not have an account yet.
+    """
+
+    __tablename__ = "list_invitation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("custom_list.id"), nullable=False)
+    token: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+
+    custom_list: Mapped["CustomList"] = relationship(
+        "CustomList", back_populates="invitations"
+    )
+
+    @classmethod
+    def create_invitation(cls, email: str, list_id: int, expires_in_days: int = 7):
+        """
+        Create a new invitation with a secure token.
+
+        Args:
+            email: The email address to invite
+            list_id: The ID of the list to share
+            expires_in_days: Number of days until the invitation expires
+
+        Returns:
+            ListInvitation: The created invitation
+        """
+        from datetime import timedelta
+
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
+
+        invitation = cls(
+            email=email, list_id=list_id, token=token, expires_at=expires_at
+        )
+        return invitation
+
+    @property
+    def is_expired(self) -> bool:
+        """Check if the invitation has expired."""
+        return datetime.now(timezone.utc) > self.expires_at
+
+    @property
+    def is_accepted(self) -> bool:
+        """Check if the invitation has been accepted."""
+        return self.accepted_at is not None
+
+    def accept(self) -> None:
+        """Mark the invitation as accepted."""
+        self.accepted_at = datetime.now(timezone.utc)
 
 
 class Gift(db.Model):

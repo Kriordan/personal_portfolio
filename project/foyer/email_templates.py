@@ -22,6 +22,46 @@ def get_contact_email_content(name, email, message):
     """
 
 
+def get_list_invitation_email_content(inviter_name, list_title, invite_url):
+    """Generate HTML content for list sharing invitation email."""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>You've been invited to a shared list</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
+        <table width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <tr>
+                <td style="padding: 40px; text-align: center;">
+                    <h1 style="font-family: Arial, sans-serif; color: #333333; margin-bottom: 24px;">
+                        You've Been Invited!
+                    </h1>
+                    <p style="font-family: Arial, sans-serif; color: #666666; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
+                        <strong>{inviter_name}</strong> has invited you to collaborate on a list:
+                    </p>
+                    <p style="font-family: Arial, sans-serif; color: #333333; font-size: 20px; font-weight: bold; margin-bottom: 24px;">
+                        "{list_title}"
+                    </p>
+                    <a href="{invite_url}" style="display: inline-block; padding: 14px 32px; background-color: #4CAF50; color: #ffffff; text-decoration: none; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; border-radius: 4px; margin-bottom: 24px;">
+                        Accept Invitation
+                    </a>
+                    <p style="font-family: Arial, sans-serif; color: #999999; font-size: 14px; line-height: 1.5; margin-top: 24px;">
+                        This invitation will expire in 7 days. If you don't have an account yet, you'll be prompted to create one.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #eeeeee; margin: 24px 0;">
+                    <p style="font-family: Arial, sans-serif; color: #999999; font-size: 12px;">
+                        If the button doesn't work, copy and paste this link into your browser:<br>
+                        <a href="{invite_url}" style="color: #4CAF50; word-break: break-all;">{invite_url}</a>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+
 def get_password_reset_email_content(reset_url):
     """Generate HTML content for password reset email."""
     return f"""

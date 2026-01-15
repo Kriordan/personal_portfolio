@@ -32,8 +32,14 @@ def login():
     """
     The login route.
     """
+    from flask import session
+
     if current_user.is_authenticated:
+        pending_token = session.pop("pending_invitation_token", None)
+        if pending_token:
+            return redirect(url_for("lists.accept_invitation", token=pending_token))
         return redirect(url_for("foyer.home"))
+
     form = LoginForm()
     if form.validate_on_submit():
         user = db.session.scalar(sa.select(User).where(User.email == form.email.data))
@@ -45,6 +51,11 @@ def login():
             flash("Invalid username or password", "error")
             return redirect(url_for("account.login"))
         login_user(user, remember=form.remember_me.data)
+
+        pending_token = session.pop("pending_invitation_token", None)
+        if pending_token:
+            return redirect(url_for("lists.accept_invitation", token=pending_token))
+
         next_page = request.args.get("next")
         if not next_page or urlsplit(next_page).netloc != "":
             next_page = url_for("foyer.home")

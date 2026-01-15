@@ -32,6 +32,7 @@ from .csp import csp
 from .database import db
 from .extensions import login_manager, migrate, scheduler, talisman
 from .models import User
+from .sockets import register_handlers, socketio
 
 ENV_FILE = find_dotenv()
 if ENV_FILE:
@@ -61,6 +62,7 @@ def create_app(test_config=None):
     register_commands(app)
     register_jinja_env(app)
     register_errorhandlers(app)
+    register_websockets(app)
     # register_tasks()
     # register_events()
 
@@ -167,3 +169,23 @@ def register_errorhandlers(app):
         HTTPStatus.UNAUTHORIZED,
     ]:
         app.errorhandler(e)(render_error)
+
+
+def register_websockets(app):
+    """
+    Register WebSocket handlers with the Flask application.
+
+    Initializes Flask-SocketIO and registers all event handlers
+
+    Args:
+        app (Flask): The Flask app instance.
+
+    Returns:
+        None
+    """
+    socketio.init_app(
+        app,
+        cors_allowed_origins="*",
+        async_mode="threading",
+    )
+    register_handlers()

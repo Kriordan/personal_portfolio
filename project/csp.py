@@ -7,7 +7,8 @@ csp = {
         "'self'",
         "https://www.googletagmanager.com",
         "https://*.hotjar.com",
-        "https://cdn.jsdelivr.net",  # Add this line for AlpineJS CDN
+        "https://cdn.jsdelivr.net",  # AlpineJS CDN
+        "https://cdn.socket.io",  # Socket.IO client
         "'unsafe-inline'",
     ],
     "img-src": [
@@ -23,6 +24,8 @@ csp = {
         "https://*.hotjar.com",
         "https://*.hotjar.io",
         "wss://*.hotjar.com",
+        "ws:",
+        "wss:",
     ],
     "frame-src": [
         "'self'",
