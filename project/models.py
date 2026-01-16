@@ -35,6 +35,14 @@ class User(UserMixin, db.Model):
     username: Mapped[str] = mapped_column(String(64), index=True, unique=True)
     email: Mapped[str] = mapped_column(String(120), index=True, unique=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(256))
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_verification_token: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True, unique=True, index=True
+    )
+    email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        nullable=True
+    )
 
     gifts: Mapped["Gift"] = relationship("Gift", back_populates="author")
     custom_lists: Mapped[list["CustomList"]] = relationship(
@@ -61,6 +69,18 @@ class PasswordResetAttempt(db.Model):
     """Track password reset attempts for rate limiting."""
 
     __tablename__ = "password_reset_attempt"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), index=True)
+    attempted_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class EmailVerificationAttempt(db.Model):
+    """Track email verification resend attempts for rate limiting."""
+
+    __tablename__ = "email_verification_attempt"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(120), index=True)
@@ -172,6 +192,62 @@ class ListInvitation(db.Model):
             email=email, list_id=list_id, token=token, expires_at=expires_at
         )
         return invitation
+
+    @property
+    def is_expired(self) -> bool:
+        """Check if the invitation has expired."""
+        return datetime.now(timezone.utc) > self.expires_at
+
+    @property
+    def is_accepted(self) -> bool:
+        """Check if the invitation has been accepted."""
+        return self.accepted_at is not None
+
+    def accept(self) -> None:
+        """Mark the invitation as accepted."""
+        self.accepted_at = datetime.now(timezone.utc)
+
+
+class SiteInvitation(db.Model):
+    """
+    Represents a general invitation to sign up (not tied to a specific list).
+    """
+
+    __tablename__ = "site_invitation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    token: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    invited_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user.id"), nullable=True
+    )
+
+    invited_by: Mapped[Optional["User"]] = relationship("User")
+
+    @classmethod
+    def create_invitation(cls, email: str, expires_in_days: int = 7):
+        """
+        Create a new general invitation with a secure token.
+
+        Args:
+            email: The email address to invite
+            expires_in_days: Number of days until the invitation expires
+
+        Returns:
+            SiteInvitation: The created invitation
+        """
+        from datetime import timedelta
+
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
+        return cls(email=email, token=token, expires_at=expires_at)
 
     @property
     def is_expired(self) -> bool:

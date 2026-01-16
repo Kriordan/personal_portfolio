@@ -158,11 +158,8 @@ def accept_invitation(token):
         return redirect(url_for("account.login"))
 
     if not current_user.is_authenticated:
-        from flask import session
-
-        session["pending_invitation_token"] = token
-        flash("Please log in or create an account to accept this invitation.", "info")
-        return redirect(url_for("account.login"))
+        flash("Please create an account to accept this invitation.", "info")
+        return redirect(url_for("account.signup", token=token))
 
     if current_user.email.lower() != invitation.email.lower():
         flash(

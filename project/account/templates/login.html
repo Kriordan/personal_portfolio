@@ -18,4 +18,10 @@
             <a href="{{ url_for('account.forgot_password') }}">Forgot password?</a>
         </p>
     </form>
+    {% if session.get("pending_verification_email") %}
+        <form class="Login-form" method="post" action="{{ url_for('account.resend_verification') }}">
+            {{ resend_form.hidden_tag() }}
+            <p>{{ resend_form.submit(class_="Login-submit") }}</p>
+        </form>
+    {% endif %}
 {% endblock body %}

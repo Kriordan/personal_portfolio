@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <form class="Login-form" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        {% include "_flash_messages.html" %}
+        <p>
+            {{ form.email.label }}<br>
+            {{ form.email(class_="Login-input") }}
+        </p>
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(class_="Login-input") }}
+        </p>
+        <p>
+            {{ form.password.label }}<br>
+            {{ form.password(class_="Login-input") }}
+        </p>
+        <p>
+            {{ form.password_confirm.label }}<br>
+            {{ form.password_confirm(class_="Login-input") }}
+        </p>
+        <p>{{ form.submit(class_="Login-submit") }}</p>
+    </form>
+{% endblock body %}

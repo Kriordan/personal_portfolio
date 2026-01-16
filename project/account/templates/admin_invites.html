@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <div class="Login-form">
+        {% include "_flash_messages.html" %}
+        <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+            <p>
+                {{ form.email.label }}<br>
+                {{ form.email(class_="Login-input") }}
+            </p>
+            <p>{{ form.submit(class_="Login-submit") }}</p>
+        </form>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h3>General Invites</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Sent</th>
+                    <th>Accepted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invite in site_invites %}
+                    <tr>
+                        <td>{{ invite.email }}</td>
+                        <td>
+                            {% if invite.is_accepted %}
+                                Accepted
+                            {% elif invite.is_expired %}
+                                Expired
+                            {% else %}
+                                Pending
+                            {% endif %}
+                        </td>
+                        <td>{{ invite.created_at }}</td>
+                        <td>{{ invite.accepted_at or "" }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4">No invites sent yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h3>List Invites</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>List</th>
+                    <th>Status</th>
+                    <th>Sent</th>
+                    <th>Accepted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invite in list_invites %}
+                    <tr>
+                        <td>{{ invite.email }}</td>
+                        <td>{{ invite.custom_list.title }}</td>
+                        <td>
+                            {% if invite.is_accepted %}
+                                Accepted
+                            {% elif invite.is_expired %}
+                                Expired
+                            {% else %}
+                                Pending
+                            {% endif %}
+                        </td>
+                        <td>{{ invite.created_at }}</td>
+                        <td>{{ invite.accepted_at or "" }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5">No list invites sent yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock body %}
