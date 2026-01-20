@@ -1,7 +1,7 @@
 """This file defines the routes for the account blueprint."""
 
-from datetime import datetime, timedelta, timezone
 import secrets
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
 import sqlalchemy as sa
@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
@@ -21,8 +22,8 @@ from project.account.forms import (
     AdminInviteForm,
     ForgotPasswordForm,
     LoginForm,
-    ResetPasswordForm,
     ResendVerificationForm,
+    ResetPasswordForm,
     SignupForm,
 )
 from project.account.tokens import generate_reset_token, verify_reset_token
@@ -51,8 +52,6 @@ def login():
     """
     The login route.
     """
-    from flask import session
-
     if current_user.is_authenticated:
         pending_token = session.pop("pending_invitation_token", None)
         if pending_token:
@@ -75,6 +74,7 @@ def login():
             session["pending_verification_email"] = user.email
             return redirect(url_for("account.login"))
         login_user(user, remember=form.remember_me.data)
+        session.pop("pending_verification_email", None)
 
         pending_token = session.pop("pending_invitation_token", None)
         if pending_token:
@@ -92,9 +92,7 @@ def login():
 def generate_email_verification(user: User) -> None:
     """Generate and store an email verification token for the user."""
     user.email_verification_token = secrets.token_urlsafe(32)
-    user.email_verification_expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=1
-    )
+    user.email_verification_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
 
 def send_verification_email(user: User) -> None:
@@ -217,6 +215,7 @@ def verify_email(token):
         invite.accept()
 
     db.session.commit()
+    session.pop("pending_verification_email", None)
     flash("Your email has been verified. Please log in.", "success")
     return redirect(url_for("account.login"))
 
@@ -224,8 +223,6 @@ def verify_email(token):
 @account_blueprint.route("/resend-verification", methods=["POST"])
 def resend_verification():
     """Resend a verification email for users who haven't verified yet."""
-    from flask import session
-
     resend_form = ResendVerificationForm()
     if not resend_form.validate_on_submit():
         return redirect(url_for("account.login"))
@@ -257,6 +254,7 @@ def resend_verification():
     except Exception as err:
         print(f"Error sending verification email: {err}")
 
+    session.pop("pending_verification_email", None)
     flash("Verification email resent. Please check your inbox.", "success")
     return redirect(url_for("account.login"))
 
@@ -298,9 +296,7 @@ def admin_invites():
         db.session.commit()
 
         try:
-            invite_url = url_for(
-                "account.signup", token=invite.token, _external=True
-            )
+            invite_url = url_for("account.signup", token=invite.token, _external=True)
             html_content = get_signup_invitation_email_content(invite_url)
             ms = MailerSendClient(api_key=current_app.config["MAILERSEND_API_KEY"])
             email_message = (
@@ -319,9 +315,7 @@ def admin_invites():
         return redirect(url_for("account.admin_invites"))
 
     site_invites = SiteInvitation.query.order_by(SiteInvitation.created_at.desc()).all()
-    list_invites = ListInvitation.query.order_by(
-        ListInvitation.created_at.desc()
-    ).all()
+    list_invites = ListInvitation.query.order_by(ListInvitation.created_at.desc()).all()
 
     return render_template(
         "admin_invites.html",
@@ -336,6 +330,7 @@ def logout():
     """
     The logout route.
     """
+    session.pop("pending_verification_email", None)
     logout_user()
     return redirect(url_for("foyer.home"))
 

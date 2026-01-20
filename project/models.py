@@ -41,7 +41,7 @@ class User(UserMixin, db.Model):
         String(64), nullable=True, unique=True, index=True
     )
     email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
-        nullable=True
+        db.DateTime(timezone=True), nullable=True
     )
 
     gifts: Mapped["Gift"] = relationship("Gift", back_populates="author")
@@ -73,7 +73,7 @@ class PasswordResetAttempt(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(120), index=True)
     attempted_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -85,7 +85,7 @@ class EmailVerificationAttempt(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(120), index=True)
     attempted_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -99,9 +99,10 @@ class CustomList(db.Model):
         String(32), nullable=True, default="category_section"
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
@@ -161,10 +162,14 @@ class ListInvitation(db.Model):
         String(64), nullable=False, unique=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    accepted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False
+    )
 
     custom_list: Mapped["CustomList"] = relationship(
         "CustomList", back_populates="invitations"
@@ -221,10 +226,14 @@ class SiteInvitation(db.Model):
         String(64), nullable=False, unique=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    accepted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False
+    )
     invited_by_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("user.id"), nullable=True
     )
@@ -270,7 +279,9 @@ class Gift(db.Model):
     body: Mapped[str] = mapped_column(String(140))
     image_url: Mapped[Optional[str]] = mapped_column(String(140), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(
-        index=True, default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True),
+        index=True,
+        default=lambda: datetime.now(timezone.utc),
     )
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id), index=True)
 
@@ -285,7 +296,9 @@ class Job(db.Model):
     company_name = db.Column(db.String, nullable=False)
     listing_url = db.Column(db.String, nullable=False)
     listing_image = db.Column(db.String, default="")
-    posted_date = db.Column(db.DateTime, default=datetime.utcnow())
+    posted_date = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     def __init__(self, title, company_name, listing_url, posted_date):
         self.title = title
@@ -334,11 +347,15 @@ class Playlist(db.Model):
     id: Mapped[str] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    published_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
-    updated_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    published_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, index=True
+    )
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     videos: Mapped[list["Video"]] = relationship("Video", back_populates="playlist")
@@ -352,14 +369,17 @@ class Video(db.Model):
     video_url_id: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    published_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    published_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, index=True
+    )
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     embed_url: Mapped[str] = mapped_column(String(255), nullable=False)
     watched: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
