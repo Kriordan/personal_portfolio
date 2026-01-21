@@ -1,0 +1,54 @@
+{
+  "id": "timezone-learning",
+  "title": "Timezone-Aware Timestamps",
+  "created_at": "2026-01-16",
+  "tags": ["postgresql", "sqlalchemy", "migrations", "datetime"],
+  "summary": "Postgres drops timezone info when you use timestamp without time zone, which can cause naive vs aware comparison bugs in Python. Use timestamptz (DateTime(timezone=True)) and keep all timestamps in UTC. When migrating existing data, convert with AT TIME ZONE 'UTC' inside the migration.",
+  "flashcards": [
+    {
+      "id": "tz-1",
+      "question": "Why can datetime comparisons fail in Python with SQLAlchemy?",
+      "answer": "Because timezone-aware datetimes (e.g., now(timezone.utc)) cannot be compared to timezone-naive datetimes loaded from the DB."
+    },
+    {
+      "id": "tz-2",
+      "question": "Which Postgres type should you use for real points in time?",
+      "answer": "timestamptz (SQLAlchemy: DateTime(timezone=True))."
+    },
+    {
+      "id": "tz-3",
+      "question": "What happens if you use timestamp without time zone in Postgres?",
+      "answer": "Timezone info is dropped on write/read, so values come back as naive datetimes."
+    },
+    {
+      "id": "tz-4",
+      "question": "Why is timestamptz safer for production?",
+      "answer": "It preserves real moments in time, supports correct timezone conversions, and avoids ambiguous comparisons."
+    },
+    {
+      "id": "tz-5",
+      "question": "What is the app-level rule for timestamps?",
+      "answer": "Always generate and compare in UTC using timezone-aware datetimes."
+    },
+    {
+      "id": "tz-6",
+      "question": "Can Alembic autogenerate handle timezone changes without review?",
+      "answer": "No. You must review and often edit the migration."
+    },
+    {
+      "id": "tz-7",
+      "question": "How do you safely convert timestamp data to timestamptz?",
+      "answer": "ALTER COLUMN ... TYPE timestamptz USING col AT TIME ZONE 'UTC'."
+    },
+    {
+      "id": "tz-8",
+      "question": "Where does the AT TIME ZONE conversion belong?",
+      "answer": "Inside the migration file (postgresql_using=...) so the change is applied in the DB."
+    },
+    {
+      "id": "tz-9",
+      "question": "After migrating to timestamptz, should you keep naive-datetime fixes in code?",
+      "answer": "No. Remove them and compare aware datetimes directly."
+    }
+  ]
+}

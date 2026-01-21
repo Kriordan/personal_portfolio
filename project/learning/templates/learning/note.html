@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ note.title }}{% endblock title %}
+
+{% block body %}
+  <section class="learning-note">
+    <a class="learning-back" href="{{ url_for('learning.index') }}">← Back to notes</a>
+    <h1>{{ note.title }}</h1>
+    {% if note.summary %}
+      <p class="learning-summary">{{ note.summary }}</p>
+    {% endif %}
+  </section>
+
+  <section class="learning-cards">
+    <h2>Flashcards</h2>
+    {% if note.flashcards %}
+      <div class="flashcard-grid">
+        {% for card in note.flashcards %}
+          <div class="flashcard" data-flip-card>
+            <div class="flashcard-inner">
+              <div class="flashcard-face flashcard-front">
+                <div class="flashcard-label">Question</div>
+                <p>{{ card.question }}</p>
+              </div>
+              <div class="flashcard-face flashcard-back">
+                <div class="flashcard-label">Answer</div>
+                <p>{{ card.answer }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No flashcards for this note yet.</p>
+    {% endif %}
+  </section>
+{% endblock body %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
+{% endblock scripts %}

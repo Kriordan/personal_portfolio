@@ -1310,3 +1310,131 @@ li.drag-placeholder {
     border-radius: 0;
   }
 }
+.learning-hero,
+.learning-review,
+.learning-note {
+  margin: 2rem 0;
+}
+
+.learning-subtitle {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.learning-note-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.learning-note-item {
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0.75rem 0;
+}
+
+.learning-note-link {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.learning-note-meta {
+  color: #666;
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.learning-back {
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.flashcard-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.flashcard {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.flashcard--review {
+  margin: 1.5rem auto 1rem;
+  max-width: 500px;
+}
+
+.flashcard-inner {
+  border-radius: 14px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+  width: 100%;
+}
+
+.flashcard.is-flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 14px;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.flashcard-front {
+  background: #fff;
+}
+
+.flashcard-back {
+  background: #fff;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform: rotateY(180deg);
+}
+
+.flashcard-label {
+  color: #999;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.flashcard-content {
+  line-height: 1.5;
+}
+
+.flashcard-meta {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.flashcard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.flashcard-actions.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .flashcard-actions {
+    flex-direction: column;
+  }
+}

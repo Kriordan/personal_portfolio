@@ -22,6 +22,7 @@ from flask import Flask, render_template
 from project.account.views import account_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
+from project.learning import learning_blueprint
 from project.library.views import library_blueprint
 from project.lists.views import lists_blueprint
 from project.oauth.views import oauth_blueprint
@@ -106,6 +107,7 @@ def register_blueprints(app):
     app.register_blueprint(account_blueprint)
     app.register_blueprint(foyer_blueprint)
     app.register_blueprint(jobwizard_blueprint)
+    app.register_blueprint(learning_blueprint)
     app.register_blueprint(library_blueprint)
     app.register_blueprint(oauth_blueprint)
     app.register_blueprint(wishlist_blueprint)

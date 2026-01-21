@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Learning{% endblock title %}
+
+{% block body %}
+  <section class="learning-hero">
+    <h1>Learning Notes</h1>
+    <p class="learning-subtitle">
+      {{ total_due }} card{{ "s" if total_due != 1 }} due
+    </p>
+    <a class="button" href="{{ url_for('learning.review') }}">Start review</a>
+  </section>
+
+  <section class="learning-notes">
+    <h2>All Notes</h2>
+    {% if notes %}
+      <ul class="learning-note-list">
+        {% for note in notes %}
+          <li class="learning-note-item">
+            <a class="learning-note-link" href="{{ url_for('learning.note', note_id=note.id) }}">
+              {{ note.title }}
+            </a>
+            <span class="learning-note-meta">
+              {{ note.flashcard_count }} cards
+              {% if note.due_count %}
+                · {{ note.due_count }} due
+              {% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No learning notes yet.</p>
+    {% endif %}
+  </section>
+{% endblock body %}

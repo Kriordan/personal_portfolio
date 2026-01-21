@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Review{% endblock title %}
+
+{% block body %}
+  <section class="learning-review">
+    <h1>Review Session</h1>
+    {% if cards %}
+      <div class="review-progress" id="review-progress">Card 1 of {{ cards|length }}</div>
+      <div class="flashcard flashcard--review" data-flip-card data-review-card>
+        <div class="flashcard-inner">
+          <div class="flashcard-face flashcard-front">
+            <div class="flashcard-label">Question</div>
+            <h2 id="card-question"></h2>
+            <p class="flashcard-meta" id="card-note-title"></p>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <div class="flashcard-label">Answer</div>
+            <p id="card-answer"></p>
+          </div>
+        </div>
+      </div>
+      <div class="flashcard-actions" id="flashcard-actions">
+        <button class="button button--secondary" data-rating="0" type="button">Again</button>
+        <button class="button button--secondary" data-rating="3" type="button">Hard</button>
+        <button class="button" data-rating="4" type="button">Good</button>
+        <button class="button button--secondary" data-rating="5" type="button">Easy</button>
+      </div>
+    {% else %}
+      <p>You're all caught up. No cards due right now.</p>
+    {% endif %}
+  </section>
+{% endblock body %}
+
+{% block scripts %}
+  <script type="application/json" id="review-cards-data">{{ cards|tojson }}</script>
+  <script type="application/json" id="review-config-data">
+    {{ {"rateUrl": url_for('learning.rate_card')}|tojson }}
+  </script>
+  <script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
+{% endblock scripts %}

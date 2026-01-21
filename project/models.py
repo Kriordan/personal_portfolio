@@ -10,7 +10,7 @@ import boto3
 import requests
 from botocore.exceptions import ClientError
 from flask_login import UserMixin
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -385,3 +385,22 @@ class Video(db.Model):
     )
 
     playlist: Mapped["Playlist"] = relationship("Playlist", back_populates="videos")
+
+
+class ReviewProgress(db.Model):
+    __tablename__ = "review_progress"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    card_id: Mapped[str] = mapped_column(String(128), index=True)
+    easiness: Mapped[float] = mapped_column(Float, default=2.5)
+    interval: Mapped[int] = mapped_column(Integer, default=1)
+    repetitions: Mapped[int] = mapped_column(Integer, default=0)
+    next_review: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    last_reviewed: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
+
+    user: Mapped["User"] = relationship("User")
