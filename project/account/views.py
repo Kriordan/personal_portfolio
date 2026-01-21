@@ -154,6 +154,13 @@ def signup(token):
             flash("An account with that email already exists. Please log in.", "info")
             return redirect(url_for("account.login"))
 
+        existing_username = db.session.scalar(
+            sa.select(User).where(User.username == form.username.data)
+        )
+        if existing_username:
+            flash("That username is already taken.", "danger")
+            return render_template("signup.html", form=form)
+
         user = User(email=invite.email, username=form.username.data)
         user.set_password(form.password.data)
         generate_email_verification(user)
