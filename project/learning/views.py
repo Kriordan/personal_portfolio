@@ -6,9 +6,10 @@ from flask import abort, current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from project.database import db
-from project.models import ReviewProgress
+from project.models import ReviewLog, ReviewProgress
 
 from . import learning_blueprint
+from .scheduler_config import SCHEDULER_VERSION
 from .spaced_repetition import update_schedule
 
 
@@ -148,6 +149,8 @@ def rate_card():
     payload = request.get_json(silent=True) or {}
     card_id = payload.get("card_id")
     rating = payload.get("rating")
+    response_ms = payload.get("response_ms")
+    session_id = payload.get("session_id")
 
     if not card_id or rating is None:
         return jsonify({"error": "card_id and rating are required"}), 400
@@ -169,24 +172,58 @@ def rate_card():
         user_id=current_user.id, card_id=card_id
     ).one_or_none()
 
+    now = datetime.now(timezone.utc)
     if progress is None:
         progress = ReviewProgress(
             user_id=current_user.id,
             card_id=card_id,
+            scheduler_version=SCHEDULER_VERSION,
             easiness=2.5,
             interval=1,
             repetitions=0,
-            next_review=datetime.now(timezone.utc),
+            next_review=now,
         )
+        before = {
+            "interval": progress.interval,
+            "easiness": progress.easiness,
+            "repetitions": progress.repetitions,
+            "next_review": progress.next_review,
+        }
+    else:
+        before = {
+            "interval": progress.interval,
+            "easiness": progress.easiness,
+            "repetitions": progress.repetitions,
+            "next_review": progress.next_review,
+        }
 
     progress.easiness, progress.interval, progress.repetitions = update_schedule(
         progress.easiness, progress.interval, progress.repetitions, rating
     )
-    now = datetime.now(timezone.utc)
     progress.last_reviewed = now
     progress.next_review = now + timedelta(days=progress.interval)
+    progress.scheduler_version = SCHEDULER_VERSION
+
+    log_entry = ReviewLog(
+        user_id=current_user.id,
+        card_id=card_id,
+        reviewed_at=now,
+        rating=rating,
+        scheduler_version=SCHEDULER_VERSION,
+        interval_before=before["interval"],
+        easiness_before=before["easiness"],
+        repetitions_before=before["repetitions"],
+        next_review_before=before["next_review"],
+        interval_after=progress.interval,
+        easiness_after=progress.easiness,
+        repetitions_after=progress.repetitions,
+        next_review_after=progress.next_review,
+        response_ms=response_ms,
+        session_id=session_id,
+    )
 
     db.session.add(progress)
+    db.session.add(log_entry)
     db.session.commit()
 
     return jsonify(

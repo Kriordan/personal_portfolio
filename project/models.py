@@ -388,11 +388,19 @@ class Video(db.Model):
 
 
 class ReviewProgress(db.Model):
+    """
+    Current review state for a card.
+
+    next_review is the canonical source of truth for scheduling.
+    interval is derived/informational.
+    """
+
     __tablename__ = "review_progress"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     card_id: Mapped[str] = mapped_column(String(128), index=True)
+    scheduler_version: Mapped[str] = mapped_column(String(32), default="sm2_v1")
     easiness: Mapped[float] = mapped_column(Float, default=2.5)
     interval: Mapped[int] = mapped_column(Integer, default=1)
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
@@ -402,5 +410,33 @@ class ReviewProgress(db.Model):
     last_reviewed: Mapped[Optional[datetime]] = mapped_column(
         db.DateTime(timezone=True), nullable=True
     )
+
+    user: Mapped["User"] = relationship("User")
+
+
+class ReviewLog(db.Model):
+    __tablename__ = "review_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    card_id: Mapped[str] = mapped_column(String(128), index=True)
+    reviewed_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), index=True
+    )
+    rating: Mapped[int] = mapped_column(Integer)
+    scheduler_version: Mapped[str] = mapped_column(String(32))
+
+    interval_before: Mapped[int] = mapped_column(Integer)
+    easiness_before: Mapped[float] = mapped_column(Float)
+    repetitions_before: Mapped[int] = mapped_column(Integer)
+    next_review_before: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+    interval_after: Mapped[int] = mapped_column(Integer)
+    easiness_after: Mapped[float] = mapped_column(Float)
+    repetitions_after: Mapped[int] = mapped_column(Integer)
+    next_review_after: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+    response_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     user: Mapped["User"] = relationship("User")
