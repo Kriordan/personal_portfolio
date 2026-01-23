@@ -90,8 +90,17 @@
     const progressEl = document.getElementById("review-progress");
     const actionsEl = document.getElementById("flashcard-actions");
     const rateUrl = config.rateUrl;
+    const doneUrl = config.doneUrl || "/learning/";
+    const toastEl = document.getElementById("flashcard-toast");
+    const summaryEl = document.getElementById("review-summary");
+    const summaryTextEl = document.getElementById("review-summary-text");
+    const summaryDoneEl = document.getElementById("review-summary-done");
 
     let currentIndex = 0;
+    let cardStart = performance.now();
+    let completedCount = 0;
+    let isSubmitting = false;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const updateProgress = () => {
       if (progressEl) {
@@ -107,6 +116,13 @@
       actionsEl?.classList.remove("is-disabled");
     };
 
+    const showToast = (message) => {
+      if (!toastEl || !message) return;
+      toastEl.textContent = message;
+      toastEl.classList.add("is-visible");
+      window.setTimeout(() => toastEl.classList.remove("is-visible"), 2000);
+    };
+
     const renderCard = () => {
       const card = cards[currentIndex];
       if (!card) return;
@@ -118,20 +134,32 @@
       answerEl.textContent = card.answer;
       noteTitleEl.textContent = card.note_title ? `From ${card.note_title}` : "";
       updateProgress();
+      cardStart = performance.now();
     };
 
     const sendRating = async (cardId, rating) => {
       if (!rateUrl) return;
+      const responseMs = Math.max(0, Math.round(performance.now() - cardStart));
       try {
-        await fetch(rateUrl, {
+        const response = await fetch(rateUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ card_id: cardId, rating }),
+          body: JSON.stringify({
+            card_id: cardId,
+            rating,
+            response_ms: responseMs,
+            session_id: sessionId,
+          }),
         });
+        if (!response.ok) {
+          return null;
+        }
+        return response.json();
       } catch (error) {
         console.error("Failed to rate card", error);
+        return null;
       }
     };
 
@@ -145,21 +173,36 @@
 
     actionsEl?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-rating]");
-      if (!button || actionsEl.classList.contains("is-disabled")) {
+      if (!button || actionsEl.classList.contains("is-disabled") || isSubmitting) {
         return;
       }
       const rating = Number(button.dataset.rating);
       const card = cards[currentIndex];
       if (!card) return;
 
-      sendRating(card.card_id, rating);
+      isSubmitting = true;
+      lockActions();
 
-      currentIndex += 1;
-      if (currentIndex >= cards.length) {
-        window.location.reload();
-        return;
-      }
-      renderCard();
+      sendRating(card.card_id, rating).then((data) => {
+        isSubmitting = false;
+        if (data?.next_review_display) {
+          showToast(data.next_review_display);
+        }
+        completedCount += 1;
+        currentIndex += 1;
+        if (currentIndex >= cards.length) {
+          reviewCard.setAttribute("hidden", "true");
+          actionsEl?.setAttribute("hidden", "true");
+          if (summaryEl) {
+            summaryEl.hidden = false;
+          }
+          if (summaryTextEl) {
+            summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
+          }
+          return;
+        }
+        renderCard();
+      });
     });
 
     document.addEventListener("keydown", (event) => {
@@ -185,17 +228,40 @@
         Digit4: 5,
       };
 
-      if (ratingMap[event.code] !== undefined && !actionsEl.classList.contains("is-disabled")) {
+      if (
+        ratingMap[event.code] !== undefined &&
+        !actionsEl.classList.contains("is-disabled") &&
+        !isSubmitting
+      ) {
         const rating = ratingMap[event.code];
         const card = cards[currentIndex];
-        sendRating(card.card_id, rating);
-        currentIndex += 1;
-        if (currentIndex >= cards.length) {
-          window.location.reload();
-          return;
-        }
-        renderCard();
+        isSubmitting = true;
+        lockActions();
+        sendRating(card.card_id, rating).then((data) => {
+          isSubmitting = false;
+          if (data?.next_review_display) {
+            showToast(data.next_review_display);
+          }
+          completedCount += 1;
+          currentIndex += 1;
+          if (currentIndex >= cards.length) {
+            reviewCard.setAttribute("hidden", "true");
+            actionsEl?.setAttribute("hidden", "true");
+            if (summaryEl) {
+              summaryEl.hidden = false;
+            }
+            if (summaryTextEl) {
+              summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
+            }
+            return;
+          }
+          renderCard();
+        });
       }
+    });
+
+    summaryDoneEl?.addEventListener("click", () => {
+      window.location.href = doneUrl;
     });
 
     renderCard();

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import abort, current_app, jsonify, render_template, request
@@ -10,7 +10,7 @@ from project.models import ReviewLog, ReviewProgress
 
 from . import learning_blueprint
 from .scheduler_config import SCHEDULER_VERSION
-from .spaced_repetition import update_schedule
+from .spaced_repetition import compute_schedule
 
 
 def _notes_dir() -> Path:
@@ -77,6 +77,28 @@ def _progress_map(card_ids):
         ReviewProgress.card_id.in_(card_ids),
     ).all()
     return {row.card_id: row for row in progress_rows}
+
+
+def _format_next_review_display(now, next_review, before_state, after_state):
+    delta = next_review - now
+    seconds = max(0, int(delta.total_seconds()))
+
+    if seconds < 60:
+        display = "Next review in <1 min"
+    elif seconds < 3600:
+        minutes = round(seconds / 60)
+        display = f"Next review in {minutes} min"
+    elif seconds < 86400:
+        hours = round(seconds / 3600)
+        display = f"Next review in {hours} hr"
+    else:
+        days = round(seconds / 86400)
+        display = f"Next review in {days} day{'s' if days != 1 else ''}"
+
+    if before_state in {"new", "learning", "relearning"} and after_state == "review":
+        return f"Graduated: {display}"
+
+    return display
 
 
 @learning_blueprint.route("/")
@@ -178,30 +200,45 @@ def rate_card():
             user_id=current_user.id,
             card_id=card_id,
             scheduler_version=SCHEDULER_VERSION,
+            learning_state="new",
+            step_index=None,
+            lapses=0,
+            last_rating=None,
             easiness=2.5,
             interval=1,
             repetitions=0,
             next_review=now,
         )
-        before = {
-            "interval": progress.interval,
-            "easiness": progress.easiness,
-            "repetitions": progress.repetitions,
-            "next_review": progress.next_review,
-        }
-    else:
-        before = {
-            "interval": progress.interval,
-            "easiness": progress.easiness,
-            "repetitions": progress.repetitions,
-            "next_review": progress.next_review,
-        }
+    before = {
+        "learning_state": progress.learning_state,
+        "step_index": progress.step_index,
+        "lapses": progress.lapses,
+        "interval": progress.interval,
+        "easiness": progress.easiness,
+        "repetitions": progress.repetitions,
+        "next_review": progress.next_review,
+    }
 
-    progress.easiness, progress.interval, progress.repetitions = update_schedule(
-        progress.easiness, progress.interval, progress.repetitions, rating
+    schedule = compute_schedule(
+        progress.learning_state,
+        progress.step_index,
+        progress.easiness,
+        progress.interval,
+        progress.repetitions,
+        progress.lapses,
+        rating,
+        now,
     )
+
+    progress.learning_state = schedule["learning_state"]
+    progress.step_index = schedule["step_index"]
+    progress.easiness = schedule["easiness"]
+    progress.interval = schedule["interval"]
+    progress.repetitions = schedule["repetitions"]
+    progress.lapses = schedule["lapses"]
+    progress.next_review = schedule["next_review"]
     progress.last_reviewed = now
-    progress.next_review = now + timedelta(days=progress.interval)
+    progress.last_rating = rating
     progress.scheduler_version = SCHEDULER_VERSION
 
     log_entry = ReviewLog(
@@ -210,6 +247,12 @@ def rate_card():
         reviewed_at=now,
         rating=rating,
         scheduler_version=SCHEDULER_VERSION,
+        learning_state_before=before["learning_state"],
+        learning_state_after=progress.learning_state,
+        step_index_before=before["step_index"],
+        step_index_after=progress.step_index,
+        lapses_before=before["lapses"],
+        lapses_after=progress.lapses,
         interval_before=before["interval"],
         easiness_before=before["easiness"],
         repetitions_before=before["repetitions"],
@@ -229,9 +272,13 @@ def rate_card():
     return jsonify(
         {
             "card_id": progress.card_id,
+            "learning_state": progress.learning_state,
             "interval": progress.interval,
             "repetitions": progress.repetitions,
             "easiness": progress.easiness,
             "next_review": progress.next_review.isoformat(),
+            "next_review_display": _format_next_review_display(
+                now, progress.next_review, before["learning_state"], progress.learning_state
+            ),
         }
     )

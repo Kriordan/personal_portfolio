@@ -400,7 +400,11 @@ class ReviewProgress(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     card_id: Mapped[str] = mapped_column(String(128), index=True)
-    scheduler_version: Mapped[str] = mapped_column(String(32), default="sm2_v1")
+    scheduler_version: Mapped[str] = mapped_column(String(32), default="sm2_v2_steps")
+    learning_state: Mapped[str] = mapped_column(String(16), default="new")
+    step_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    lapses: Mapped[int] = mapped_column(Integer, default=0)
+    last_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     easiness: Mapped[float] = mapped_column(Float, default=2.5)
     interval: Mapped[int] = mapped_column(Integer, default=1)
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
@@ -425,6 +429,16 @@ class ReviewLog(db.Model):
     )
     rating: Mapped[int] = mapped_column(Integer)
     scheduler_version: Mapped[str] = mapped_column(String(32))
+    learning_state_before: Mapped[Optional[str]] = mapped_column(
+        String(16), nullable=True
+    )
+    learning_state_after: Mapped[Optional[str]] = mapped_column(
+        String(16), nullable=True
+    )
+    step_index_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    step_index_after: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    lapses_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    lapses_after: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     interval_before: Mapped[int] = mapped_column(Integer)
     easiness_before: Mapped[float] = mapped_column(Float)

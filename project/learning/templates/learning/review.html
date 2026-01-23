@@ -6,6 +6,7 @@
   <section class="learning-review">
     <h1>Review Session</h1>
     {% if cards %}
+      <div class="flashcard-toast" id="flashcard-toast" role="status" aria-live="polite"></div>
       <div class="review-progress" id="review-progress">Card 1 of {{ cards|length }}</div>
       <div class="flashcard flashcard--review" data-flip-card data-review-card>
         <div class="flashcard-inner">
@@ -26,6 +27,11 @@
         <button class="button" data-rating="4" type="button">Good</button>
         <button class="button button--secondary" data-rating="5" type="button">Easy</button>
       </div>
+      <div class="review-summary" id="review-summary" hidden>
+        <h2>Session complete</h2>
+        <p id="review-summary-text"></p>
+        <button class="button" id="review-summary-done" type="button">Done</button>
+      </div>
     {% else %}
       <p>You're all caught up. No cards due right now.</p>
     {% endif %}
@@ -35,7 +41,7 @@
 {% block scripts %}
   <script type="application/json" id="review-cards-data">{{ cards|tojson }}</script>
   <script type="application/json" id="review-config-data">
-    {{ {"rateUrl": url_for('learning.rate_card')}|tojson }}
+    {{ {"rateUrl": url_for('learning.rate_card'), "doneUrl": url_for('learning.index')}|tojson }}
   </script>
   <script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
 {% endblock scripts %}
