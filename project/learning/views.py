@@ -9,8 +9,8 @@ from project.database import db
 from project.models import ReviewLog, ReviewProgress
 
 from . import learning_blueprint
-from .scheduler_config import SCHEDULER_VERSION
-from .spaced_repetition import compute_schedule
+from project.learning.schedulers import ScheduleInput
+from project.learning.schedulers.factory import get_scheduler
 
 
 def _notes_dir() -> Path:
@@ -199,7 +199,6 @@ def rate_card():
         progress = ReviewProgress(
             user_id=current_user.id,
             card_id=card_id,
-            scheduler_version=SCHEDULER_VERSION,
             learning_state="new",
             step_index=None,
             lapses=0,
@@ -213,46 +212,62 @@ def rate_card():
         "learning_state": progress.learning_state,
         "step_index": progress.step_index,
         "lapses": progress.lapses,
+        "half_life_days": progress.half_life_days,
+        "predicted_recall": progress.predicted_recall,
         "interval": progress.interval,
         "easiness": progress.easiness,
         "repetitions": progress.repetitions,
         "next_review": progress.next_review,
     }
 
-    schedule = compute_schedule(
-        progress.learning_state,
-        progress.step_index,
-        progress.easiness,
-        progress.interval,
-        progress.repetitions,
-        progress.lapses,
-        rating,
-        now,
+    scheduler = get_scheduler(current_user.scheduler_preference)
+    schedule_output = scheduler.compute(
+        ScheduleInput(
+            learning_state=progress.learning_state,
+            step_index=progress.step_index,
+            easiness=progress.easiness,
+            interval=progress.interval,
+            repetitions=progress.repetitions,
+            lapses=progress.lapses,
+            half_life_days=progress.half_life_days,
+            predicted_recall=progress.predicted_recall,
+            target_recall=progress.target_recall,
+            rating=rating,
+            now=now,
+            last_reviewed=progress.last_reviewed,
+        )
     )
 
-    progress.learning_state = schedule["learning_state"]
-    progress.step_index = schedule["step_index"]
-    progress.easiness = schedule["easiness"]
-    progress.interval = schedule["interval"]
-    progress.repetitions = schedule["repetitions"]
-    progress.lapses = schedule["lapses"]
-    progress.next_review = schedule["next_review"]
+    progress.learning_state = schedule_output.learning_state
+    progress.step_index = schedule_output.step_index
+    progress.easiness = schedule_output.easiness
+    progress.interval = schedule_output.interval
+    progress.repetitions = schedule_output.repetitions
+    progress.lapses = schedule_output.lapses
+    progress.half_life_days = schedule_output.half_life_days
+    progress.predicted_recall = schedule_output.predicted_recall
+    progress.next_review = schedule_output.next_review
     progress.last_reviewed = now
     progress.last_rating = rating
-    progress.scheduler_version = SCHEDULER_VERSION
+    progress.scheduler_version = schedule_output.scheduler_version
 
     log_entry = ReviewLog(
         user_id=current_user.id,
         card_id=card_id,
         reviewed_at=now,
         rating=rating,
-        scheduler_version=SCHEDULER_VERSION,
+        scheduler_version=progress.scheduler_version,
         learning_state_before=before["learning_state"],
         learning_state_after=progress.learning_state,
         step_index_before=before["step_index"],
         step_index_after=progress.step_index,
         lapses_before=before["lapses"],
         lapses_after=progress.lapses,
+        half_life_before=before["half_life_days"],
+        half_life_after=progress.half_life_days,
+        predicted_recall_before=before["predicted_recall"],
+        predicted_recall_after=progress.predicted_recall,
+        target_recall=progress.target_recall,
         interval_before=before["interval"],
         easiness_before=before["easiness"],
         repetitions_before=before["repetitions"],
@@ -280,5 +295,6 @@ def rate_card():
             "next_review_display": _format_next_review_display(
                 now, progress.next_review, before["learning_state"], progress.learning_state
             ),
+            "scheduler_version": progress.scheduler_version,
         }
     )

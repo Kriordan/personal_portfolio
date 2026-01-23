@@ -36,6 +36,9 @@ class User(UserMixin, db.Model):
     email: Mapped[str] = mapped_column(String(120), index=True, unique=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(256))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    scheduler_preference: Mapped[str] = mapped_column(
+        String(32), default="sm2_v2_steps"
+    )
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verification_token: Mapped[Optional[str]] = mapped_column(
         String(64), nullable=True, unique=True, index=True
@@ -405,6 +408,9 @@ class ReviewProgress(db.Model):
     step_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     lapses: Mapped[int] = mapped_column(Integer, default=0)
     last_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    half_life_days: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    target_recall: Mapped[float] = mapped_column(Float, default=0.9)
+    predicted_recall: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     easiness: Mapped[float] = mapped_column(Float, default=2.5)
     interval: Mapped[int] = mapped_column(Integer, default=1)
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
@@ -439,6 +445,15 @@ class ReviewLog(db.Model):
     step_index_after: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     lapses_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     lapses_after: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    half_life_before: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    half_life_after: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    predicted_recall_before: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True
+    )
+    predicted_recall_after: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True
+    )
+    target_recall: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     interval_before: Mapped[int] = mapped_column(Integer)
     easiness_before: Mapped[float] = mapped_column(Float)

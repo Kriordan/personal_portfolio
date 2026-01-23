@@ -6,6 +6,7 @@ from project.library.jobs import sync_playlists_and_videos
 
 from .database import db
 from .models import User
+from .learning.evaluation import evaluate_scheduler
 
 
 @click.command(name="create-user")
@@ -65,3 +66,26 @@ def sync_yt_subs():
     """Sync YouTube subscriptions and playlists"""
     sync_playlists_and_videos()
     click.echo("YouTube playlists and subs synced successfully.")
+
+
+@click.command(name="eval-scheduler")
+@click.option("--user-id", required=True, type=int)
+@click.option("--days", default=30, type=int)
+@with_appcontext
+def eval_scheduler(user_id, days):
+    """Evaluate scheduler performance."""
+    results = evaluate_scheduler(user_id, days)
+    click.echo(f"Success rate: {results['success_rate']:.2%}")
+    click.echo(f"Lapse rate: {results['lapse_rate']:.2%}")
+    click.echo(f"Reviews per day: {results['reviews_per_day']:.2f}")
+    click.echo(f"Avg half-life growth: {results['avg_half_life_growth']:.2f}")
+
+    if results["by_scheduler"]:
+        click.echo("\nBy scheduler version:")
+        for version, metrics in results["by_scheduler"].items():
+            click.echo(f"- {version}")
+            click.echo(f"  Success rate: {metrics['success_rate']:.2%}")
+            click.echo(f"  Lapse rate: {metrics['lapse_rate']:.2%}")
+            click.echo(
+                f"  Avg half-life growth: {metrics['avg_half_life_growth']:.2f}"
+            )
