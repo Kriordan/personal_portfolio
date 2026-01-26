@@ -95,10 +95,15 @@
     const summaryEl = document.getElementById("review-summary");
     const summaryTextEl = document.getElementById("review-summary-text");
     const summaryDoneEl = document.getElementById("review-summary-done");
+    const summaryStatsEl = document.getElementById("review-summary-stats");
+    const summaryWeakEl = document.getElementById("review-summary-weak");
 
     let currentIndex = 0;
     let cardStart = performance.now();
     let completedCount = 0;
+    let lapseCount = 0;
+    let graduatedCount = 0;
+    const tagLapses = {};
     let isSubmitting = false;
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -135,6 +140,24 @@
 
     const rateUrlWithDebug = buildRateUrl();
 
+    const escapeHtml = (value) =>
+      String(value).replace(/[&<>"']/g, (char) => {
+        const map = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        };
+        return map[char] || char;
+      });
+
+    const renderMultiline = (el, value) => {
+      if (!el) return;
+      const safe = escapeHtml(value || "");
+      el.innerHTML = safe.replace(/\n/g, "<br>");
+    };
+
     const renderCard = () => {
       const card = cards[currentIndex];
       if (!card) return;
@@ -142,8 +165,20 @@
       reviewCard.classList.remove("is-flipped");
       lockActions();
 
-      questionEl.textContent = card.question;
-      answerEl.textContent = card.answer;
+      const prompt = card.prompt ?? card.question ?? "";
+      const response = card.response ?? card.answer ?? "";
+      renderMultiline(questionEl, prompt);
+      const useCodeBlock = card.type === "command" || card.type === "code_diff";
+      if (useCodeBlock && answerEl) {
+        answerEl.innerHTML = "";
+        const pre = document.createElement("pre");
+        const code = document.createElement("code");
+        code.textContent = response;
+        pre.appendChild(code);
+        answerEl.appendChild(pre);
+      } else {
+        renderMultiline(answerEl, response);
+      }
       noteTitleEl.textContent = card.note_title ? `From ${card.note_title}` : "";
       updateProgress();
       cardStart = performance.now();
@@ -199,9 +234,19 @@
         isSubmitting = false;
         if (data?.next_review_display) {
           showToast(data.next_review_display);
+          if (data.next_review_display.startsWith("Graduated:")) {
+            graduatedCount += 1;
+          }
         }
         if (data?.debug) {
           console.log("Scheduler debug", data.debug);
+        }
+        if (rating === 0) {
+          lapseCount += 1;
+          const tags = card.tags || [];
+          tags.forEach((tag) => {
+            tagLapses[tag] = (tagLapses[tag] || 0) + 1;
+          });
         }
         completedCount += 1;
         currentIndex += 1;
@@ -213,6 +258,18 @@
           }
           if (summaryTextEl) {
             summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
+          }
+          if (summaryStatsEl) {
+            summaryStatsEl.textContent = `Reviewed: ${completedCount} | Lapses: ${lapseCount} | Graduated: ${graduatedCount}`;
+          }
+          if (summaryWeakEl) {
+            const sortedTags = Object.entries(tagLapses)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3)
+              .map(([tag]) => tag);
+            summaryWeakEl.textContent = sortedTags.length
+              ? `Weak areas: ${sortedTags.join(", ")}`
+              : "Weak areas: None yet";
           }
           return;
         }
@@ -254,12 +311,22 @@
         lockActions();
         sendRating(card.card_id, rating).then((data) => {
           isSubmitting = false;
-          if (data?.next_review_display) {
+        if (data?.next_review_display) {
             showToast(data.next_review_display);
+          if (data.next_review_display.startsWith("Graduated:")) {
+            graduatedCount += 1;
+          }
           }
           if (data?.debug) {
             console.log("Scheduler debug", data.debug);
           }
+        if (rating === 0) {
+          lapseCount += 1;
+          const tags = card.tags || [];
+          tags.forEach((tag) => {
+            tagLapses[tag] = (tagLapses[tag] || 0) + 1;
+          });
+        }
           completedCount += 1;
           currentIndex += 1;
           if (currentIndex >= cards.length) {
@@ -268,9 +335,21 @@
             if (summaryEl) {
               summaryEl.hidden = false;
             }
-            if (summaryTextEl) {
-              summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
-            }
+          if (summaryTextEl) {
+            summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
+          }
+          if (summaryStatsEl) {
+            summaryStatsEl.textContent = `Reviewed: ${completedCount} | Lapses: ${lapseCount} | Graduated: ${graduatedCount}`;
+          }
+          if (summaryWeakEl) {
+            const sortedTags = Object.entries(tagLapses)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3)
+              .map(([tag]) => tag);
+            summaryWeakEl.textContent = sortedTags.length
+              ? `Weak areas: ${sortedTags.join(", ")}`
+              : "Weak areas: None yet";
+          }
             return;
           }
           renderCard();

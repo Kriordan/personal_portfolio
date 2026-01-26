@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from project.models import ReviewLog, ReviewProgress
 from . import learning_blueprint
 from project.learning.schedulers import ScheduleInput
 from project.learning.schedulers.factory import get_scheduler
+from project.learning.queue_builder import build_review_queue
 from project.learning.scheduler_config import get_effective_target_recall
 
 
@@ -31,6 +33,24 @@ def _load_note(note_id: str):
     data.setdefault("summary", "")
     data.setdefault("flashcards", [])
     return data
+
+
+def _slugify(value: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9\s-]", "", value or "").strip().lower()
+    return re.sub(r"[\s_-]+", "-", cleaned).strip("-")
+
+
+def _ensure_unique_card_id(note, desired_id):
+    existing_ids = {card.get("id") for card in note.get("flashcards", [])}
+    if desired_id and desired_id not in existing_ids:
+        return desired_id
+    base = desired_id or "inc"
+    counter = 1
+    candidate = f"{base}-{counter}"
+    while candidate in existing_ids:
+        counter += 1
+        candidate = f"{base}-{counter}"
+    return candidate
 
 
 def _load_notes():
@@ -59,35 +79,51 @@ def _build_cards(notes):
             card_id = card.get("id")
             if not card_id:
                 continue
+            card_tags = card.get("tags", [])
+            merged_tags = list(dict.fromkeys([*note_tags, *card_tags]))
             card_type = card.get("type", "qa")
             if card_type == "incident":
                 symptom = card.get("symptom", "")
                 root_cause = card.get("root_cause", "")
                 fix = card.get("fix", "")
                 prevention = card.get("prevention", "")
-                question = (
-                    f"Incident symptom: {symptom}\n"
-                    "What was the root cause, fix, and prevention?"
+                prompt = (
+                    f"Symptom: {symptom}\n\n"
+                    "What's the likely root cause? How do you fix it? "
+                    "How do you prevent regression?"
                 )
-                answer_parts = []
+                response_parts = []
                 if root_cause:
-                    answer_parts.append(f"Root cause: {root_cause}")
+                    response_parts.append(f"Root cause: {root_cause}")
                 if fix:
-                    answer_parts.append(f"Fix: {fix}")
+                    response_parts.append(f"Fix: {fix}")
                 if prevention:
-                    answer_parts.append(f"Prevention: {prevention}")
-                answer = "\n".join(answer_parts).strip()
+                    response_parts.append(f"Prevention: {prevention}")
+                response = "\n".join(response_parts).strip()
+            elif card_type == "cloze":
+                text = card.get("text", "")
+                prompt = re.sub(r"\{\{c\d+::(.*?)\}\}", "[...]", text)
+                response = re.sub(r"\{\{c\d+::(.*?)\}\}", r"\1", text).strip()
+            elif card_type == "command":
+                prompt = card.get("prompt", "")
+                response = card.get("answer", "")
+            elif card_type == "code_diff":
+                prompt = f"{card.get('prompt', '')}\n\nWhat code change fixes this?"
+                before = card.get("before", "")
+                after = card.get("after", "")
+                response = f"Before:\n{before}\n\nAfter:\n{after}".strip()
             else:
-                question = card.get("question", "")
-                answer = card.get("answer", "")
+                prompt = card.get("question", "")
+                response = card.get("answer", "")
             cards.append(
                 {
                     "card_id": f"{note_id}:{card_id}",
                     "note_id": note_id,
                     "note_title": note_title,
-                    "tags": note_tags,
-                    "question": question,
-                    "answer": answer,
+                    "type": card_type,
+                    "tags": merged_tags,
+                    "prompt": prompt,
+                    "response": response,
                 }
             )
     return cards
@@ -168,13 +204,7 @@ def review():
         if progress is None or progress.next_review <= now:
             due_cards.append(card)
 
-    due_cards.sort(
-        key=lambda card: (
-            progress_map.get(card["card_id"]).next_review
-            if progress_map.get(card["card_id"])
-            else now
-        )
-    )
+    due_cards = build_review_queue(due_cards, progress_map)
 
     return render_template(
         "learning/review.html",
@@ -188,6 +218,7 @@ def note(note_id):
     note_data = _load_note(note_id)
     if note_data is None:
         abort(404)
+    note_data["flashcards"] = _build_cards([note_data])
     return render_template("learning/note.html", note=note_data)
 
 
@@ -344,3 +375,66 @@ def rate_card():
         }
 
     return jsonify(response_data)
+
+
+@learning_blueprint.route("/api/incident", methods=["POST"])
+@login_required
+def create_incident():
+    if not current_user.is_admin:
+        return jsonify({"error": "admin access required"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    note_id = payload.get("note_id")
+    title = payload.get("title")
+    symptom = payload.get("symptom")
+    root_cause = payload.get("root_cause")
+    fix = payload.get("fix")
+    prevention = payload.get("prevention", "")
+    tags = payload.get("tags", [])
+
+    if not symptom or not root_cause or not fix:
+        return jsonify(
+            {"error": "symptom, root_cause, and fix are required"}
+        ), 400
+
+    resolved_note_id = note_id or _slugify(title)
+    if not resolved_note_id:
+        return jsonify({"error": "note_id or title is required"}), 400
+
+    note = _load_note(resolved_note_id)
+    if note is None:
+        note = {
+            "id": resolved_note_id,
+            "title": title or resolved_note_id.replace("-", " ").title(),
+            "created_at": datetime.now(timezone.utc).date().isoformat(),
+            "tags": tags,
+            "summary": "",
+            "flashcards": [],
+        }
+
+    desired_card_id = payload.get("id")
+    if desired_card_id:
+        existing_ids = {card.get("id") for card in note.get("flashcards", [])}
+        if desired_card_id in existing_ids:
+            return jsonify({"error": "card id already exists"}), 400
+
+    card_id = _ensure_unique_card_id(note, desired_card_id or "inc")
+    new_card = {
+        "id": card_id,
+        "type": "incident",
+        "title": title or "",
+        "symptom": symptom,
+        "root_cause": root_cause,
+        "fix": fix,
+        "prevention": prevention,
+        "tags": tags,
+    }
+    note.setdefault("flashcards", []).append(new_card)
+
+    note_path = _notes_dir() / f"{resolved_note_id}.json"
+    note_path.write_text(
+        json.dumps(note, indent=2, ensure_ascii=True),
+        encoding="utf-8",
+    )
+
+    return jsonify({"note_id": resolved_note_id, "card_id": card_id}), 201

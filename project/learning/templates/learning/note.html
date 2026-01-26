@@ -20,11 +20,11 @@
             <div class="flashcard-inner">
               <div class="flashcard-face flashcard-front">
                 <div class="flashcard-label">Question</div>
-                <p>{{ card.question }}</p>
+                <p>{{ card.prompt or card.question }}</p>
               </div>
               <div class="flashcard-face flashcard-back">
                 <div class="flashcard-label">Answer</div>
-                <p>{{ card.answer }}</p>
+                <p>{{ card.response or card.answer }}</p>
               </div>
             </div>
           </div>
