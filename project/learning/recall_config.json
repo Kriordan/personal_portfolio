@@ -1,0 +1,8 @@
+{
+  "tags": {
+    "security": 0.95,
+    "auth": 0.93,
+    "migrations": 0.92
+  },
+  "default": 0.9
+}

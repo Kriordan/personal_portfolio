@@ -11,6 +11,7 @@ from project.models import ReviewLog, ReviewProgress
 from . import learning_blueprint
 from project.learning.schedulers import ScheduleInput
 from project.learning.schedulers.factory import get_scheduler
+from project.learning.scheduler_config import get_effective_target_recall
 
 
 def _notes_dir() -> Path:
@@ -53,17 +54,40 @@ def _build_cards(notes):
     for note in notes:
         note_id = note.get("id")
         note_title = note.get("title")
+        note_tags = note.get("tags", [])
         for card in note.get("flashcards", []):
             card_id = card.get("id")
             if not card_id:
                 continue
+            card_type = card.get("type", "qa")
+            if card_type == "incident":
+                symptom = card.get("symptom", "")
+                root_cause = card.get("root_cause", "")
+                fix = card.get("fix", "")
+                prevention = card.get("prevention", "")
+                question = (
+                    f"Incident symptom: {symptom}\n"
+                    "What was the root cause, fix, and prevention?"
+                )
+                answer_parts = []
+                if root_cause:
+                    answer_parts.append(f"Root cause: {root_cause}")
+                if fix:
+                    answer_parts.append(f"Fix: {fix}")
+                if prevention:
+                    answer_parts.append(f"Prevention: {prevention}")
+                answer = "\n".join(answer_parts).strip()
+            else:
+                question = card.get("question", "")
+                answer = card.get("answer", "")
             cards.append(
                 {
                     "card_id": f"{note_id}:{card_id}",
                     "note_id": note_id,
                     "note_title": note_title,
-                    "question": card.get("question", ""),
-                    "answer": card.get("answer", ""),
+                    "tags": note_tags,
+                    "question": question,
+                    "answer": answer,
                 }
             )
     return cards
@@ -139,6 +163,8 @@ def review():
     due_cards = []
     for card in cards:
         progress = progress_map.get(card["card_id"])
+        if progress is not None and progress.is_suspended:
+            continue
         if progress is None or progress.next_review <= now:
             due_cards.append(card)
 
@@ -187,8 +213,11 @@ def rate_card():
 
     notes = _load_notes()
     cards = _build_cards(notes)
-    if card_id not in {card["card_id"] for card in cards}:
+    card_lookup = {card["card_id"]: card for card in cards}
+    if card_id not in card_lookup:
         return jsonify({"error": "card not found"}), 404
+    card = card_lookup[card_id]
+    effective_target_recall = get_effective_target_recall(card.get("tags", []))
 
     progress = ReviewProgress.query.filter_by(
         user_id=current_user.id, card_id=card_id
@@ -231,7 +260,7 @@ def rate_card():
             lapses=progress.lapses,
             half_life_days=progress.half_life_days,
             predicted_recall=progress.predicted_recall,
-            target_recall=progress.target_recall,
+            target_recall=effective_target_recall,
             rating=rating,
             now=now,
             last_reviewed=progress.last_reviewed,
@@ -246,10 +275,15 @@ def rate_card():
     progress.lapses = schedule_output.lapses
     progress.half_life_days = schedule_output.half_life_days
     progress.predicted_recall = schedule_output.predicted_recall
+    progress.target_recall = effective_target_recall
     progress.next_review = schedule_output.next_review
     progress.last_reviewed = now
     progress.last_rating = rating
     progress.scheduler_version = schedule_output.scheduler_version
+    if schedule_output.is_graduated and progress.graduated_at is None:
+        progress.graduated_at = now
+    if rating < 3 and progress.graduated_at is not None:
+        progress.graduated_at = None
 
     log_entry = ReviewLog(
         user_id=current_user.id,
@@ -284,17 +318,29 @@ def rate_card():
     db.session.add(log_entry)
     db.session.commit()
 
-    return jsonify(
-        {
-            "card_id": progress.card_id,
-            "learning_state": progress.learning_state,
-            "interval": progress.interval,
-            "repetitions": progress.repetitions,
-            "easiness": progress.easiness,
-            "next_review": progress.next_review.isoformat(),
-            "next_review_display": _format_next_review_display(
-                now, progress.next_review, before["learning_state"], progress.learning_state
-            ),
+    response_data = {
+        "card_id": progress.card_id,
+        "learning_state": progress.learning_state,
+        "interval": progress.interval,
+        "repetitions": progress.repetitions,
+        "easiness": progress.easiness,
+        "next_review": progress.next_review.isoformat(),
+        "next_review_display": _format_next_review_display(
+            now, progress.next_review, before["learning_state"], progress.learning_state
+        ),
+        "scheduler_version": progress.scheduler_version,
+    }
+
+    show_debug = current_user.is_admin or request.args.get("debug") == "1"
+    if show_debug:
+        debug_info = schedule_output.debug_info or {}
+        response_data["debug"] = {
             "scheduler_version": progress.scheduler_version,
+            "predicted_recall_before": debug_info.get("predicted_recall_before"),
+            "predicted_recall_after": progress.predicted_recall,
+            "half_life_days": progress.half_life_days,
+            "target_recall": progress.target_recall,
+            "next_review": progress.next_review.isoformat(),
         }
-    )
+
+    return jsonify(response_data)

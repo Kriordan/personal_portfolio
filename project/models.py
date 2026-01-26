@@ -411,6 +411,10 @@ class ReviewProgress(db.Model):
     half_life_days: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     target_recall: Mapped[float] = mapped_column(Float, default=0.9)
     predicted_recall: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    is_suspended: Mapped[bool] = mapped_column(Boolean, default=False)
+    graduated_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
     easiness: Mapped[float] = mapped_column(Float, default=2.5)
     interval: Mapped[int] = mapped_column(Integer, default=1)
     repetitions: Mapped[int] = mapped_column(Integer, default=0)

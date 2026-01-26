@@ -123,6 +123,18 @@
       window.setTimeout(() => toastEl.classList.remove("is-visible"), 2000);
     };
 
+    const buildRateUrl = () => {
+      if (!rateUrl) return null;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("debug") !== "1") {
+        return rateUrl;
+      }
+      const separator = rateUrl.includes("?") ? "&" : "?";
+      return `${rateUrl}${separator}debug=1`;
+    };
+
+    const rateUrlWithDebug = buildRateUrl();
+
     const renderCard = () => {
       const card = cards[currentIndex];
       if (!card) return;
@@ -138,10 +150,10 @@
     };
 
     const sendRating = async (cardId, rating) => {
-      if (!rateUrl) return;
+      if (!rateUrlWithDebug) return;
       const responseMs = Math.max(0, Math.round(performance.now() - cardStart));
       try {
-        const response = await fetch(rateUrl, {
+        const response = await fetch(rateUrlWithDebug, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -187,6 +199,9 @@
         isSubmitting = false;
         if (data?.next_review_display) {
           showToast(data.next_review_display);
+        }
+        if (data?.debug) {
+          console.log("Scheduler debug", data.debug);
         }
         completedCount += 1;
         currentIndex += 1;
@@ -241,6 +256,9 @@
           isSubmitting = false;
           if (data?.next_review_display) {
             showToast(data.next_review_display);
+          }
+          if (data?.debug) {
+            console.log("Scheduler debug", data.debug);
           }
           completedCount += 1;
           currentIndex += 1;

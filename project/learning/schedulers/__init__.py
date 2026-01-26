@@ -33,6 +33,7 @@ class ScheduleOutput:
     next_review: datetime
     scheduler_version: str
     debug_info: Optional[dict] = None
+    is_graduated: bool = False
 
 
 class BaseScheduler(ABC):

@@ -3,6 +3,8 @@ from datetime import timedelta
 
 from project.learning.scheduler_config import (
     HLR_DEFAULT_TARGET_RECALL,
+    HLR_CONFIDENCE_CHECK_INTERVAL_DAYS,
+    HLR_GRADUATION_HALF_LIFE_DAYS,
     HLR_HALF_LIFE_MULTIPLIERS,
     HLR_INITIAL_HALF_LIFE,
     HLR_LAPSE_MULTIPLIER,
@@ -54,6 +56,7 @@ class HLRScheduler(BaseScheduler):
                 predicted_recall=inp.predicted_recall,
                 next_review=schedule["next_review"],
                 scheduler_version=HLR_SCHEDULER_VERSION,
+                is_graduated=False,
             )
 
         half_life = inp.half_life_days or HLR_INITIAL_HALF_LIFE
@@ -92,6 +95,7 @@ class HLRScheduler(BaseScheduler):
                     "predicted_recall_before": predicted_recall_before,
                     "predicted_recall_after": predicted_recall_after,
                 },
+                is_graduated=False,
             )
 
         multiplier = HLR_HALF_LIFE_MULTIPLIERS.get(inp.rating, 1.0)
@@ -104,6 +108,11 @@ class HLRScheduler(BaseScheduler):
         days_until = min(HLR_MAX_HALF_LIFE, days_until)
 
         next_review = inp.now + timedelta(days=days_until)
+        is_graduated = False
+        if half_life >= HLR_GRADUATION_HALF_LIFE_DAYS:
+            next_review = inp.now + timedelta(days=HLR_CONFIDENCE_CHECK_INTERVAL_DAYS)
+            days_until = HLR_CONFIDENCE_CHECK_INTERVAL_DAYS
+            is_graduated = True
 
         return ScheduleOutput(
             learning_state="review",
@@ -121,4 +130,5 @@ class HLRScheduler(BaseScheduler):
                 "predicted_recall_after": predicted_recall_after,
                 "days_until": days_until,
             },
+            is_graduated=is_graduated,
         )
