@@ -275,8 +275,16 @@ def resend_verification():
 
     try:
         send_verification_email(user)
-    except Exception as err:
-        print(f"Error sending verification email: {err}")
+    except Exception:
+        current_app.logger.exception(
+            "Failed to resend verification email to %s", user.email
+        )
+        session.pop("pending_verification_email", None)
+        flash(
+            "We couldn't send the verification email. Please try again later.",
+            "warning",
+        )
+        return redirect(url_for("account.login"))
 
     session.pop("pending_verification_email", None)
     flash("Verification email resent. Please check your inbox.", "success")
