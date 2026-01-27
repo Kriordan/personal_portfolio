@@ -19,14 +19,20 @@ from .learning.evaluation import evaluate_scheduler
     confirmation_prompt=True,
     help="The password of the user",
 )
+@click.option(
+    "--verified/--no-verified",
+    default=True,
+    help="Whether to mark email as verified (default: True)",
+)
 @with_appcontext
-def create_user(email, username, password):
+def create_user(email, username, password, verified):
     """Create a new user"""
     user = User(email=email, username=username)
     user.set_password(password)
+    user.email_verified = verified
     db.session.add(user)
     db.session.commit()
-    click.echo(f"User {username} created successfully")
+    click.echo(f"User {username} created successfully (email_verified={verified})")
 
 
 @click.command(name="reset-password")
