@@ -2,7 +2,7 @@ import logging
 import os
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -191,8 +191,6 @@ class ListInvitation(db.Model):
         Returns:
             ListInvitation: The created invitation
         """
-        from datetime import timedelta
-
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
 
@@ -255,8 +253,6 @@ class SiteInvitation(db.Model):
         Returns:
             SiteInvitation: The created invitation
         """
-        from datetime import timedelta
-
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
         return cls(email=email, token=token, expires_at=expires_at)

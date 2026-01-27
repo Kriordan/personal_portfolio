@@ -37,8 +37,8 @@
                                 Pending
                             {% endif %}
                         </td>
-                        <td>{{ invite.created_at }}</td>
-                        <td>{{ invite.accepted_at or "" }}</td>
+                        <td>{{ invite.created_at|datetimeformat }}</td>
+                        <td>{{ invite.accepted_at|datetimeformat }}</td>
                     </tr>
                 {% else %}
                     <tr>
@@ -75,8 +75,8 @@
                                 Pending
                             {% endif %}
                         </td>
-                        <td>{{ invite.created_at }}</td>
-                        <td>{{ invite.accepted_at or "" }}</td>
+                        <td>{{ invite.created_at|datetimeformat }}</td>
+                        <td>{{ invite.accepted_at|datetimeformat }}</td>
                     </tr>
                 {% else %}
                     <tr>

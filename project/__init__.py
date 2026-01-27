@@ -28,10 +28,17 @@ from project.lists.views import lists_blueprint
 from project.oauth.views import oauth_blueprint
 from project.wishlist.views import wishlist_blueprint
 
-from .commands import create_user, eval_scheduler, reset_db, reset_password, sync_yt_subs
+from .commands import (
+    create_user,
+    eval_scheduler,
+    reset_db,
+    reset_password,
+    sync_yt_subs,
+)
 from .csp import csp
 from .database import db
 from .extensions import login_manager, migrate, scheduler, talisman
+from .filters import register_filters
 from .models import User
 from .sockets import register_handlers, socketio
 
@@ -61,6 +68,7 @@ def create_app(test_config=None):
     register_extensions(app)
     register_blueprints(app)
     register_commands(app)
+    register_filters(app)
     register_jinja_env(app)
     register_errorhandlers(app)
     register_websockets(app)

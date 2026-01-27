@@ -1,4 +1,5 @@
 import json
+import threading
 from datetime import timedelta
 from pathlib import Path
 
@@ -27,6 +28,7 @@ HLR_GRADUATION_HALF_LIFE_DAYS = 180
 HLR_CONFIDENCE_CHECK_INTERVAL_DAYS = 90
 
 _RECALL_CONFIG_CACHE = None
+_RECALL_CONFIG_LOCK = threading.Lock()
 
 
 def load_recall_config():
@@ -34,16 +36,21 @@ def load_recall_config():
     if _RECALL_CONFIG_CACHE is not None:
         return _RECALL_CONFIG_CACHE
 
-    config_path = Path(__file__).with_name("recall_config.json")
-    if not config_path.exists():
-        _RECALL_CONFIG_CACHE = {}
-        return _RECALL_CONFIG_CACHE
+    with _RECALL_CONFIG_LOCK:
+        # Double-check after acquiring lock
+        if _RECALL_CONFIG_CACHE is not None:
+            return _RECALL_CONFIG_CACHE
 
-    try:
-        _RECALL_CONFIG_CACHE = json.loads(config_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        _RECALL_CONFIG_CACHE = {}
-    return _RECALL_CONFIG_CACHE
+        config_path = Path(__file__).with_name("recall_config.json")
+        if not config_path.exists():
+            _RECALL_CONFIG_CACHE = {}
+            return _RECALL_CONFIG_CACHE
+
+        try:
+            _RECALL_CONFIG_CACHE = json.loads(config_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            _RECALL_CONFIG_CACHE = {}
+        return _RECALL_CONFIG_CACHE
 
 
 def get_effective_target_recall(tags):
