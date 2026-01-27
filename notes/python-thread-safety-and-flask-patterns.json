@@ -1,0 +1,71 @@
+{
+  "id": "python-thread-safety-and-flask-patterns",
+  "title": "Python Thread Safety and Flask Patterns",
+  "created_at": "2026-01-27",
+  "tags": ["python", "flask", "threading", "best-practices"],
+  "summary": "Key patterns for thread-safe caching in Python using double-checked locking, proper import organization, and Flask decorator patterns for route protection. Includes migration best practices for timezone-aware datetime columns.",
+  "flashcards": [
+    {
+      "id": "thread-qa-1",
+      "type": "qa",
+      "question": "Why is a global mutable cache variable without locking problematic in a multi-threaded web application?",
+      "answer": "Multiple threads can read/write the cache simultaneously, causing race conditions. Thread A might check 'cache is None', then Thread B also checks before A writes, resulting in duplicate initialization or corrupted state.",
+      "tags": ["threading", "concurrency"]
+    },
+    {
+      "id": "thread-cloze-1",
+      "type": "cloze",
+      "text": "The {{c1::double-checked locking}} pattern checks the condition before acquiring the lock, then checks again after acquiring it, to avoid unnecessary lock contention while remaining thread-safe.",
+      "tags": ["threading", "patterns"]
+    },
+    {
+      "id": "thread-diff-1",
+      "type": "code_diff",
+      "prompt": "How do you make a global cache thread-safe in Python?",
+      "before": "_CACHE = None\n\ndef load_config():\n    global _CACHE\n    if _CACHE is not None:\n        return _CACHE\n    _CACHE = read_file()\n    return _CACHE",
+      "after": "import threading\n\n_CACHE = None\n_LOCK = threading.Lock()\n\ndef load_config():\n    global _CACHE\n    if _CACHE is not None:\n        return _CACHE\n    with _LOCK:\n        if _CACHE is not None:\n            return _CACHE\n        _CACHE = read_file()\n        return _CACHE",
+      "tags": ["threading", "python"]
+    },
+    {
+      "id": "import-qa-1",
+      "type": "qa",
+      "question": "Why should imports be at the module level rather than inside functions?",
+      "answer": "1) Consistency and readability - all dependencies visible at top of file. 2) Minor performance - import statement runs once at module load vs every function call. 3) Easier to track dependencies and avoid circular imports.",
+      "tags": ["python", "imports"]
+    },
+    {
+      "id": "flask-qa-1",
+      "type": "qa",
+      "question": "Why is a boolean-returning helper function for route access control error-prone compared to a decorator?",
+      "answer": "Callers can forget to: 1) check the return value, 2) return/redirect after a failed check. Each route duplicates redirect logic. A decorator handles all this automatically and consistently.",
+      "tags": ["flask", "decorators"]
+    },
+    {
+      "id": "flask-diff-1",
+      "type": "code_diff",
+      "prompt": "Convert a boolean access helper to a Flask decorator pattern",
+      "before": "def require_admin_access():\n    if not current_user.is_admin:\n        flash(\"No access\", \"danger\")\n        return False\n    return True\n\n@app.route(\"/admin\")\ndef admin():\n    if not require_admin_access():\n        return redirect(url_for(\"home\"))\n    # route logic",
+      "after": "from functools import wraps\n\ndef admin_required(f):\n    @wraps(f)\n    def decorated(*args, **kwargs):\n        if not current_user.is_admin:\n            flash(\"No access\", \"danger\")\n            return redirect(url_for(\"home\"))\n        return f(*args, **kwargs)\n    return decorated\n\n@app.route(\"/admin\")\n@admin_required\ndef admin():\n    # route logic",
+      "tags": ["flask", "decorators"]
+    },
+    {
+      "id": "flask-cloze-1",
+      "type": "cloze",
+      "text": "When creating a Flask decorator, use {{c1::@wraps(f)}} from functools to preserve the original function's name and docstring.",
+      "tags": ["flask", "decorators"]
+    },
+    {
+      "id": "migration-cloze-1",
+      "type": "cloze",
+      "text": "In SQLAlchemy migrations, use {{c1::sa.DateTime(timezone=True)}} to match model columns defined with {{c2::db.DateTime(timezone=True)}}.",
+      "tags": ["sqlalchemy", "migrations"]
+    },
+    {
+      "id": "review-qa-1",
+      "type": "qa",
+      "question": "When reviewing reported code issues, what should you verify before fixing?",
+      "answer": "1) Line numbers actually match the issue described. 2) The issue exists in current code (not already fixed). 3) For migrations, check if subsequent migrations already addressed it. 4) The fix won't break existing functionality.",
+      "tags": ["code-review", "best-practices"]
+    }
+  ]
+}
