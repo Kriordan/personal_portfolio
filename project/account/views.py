@@ -144,9 +144,13 @@ def signup(token):
         return redirect(url_for("account.login"))
 
     form = SignupForm()
-    form.email.data = invite.email
 
     if form.validate_on_submit():
+        if form.email.data and form.email.data.lower() != invite.email.lower():
+            flash("Email address does not match the invitation.", "danger")
+            form.email.data = invite.email
+            return render_template("signup.html", form=form)
+
         existing_user = db.session.scalar(
             sa.select(User).where(User.email == invite.email)
         )
@@ -159,6 +163,7 @@ def signup(token):
         )
         if existing_username:
             flash("That username is already taken.", "danger")
+            form.email.data = invite.email
             return render_template("signup.html", form=form)
 
         user = User(email=invite.email, username=form.username.data)
@@ -166,6 +171,9 @@ def signup(token):
         generate_email_verification(user)
         db.session.add(user)
 
+        # SiteInvitations are accepted immediately at signup.
+        # ListInvitations are intentionally deferred to email verification,
+        # where the user is also added to the list's shared_with (see verify_email).
         if isinstance(invite, SiteInvitation):
             invite.accept()
 
@@ -174,7 +182,9 @@ def signup(token):
         try:
             send_verification_email(user)
         except Exception:
-            current_app.logger.exception("Failed to send verification email to %s", user.email)
+            current_app.logger.exception(
+                "Failed to send verification email to %s", user.email
+            )
             flash(
                 "Your account was created, but we couldn't send the verification email. "
                 "Please request a new one from your account settings.",
@@ -183,6 +193,8 @@ def signup(token):
 
         return render_template("verify_email_sent.html", email=user.email)
 
+    # Always display the invite email in the form (GET requests and validation errors)
+    form.email.data = invite.email
     return render_template("signup.html", form=form)
 
 

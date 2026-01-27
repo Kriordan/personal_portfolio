@@ -1,0 +1,71 @@
+{
+  "id": "flask-migrations-and-invite-patterns",
+  "title": "Flask Migrations and Invitation Flow Patterns",
+  "created_at": "2026-01-27",
+  "tags": ["flask", "alembic", "migrations", "security", "sqlalchemy"],
+  "summary": "Patterns for handling invitation-based signup flows with deferred acceptance, timezone-aware migrations, and migration squashing workflows in Flask/Alembic projects.",
+  "flashcards": [
+    {
+      "id": "invite-qa-1",
+      "type": "qa",
+      "question": "Why might you defer ListInvitation acceptance to email verification instead of accepting at signup?",
+      "answer": "Security measure - the list isn't shared with the user until their email is verified. This prevents someone from gaining access to shared resources before proving they own the email address.",
+      "tags": ["security", "flask"]
+    },
+    {
+      "id": "invite-qa-2",
+      "type": "qa",
+      "question": "When setting a form field value before validation (e.g., form.email.data = invite.email), why is it important to always use the server-side value for database operations?",
+      "answer": "WTForms repopulates form.data from POST data during validate_on_submit(), so a user could manipulate the submitted value. Always use the trusted server-side value (invite.email) for DB operations, not form.email.data.",
+      "tags": ["security", "wtforms", "flask"]
+    },
+    {
+      "id": "migrate-cloze-1",
+      "type": "cloze",
+      "text": "In SQLAlchemy/Alembic migrations, use {{c1::sa.DateTime(timezone=True)}} to create timezone-aware timestamp columns that match model definitions using {{c2::db.DateTime(timezone=True)}}.",
+      "tags": ["alembic", "sqlalchemy"]
+    },
+    {
+      "id": "migrate-qa-1",
+      "type": "qa",
+      "question": "If a migration creates DateTime columns without timezone=True but your models use timezone-aware types, what's the proper fix?",
+      "answer": "Create a follow-up migration that alters the columns to use timezone-aware types. Use postgresql_using to convert existing data: batch_op.alter_column('col', type_=sa.DateTime(timezone=True), postgresql_using=\"col AT TIME ZONE 'UTC'\")",
+      "tags": ["alembic", "postgresql"]
+    },
+    {
+      "id": "squash-qa-1",
+      "type": "qa",
+      "question": "What's the main challenge when squashing Alembic migrations after they've been applied to production?",
+      "answer": "The squashed migration has a new revision ID, but production's alembic_version table still references the old final revision. You must manually UPDATE alembic_version SET version_num = 'new_id' in all environments after squashing.",
+      "tags": ["alembic", "migrations"]
+    },
+    {
+      "id": "squash-qa-2",
+      "type": "qa",
+      "question": "When is migration squashing most valuable vs. unnecessary?",
+      "answer": "Valuable: 50+ migrations, redundant migrations (add then remove same column), before open-sourcing. Unnecessary: <20 migrations, personal projects, when history tells a useful story of schema evolution.",
+      "tags": ["alembic", "migrations"]
+    },
+    {
+      "id": "squash-cmd-1",
+      "type": "command",
+      "prompt": "Alembic command to merge divergent migration branches",
+      "answer": "flask db merge heads -m \"merge migrations\"",
+      "tags": ["alembic", "flask"]
+    },
+    {
+      "id": "squash-cloze-1",
+      "type": "cloze",
+      "text": "Before squashing migrations, verify all environments are on the {{c1::same final revision}} and only squash migrations that have been {{c2::applied to ALL environments}}.",
+      "tags": ["alembic", "migrations"]
+    },
+    {
+      "id": "invite-diff-1",
+      "type": "code_diff",
+      "prompt": "How do you add server-side validation to prevent form email manipulation in an invitation signup flow?",
+      "before": "form = SignupForm()\nform.email.data = invite.email\n\nif form.validate_on_submit():\n    user = User(email=invite.email, ...)",
+      "after": "form = SignupForm()\n\nif form.validate_on_submit():\n    if form.email.data and form.email.data.lower() != invite.email.lower():\n        flash(\"Email address does not match the invitation.\", \"danger\")\n        form.email.data = invite.email\n        return render_template(\"signup.html\", form=form)\n    user = User(email=invite.email, ...)\n\nform.email.data = invite.email  # Always set for GET/error renders\nreturn render_template(\"signup.html\", form=form)",
+      "tags": ["security", "wtforms", "flask"]
+    }
+  ]
+}
