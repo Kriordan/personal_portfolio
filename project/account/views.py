@@ -173,8 +173,13 @@ def signup(token):
 
         try:
             send_verification_email(user)
-        except Exception as err:
-            print(f"Error sending verification email: {err}")
+        except Exception:
+            current_app.logger.exception("Failed to send verification email to %s", user.email)
+            flash(
+                "Your account was created, but we couldn't send the verification email. "
+                "Please request a new one from your account settings.",
+                "warning",
+            )
 
         return render_template("verify_email_sent.html", email=user.email)
 
@@ -316,8 +321,9 @@ def admin_invites():
             )
             ms.emails.send(email_message)
             flash("Invitation sent successfully.", "success")
-        except Exception as err:
-            flash(f"Failed to send invitation email: {err}", "danger")
+        except Exception:
+            current_app.logger.exception("Failed to send invitation email to %s", email)
+            flash("Failed to send invitation email. Please try again.", "danger")
 
         return redirect(url_for("account.admin_invites"))
 
