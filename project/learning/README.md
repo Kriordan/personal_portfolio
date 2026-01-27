@@ -14,7 +14,7 @@ A spaced repetition system optimized for retaining software engineering lessons.
 
 ## Architecture
 
-```
+```text
 project/learning/
 ├── __init__.py              # Blueprint registration
 ├── views.py                 # Routes and card builder
@@ -36,7 +36,7 @@ project/learning/
 ## Routes
 
 | Method | Path | Description |
-|--------|------|-------------|
+| ------ | ---- | ----------- |
 | GET | `/learning/` | List notes with due card counts |
 | GET | `/learning/review` | Start review session with due cards |
 | GET | `/learning/note/<note_id>` | View a specific note's flashcards |
@@ -188,7 +188,7 @@ The `build_review_queue()` function orders cards to maximize learning:
 ## Rating Scale
 
 | Key | Rating | Meaning |
-|-----|--------|---------|
+| --- | ------ | ------- |
 | 1 | 0 | Again (complete failure, re-enter learning) |
 | 2 | 3 | Hard (correct but difficult) |
 | 3 | 4 | Good (correct with effort) |
@@ -226,7 +226,7 @@ Admins see scheduler debug info in the `/rate` response. Non-admins can add `?de
 Current state for each card per user:
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ---- | ----------- |
 | card_id | string | `{note_id}:{card_id}` |
 | learning_state | string | new/learning/review/relearning |
 | step_index | int | Current learning step (nullable) |
@@ -258,6 +258,31 @@ Create `notes/my-topic.json` following the note format above.
 
 Use `.cursor/commands/create-learning-note.md` or `.cursor/commands/create-incident-note.md` to generate notes from chat sessions.
 
+#### When to Use Each Method
+
+| Method | Best For |
+| ------ | -------- |
+| `create-learning-note` | General concepts, tutorials, documentation learnings |
+| `create-incident-note` | Debugging sessions, production issues, bug fixes |
+| Manual JSON | Quick single cards, editing existing notes |
+| API endpoint | Programmatic creation, integrations |
+
+#### Using Cursor Commands
+
+1. Have a conversation about a topic or debug an issue.
+2. Run the appropriate command via the Cursor command palette.
+3. Review the generated JSON for accuracy and completeness.
+4. Save to the `notes/` directory.
+
+#### Card Design Best Practices
+
+- One concept per card.
+- Front should be a clear question or prompt.
+- Back should be concise (aim for <50 words).
+- Use cloze for exact syntax/values.
+- Use incident cards for real debugging lessons.
+- Tag cards that need higher recall (security, auth).
+
 ### API Endpoint (Admin)
 
 ```bash
@@ -288,7 +313,7 @@ pytest tests/test_queue_builder.py::QueueBuilderTests::test_build_review_queue_i
 ### Scheduler Parameters (`scheduler_config.py`)
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
+| --------- | ------- | ----------- |
 | LEARNING_STEPS | [10min, 1day] | Steps for new cards |
 | RELEARNING_STEPS | [10min, 1day] | Steps after lapse |
 | GRADUATING_INTERVAL_DAYS | 3 | First review interval |
