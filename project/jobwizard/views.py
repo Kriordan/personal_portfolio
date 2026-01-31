@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import login_required
@@ -28,7 +28,7 @@ def create_job():
             title=form.title.data,
             company_name=form.company_name.data,
             listing_url=form.listing_url.data,
-            posted_date=datetime.datetime.utcnow(),
+            posted_date=datetime.now(timezone.utc),
         )
         new_job.render_screenshot()
         db.session.add(new_job)
