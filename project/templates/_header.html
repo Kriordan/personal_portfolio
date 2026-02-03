@@ -39,6 +39,9 @@
       <a
         {% if request.path == '/lib' %}class="active"{% endif %}
         href="{{ url_for( 'library.library_home' )}}">Library</a>
+      <a
+        {% if request.path.startswith('/learning') %}class="active"{% endif %}
+        href="{{ url_for( 'learning.index' )}}">Notes</a>
     {% endif %}
   </nav>
 </header>

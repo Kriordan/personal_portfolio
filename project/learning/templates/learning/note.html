@@ -14,36 +14,39 @@
   <section class="learning-cards">
     <h2>Flashcards</h2>
     {% if note.flashcards %}
-      <div class="flashcard-grid">
-        {% for card in note.flashcards %}
-          <div class="flashcard" data-flip-card>
-            <div class="flashcard-inner">
-              <div class="flashcard-face flashcard-front">
-                <div class="flashcard-label">Question</div>
-                <div
-                  class="flashcard-content"
-                  data-markdown
-                  data-card-side="prompt"
-                  data-card-type="{{ card.type or 'qa' }}"
-                >
-                  {{ card.prompt or card.question }}
-                </div>
-              </div>
-              <div class="flashcard-face flashcard-back">
-                <div class="flashcard-label">Answer</div>
-                <div
-                  class="flashcard-content"
-                  data-markdown
-                  data-card-side="response"
-                  data-card-type="{{ card.type or 'qa' }}"
-                >
-                  {{ card.response or card.answer }}
-                </div>
-              </div>
+      <div class="flashcard-viewer" data-note-viewer>
+        <div class="flashcard flashcard--review" data-flip-card>
+          <div class="flashcard-inner">
+            <div class="flashcard-face flashcard-front">
+              <div class="flashcard-label">Question</div>
+              <div class="flashcard-content flashcard-question" id="note-card-question"></div>
+            </div>
+            <div class="flashcard-face flashcard-back">
+              <div class="flashcard-label">Answer</div>
+              <div class="flashcard-content flashcard-answer" id="note-card-answer"></div>
             </div>
           </div>
-        {% endfor %}
+        </div>
+        <div class="flashcard-nav">
+          <button class="flashcard-nav-btn" data-nav="prev" aria-label="Previous">&larr;</button>
+          <span class="flashcard-nav-progress" id="note-progress">1 / {{ note.flashcards|length }}</span>
+          <button class="flashcard-nav-btn" data-nav="next" aria-label="Next">&rarr;</button>
+        </div>
       </div>
+
+      <section class="term-list">
+        <h2>Terms in this set ({{ note.flashcards|length }})</h2>
+        <ul class="term-list-items">
+          {% for card in note.flashcards %}
+            <li class="term-list-item">
+              <div class="term-list-term" data-markdown>{{ card.prompt or card.question }}</div>
+              <div class="term-list-definition" data-markdown data-card-side="response" data-card-type="{{ card.type or 'qa' }}">
+                {{ card.response or card.answer }}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
     {% else %}
       <p>No flashcards for this note yet.</p>
     {% endif %}
@@ -51,6 +54,7 @@
 {% endblock body %}
 
 {% block scripts %}
+  <script type="application/json" id="note-cards-data">{{ note.flashcards|tojson }}</script>
   <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.1/dist/purify.min.js"></script>
   <script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>

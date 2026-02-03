@@ -4,6 +4,7 @@
 
 {% block body %}
   <section class="learning-review">
+    <a class="learning-back" href="{{ url_for('learning.index') }}">← Back to notes</a>
     <h1>Review Session</h1>
     {% if cards %}
       <div class="flashcard-toast" id="flashcard-toast" role="status" aria-live="polite"></div>

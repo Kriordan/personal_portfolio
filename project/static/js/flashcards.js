@@ -76,6 +76,28 @@
     });
   };
 
+  const adjustSingleCardHeight = (card) => {
+    if (!card) return;
+    const inner = card.querySelector(".flashcard-inner");
+    const front = card.querySelector(".flashcard-front");
+    const back = card.querySelector(".flashcard-back");
+    if (!inner || !front || !back) return;
+
+    inner.style.height = "";
+    back.style.height = "";
+    back.style.position = "static";
+    back.style.transform = "none";
+
+    const frontHeight = front.offsetHeight;
+    const backHeight = back.offsetHeight;
+    const maxHeight = Math.max(frontHeight, backHeight);
+
+    inner.style.height = `${maxHeight}px`;
+    back.style.height = `${maxHeight}px`;
+    back.style.position = "absolute";
+    back.style.transform = "";
+  };
+
   const escapeHtml = (value) =>
     String(value).replace(/[&<>"']/g, (char) => {
       const map = {
@@ -263,6 +285,7 @@
         : "";
       updateProgress();
       cardStart = performance.now();
+      requestAnimationFrame(() => adjustSingleCardHeight(reviewCard));
     };
 
     const sendRating = async (cardId, rating) => {
@@ -449,15 +472,95 @@
     renderCard();
   };
 
+  const setupNoteViewer = () => {
+    const viewer = document.querySelector("[data-note-viewer]");
+    if (!viewer) return;
+
+    const cards = readJsonScript("note-cards-data") || [];
+    if (!cards.length) return;
+
+    const questionEl = document.getElementById("note-card-question");
+    const answerEl = document.getElementById("note-card-answer");
+    const progressEl = document.getElementById("note-progress");
+    const prevButton = viewer.querySelector('[data-nav="prev"]');
+    const nextButton = viewer.querySelector('[data-nav="next"]');
+    const cardEl = viewer.querySelector(".flashcard");
+
+    let currentIndex = 0;
+
+    const renderNoteCard = () => {
+      const card = cards[currentIndex];
+      if (!card) return;
+      cardEl?.classList.remove("is-flipped");
+
+      const prompt = normalizeMarkdown(card.prompt ?? card.question ?? "");
+      const response = normalizeMarkdown(card.response ?? card.answer ?? "");
+      renderMarkdown(questionEl, prompt);
+      const responseMarkdown = formatResponseMarkdown(card, response);
+      renderMarkdown(answerEl, responseMarkdown);
+
+      if (progressEl) {
+        progressEl.textContent = `${currentIndex + 1} / ${cards.length}`;
+      }
+      requestAnimationFrame(() => adjustSingleCardHeight(cardEl));
+    };
+
+    const goPrev = () => {
+      currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+      renderNoteCard();
+    };
+
+    const goNext = () => {
+      currentIndex = (currentIndex + 1) % cards.length;
+      renderNoteCard();
+    };
+
+    prevButton?.addEventListener("click", (event) => {
+      event.preventDefault();
+      goPrev();
+    });
+
+    nextButton?.addEventListener("click", (event) => {
+      event.preventDefault();
+      goNext();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const isTyping =
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement;
+      if (isTyping) return;
+
+      if (event.code === "ArrowLeft") {
+        event.preventDefault();
+        goPrev();
+      }
+
+      if (event.code === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+      }
+    });
+
+    renderNoteCard();
+  };
+
   renderMarkdownBlocks();
   setupFlipCards();
   equalizeCardHeights();
   setupReviewSession();
+  setupNoteViewer();
 
   // Re-equalize on window resize
   let resizeTimeout;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(equalizeCardHeights, 150);
+    resizeTimeout = setTimeout(() => {
+      equalizeCardHeights();
+      adjustSingleCardHeight(document.querySelector("[data-review-card]"));
+      adjustSingleCardHeight(
+        document.querySelector("[data-note-viewer] .flashcard"),
+      );
+    }, 150);
   });
 })();
