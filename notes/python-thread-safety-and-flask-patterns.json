@@ -3,7 +3,7 @@
   "title": "Python Thread Safety and Flask Patterns",
   "created_at": "2026-01-27",
   "tags": ["python", "flask", "threading", "best-practices"],
-  "summary": "Key patterns for thread-safe caching in Python using double-checked locking, proper import organization, and Flask decorator patterns for route protection. Includes migration best practices for timezone-aware datetime columns.",
+  "summary": "## Overview\nThis note summarizes thread-safe caching patterns in Python, safer Flask access control via decorators, and a few related best practices like import hygiene and timezone-aware migrations.\n\n## Key Concepts\n- Use double-checked locking to guard shared caches efficiently.\n- Prefer decorators for route protection to avoid missed checks.\n- Keep imports at module level for clarity and stability.\n\n## Common Pitfalls\n- Global mutable state without locks causes race conditions.\n- Boolean helpers are easy to forget to check in routes.\n- Migrations that omit `timezone=True` drift from model definitions.\n\n## Practical Usage\nAdopt a small set of reusable decorators and ensure migrations explicitly match model types to avoid subtle production bugs.",
   "flashcards": [
     {
       "id": "thread-qa-1",

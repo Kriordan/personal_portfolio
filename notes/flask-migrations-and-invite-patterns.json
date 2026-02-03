@@ -3,7 +3,7 @@
   "title": "Flask Migrations and Invitation Flow Patterns",
   "created_at": "2026-01-27",
   "tags": ["flask", "alembic", "migrations", "security", "sqlalchemy"],
-  "summary": "Patterns for handling invitation-based signup flows with deferred acceptance, timezone-aware migrations, and migration squashing workflows in Flask/Alembic projects.",
+  "summary": "## Overview\nThis note covers safe invitation-based signup flows, timezone-aware migrations, and when Alembic migration squashing is worth it. The focus is on security guarantees, data integrity, and minimizing surprises in production.\n\n## Key Concepts\n- Defer invitation acceptance until email verification to prevent premature access.\n- Always trust server-side values over user-submitted form data.\n- Align model and migration datetime types (`DateTime(timezone=True)`).\n\n## Common Pitfalls\n- Accepting invitations before email verification can expose shared data.\n- Letting `validate_on_submit()` override trusted values can enable spoofing.\n- Squashing migrations without syncing `alembic_version` breaks prod.\n\n## Practical Usage\nUse follow-up migrations to correct timezone types and update all environments to the same revision before squashing.",
   "flashcards": [
     {
       "id": "invite-qa-1",

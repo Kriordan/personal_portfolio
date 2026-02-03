@@ -76,6 +76,112 @@
     });
   };
 
+  const escapeHtml = (value) =>
+    String(value).replace(/[&<>"']/g, (char) => {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      };
+      return map[char] || char;
+    });
+
+  const renderMultiline = (el, value) => {
+    if (!el) return;
+    const safe = escapeHtml(value || "");
+    el.innerHTML = safe.replace(/\n/g, "<br>");
+  };
+
+  const parseMarkdown = (value) => {
+    if (!window.marked || typeof window.marked.parse !== "function") {
+      return null;
+    }
+    return window.marked.parse(value || "", { breaks: true });
+  };
+
+  const sanitizeHtml = (html) => {
+    if (window.DOMPurify && typeof window.DOMPurify.sanitize === "function") {
+      return window.DOMPurify.sanitize(html);
+    }
+    return null;
+  };
+
+  const renderMarkdown = (el, value) => {
+    if (!el) return;
+    const html = parseMarkdown(value);
+    if (!html) {
+      renderMultiline(el, value);
+      return;
+    }
+    const safeHtml = sanitizeHtml(html);
+    if (safeHtml === null) {
+      console.warn("DOMPurify not available; rendering unsanitized markdown.");
+      el.innerHTML = html;
+      return;
+    }
+    el.innerHTML = safeHtml;
+  };
+
+  const normalizeMarkdown = (value) => {
+    const text = String(value || "");
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    while (lines.length && lines[0].trim() === "") lines.shift();
+    while (lines.length && lines[lines.length - 1].trim() === "") lines.pop();
+    if (!lines.length) return "";
+    const indents = lines
+      .filter((line) => line.trim() !== "")
+      .map((line) => (line.match(/^ */) || [""])[0].length);
+    const minIndent = Math.min(...indents);
+    if (!minIndent) return lines.join("\n");
+    return lines.map((line) => line.slice(minIndent)).join("\n");
+  };
+
+  const ensureCodeFence = (value) => {
+    const trimmed = normalizeMarkdown(value).trim();
+    if (!trimmed) return "```\n```";
+    if (trimmed.includes("```")) return trimmed;
+    return `\`\`\`\n${trimmed}\n\`\`\``;
+  };
+
+  const formatCodeDiffMarkdown = (value) => {
+    const trimmed = String(value || "").trim();
+    const match = trimmed.match(/^Before:\n([\s\S]*?)\n\nAfter:\n([\s\S]*)$/);
+    if (!match) {
+      return ensureCodeFence(trimmed);
+    }
+    const before = match[1].trim();
+    const after = match[2].trim();
+    return `**Before**\n${ensureCodeFence(before)}\n\n**After**\n${ensureCodeFence(after)}`;
+  };
+
+  const formatResponseMarkdown = (card, response) => {
+    if (!card || !response) return response || "";
+    if (card.type === "command") {
+      return ensureCodeFence(response);
+    }
+    if (card.type === "code_diff") {
+      return formatCodeDiffMarkdown(response);
+    }
+    return response;
+  };
+
+  const renderMarkdownBlocks = () => {
+    document.querySelectorAll("[data-markdown]").forEach((el) => {
+      const raw = normalizeMarkdown(el.textContent || "");
+      const cardType = el.dataset.cardType;
+      const cardSide = el.dataset.cardSide;
+      const isCodeResponse =
+        cardSide === "response" &&
+        (cardType === "command" || cardType === "code_diff");
+      const value = isCodeResponse
+        ? formatResponseMarkdown({ type: cardType }, raw)
+        : raw;
+      renderMarkdown(el, value);
+    });
+  };
+
   const setupReviewSession = () => {
     const reviewCard = document.querySelector("[data-review-card]");
     if (!reviewCard) return;
@@ -140,24 +246,6 @@
 
     const rateUrlWithDebug = buildRateUrl();
 
-    const escapeHtml = (value) =>
-      String(value).replace(/[&<>"']/g, (char) => {
-        const map = {
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        };
-        return map[char] || char;
-      });
-
-    const renderMultiline = (el, value) => {
-      if (!el) return;
-      const safe = escapeHtml(value || "");
-      el.innerHTML = safe.replace(/\n/g, "<br>");
-    };
-
     const renderCard = () => {
       const card = cards[currentIndex];
       if (!card) return;
@@ -165,21 +253,14 @@
       reviewCard.classList.remove("is-flipped");
       lockActions();
 
-      const prompt = card.prompt ?? card.question ?? "";
-      const response = card.response ?? card.answer ?? "";
-      renderMultiline(questionEl, prompt);
-      const useCodeBlock = card.type === "command" || card.type === "code_diff";
-      if (useCodeBlock && answerEl) {
-        answerEl.innerHTML = "";
-        const pre = document.createElement("pre");
-        const code = document.createElement("code");
-        code.textContent = response;
-        pre.appendChild(code);
-        answerEl.appendChild(pre);
-      } else {
-        renderMultiline(answerEl, response);
-      }
-      noteTitleEl.textContent = card.note_title ? `From ${card.note_title}` : "";
+      const prompt = normalizeMarkdown(card.prompt ?? card.question ?? "");
+      const response = normalizeMarkdown(card.response ?? card.answer ?? "");
+      renderMarkdown(questionEl, prompt);
+      const responseMarkdown = formatResponseMarkdown(card, response);
+      renderMarkdown(answerEl, responseMarkdown);
+      noteTitleEl.textContent = card.note_title
+        ? `From ${card.note_title}`
+        : "";
       updateProgress();
       cardStart = performance.now();
     };
@@ -220,7 +301,11 @@
 
     actionsEl?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-rating]");
-      if (!button || actionsEl.classList.contains("is-disabled") || isSubmitting) {
+      if (
+        !button ||
+        actionsEl.classList.contains("is-disabled") ||
+        isSubmitting
+      ) {
         return;
       }
       const rating = Number(button.dataset.rating);
@@ -311,22 +396,22 @@
         lockActions();
         sendRating(card.card_id, rating).then((data) => {
           isSubmitting = false;
-        if (data?.next_review_display) {
+          if (data?.next_review_display) {
             showToast(data.next_review_display);
-          if (data.next_review_display.startsWith("Graduated:")) {
-            graduatedCount += 1;
-          }
+            if (data.next_review_display.startsWith("Graduated:")) {
+              graduatedCount += 1;
+            }
           }
           if (data?.debug) {
             console.log("Scheduler debug", data.debug);
           }
-        if (rating === 0) {
-          lapseCount += 1;
-          const tags = card.tags || [];
-          tags.forEach((tag) => {
-            tagLapses[tag] = (tagLapses[tag] || 0) + 1;
-          });
-        }
+          if (rating === 0) {
+            lapseCount += 1;
+            const tags = card.tags || [];
+            tags.forEach((tag) => {
+              tagLapses[tag] = (tagLapses[tag] || 0) + 1;
+            });
+          }
           completedCount += 1;
           currentIndex += 1;
           if (currentIndex >= cards.length) {
@@ -335,21 +420,21 @@
             if (summaryEl) {
               summaryEl.hidden = false;
             }
-          if (summaryTextEl) {
-            summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
-          }
-          if (summaryStatsEl) {
-            summaryStatsEl.textContent = `Reviewed: ${completedCount} | Lapses: ${lapseCount} | Graduated: ${graduatedCount}`;
-          }
-          if (summaryWeakEl) {
-            const sortedTags = Object.entries(tagLapses)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 3)
-              .map(([tag]) => tag);
-            summaryWeakEl.textContent = sortedTags.length
-              ? `Weak areas: ${sortedTags.join(", ")}`
-              : "Weak areas: None yet";
-          }
+            if (summaryTextEl) {
+              summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
+            }
+            if (summaryStatsEl) {
+              summaryStatsEl.textContent = `Reviewed: ${completedCount} | Lapses: ${lapseCount} | Graduated: ${graduatedCount}`;
+            }
+            if (summaryWeakEl) {
+              const sortedTags = Object.entries(tagLapses)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([tag]) => tag);
+              summaryWeakEl.textContent = sortedTags.length
+                ? `Weak areas: ${sortedTags.join(", ")}`
+                : "Weak areas: None yet";
+            }
             return;
           }
           renderCard();
@@ -364,6 +449,7 @@
     renderCard();
   };
 
+  renderMarkdownBlocks();
   setupFlipCards();
   equalizeCardHeights();
   setupReviewSession();

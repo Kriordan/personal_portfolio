@@ -3,7 +3,7 @@
   "title": "Timezone-Aware Timestamps",
   "created_at": "2026-01-16",
   "tags": ["postgresql", "sqlalchemy", "migrations", "datetime"],
-  "summary": "Postgres drops timezone info when you use timestamp without time zone, which can cause naive vs aware comparison bugs in Python. Use timestamptz (DateTime(timezone=True)) and keep all timestamps in UTC. When migrating existing data, convert with AT TIME ZONE 'UTC' inside the migration.",
+  "summary": "## Overview\nPostgres can drop timezone info when you use `timestamp without time zone`, which leads to naive vs aware comparison errors in Python. The safe default is `timestamptz` (SQLAlchemy `DateTime(timezone=True)`) and keeping all app timestamps in UTC.\n\n## Key Concepts\n- Use timezone-aware datetimes end to end (`now(timezone.utc)` in Python).\n- Store real points in time with `timestamptz` so conversions stay correct.\n\n## Common Pitfalls\n- Mixing naive and aware datetimes breaks comparisons.\n- Relying on defaults in autogenerate can miss timezone changes.\n\n## Migrations\nConvert existing data inside the migration with `AT TIME ZONE 'UTC'` and remove any legacy naive-datetime fixes after the schema is corrected.",
   "flashcards": [
     {
       "id": "tz-1",

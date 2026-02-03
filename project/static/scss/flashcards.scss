@@ -102,6 +102,88 @@
   line-height: 1.5;
 }
 
+.flashcard-content,
+.learning-summary {
+  font-family: "Fauna One", serif;
+}
+
+.flashcard-question {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+}
+
+.flashcard-answer {
+  font-family: "Fauna One", serif;
+}
+
+.flashcard-question {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.flashcard-answer {
+  font-size: 1.05rem;
+}
+
+.flashcard-content,
+.learning-summary,
+#card-question,
+#card-answer {
+  line-height: 1.5;
+}
+
+.flashcard-content code,
+.learning-summary code,
+#card-question code,
+#card-answer code {
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-family:
+    "SFMono-Regular", SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95em;
+  padding: 0.1rem 0.25rem;
+}
+
+.flashcard-content pre,
+.learning-summary pre,
+#card-question pre,
+#card-answer pre {
+  background: #0f172a;
+  border-radius: 8px;
+  color: #f8fafc;
+  margin: 0.75rem 0 0;
+  overflow-x: auto;
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+}
+
+.flashcard-content pre code,
+.learning-summary pre code,
+#card-question pre code,
+#card-answer pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.9em;
+  padding: 0;
+}
+
+.flashcard-content ul,
+.flashcard-content ol,
+.learning-summary ul,
+.learning-summary ol {
+  margin: 0.5rem 0 0.5rem 1.25rem;
+  text-align: left;
+}
+
+.flashcard-content h1,
+.flashcard-content h2,
+.flashcard-content h3,
+.learning-summary h1,
+.learning-summary h2,
+.learning-summary h3 {
+  margin: 0.6rem 0 0.4rem;
+}
+
 .flashcard-meta {
   color: #666;
   font-size: 0.9rem;
@@ -131,7 +213,9 @@
   opacity: 0;
   padding: 0.5rem 1rem;
   transform: translateY(-6px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .flashcard-toast.is-visible {

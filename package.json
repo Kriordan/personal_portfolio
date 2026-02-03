@@ -25,5 +25,9 @@
   "bugs": {
     "url": "https://github.com/Kriordan/personal_portfolio/issues"
   },
-  "homepage": "https://github.com/Kriordan/personal_portfolio"
+  "homepage": "https://github.com/Kriordan/personal_portfolio",
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "marked": "^17.0.1"
+  }
 }
