@@ -362,7 +362,7 @@ def rate_card():
         "scheduler_version": progress.scheduler_version,
     }
 
-    show_debug = current_user.is_admin or request.args.get("debug") == "1"
+    show_debug = current_user.is_admin
     if show_debug:
         debug_info = schedule_output.debug_info or {}
         response_data["debug"] = {

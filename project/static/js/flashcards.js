@@ -139,8 +139,8 @@
     }
     const safeHtml = sanitizeHtml(html);
     if (safeHtml === null) {
-      console.warn("DOMPurify not available; rendering unsanitized markdown.");
-      el.innerHTML = html;
+      console.warn("DOMPurify not available; falling back to plain text.");
+      renderMultiline(el, value);
       return;
     }
     el.innerHTML = safeHtml;
