@@ -7,13 +7,13 @@ from flask import abort, current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from project.database import db
+from project.learning.queue_builder import build_review_queue
+from project.learning.scheduler_config import get_effective_target_recall
+from project.learning.schedulers import ScheduleInput
+from project.learning.schedulers.factory import get_scheduler
 from project.models import ReviewLog, ReviewProgress
 
 from . import learning_blueprint
-from project.learning.schedulers import ScheduleInput
-from project.learning.schedulers.factory import get_scheduler
-from project.learning.queue_builder import build_review_queue
-from project.learning.scheduler_config import get_effective_target_recall
 
 
 def _notes_dir() -> Path:
@@ -393,13 +393,15 @@ def create_incident():
     tags = payload.get("tags", [])
 
     if not symptom or not root_cause or not fix:
-        return jsonify(
-            {"error": "symptom, root_cause, and fix are required"}
-        ), 400
+        return jsonify({"error": "symptom, root_cause, and fix are required"}), 400
 
     resolved_note_id = note_id or _slugify(title)
     if not resolved_note_id:
         return jsonify({"error": "note_id or title is required"}), 400
+
+    note_path = (_notes_dir() / f"{resolved_note_id}.json").resolve()
+    if not note_path.is_relative_to(_notes_dir().resolve()):
+        return jsonify({"error": "invalid note_id"}), 400
 
     note = _load_note(resolved_note_id)
     if note is None:
@@ -431,7 +433,6 @@ def create_incident():
     }
     note.setdefault("flashcards", []).append(new_card)
 
-    note_path = _notes_dir() / f"{resolved_note_id}.json"
     note_path.write_text(
         json.dumps(note, indent=2, ensure_ascii=True),
         encoding="utf-8",

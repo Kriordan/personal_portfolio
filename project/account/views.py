@@ -403,7 +403,6 @@ def log_verification_attempt(email: str) -> None:
     """Log a verification resend attempt for rate limiting."""
     attempt = EmailVerificationAttempt(email=email)
     db.session.add(attempt)
-    db.session.commit()
 
 
 @account_blueprint.route("/forgot-password", methods=["GET", "POST"])
