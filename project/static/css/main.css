@@ -666,6 +666,10 @@ blockquote p {
   color: #eee;
 }
 
+.Admin-section {
+  margin-top: 2rem;
+}
+
 .Wishlist-title {
   margin: 20px 0;
   text-align: center;

@@ -6,12 +6,12 @@ Filters are registered with the app via the register_filters function.
 """
 
 
-def datetimeformat(value, format="%b %d, %Y"):
+def datetimeformat(value, fmt="%b %d, %Y"):
     """Format a datetime object for display in templates.
 
     Args:
         value: A datetime object to format
-        format: strftime format string (default: "Jan 15, 2026")
+        fmt: strftime format string (default: "Jan 15, 2026")
 
     Returns:
         Formatted date string, or empty string if value is None
@@ -22,7 +22,7 @@ def datetimeformat(value, format="%b %d, %Y"):
     """
     if value is None:
         return ""
-    return value.strftime(format)
+    return value.strftime(fmt)
 
 
 def register_filters(app):
