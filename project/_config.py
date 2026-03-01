@@ -11,6 +11,8 @@ if db_uri.startswith("postgres://"):
 SQLALCHEMY_DATABASE_URI = db_uri
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
+RATELIMIT_STORAGE_URI = "memory://"
+
 MAILERSEND_API_KEY = os.getenv("MAILERSEND_API_KEY")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 
