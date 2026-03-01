@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import click
 from flask.cli import with_appcontext
 from flask_migrate import upgrade
@@ -5,8 +7,8 @@ from flask_migrate import upgrade
 from project.library.jobs import sync_playlists_and_videos
 
 from .database import db
-from .models import User
 from .learning.evaluation import evaluate_scheduler
+from .models import EmailVerificationAttempt, PasswordResetAttempt, User
 
 
 @click.command(name="create-user")
@@ -95,3 +97,23 @@ def eval_scheduler(user_id, days):
             click.echo(
                 f"  Avg half-life growth: {metrics['avg_half_life_growth']:.2f}"
             )
+
+
+@click.command(name="purge-attempts")
+@click.option(
+    "--hours", default=24, type=int, help="Delete records older than this many hours"
+)
+@with_appcontext
+def purge_attempts(hours):
+    """Purge stale rate-limiting records."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    email_count = EmailVerificationAttempt.query.filter(
+        EmailVerificationAttempt.attempted_at < cutoff
+    ).delete()
+    reset_count = PasswordResetAttempt.query.filter(
+        PasswordResetAttempt.attempted_at < cutoff
+    ).delete()
+    db.session.commit()
+    click.echo(
+        f"Purged {email_count} verification and {reset_count} reset attempt records."
+    )

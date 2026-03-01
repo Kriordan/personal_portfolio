@@ -242,9 +242,17 @@ def rate_card():
     if rating < 0 or rating > 5:
         return jsonify({"error": "rating must be between 0 and 5"}), 400
 
-    notes = _load_notes()
-    cards = _build_cards(notes)
-    card_lookup = {card["card_id"]: card for card in cards}
+    parts = card_id.split(":", 1)
+    if len(parts) != 2:
+        return jsonify({"error": "invalid card_id format"}), 400
+    note_id, _ = parts
+
+    note = _load_note(note_id)
+    if note is None:
+        return jsonify({"error": "card not found"}), 404
+
+    cards = _build_cards([note])
+    card_lookup = {c["card_id"]: c for c in cards}
     if card_id not in card_lookup:
         return jsonify({"error": "card not found"}), 404
     card = card_lookup[card_id]

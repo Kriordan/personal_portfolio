@@ -31,6 +31,7 @@ from project.wishlist.views import wishlist_blueprint
 from .commands import (
     create_user,
     eval_scheduler,
+    purge_attempts,
     reset_db,
     reset_password,
     sync_yt_subs,
@@ -137,6 +138,7 @@ def register_commands(app):
     app.cli.add_command(reset_db)
     app.cli.add_command(sync_yt_subs)
     app.cli.add_command(eval_scheduler)
+    app.cli.add_command(purge_attempts)
 
 
 def register_jinja_env(app):

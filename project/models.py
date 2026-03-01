@@ -151,16 +151,10 @@ class ListItem(db.Model):
     )
 
 
-class ListInvitation(db.Model):
-    """
-    Represents a pending invitation to share a list with a user who may not have an account yet.
-    """
+class InvitationMixin:
+    """Shared columns and logic for invitation models."""
 
-    __tablename__ = "list_invitation"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
-    list_id: Mapped[int] = mapped_column(ForeignKey("custom_list.id"), nullable=False)
     token: Mapped[str] = mapped_column(
         String(64), nullable=False, unique=True, index=True
     )
@@ -173,6 +167,31 @@ class ListInvitation(db.Model):
     expires_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False
     )
+
+    @property
+    def is_expired(self) -> bool:
+        """Check if the invitation has expired."""
+        return datetime.now(timezone.utc) > self.expires_at
+
+    @property
+    def is_accepted(self) -> bool:
+        """Check if the invitation has been accepted."""
+        return self.accepted_at is not None
+
+    def accept(self) -> None:
+        """Mark the invitation as accepted."""
+        self.accepted_at = datetime.now(timezone.utc)
+
+
+class ListInvitation(InvitationMixin, db.Model):
+    """
+    Represents a pending invitation to share a list with a user who may not have an account yet.
+    """
+
+    __tablename__ = "list_invitation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("custom_list.id"), nullable=False)
 
     custom_list: Mapped["CustomList"] = relationship(
         "CustomList", back_populates="invitations"
@@ -193,28 +212,10 @@ class ListInvitation(db.Model):
         """
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
-
-        invitation = cls(
-            email=email, list_id=list_id, token=token, expires_at=expires_at
-        )
-        return invitation
-
-    @property
-    def is_expired(self) -> bool:
-        """Check if the invitation has expired."""
-        return datetime.now(timezone.utc) > self.expires_at
-
-    @property
-    def is_accepted(self) -> bool:
-        """Check if the invitation has been accepted."""
-        return self.accepted_at is not None
-
-    def accept(self) -> None:
-        """Mark the invitation as accepted."""
-        self.accepted_at = datetime.now(timezone.utc)
+        return cls(email=email, list_id=list_id, token=token, expires_at=expires_at)
 
 
-class SiteInvitation(db.Model):
+class SiteInvitation(InvitationMixin, db.Model):
     """
     Represents a general invitation to sign up (not tied to a specific list).
     """
@@ -222,19 +223,6 @@ class SiteInvitation(db.Model):
     __tablename__ = "site_invitation"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
-    token: Mapped[str] = mapped_column(
-        String(64), nullable=False, unique=True, index=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-    accepted_at: Mapped[Optional[datetime]] = mapped_column(
-        db.DateTime(timezone=True), nullable=True
-    )
-    expires_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False
-    )
     invited_by_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("user.id"), nullable=True
     )
@@ -256,20 +244,6 @@ class SiteInvitation(db.Model):
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
         return cls(email=email, token=token, expires_at=expires_at)
-
-    @property
-    def is_expired(self) -> bool:
-        """Check if the invitation has expired."""
-        return datetime.now(timezone.utc) > self.expires_at
-
-    @property
-    def is_accepted(self) -> bool:
-        """Check if the invitation has been accepted."""
-        return self.accepted_at is not None
-
-    def accept(self) -> None:
-        """Mark the invitation as accepted."""
-        self.accepted_at = datetime.now(timezone.utc)
 
 
 class Gift(db.Model):
