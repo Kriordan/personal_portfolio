@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField
+from wtforms import HiddenField, StringField, TextAreaField
 from wtforms.validators import Email, InputRequired
 
 
@@ -18,5 +18,6 @@ class ContactForm(FlaskForm):
     message = TextAreaField(
         "Message", validators=[InputRequired("Please enter a message.")]
     )
+    cf_turnstile_response = HiddenField("cf-turnstile-response")
     # Honeypot field
     website = StringField("Website")

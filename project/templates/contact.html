@@ -7,7 +7,21 @@
     <p>Thanks for your message. I'll be getting back to you shortly!</p>
   {% else %}
     <h2 class="Contact-title">Let's discuss your next project!</h2>
-    {{ render_form(form, action=url_for('foyer.contact'), method="POST") }}
+    {% if turnstile_error %}
+      <p style="color: red;">{{ turnstile_error }}</p>
+    {% endif %}
+    {{ render_form(form, action=url_for('foyer.contact'), method="POST", turnstile_site_key=turnstile_site_key) }}
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if not success %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+  function onTurnstileSuccess(token) {
+    document.querySelector('input[name="cf_turnstile_response"]').value = token;
+  }
+</script>
+{% endif %}
 {% endblock %}

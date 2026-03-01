@@ -9,6 +9,7 @@ csp = {
         "https://*.hotjar.com",
         "https://cdn.jsdelivr.net",  # AlpineJS CDN
         "https://cdn.socket.io",  # Socket.IO client
+        "https://challenges.cloudflare.com",  # Turnstile
         "'unsafe-inline'",
     ],
     "img-src": [
@@ -31,6 +32,7 @@ csp = {
         "'self'",
         "https://www.youtube.com",
         "https://www.youtube-nocookie.com",
+        "https://challenges.cloudflare.com",  # Turnstile
     ],
     "media-src": [
         "'self'",

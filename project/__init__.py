@@ -38,7 +38,7 @@ from .commands import (
 )
 from .csp import csp
 from .database import db
-from .extensions import login_manager, migrate, scheduler, talisman
+from .extensions import limiter, login_manager, migrate, scheduler, talisman
 from .filters import register_filters
 from .models import User
 from .sockets import register_handlers, socketio
@@ -90,6 +90,7 @@ def register_extensions(app):
         None
     """
     db.init_app(app)
+    limiter.init_app(app)
 
     login_manager.init_app(app)
     login_manager.login_view = "account.login"
@@ -180,6 +181,7 @@ def register_errorhandlers(app):
         HTTPStatus.INTERNAL_SERVER_ERROR,
         HTTPStatus.NOT_FOUND,
         HTTPStatus.UNAUTHORIZED,
+        HTTPStatus.TOO_MANY_REQUESTS,
     ]:
         app.errorhandler(e)(render_error)
 

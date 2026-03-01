@@ -1,6 +1,6 @@
 {% from "_button.html" import button with context %}
 
-{% macro render_form(form, action, method, external_submit=False) %}
+{% macro render_form(form, action, method, external_submit=False, turnstile_site_key=None) %}
   <form class="Form" action="{{ action }}" method="{{ method }}" enctype="multipart/form-data">
   {{ form.csrf_token }}
   {% for field in form if not field.name == 'csrf_token' %}
@@ -10,6 +10,8 @@
       {{ field.label }}
       {{ field(class_="Form-input", tabindex="-1", autocomplete="off") }}
     </div>
+    {% elif field.type == 'HiddenField' %}
+    {{ field() }}
     {% else %}
     <div class="Form-inputGroup">
       {% if field.type != 'CSRFTokenField' %}
@@ -28,6 +30,9 @@
     </div>
     {% endif %}
   {% endfor %}
+  {% if turnstile_site_key %}
+    <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-callback="onTurnstileSuccess"></div>
+  {% endif %}
   {% if not external_submit %}
     {{ button('Submit', 'Button-submit', type="submit") }}
   {% endif%}
