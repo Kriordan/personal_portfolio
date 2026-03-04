@@ -17,9 +17,11 @@ import datetime
 from http import HTTPStatus
 
 from dotenv import find_dotenv, load_dotenv
+from flask_cors import CORS
 from flask import Flask, render_template
 
 from project.account.views import account_blueprint
+from project.api import api_blueprint
 from project.foyer.views import foyer_blueprint
 from project.jobwizard.views import jobwizard_blueprint
 from project.learning import learning_blueprint
@@ -38,7 +40,7 @@ from .commands import (
 )
 from .csp import csp
 from .database import db
-from .extensions import limiter, login_manager, migrate, scheduler, talisman
+from .extensions import jwt, limiter, login_manager, migrate, scheduler, talisman
 from .filters import register_filters
 from .models import User
 from .sockets import register_handlers, socketio
@@ -102,6 +104,8 @@ def register_extensions(app):
     migrate.init_app(app, db)
     scheduler.init_app(app)
     talisman.init_app(app, content_security_policy=csp)
+    jwt.init_app(app)
+    CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 
 
 def register_blueprints(app):
@@ -122,6 +126,7 @@ def register_blueprints(app):
     app.register_blueprint(oauth_blueprint)
     app.register_blueprint(wishlist_blueprint)
     app.register_blueprint(lists_blueprint)
+    app.register_blueprint(api_blueprint)
 
 
 def register_commands(app):
