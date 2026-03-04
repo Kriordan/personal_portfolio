@@ -171,7 +171,11 @@ class InvitationMixin:
     @property
     def is_expired(self) -> bool:
         """Check if the invitation has expired."""
-        return datetime.now(timezone.utc) > self.expires_at
+        expires_at = self.expires_at
+        if expires_at.tzinfo is None:
+            # Some DB backends/tests may deserialize timezone columns as naive values.
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > expires_at
 
     @property
     def is_accepted(self) -> bool:
