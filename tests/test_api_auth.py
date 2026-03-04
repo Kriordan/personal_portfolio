@@ -47,6 +47,30 @@ class ApiAuthTests(unittest.TestCase):
     def _post(self, path: str, **kwargs):
         return self.client.post(path, base_url="https://localhost", **kwargs)
 
+    def _options(self, path: str, **kwargs):
+        return self.client.options(path, base_url="https://localhost", **kwargs)
+
+    def test_cors_headers_apply_to_api_routes_only(self):
+        response = self._options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": "https://mobile.example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.headers.get("Access-Control-Allow-Origin"))
+
+        web_response = self._options(
+            "/login",
+            headers={
+                "Origin": "https://mobile.example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertEqual(web_response.status_code, 200)
+        self.assertIsNone(web_response.headers.get("Access-Control-Allow-Origin"))
+
     def test_login_returns_tokens_for_verified_user(self):
         self._create_user(email="verified@example.com", username="verified")
 

@@ -43,7 +43,6 @@ Follow this template exactly. Every section is required. Scale detail to the siz
 # <Title> (`<todo-id>`)
 
 Date: YYYY-MM-DD
-Owner: <who did the work — "AI coding agent", user name, or pair>
 Todo ID: `<todo-id>`
 
 ## Objective
@@ -103,6 +102,7 @@ Todo ID: `<todo-id>`
 ## Step 4 — Confirm with user
 
 After writing the file, print:
+
 1. The full path of the created note.
 2. A short summary of what was documented.
 3. Ask if they want any sections expanded, trimmed, or corrected before committing.

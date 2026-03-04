@@ -105,7 +105,8 @@ def register_extensions(app):
     scheduler.init_app(app)
     talisman.init_app(app, content_security_policy=csp)
     jwt.init_app(app)
-    CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+    api_cors_origins = app.config.get("API_CORS_ORIGINS", "*")
+    CORS(app, resources={r"/api/v1/*": {"origins": api_cors_origins}})
 
 
 def register_blueprints(app):
