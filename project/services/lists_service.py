@@ -40,6 +40,16 @@ def get_list_or_404(list_id: int) -> CustomList:
     return CustomList.query.get_or_404(list_id)
 
 
+def get_list_item_or_404(item_id: int) -> ListItem:
+    """Fetch a list item or raise 404."""
+    return ListItem.query.get_or_404(item_id)
+
+
+def get_invitation_or_404(token: str) -> ListInvitation:
+    """Fetch invitation by token or raise 404."""
+    return ListInvitation.query.filter_by(token=token).first_or_404()
+
+
 def ensure_list_access(custom_list: CustomList, user: User) -> None:
     """Ensure a user can access a list."""
     if custom_list.owner_id != user.id and user not in custom_list.shared_with:

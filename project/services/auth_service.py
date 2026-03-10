@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 import sqlalchemy as sa
 
+from project.account.tokens import verify_reset_token
 from project.database import db
 from project.models import (
     EmailVerificationAttempt,
@@ -106,6 +108,97 @@ def verify_email_token(token: str) -> User | None:
 
     db.session.commit()
     return user
+
+
+def get_user_by_email(email: str) -> User | None:
+    """Look up user by normalized email."""
+    return db.session.scalar(sa.select(User).where(User.email == email))
+
+
+def get_user_by_verification_token(token: str) -> User | None:
+    """Look up user by email verification token."""
+    return db.session.scalar(sa.select(User).where(User.email_verification_token == token))
+
+
+def get_verification_status(user: User | None) -> Literal["invalid", "expired", "verified", "pending"]:
+    """Classify verification state for a token lookup result."""
+    if user is None:
+        return "invalid"
+    if user.email_verified:
+        return "verified"
+    if (
+        user.email_verification_expires_at is None
+        or datetime.now(timezone.utc) > user.email_verification_expires_at
+    ):
+        return "expired"
+    return "pending"
+
+
+def create_site_invitation(*, email: str, invited_by: User) -> tuple[SiteInvitation | None, str]:
+    """Create a site invitation, returning status for existing records."""
+    existing_user = get_user_by_email(email)
+    if existing_user:
+        return None, "user_exists"
+
+    existing_invite = db.session.scalar(
+        sa.select(SiteInvitation)
+        .where(SiteInvitation.email == email)
+        .where(SiteInvitation.accepted_at.is_(None))
+    )
+    if existing_invite and not existing_invite.is_expired:
+        return None, "invite_exists"
+
+    invite = SiteInvitation.create_invitation(email=email)
+    invite.invited_by = invited_by
+    db.session.add(invite)
+    db.session.commit()
+    return invite, "created"
+
+
+def get_admin_invites() -> tuple[list[SiteInvitation], list[ListInvitation]]:
+    """Return site and list invites for admin views."""
+    site_invites = SiteInvitation.query.order_by(SiteInvitation.created_at.desc()).all()
+    list_invites = ListInvitation.query.order_by(ListInvitation.created_at.desc()).all()
+    return site_invites, list_invites
+
+
+def prepare_password_reset(email: str) -> tuple[User | None, str]:
+    """Rate-limit and log reset attempts; return status and target user."""
+    if is_password_reset_rate_limited(email):
+        return None, "rate_limited"
+
+    log_password_reset_attempt(email)
+    return get_user_by_email(email), "ok"
+
+
+def get_user_from_reset_token(token: str) -> User | None:
+    """Resolve reset token to an existing user."""
+    email = verify_reset_token(token)
+    if not email:
+        return None
+    return get_user_by_email(email)
+
+
+def reset_user_password(*, user: User, password: str) -> None:
+    """Set and persist a user's new password."""
+    user.set_password(password)
+    db.session.commit()
+
+
+def prepare_verification_resend(email: str) -> tuple[User | None, str]:
+    """Validate and stage verification resend for a user."""
+    user = get_user_by_email(email)
+    if not user:
+        return None, "user_not_found"
+    if user.email_verified:
+        return None, "already_verified"
+    if is_verification_rate_limited(email):
+        return None, "rate_limited"
+
+    log_verification_attempt(email)
+    generate_email_verification(user)
+    db.session.commit()
+    return user, "ok"
 
 
 def is_password_reset_rate_limited(email: str) -> bool:

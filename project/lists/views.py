@@ -14,7 +14,7 @@ from mailersend import EmailBuilder, MailerSendClient
 
 from project.foyer.email_templates import get_list_invitation_email_content
 from project.lists.forms import CategoryForm, ItemForm, ListForm
-from project.models import ListInvitation, ListItem, db
+from project.models import db
 from project.services import lists_service
 
 lists_blueprint = Blueprint("lists", __name__, template_folder="templates")
@@ -130,7 +130,7 @@ def send_invitation_email(email, inviter_name, list_title, invite_url):
 @lists_blueprint.route("/lists/invitation/<token>")
 def accept_invitation(token):
     """Accept a list sharing invitation."""
-    invitation = ListInvitation.query.filter_by(token=token).first_or_404()
+    invitation = lists_service.get_invitation_or_404(token)
 
     if invitation.is_expired:
         flash("This invitation has expired.", "danger")
@@ -252,7 +252,7 @@ def add_item(list_id):
 @login_required
 def toggle_item(list_id, item_id):
     """Toggle an item's completed status."""
-    item = ListItem.query.get_or_404(item_id)
+    item = lists_service.get_list_item_or_404(item_id)
     try:
         completed = lists_service.toggle_item_completion(item=item, user=current_user)
     except PermissionError:
