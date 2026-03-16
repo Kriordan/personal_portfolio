@@ -3,8 +3,8 @@
 from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import login_required
 
-from project.library.jobs import export_subscriptions_to_json, sync_playlists_and_videos
-from project.models import Playlist, Video
+from project.library.jobs import export_subscriptions_to_json
+from project.services import library_service
 
 library_blueprint = Blueprint(
     "library", __name__, template_folder="templates", url_prefix="/lib"
@@ -15,7 +15,7 @@ library_blueprint = Blueprint(
 @login_required
 def library_home():
     """Renders the library.html template."""
-    playlists = Playlist.query.all()
+    playlists = library_service.list_playlists()
 
     return render_template("playlists.html", playlists=playlists)
 
@@ -24,8 +24,10 @@ def library_home():
 @login_required
 def view_playlist(playlist_id):
     """Renders the library.html template."""
-    playlist = Playlist.query.get(playlist_id)
-    videos = Video.query.filter_by(playlist_id=playlist_id).all()
+    try:
+        playlist, videos = library_service.get_playlist_with_videos(playlist_id=playlist_id)
+    except library_service.NotFoundError:
+        return render_template("404.html"), 404
 
     return render_template("playlist.html", playlist=playlist, videos=videos)
 
@@ -33,7 +35,10 @@ def view_playlist(playlist_id):
 @library_blueprint.route("/videos/<video_id>")
 @login_required
 def view_video(video_id):
-    video = Video.query.get(video_id)
+    try:
+        video = library_service.get_video(video_id=video_id)
+    except library_service.NotFoundError:
+        return render_template("404.html"), 404
 
     return render_template("video.html", video=video)
 
@@ -42,7 +47,7 @@ def view_video(video_id):
 @login_required
 def sync_playlists():
     """Synchronizes playlists and videos."""
-    sync_playlists_and_videos()
+    library_service.sync_library()
 
     return redirect(url_for("foyer.utilities"))
 
