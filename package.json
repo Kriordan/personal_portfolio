@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/Kriordan/personal_portfolio",
   "dependencies": {
-    "dompurify": "^3.3.1",
+    "dompurify": "^3.3.2",
     "marked": "^17.0.1"
   }
 }
