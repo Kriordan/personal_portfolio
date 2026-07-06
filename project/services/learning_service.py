@@ -32,6 +32,16 @@ class ConflictError(LearningServiceError):
     """Raised when a resource conflict occurs."""
 
 
+def _ensure_aware(value: datetime) -> datetime:
+    """Coerce naive datetimes to UTC.
+
+    Some DB backends/tests may deserialize timezone columns as naive values.
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 def notes_dir_for_root(root_path: str) -> Path:
     """Return notes directory for a Flask app root."""
     return Path(root_path).parent / "notes"
@@ -156,7 +166,7 @@ def summarize_notes_for_user(
     due_counts: dict[str, int] = {}
     for card in cards:
         progress = progress_by_card.get(card["card_id"])
-        is_due = progress is None or progress.next_review <= review_now
+        is_due = progress is None or _ensure_aware(progress.next_review) <= review_now
         if is_due:
             due_counts[card["note_id"]] = due_counts.get(card["note_id"], 0) + 1
 
@@ -190,7 +200,7 @@ def review_cards_for_user(
         progress = progress_by_card.get(card["card_id"])
         if progress is not None and progress.is_suspended:
             continue
-        if progress is None or progress.next_review <= review_now:
+        if progress is None or _ensure_aware(progress.next_review) <= review_now:
             due_cards.append(card)
     return build_review_queue(due_cards, progress_by_card)
 
@@ -442,7 +452,7 @@ def format_next_review_display(
     after_state: str,
 ) -> str:
     """Build user-facing next review text."""
-    delta = next_review - now
+    delta = _ensure_aware(next_review) - now
     seconds = max(0, int(delta.total_seconds()))
 
     if seconds < 60:
