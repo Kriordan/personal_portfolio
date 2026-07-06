@@ -1,10 +1,7 @@
-from datetime import datetime, timezone
-
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import login_required
 
-from project.database import db
-from project.models import Job
+from project.services import jobwizard_service
 
 from .forms import AddJobForm
 
@@ -14,7 +11,7 @@ jobwizard_blueprint = Blueprint("jobwizard", __name__, template_folder="template
 @jobwizard_blueprint.route("/jobwizard")
 @login_required
 def home():
-    jobs = db.session.query(Job)
+    jobs = jobwizard_service.list_jobs()
     return render_template("job_list.html", form=AddJobForm(request.form), jobs=jobs)
 
 
@@ -24,21 +21,20 @@ def create_job():
     error = None
     form = AddJobForm(request.form)
     if form.validate_on_submit():
-        new_job = Job(
+        jobwizard_service.create_job(
             title=form.title.data,
             company_name=form.company_name.data,
             listing_url=form.listing_url.data,
-            posted_date=datetime.now(timezone.utc),
         )
-        new_job.render_screenshot()
-        db.session.add(new_job)
-        db.session.commit()
         return redirect(url_for(".home"))
     return render_template("jobwizard.html", form=form, error=error)
 
 
-@jobwizard_blueprint.route("/jobwizard/<job_id>", methods=["GET"])
+@jobwizard_blueprint.route("/jobwizard/<int:job_id>", methods=["GET"])
 @login_required
 def get_job(job_id):
-    job = Job.query.filter_by(id=int(job_id)).first()
+    try:
+        job = jobwizard_service.get_job(job_id)
+    except jobwizard_service.NotFoundError:
+        return render_template("404.html"), 404
     return render_template("job.html", job=job)
