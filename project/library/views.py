@@ -1,5 +1,3 @@
-# Python
-
 from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import login_required
 
@@ -14,7 +12,7 @@ library_blueprint = Blueprint(
 @library_blueprint.route("/", methods=["GET"])
 @login_required
 def library_home():
-    """Renders the library.html template."""
+    """Renders the playlists overview."""
     playlists = library_service.list_playlists()
 
     return render_template("playlists.html", playlists=playlists)
@@ -23,7 +21,7 @@ def library_home():
 @library_blueprint.route("/playlist/<playlist_id>", methods=["GET"])
 @login_required
 def view_playlist(playlist_id):
-    """Renders the library.html template."""
+    """Renders a single playlist with its videos."""
     try:
         playlist, videos = library_service.get_playlist_with_videos(playlist_id=playlist_id)
     except library_service.NotFoundError:
