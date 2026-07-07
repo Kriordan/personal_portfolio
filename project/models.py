@@ -276,12 +276,18 @@ class Job(db.Model):
     posted_date = db.Column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
 
-    def __init__(self, title, company_name, listing_url, posted_date):
+    owner = db.relationship("User")
+
+    def __init__(self, title, company_name, listing_url, posted_date, user_id):
         self.title = title
         self.company_name = company_name
         self.listing_url = listing_url
         self.posted_date = posted_date
+        self.user_id = user_id
 
     def __repr__(self):
         return "<Job %r>" % self.company_name

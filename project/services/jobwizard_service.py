@@ -20,27 +20,34 @@ class ValidationError(JobwizardServiceError):
     """Raised when service input fails validation."""
 
 
-def list_jobs() -> list[Job]:
-    """Return all jobs."""
-    return db.session.execute(db.select(Job)).scalars().all()
+def list_jobs_for_user(user_id: int) -> list[Job]:
+    """Return all jobs owned by the provided user ID."""
+    return (
+        db.session.execute(db.select(Job).filter_by(user_id=user_id)).scalars().all()
+    )
 
 
-def get_job(job_id: int) -> Job:
-    """Return a job by ID, raising if not found."""
+def get_job_for_user(*, user_id: int, job_id: int) -> Job:
+    """Return a job owned by the user, raising NotFoundError otherwise.
+
+    Jobs owned by other users also raise NotFoundError so their existence
+    is not leaked.
+    """
     job = db.session.get(Job, job_id)
-    if job is None:
+    if job is None or job.user_id != user_id:
         raise NotFoundError("job not found")
     return job
 
 
-def create_job(
+def create_job_for_user(
     *,
+    user_id: int,
     title: str,
     company_name: str,
     listing_url: str,
     posted_date: datetime | None = None,
 ) -> Job:
-    """Create a job, render its listing screenshot, and persist it."""
+    """Create a job owned by user, render its listing screenshot, and persist it."""
     cleaned_title = (title or "").strip()
     cleaned_company_name = (company_name or "").strip()
     cleaned_listing_url = (listing_url or "").strip()
@@ -52,6 +59,7 @@ def create_job(
         company_name=cleaned_company_name,
         listing_url=cleaned_listing_url,
         posted_date=posted_date or datetime.now(timezone.utc),
+        user_id=user_id,
     )
     job.render_screenshot()
     db.session.add(job)

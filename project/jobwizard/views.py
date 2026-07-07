@@ -1,5 +1,5 @@
 from flask import Blueprint, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from project.services import jobwizard_service
 
@@ -11,7 +11,7 @@ jobwizard_blueprint = Blueprint("jobwizard", __name__, template_folder="template
 @jobwizard_blueprint.route("/jobwizard")
 @login_required
 def home():
-    jobs = jobwizard_service.list_jobs()
+    jobs = jobwizard_service.list_jobs_for_user(current_user.id)
     return render_template("job_list.html", form=AddJobForm(request.form), jobs=jobs)
 
 
@@ -21,7 +21,8 @@ def create_job():
     error = None
     form = AddJobForm(request.form)
     if form.validate_on_submit():
-        jobwizard_service.create_job(
+        jobwizard_service.create_job_for_user(
+            user_id=current_user.id,
             title=form.title.data,
             company_name=form.company_name.data,
             listing_url=form.listing_url.data,
@@ -34,7 +35,9 @@ def create_job():
 @login_required
 def get_job(job_id):
     try:
-        job = jobwizard_service.get_job(job_id)
+        job = jobwizard_service.get_job_for_user(
+            user_id=current_user.id, job_id=job_id
+        )
     except jobwizard_service.NotFoundError:
         return render_template("404.html"), 404
     return render_template("job.html", job=job)
