@@ -25,6 +25,7 @@ class ApiFeatureRegistrationTests(unittest.TestCase):
             "/api/v1/learning/notes",
             "/api/v1/wishlist/gifts",
             "/api/v1/library/playlists",
+            "/api/v1/jobwizard/jobs",
         ]
 
         for path in protected_feature_routes:

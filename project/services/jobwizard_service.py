@@ -20,6 +20,19 @@ class ValidationError(JobwizardServiceError):
     """Raised when service input fails validation."""
 
 
+def serialize_job(job: Job) -> dict[str, object]:
+    """Return a JSON-safe job payload."""
+    return {
+        "id": job.id,
+        "title": job.title,
+        "company_name": job.company_name,
+        "listing_url": job.listing_url,
+        "listing_image": job.listing_image,
+        "posted_date": job.posted_date.isoformat() if job.posted_date else None,
+        "user_id": job.user_id,
+    }
+
+
 def list_jobs_for_user(user_id: int) -> list[Job]:
     """Return all jobs owned by the provided user ID."""
     return (
