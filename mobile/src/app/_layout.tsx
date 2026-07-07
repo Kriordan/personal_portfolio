@@ -17,6 +17,9 @@ export default function RootLayout() {
             <Stack.Screen name="login" options={{ title: 'Sign In', headerShown: false }} />
             <Stack.Screen name="lists/index" options={{ title: 'Lists' }} />
             <Stack.Screen name="lists/[id]" options={{ title: 'List' }} />
+            <Stack.Screen name="learning/index" options={{ title: 'Learning' }} />
+            <Stack.Screen name="learning/[id]" options={{ title: 'Note' }} />
+            <Stack.Screen name="learning/review" options={{ title: 'Review' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

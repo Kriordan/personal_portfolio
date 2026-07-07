@@ -39,6 +39,12 @@ export default function HomeScreen() {
           </ThemedText>
         </Pressable>
 
+        <Pressable style={styles.buttonLearning} onPress={() => router.push('/learning')}>
+          <ThemedText type="smallBold" style={styles.buttonText}>
+            Learning
+          </ThemedText>
+        </Pressable>
+
         <Pressable style={styles.buttonSecondary} onPress={signOut}>
           <ThemedText type="smallBold">Sign Out</ThemedText>
         </Pressable>
@@ -73,6 +79,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     alignItems: 'center',
     marginTop: Spacing.four,
+  },
+  buttonLearning: {
+    backgroundColor: '#3c87f7',
+    borderRadius: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    alignItems: 'center',
   },
   buttonSecondary: {
     borderRadius: Spacing.two,
