@@ -250,13 +250,22 @@ List events broadcast to room `list_<id>`: `item_added`, `item_toggled`, `items_
 
 ## 6. Mobile client verification
 
-Not applicable yet — no Expo/mobile app exists in the repo. When the mobile scaffold lands (planned under `mobile/`), verify it against this backend by:
+The Expo app lives under `mobile/` (see `mobile/README.md` for full setup). To verify it against this backend:
 
-1. Running the backend locally per section 1 (simulators need a reachable base URL, e.g. `http://127.0.0.1:5001` for iOS simulator or the machine's LAN IP for a physical device).
-2. Exercising the JWT flow in section 3 from the app (login, authenticated requests, refresh on 401, logout).
-3. Confirming Socket.IO connects with `auth: {token: <access_token>}` per section 5.
+```bash
+# Backend first (section 1); --debug avoids Talisman HTTPS redirects
+flask --app project run --port 5001 --debug
 
-Update this section with app-specific commands once the scaffold exists.
+# Then the app
+cd mobile
+npm install
+npx tsc --noEmit && npx expo lint   # static checks
+npm start                           # press i (iOS), a (Android), or w (web)
+```
+
+Base URL resolution is in `mobile/src/lib/config.ts`: `EXPO_PUBLIC_API_URL` if set (copy `mobile/.env.example` to `mobile/.env`), otherwise `http://127.0.0.1:5001` on iOS simulator/web and `http://10.0.2.2:5001` on the Android emulator. Physical devices need the machine's LAN IP.
+
+Manual smoke in the app: sign in with the section-1 test user, confirm the home screen shows the username and API URL, then sign out. The client stores tokens with `expo-secure-store` and auto-refreshes on 401 (`mobile/src/lib/api-client.ts`), matching the JWT flow in section 3. Socket.IO integration (section 5) is not wired into the app yet — it arrives with the lists/realtime feature work.
 
 ## 7. External dependency notes
 
