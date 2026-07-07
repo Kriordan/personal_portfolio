@@ -128,6 +128,11 @@ export const authApi = {
     });
   },
 
+  /** Fetch the current user; used to restore/validate the session at startup. */
+  me(): Promise<{ user: ApiUser }> {
+    return apiRequest<{ user: ApiUser }>('/auth/me');
+  },
+
   /** Stateless on the server; the caller must also clear local tokens. */
   async logout(): Promise<void> {
     try {

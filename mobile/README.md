@@ -46,6 +46,7 @@ For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. 
 ## Auth flow
 
 - `POST /api/v1/auth/login` returns `access_token` (15 min), `refresh_token` (30 days), and the `user` object; both tokens are stored in secure storage.
+- On app launch, a stored refresh token restores the session immediately; `GET /api/v1/auth/me` then repopulates the `user` object and validates the session (an unrecoverable 401/404 signs the user out; network errors keep the session).
 - Requests attach `Authorization: Bearer <access_token>`. On a 401 the client refreshes via `POST /api/v1/auth/refresh` (using the refresh token) and retries once; concurrent 401s share a single refresh.
 - If refresh also fails, tokens are cleared and the app redirects to the login screen.
 - Logout calls `POST /api/v1/auth/logout` (stateless server-side) and clears local tokens and the query cache.

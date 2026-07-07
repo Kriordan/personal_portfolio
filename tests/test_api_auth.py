@@ -47,6 +47,9 @@ class ApiAuthTests(unittest.TestCase):
     def _post(self, path: str, **kwargs):
         return self.client.post(path, base_url="https://localhost", **kwargs)
 
+    def _get(self, path: str, **kwargs):
+        return self.client.get(path, base_url="https://localhost", **kwargs)
+
     def _options(self, path: str, **kwargs):
         return self.client.options(path, base_url="https://localhost", **kwargs)
 
@@ -114,6 +117,47 @@ class ApiAuthTests(unittest.TestCase):
             response.get_json()["error"],
             "Email verification required.",
         )
+
+    def test_me_returns_current_user(self):
+        self._create_user(email="me@example.com", username="me-user")
+        login_response = self._post(
+            "/api/v1/auth/login",
+            json={"email": "me@example.com", "password": "password123"},
+        )
+        access_token = login_response.get_json()["access_token"]
+
+        response = self._get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["user"]["email"], "me@example.com")
+        self.assertEqual(payload["user"]["username"], "me-user")
+
+    def test_me_requires_access_token(self):
+        response = self._get("/api/v1/auth/me")
+        self.assertEqual(response.status_code, 401)
+
+    def test_me_returns_404_for_deleted_user(self):
+        self._create_user(email="gone@example.com", username="gone-user")
+        login_response = self._post(
+            "/api/v1/auth/login",
+            json={"email": "gone@example.com", "password": "password123"},
+        )
+        access_token = login_response.get_json()["access_token"]
+
+        with self.app.app_context():
+            user = User.query.filter_by(email="gone@example.com").one()
+            db.session.delete(user)
+            db.session.commit()
+
+        response = self._get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_refresh_returns_new_access_token(self):
         self._create_user(email="refresh@example.com", username="refresh")

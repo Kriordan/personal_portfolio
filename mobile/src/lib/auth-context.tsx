@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { authApi, setUnauthorizedListener, type ApiUser } from '@/lib/api-client';
+import { ApiError, authApi, setUnauthorizedListener, type ApiUser } from '@/lib/api-client';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
 
@@ -19,12 +19,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    tokenStorage.getRefreshToken().then((refreshToken) => {
-      if (!cancelled) {
-        setIsAuthenticated(refreshToken !== null);
-      }
+    // If a request 401s even after refresh, the session is unrecoverable.
+    // Registered before session restoration so a failed restore is caught too.
+    setUnauthorizedListener(() => {
+      tokenStorage.clear();
+      queryClient.clear();
+      setUser(null);
+      setIsAuthenticated(false);
     });
+    return () => setUnauthorizedListener(null);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (refreshToken === null) {
+        if (!cancelled) setIsAuthenticated(false);
+        return;
+      }
+      // Render the authenticated shell immediately; validation happens below.
+      if (!cancelled) setIsAuthenticated(true);
+      try {
+        const { user: restoredUser } = await authApi.me();
+        if (!cancelled) setUser(restoredUser);
+      } catch (error) {
+        // A 401 is already handled by the unauthorized listener. A 404 means
+        // the account no longer exists, so the session is invalid too.
+        if (error instanceof ApiError && error.status === 404) {
+          await tokenStorage.clear();
+          queryClient.clear();
+          if (!cancelled) {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        }
+        // Network/server errors keep the session; user data loads on retry.
+      }
+    }
+
+    restoreSession();
     return () => {
       cancelled = true;
     };
@@ -36,17 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     setUser(null);
     setIsAuthenticated(false);
-  }, []);
-
-  useEffect(() => {
-    // If a request 401s even after refresh, the session is unrecoverable.
-    setUnauthorizedListener(() => {
-      tokenStorage.clear();
-      queryClient.clear();
-      setUser(null);
-      setIsAuthenticated(false);
-    });
-    return () => setUnauthorizedListener(null);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {

@@ -137,6 +137,7 @@ Endpoints under `/api/v1/auth`:
 | Method | Path | Auth | Body |
 | --- | --- | --- | --- |
 | POST | `/api/v1/auth/login` | none | `{"email", "password"}` |
+| GET | `/api/v1/auth/me` | access token | — (returns `{"user": {...}}`; used by mobile session restore) |
 | POST | `/api/v1/auth/refresh` | refresh token as Bearer | empty |
 | POST | `/api/v1/auth/logout` | access token | — (stateless; no server-side revocation) |
 | POST | `/api/v1/auth/signup/<invite_token>` | none | `{"username", "password", "email"?}` |
@@ -159,6 +160,10 @@ export REFRESH=...  # from response
 # Refresh → 200 {access_token} (new access token only)
 curl -s -X POST $BASE/api/v1/auth/refresh \
   -H "Authorization: Bearer $REFRESH"
+
+# Current user → 200 {user}
+curl -s $BASE/api/v1/auth/me \
+  -H "Authorization: Bearer $ACCESS"
 ```
 
 Login error cases: 400 missing fields, 401 bad credentials, 403 email not verified.

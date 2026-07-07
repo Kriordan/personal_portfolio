@@ -34,6 +34,16 @@ def _serialize_user(user: User) -> dict[str, object]:
     }
 
 
+def _current_user_from_jwt() -> User | None:
+    identity = get_jwt_identity()
+    if identity is None:
+        return None
+    try:
+        return db.session.get(User, int(identity))
+    except (TypeError, ValueError):
+        return None
+
+
 def _send_verification_email(user: User) -> None:
     verify_url = url_for("account.verify_email", token=user.email_verification_token, _external=True)
     html_content = get_email_verification_email_content(verify_url)
@@ -88,6 +98,15 @@ def api_login():
         ),
         200,
     )
+
+
+@auth_api_blueprint.get("/me")
+@jwt_required()
+def api_me():
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "User not found."}), 404
+    return jsonify({"user": _serialize_user(user)}), 200
 
 
 @auth_api_blueprint.post("/refresh")
