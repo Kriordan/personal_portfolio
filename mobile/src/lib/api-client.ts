@@ -66,7 +66,8 @@ async function rawRequest(path: string, options: RequestOptions, accessToken: st
 // Deduplicate concurrent refresh attempts so parallel 401s trigger one refresh.
 let refreshPromise: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+/** Exported for the Socket.IO client, which needs a fresh token after a rejected connect. */
+export async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshToken = await tokenStorage.getRefreshToken();

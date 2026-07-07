@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function HomeScreen() {
   const { isAuthenticated, user, signOut } = useAuth();
+  const router = useRouter();
 
   if (isAuthenticated === null) {
     return (
@@ -32,10 +33,14 @@ export default function HomeScreen() {
           API: {API_BASE_URL}
         </ThemedText>
 
-        <Pressable style={styles.button} onPress={signOut}>
+        <Pressable style={styles.button} onPress={() => router.push('/lists')}>
           <ThemedText type="smallBold" style={styles.buttonText}>
-            Sign Out
+            My Lists
           </ThemedText>
+        </Pressable>
+
+        <Pressable style={styles.buttonSecondary} onPress={signOut}>
+          <ThemedText type="smallBold">Sign Out</ThemedText>
         </Pressable>
       </SafeAreaView>
     </ThemedView>
@@ -68,6 +73,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     alignItems: 'center',
     marginTop: Spacing.four,
+  },
+  buttonSecondary: {
+    borderRadius: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    alignItems: 'center',
   },
   buttonText: {
     color: '#ffffff',

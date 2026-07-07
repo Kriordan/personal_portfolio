@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { ApiError, authApi, setUnauthorizedListener, type ApiUser } from '@/lib/api-client';
+import { disconnectListSocket } from '@/lib/list-socket';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
 
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // If a request 401s even after refresh, the session is unrecoverable.
     // Registered before session restoration so a failed restore is caught too.
     setUnauthorizedListener(() => {
+      disconnectListSocket();
       tokenStorage.clear();
       queryClient.clear();
       setUser(null);
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    disconnectListSocket();
     await authApi.logout();
     await tokenStorage.clear();
     queryClient.clear();
