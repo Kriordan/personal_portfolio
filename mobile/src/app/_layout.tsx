@@ -25,6 +25,9 @@ export default function RootLayout() {
             <Stack.Screen name="wishlist/[id]" options={{ title: 'Gift' }} />
             <Stack.Screen name="library/index" options={{ title: 'Library' }} />
             <Stack.Screen name="library/[id]" options={{ title: 'Playlist' }} />
+            <Stack.Screen name="jobwizard/index" options={{ title: 'Jobwizard' }} />
+            <Stack.Screen name="jobwizard/new" options={{ title: 'New Job' }} />
+            <Stack.Screen name="jobwizard/[id]" options={{ title: 'Job' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>
