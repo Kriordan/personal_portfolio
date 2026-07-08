@@ -20,6 +20,9 @@ export default function RootLayout() {
             <Stack.Screen name="learning/index" options={{ title: 'Learning' }} />
             <Stack.Screen name="learning/[id]" options={{ title: 'Note' }} />
             <Stack.Screen name="learning/review" options={{ title: 'Review' }} />
+            <Stack.Screen name="wishlist/index" options={{ title: 'Wishlist' }} />
+            <Stack.Screen name="wishlist/new" options={{ title: 'New Gift' }} />
+            <Stack.Screen name="wishlist/[id]" options={{ title: 'Gift' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

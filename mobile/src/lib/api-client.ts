@@ -33,6 +33,7 @@ export interface LoginResponse {
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** JSON-serializable body, or FormData for multipart uploads. */
   body?: unknown;
   /** Skip attaching the access token (e.g. for login). */
   anonymous?: boolean;
@@ -50,7 +51,9 @@ async function parseBody(response: Response): Promise<unknown> {
 
 async function rawRequest(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
   const headers: Record<string, string> = {};
-  if (options.body !== undefined) {
+  const isFormData = options.body instanceof FormData;
+  if (options.body !== undefined && !isFormData) {
+    // For FormData, fetch sets multipart/form-data with the boundary itself.
     headers['Content-Type'] = 'application/json';
   }
   if (accessToken && !options.anonymous) {
@@ -59,7 +62,12 @@ async function rawRequest(path: string, options: RequestOptions, accessToken: st
   return fetch(`${API_BASE_URL}${API_PREFIX}${path}`, {
     method: options.method ?? 'GET',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body === undefined
+        ? undefined
+        : isFormData
+          ? (options.body as FormData)
+          : JSON.stringify(options.body),
   });
 }
 
