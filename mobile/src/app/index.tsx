@@ -51,6 +51,12 @@ export default function HomeScreen() {
           </ThemedText>
         </Pressable>
 
+        <Pressable style={styles.buttonLearning} onPress={() => router.push('/library')}>
+          <ThemedText type="smallBold" style={styles.buttonText}>
+            Library
+          </ThemedText>
+        </Pressable>
+
         <Pressable style={styles.buttonSecondary} onPress={signOut}>
           <ThemedText type="smallBold">Sign Out</ThemedText>
         </Pressable>

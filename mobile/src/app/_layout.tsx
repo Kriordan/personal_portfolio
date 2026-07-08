@@ -23,6 +23,8 @@ export default function RootLayout() {
             <Stack.Screen name="wishlist/index" options={{ title: 'Wishlist' }} />
             <Stack.Screen name="wishlist/new" options={{ title: 'New Gift' }} />
             <Stack.Screen name="wishlist/[id]" options={{ title: 'Gift' }} />
+            <Stack.Screen name="library/index" options={{ title: 'Library' }} />
+            <Stack.Screen name="library/[id]" options={{ title: 'Playlist' }} />
           </Stack>
         </ThemeProvider>
       </AuthProvider>
