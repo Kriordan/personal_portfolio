@@ -37,11 +37,18 @@ For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. 
 | Path | Purpose |
 |------|---------|
 | `src/app/` | Expo Router screens (`_layout.tsx` wires providers, `index.tsx` authed home, `login.tsx` sign-in) |
-| `src/app/lists/index.tsx` | Lists overview: owned + shared lists, create list |
-| `src/app/lists/[id].tsx` | List detail: categories, items, toggle/add, live sync badge |
+| `src/app/lists/` | Lists overview and detail: owned + shared lists, categories, items, live sync badge |
+| `src/app/learning/` | Learning notes index, note detail, and spaced-repetition review screen |
+| `src/app/wishlist/` | Wishlist gift list, create/edit forms (optional image upload), detail |
+| `src/app/library/` | Library playlist browsing, playlist detail with videos, sync trigger |
+| `src/app/jobwizard/` | Job list, create form, and job detail |
 | `src/lib/config.ts` | Environment/API URL configuration |
 | `src/lib/api-client.ts` | Fetch wrapper with JWT attachment, 401 refresh-and-retry, auth endpoints |
 | `src/lib/lists-api.ts` | Typed list endpoints (`/api/v1/lists/...`) and TanStack Query keys |
+| `src/lib/learning-api.ts` | Typed learning endpoints (`/api/v1/learning/...`) |
+| `src/lib/wishlist-api.ts` | Typed wishlist endpoints (`/api/v1/wishlist/...`) |
+| `src/lib/library-api.ts` | Typed library endpoints (`/api/v1/library/...`) |
+| `src/lib/jobwizard-api.ts` | Typed jobwizard endpoints (`/api/v1/jobwizard/...`) |
 | `src/lib/list-socket.ts` | Socket.IO client: JWT connect auth, `useListRoom` hook, post-mutation emits |
 | `src/lib/token-storage.ts` | Secure token persistence (`expo-secure-store`, localStorage fallback on web) |
 | `src/lib/query-client.ts` | Shared TanStack Query client |

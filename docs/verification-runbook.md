@@ -2,7 +2,7 @@
 
 Operational entry point for verifying the Flask backend and its `/api/v1/` surface. Use this document to confirm the backend is ready for local development, review, or mobile-client work. The dated files under `docs/notes/` are historical implementation notes; this runbook supersedes them for day-to-day verification.
 
-Last verified: 2026-07-07 (51 tests passing in the focused API/socket suite).
+Last verified: 2026-07-07 (54 tests passing in the focused API/socket suite; 77 passing in the full suite).
 
 ## 1. Local setup
 
@@ -96,7 +96,7 @@ poetry run python -m unittest \
   tests.test_socket_auth
 ```
 
-Expected: `Ran 51 tests ... OK`.
+Expected: `Ran 54 tests ... OK`.
 
 Other useful invocations:
 
@@ -111,10 +111,7 @@ poetry run python -m unittest tests.test_api_jobwizard
 poetry run python -m unittest tests.test_jobwizard_service
 ```
 
-Known pre-existing failures in the full suite (not regressions):
-
-- `tests/test_card_builder.py` — import error (`_build_cards` was removed)
-- `tests/test_scheduler.py::test_rate_creates_log_and_intra_day_review` — expects 200, gets 302
+The full suite (`discover -s tests`) is expected to pass: `Ran 77 tests ... OK`.
 
 What the API tests cover:
 
@@ -270,7 +267,7 @@ npm start                           # press i (iOS), a (Android), or w (web)
 
 Base URL resolution is in `mobile/src/lib/config.ts`: `EXPO_PUBLIC_API_URL` if set (copy `mobile/.env.example` to `mobile/.env`), otherwise `http://127.0.0.1:5001` on iOS simulator/web and `http://10.0.2.2:5001` on the Android emulator. Physical devices need the machine's LAN IP.
 
-Manual smoke in the app: sign in with the section-1 test user, confirm the home screen shows the username and API URL, then sign out. The client stores tokens with `expo-secure-store` and auto-refreshes on 401 (`mobile/src/lib/api-client.ts`), matching the JWT flow in section 3. Socket.IO integration (section 5) is not wired into the app yet — it arrives with the lists/realtime feature work.
+Manual smoke in the app: sign in with the section-1 test user, confirm the home screen shows the username and API URL, then visit each feature screen — Lists (including the Live connection badge, which exercises the Socket.IO path from section 5), Learning (notes + review), Wishlist (create/edit/delete a gift), Library (playlists/videos), and Jobwizard (list/create/detail) — then sign out. The client stores tokens with `expo-secure-store` and auto-refreshes on 401 (`mobile/src/lib/api-client.ts`), matching the JWT flow in section 3.
 
 ## 7. External dependency notes
 
@@ -326,3 +323,5 @@ Deeper context on each subsystem, in `docs/notes/2026/`:
 - `2026-03-04__jwt-auth.md`, `2026-03-04__cors-config.md`, `2026-03-04__socket-jwt.md` — auth, CORS, and socket handshake design
 - `2026-07-06__test-existing-feature-apis.md` — feature API test strategy and mocking approach
 - `2026-07-06__extract-jobwizard-service.md`, `2026-07-06__resolve-jobwizard-ownership.md`, `2026-07-07__add-jobwizard-api.md` — jobwizard service, ownership model, and API
+- `2026-07-07__scaffold-expo-app.md`, `2026-07-07__implement-expo-auth.md`, `2026-07-07__implement-expo-lists.md` — mobile scaffold, auth, and lists/realtime
+- `2026-07-07__implement-expo-learning.md`, `2026-07-07__implement-expo-wishlist.md`, `2026-07-07__implement-expo-library.md`, `2026-07-07__implement-expo-jobwizard.md` — mobile feature screens

@@ -1,3 +1,9 @@
+## Project layout
+
+- Flask backend and web UI live in `project/`; the JSON API for external clients is under `/api/v1/` (`project/api/`).
+- The Expo mobile client lives in `mobile/` (see `mobile/README.md`).
+- For backend setup, test commands, and API smoke checks, see `docs/verification-runbook.md`.
+
 ## Running locally
 
 ### Frontend

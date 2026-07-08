@@ -1,6 +1,6 @@
 import unittest
 
-from project.learning.views import _build_cards
+from project.services.learning_service import build_cards
 
 
 class CardBuilderTests(unittest.TestCase):
@@ -47,7 +47,7 @@ class CardBuilderTests(unittest.TestCase):
             }
         ]
 
-        cards = _build_cards(notes)
+        cards = build_cards(notes)
         cards_by_id = {card["card_id"]: card for card in cards}
 
         qa = cards_by_id["note-1:qa-1"]

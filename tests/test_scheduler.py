@@ -151,6 +151,7 @@ class SchedulerIntegrationTests(unittest.TestCase):
         response = self.client.post(
             "/learning/rate",
             json={"card_id": "timezone-learning:tz-1", "rating": 2},
+            base_url="https://localhost",
         )
         self.assertEqual(response.status_code, 200)
 
@@ -161,6 +162,10 @@ class SchedulerIntegrationTests(unittest.TestCase):
             self.assertEqual(progress.learning_state, "learning")
             self.assertEqual(len(logs), 1)
             self.assertIsNotNone(logs[0].learning_state_after)
+            # SQLite deserializes timezone columns as naive UTC values.
+            next_review = progress.next_review
+            if next_review.tzinfo is None:
+                next_review = next_review.replace(tzinfo=timezone.utc)
             self.assertLessEqual(
-                progress.next_review, start + LEARNING_STEPS[0] + timedelta(seconds=5)
+                next_review, start + LEARNING_STEPS[0] + timedelta(seconds=5)
             )
