@@ -8,10 +8,10 @@ Expo client for the Flask API in the repo root. Uses [Expo Router](https://docs.
 - The Flask API running locally (see `docs/verification-runbook.md` in the repo root):
 
 ```bash
-flask --app project run --port 5001 --debug
+flask --app project run --host 0.0.0.0 --port 5001 --debug
 ```
 
-`--debug` matters: outside debug mode Talisman redirects to HTTPS, which breaks plain-HTTP requests from simulators/devices.
+`--host 0.0.0.0` matters for physical devices because the iPhone must reach the Flask server over the LAN. `--debug` matters because outside debug mode Talisman redirects to HTTPS, which breaks plain-HTTP requests from simulators/devices.
 
 ## Setup
 
@@ -30,7 +30,7 @@ The API base URL is resolved in `src/lib/config.ts`:
 1. `EXPO_PUBLIC_API_URL` if set (copy `.env.example` to `.env` and fill it in)
 2. Otherwise a platform default: `http://127.0.0.1:5001` (iOS simulator/web) or `http://10.0.2.2:5001` (Android emulator)
 
-For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. `http://192.168.1.20:5001`, and make sure the device is on the same network.
+For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. `http://192.168.1.20:5001`, and make sure the device is on the same network. A quick way to verify the right IP is to match the host shown in Metro's dev-client URL. After changing `.env`, fully reload the development build so Expo re-inlines the value into the JavaScript bundle.
 
 ## Project structure
 
