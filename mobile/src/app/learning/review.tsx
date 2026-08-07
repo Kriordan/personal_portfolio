@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -18,7 +19,7 @@ const RATING_COLORS: Record<number, string> = {
 };
 
 function newSessionId(): string {
-  return `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `mobile-${Date.now().toString(36)}-${Crypto.randomUUID()}`;
 }
 
 function ReviewSession({
