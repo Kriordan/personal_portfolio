@@ -402,6 +402,12 @@ def create_incident_card(
     resolved_note_id = note_id or slugify(title or "")
     if not resolved_note_id:
         raise ValidationError("note_id or title is required")
+    if (
+        not isinstance(resolved_note_id, str)
+        or len(resolved_note_id) > 100
+        or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", resolved_note_id)
+    ):
+        raise ValidationError("invalid note_id")
 
     note_path = (notes_dir / f"{resolved_note_id}.json").resolve()
     if not note_path.is_relative_to(notes_dir.resolve()):
