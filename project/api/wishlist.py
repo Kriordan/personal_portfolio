@@ -56,8 +56,8 @@ def api_create_gift():
             body=payload.get("body", ""),
             image_file=request.files.get("image"),
         )
-    except wishlist_service.ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except wishlist_service.ValidationError:
+        return jsonify({"error": "title and body are required"}), 400
 
     return jsonify({"gift": wishlist_service.serialize_gift(gift)}), 201
 
@@ -97,8 +97,12 @@ def api_update_gift(gift_id: int):
             body=body,
             image_file=request.files.get("image"),
         )
-    except wishlist_service.ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except wishlist_service.EmptyTitleError:
+        return jsonify({"error": "title cannot be empty"}), 400
+    except wishlist_service.EmptyBodyError:
+        return jsonify({"error": "body cannot be empty"}), 400
+    except wishlist_service.ValidationError:
+        return jsonify({"error": "Invalid gift data."}), 400
 
     return jsonify({"gift": wishlist_service.serialize_gift(gift)}), 200
 

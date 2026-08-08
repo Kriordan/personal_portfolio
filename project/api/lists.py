@@ -171,8 +171,8 @@ def api_add_item(list_id: int):
             notes=payload.get("notes"),
             category_id_raw=str(payload.get("category_id") or ""),
         )
-    except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid category ID."}), 400
     except NotFound:
         return jsonify({"error": "Category not found."}), 404
 
@@ -300,10 +300,10 @@ def api_share_list(list_id: int):
             owner=user,
             email=email,
         )
-    except PermissionError as err:
-        return jsonify({"error": str(err)}), 403
-    except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+    except PermissionError:
+        return jsonify({"error": "Only the list owner can share this list."}), 403
+    except ValueError:
+        return jsonify({"error": "Invalid share request."}), 400
 
     if result["status"] == "invitation_created":
         invitation = result["invitation"]
@@ -334,8 +334,8 @@ def api_update_list_settings(list_id: int):
         lists_service.ensure_list_owner(custom_list, user)
     except NotFound:
         return jsonify({"error": "List not found."}), 404
-    except PermissionError as err:
-        return jsonify({"error": str(err)}), 403
+    except PermissionError:
+        return jsonify({"error": "Only the list owner can update settings."}), 403
 
     payload = request.get_json(silent=True) or {}
     completed_display_mode = payload.get("completed_display_mode")
@@ -344,8 +344,7 @@ def api_update_list_settings(list_id: int):
             custom_list=custom_list,
             completed_display_mode=completed_display_mode,
         )
-    except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid display mode."}), 400
 
     return jsonify({"list": _serialize_list_summary(custom_list)}), 200
-

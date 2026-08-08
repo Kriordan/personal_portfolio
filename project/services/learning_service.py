@@ -28,6 +28,14 @@ class ValidationError(LearningServiceError):
     """Raised when service input fails validation."""
 
 
+class InvalidRatingError(ValidationError):
+    """Raised when a review rating is outside the supported range."""
+
+
+class InvalidCardIdError(ValidationError):
+    """Raised when a review card ID does not use the expected format."""
+
+
 class ConflictError(LearningServiceError):
     """Raised when a resource conflict occurs."""
 
@@ -236,11 +244,14 @@ def rate_card_for_user(
 ) -> dict[str, Any]:
     """Apply a rating to a card and persist progress/log records."""
     if rating < 0 or rating > 5:
-        raise ValidationError("rating must be between 0 and 5")
+        raise InvalidRatingError("rating must be between 0 and 5")
+
+    if not isinstance(card_id, str):
+        raise InvalidCardIdError("invalid card_id format")
 
     parts = card_id.split(":", 1)
     if len(parts) != 2:
-        raise ValidationError("invalid card_id format")
+        raise InvalidCardIdError("invalid card_id format")
     note_id, _ = parts
 
     note = load_note(notes_dir, note_id)

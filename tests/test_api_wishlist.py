@@ -7,6 +7,7 @@ from flask_jwt_extended import create_access_token
 from project import create_app
 from project.database import db
 from project.models import Gift, User
+from project.services import wishlist_service
 
 
 class ApiWishlistTests(unittest.TestCase):
@@ -121,6 +122,23 @@ class ApiWishlistTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"], "title and body are required")
+
+    @patch("project.api.wishlist.wishlist_service.create_gift_for_user")
+    def test_create_gift_does_not_expose_validation_exception_details(self, mock_create):
+        mock_create.side_effect = wishlist_service.ValidationError(
+            "storage credentials: should-not-leak"
+        )
+        user_id = self._create_user(email="owner@example.com", username="owner")
+
+        response = self._post(
+            "/api/v1/wishlist/gifts",
+            headers=self._auth_headers(user_id),
+            json={"title": "Bike", "body": "Red one"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "title and body are required")
+        self.assertNotIn("should-not-leak", response.get_data(as_text=True))
 
     @patch("project.services.wishlist_service.upload_image_to_s3")
     def test_create_gift_uploads_image_without_real_s3(self, mock_upload):

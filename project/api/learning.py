@@ -92,8 +92,12 @@ def api_rate_card():
             response_ms=response_ms,
             session_id=session_id,
         )
-    except learning_service.ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
-    except learning_service.NotFoundError as exc:
-        return jsonify({"error": str(exc)}), 404
+    except learning_service.InvalidRatingError:
+        return jsonify({"error": "rating must be between 0 and 5"}), 400
+    except learning_service.InvalidCardIdError:
+        return jsonify({"error": "invalid card_id format"}), 400
+    except learning_service.ValidationError:
+        return jsonify({"error": "Invalid review request."}), 400
+    except learning_service.NotFoundError:
+        return jsonify({"error": "card not found"}), 404
     return jsonify(response_data), 200

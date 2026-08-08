@@ -47,9 +47,10 @@ def create_list():
         new_list = lists_service.create_list(owner=current_user, title=form.title.data)
         flash("List created successfully.", "success")
         return redirect(url_for("lists.view_list", list_id=new_list.id))
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        flash(f"Error creating list: {str(e)}", "danger")
+        current_app.logger.exception("Failed to create list")
+        flash("Unable to create list.", "danger")
         return redirect(url_for("lists.list_lists"))
 
 
@@ -65,15 +66,16 @@ def share_list(list_id):
             owner=current_user,
             email=email,
         )
-    except PermissionError as err:
-        flash(str(err), "danger")
+    except PermissionError:
+        flash("Only the list owner can share this list.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
-    except ValueError as err:
-        flash(str(err), "danger")
+    except ValueError:
+        flash("Invalid share request.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
-    except Exception as err:
+    except Exception:
         db.session.rollback()
-        flash(f"Error sharing list: {str(err)}", "danger")
+        current_app.logger.exception("Failed to share list %s", list_id)
+        flash("Unable to share list.", "danger")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
     status = result["status"]
@@ -102,9 +104,10 @@ def share_list(list_id):
                 f"Invitation sent to {shared_email}. They'll receive an email with instructions.",
                 "success",
             )
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            flash(f"Failed to send invitation email: {str(e)}", "danger")
+            current_app.logger.exception("Failed to send list invitation email")
+            flash("Unable to send the invitation email.", "danger")
 
     return redirect(url_for("lists.view_list", list_id=list_id))
 
@@ -234,8 +237,8 @@ def add_item(list_id):
                 category_id_raw=request.form.get("category_id"),
             )
             flash("Item added successfully.", "success")
-        except ValueError as err:
-            flash(str(err), "danger")
+        except ValueError:
+            flash("Invalid category ID.", "danger")
         except Exception:
             flash("Error adding item.", "danger")
             db.session.rollback()

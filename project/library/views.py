@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, url_for
 from flask_login import login_required
 
 from project.library.jobs import export_subscriptions_to_json
@@ -60,16 +60,18 @@ def export_subscriptions():
             f"Successfully exported {result['total_subscriptions']} subscriptions to youtube-subscriptions.json",
             "success",
         )
-    except ValueError as e:
+    except ValueError as error:
         # Handle authentication errors
-        if "credentials not found" in str(e).lower():
+        if "credentials not found" in str(error).lower():
             flash(
                 "YouTube authorization required. Please authorize the app first.",
                 "error",
             )
             return redirect(url_for("oauth.authorize"))
-        flash(f"Error: {str(e)}", "error")
-    except Exception as e:
-        flash(f"Error exporting subscriptions: {str(e)}", "error")
+        current_app.logger.exception("Invalid YouTube subscription export request")
+        flash("Unable to export subscriptions.", "error")
+    except Exception:
+        current_app.logger.exception("Failed to export YouTube subscriptions")
+        flash("Unable to export subscriptions.", "error")
 
     return redirect(url_for("foyer.utilities"))

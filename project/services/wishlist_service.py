@@ -19,6 +19,14 @@ class ValidationError(WishlistServiceError):
     """Raised when service input fails validation."""
 
 
+class EmptyTitleError(ValidationError):
+    """Raised when an update would leave a gift title empty."""
+
+
+class EmptyBodyError(ValidationError):
+    """Raised when an update would leave a gift body empty."""
+
+
 def serialize_gift(gift: Gift) -> dict[str, object]:
     """Return a JSON-safe gift payload."""
     return {
@@ -93,13 +101,13 @@ def update_gift(
     if title is not None:
         cleaned_title = str(title).strip()
         if not cleaned_title:
-            raise ValidationError("title cannot be empty")
+            raise EmptyTitleError("title cannot be empty")
         gift.title = cleaned_title
 
     if body is not None:
         cleaned_body = str(body).strip()
         if not cleaned_body:
-            raise ValidationError("body cannot be empty")
+            raise EmptyBodyError("body cannot be empty")
         gift.body = cleaned_body
 
     if image_file:

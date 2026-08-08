@@ -7,6 +7,7 @@ from flask_jwt_extended import create_access_token
 from project import create_app
 from project.database import db
 from project.models import Job, User
+from project.services import jobwizard_service
 
 
 class ApiJobwizardTests(unittest.TestCase):
@@ -152,6 +153,30 @@ class ApiJobwizardTests(unittest.TestCase):
             response.get_json()["error"],
             "title, company_name, and listing_url are required",
         )
+
+    @patch("project.api.jobwizard.jobwizard_service.create_job_for_user")
+    def test_create_job_does_not_expose_validation_exception_details(self, mock_create):
+        mock_create.side_effect = jobwizard_service.ValidationError(
+            "database password: should-not-leak"
+        )
+        user_id = self._create_user(email="owner@example.com", username="owner")
+
+        response = self._post(
+            "/api/v1/jobwizard/jobs",
+            headers=self._auth_headers(user_id),
+            json={
+                "title": "Engineer",
+                "company_name": "Acme",
+                "listing_url": "https://example.com/job",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json()["error"],
+            "title, company_name, and listing_url are required",
+        )
+        self.assertNotIn("should-not-leak", response.get_data(as_text=True))
 
     def test_get_job_returns_owned_job(self):
         owner_id = self._create_user(email="owner@example.com", username="owner")

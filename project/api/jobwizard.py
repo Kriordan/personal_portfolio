@@ -56,8 +56,10 @@ def api_create_job():
             company_name=payload.get("company_name", ""),
             listing_url=payload.get("listing_url", ""),
         )
-    except jobwizard_service.ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except jobwizard_service.ValidationError:
+        return jsonify(
+            {"error": "title, company_name, and listing_url are required"}
+        ), 400
 
     return jsonify({"job": jobwizard_service.serialize_job(job)}), 201
 

@@ -9,6 +9,7 @@ from flask_jwt_extended import create_access_token
 from project import create_app
 from project.database import db
 from project.models import ReviewLog, ReviewProgress, User
+from project.services import learning_service
 
 NOTE_ID = "flask-basics"
 CARD_ID = f"{NOTE_ID}:q1"
@@ -212,6 +213,23 @@ class ApiLearningTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json()["error"], "card not found")
+
+    @patch("project.api.learning.learning_service.rate_card_for_user")
+    def test_rate_does_not_expose_validation_exception_details(self, mock_rate):
+        mock_rate.side_effect = learning_service.ValidationError(
+            "database connection: should-not-leak"
+        )
+        user_id = self._create_user(email="learner@example.com", username="learner")
+
+        response = self._post(
+            "/api/v1/learning/rate",
+            headers=self._auth_headers(user_id),
+            json={"card_id": CARD_ID, "rating": 4},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "Invalid review request.")
+        self.assertNotIn("should-not-leak", response.get_data(as_text=True))
 
     def test_rate_persists_progress_and_log(self):
         user_id = self._create_user(email="learner@example.com", username="learner")
