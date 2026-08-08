@@ -1,0 +1,84 @@
+{
+  "id": "codeql-security-review-patterns",
+  "title": "CodeQL Security Review Patterns",
+  "created_at": "2026-08-07",
+  "tags": ["security", "codeql", "python", "flask", "react-native"],
+  "summary": "## Overview\nSecurity findings should be traced from untrusted source to sensitive sink before accepting or dismissing them. Several alerts may represent one shared data flow, so fixing the trust boundary is usually better than patching each sink.\n\n## Key Concepts\n- Separate scanner validity from exploitability: a warning can identify a risky pattern even when another control currently blocks exploitation.\n- For simple filenames, sanitize into a new value, require an exact round trip, enforce a strict allowlist, and verify the resolved target remains inside its trusted root.\n- Never serialize exception text into HTTP responses. Return predefined client-safe messages and log unexpected details server-side.\n- Use cryptographically secure randomness for identifiers that scanners or future code may treat as security-sensitive.\n\n## Verification Strategy\nTest real adversarial cases: traversal with both separator styles, Unicode normalization, oversized identifiers, symlink escapes, reflected exception content, and valid inputs. Then run the focused tests, full suite, formatting checks, and the security scanner again.",
+  "flashcards": [
+    {
+      "id": "codeql-review-1",
+      "type": "qa",
+      "question": "What should you establish before accepting or dismissing a static-analysis security finding?",
+      "answer": "Trace the complete source-to-sink path: identify the untrusted input, transformations and validation, sensitive operation, reachable callers, and existing defenses. Then distinguish whether the alert is exploitable, a risky-but-currently-safe pattern, or a true false positive.",
+      "tags": ["code-review", "threat-modeling"]
+    },
+    {
+      "id": "codeql-review-2",
+      "type": "cloze",
+      "text": "When several CodeQL alerts share one tainted input and differ only by sinks such as path construction, exists, read, and write, fix the {{c1::shared trust boundary}} instead of patching every sink independently.",
+      "tags": ["codeql", "refactoring"]
+    },
+    {
+      "id": "path-incident-1",
+      "type": "incident",
+      "title": "User-controlled note ID reaches filesystem operations",
+      "symptom": "CodeQL reports uncontrolled data at path construction, exists(), read_text(), and write_text().",
+      "root_cause": "A note ID originating in a route or submitted card ID is interpolated into a filename. Custom validation may protect runtime behavior but may not form a clear, consistently enforced trust boundary.",
+      "fix": "Sanitize the ID into a new value with secure_filename, require the sanitized value to equal the original input, apply a strict lowercase kebab-case allowlist and length bound, then resolve the target and require it to remain under the resolved notes directory.",
+      "prevention": "Centralize path construction, make every read and write use it, test traversal and symlink cases, and rerun CodeQL after the change.",
+      "tags": ["path-traversal", "codeql", "flask"]
+    },
+    {
+      "id": "path-qa-1",
+      "type": "qa",
+      "question": "Why require secure_filename(user_value) == user_value instead of silently using the transformed result?",
+      "answer": "Equality makes sanitization a validator rather than a renaming operation. Inputs containing separators, Unicode normalization changes, or stripped special characters are rejected, preventing ambiguous identifiers and unexpected collisions.",
+      "tags": ["path-traversal", "validation"]
+    },
+    {
+      "id": "path-qa-2",
+      "type": "qa",
+      "question": "Why retain a resolved-root containment check after strict filename sanitization?",
+      "answer": "It provides an independent defense against filesystem behavior the character allowlist cannot see, especially a valid-looking file inside the trusted directory that is actually a symlink to a target outside it.",
+      "tags": ["path-traversal", "symlinks", "defense-in-depth"]
+    },
+    {
+      "id": "path-diff-1",
+      "type": "code_diff",
+      "prompt": "Harden a user-derived note ID before constructing its JSON path",
+      "before": "note_path = (notes_dir / f\"{note_id}.json\").resolve()\nif not note_path.is_relative_to(notes_dir.resolve()):\n    raise ValidationError(\"invalid note_id\")",
+      "after": "safe_note_id = secure_filename(note_id)\nif safe_note_id != note_id or not NOTE_ID_PATTERN.fullmatch(safe_note_id):\n    raise ValidationError(\"invalid note_id\")\n\nresolved_notes_dir = notes_dir.resolve()\nnote_path = (resolved_notes_dir / f\"{safe_note_id}.json\").resolve()\nif not note_path.is_relative_to(resolved_notes_dir):\n    raise ValidationError(\"invalid note_id\")",
+      "tags": ["python", "werkzeug", "path-traversal"]
+    },
+    {
+      "id": "exception-incident-1",
+      "type": "incident",
+      "title": "Exception details returned by an API",
+      "symptom": "CodeQL reports information exposure where a route returns jsonify({\"error\": str(exc)}).",
+      "root_cause": "The HTTP response is coupled to arbitrary exception text. Current messages may be harmless, but a future database, storage, or provider error could contain sensitive implementation details or reflected user input.",
+      "fix": "Catch only expected exception types and return predefined client-safe messages. Log unexpected exception details server-side with logger.exception.",
+      "prevention": "Add tests that inject a secret-bearing exception and assert the secret is absent from the response. Avoid str(exc) in JSON, rendered pages, and flash messages.",
+      "tags": ["information-exposure", "flask", "api"]
+    },
+    {
+      "id": "exception-qa-1",
+      "type": "qa",
+      "question": "How can an API preserve specific validation responses without exposing exception text?",
+      "answer": "Use narrow exception types or stable internal error codes, catch them explicitly at the controller boundary, and map each to a hard-coded public message. Keep a generic fallback for unexpected validation errors.",
+      "tags": ["api-design", "exceptions"]
+    },
+    {
+      "id": "randomness-qa-1",
+      "type": "qa",
+      "question": "When should Math.random() be replaced with cryptographically secure randomness?",
+      "answer": "Always when unpredictability matters, and preferably for opaque identifiers that may later cross a trust boundary. In Expo, Crypto.randomUUID() provides a clear cross-platform UUID v4 implementation backed by secure randomness.",
+      "tags": ["cryptography", "expo", "react-native"]
+    },
+    {
+      "id": "verification-cloze-1",
+      "type": "cloze",
+      "text": "A security fix is not complete after unit tests alone: run focused adversarial tests, the {{c1::full regression suite}}, static checks, and the {{c2::security scanner}} that originally reported the finding.",
+      "tags": ["testing", "codeql"]
+    }
+  ]
+}
