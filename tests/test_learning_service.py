@@ -22,6 +22,20 @@ class LoadNoteTests(unittest.TestCase):
 
             self.assertIsNone(load_note(notes_dir, "../outside"))
 
+    def test_rejects_symlink_to_json_file_outside_notes_directory(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_dir = Path(temporary_directory)
+            notes_dir = base_dir / "notes"
+            notes_dir.mkdir()
+            outside_path = base_dir / "outside.json"
+            outside_path.write_text(
+                '{"id": "outside", "title": "Outside"}',
+                encoding="utf-8",
+            )
+            (notes_dir / "linked-note.json").symlink_to(outside_path)
+
+            self.assertIsNone(load_note(notes_dir, "linked-note"))
+
 
 class CreateIncidentCardTests(unittest.TestCase):
     def test_creates_note_for_valid_note_id(self):
@@ -45,8 +59,10 @@ class CreateIncidentCardTests(unittest.TestCase):
         invalid_note_ids = (
             "../escape",
             "nested/note",
+            "..\\escape",
             ".hidden",
             "UPPERCASE",
+            "résumé",
             "trailing-",
             "a" * 101,
         )

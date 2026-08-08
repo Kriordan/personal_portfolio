@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from werkzeug.utils import secure_filename
+
 from project.database import db
 from project.learning.queue_builder import build_review_queue
 from project.learning.scheduler_config import get_effective_target_recall
@@ -57,15 +59,17 @@ def notes_dir_for_root(root_path: str) -> Path:
 
 def _validated_note_path(notes_dir: Path, note_id: str) -> Path:
     """Return a contained JSON path for a validated note ID."""
-    if (
-        not isinstance(note_id, str)
-        or len(note_id) > 100
-        or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", note_id)
+    if not isinstance(note_id, str) or len(note_id) > 100:
+        raise ValidationError("invalid note_id")
+
+    safe_note_id = secure_filename(note_id)
+    if safe_note_id != note_id or not re.fullmatch(
+        r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", safe_note_id
     ):
         raise ValidationError("invalid note_id")
 
     resolved_notes_dir = notes_dir.resolve()
-    note_path = (resolved_notes_dir / f"{note_id}.json").resolve()
+    note_path = (resolved_notes_dir / f"{safe_note_id}.json").resolve()
     if not note_path.is_relative_to(resolved_notes_dir):
         raise ValidationError("invalid note_id")
     return note_path
