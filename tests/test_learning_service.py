@@ -2,7 +2,25 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from project.services.learning_service import ValidationError, create_incident_card
+from project.services.learning_service import (
+    ValidationError,
+    create_incident_card,
+    load_note,
+)
+
+
+class LoadNoteTests(unittest.TestCase):
+    def test_rejects_path_traversal_to_existing_json_file(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_dir = Path(temporary_directory)
+            notes_dir = base_dir / "notes"
+            notes_dir.mkdir()
+            (base_dir / "outside.json").write_text(
+                '{"id": "outside", "title": "Outside"}',
+                encoding="utf-8",
+            )
+
+            self.assertIsNone(load_note(notes_dir, "../outside"))
 
 
 class CreateIncidentCardTests(unittest.TestCase):

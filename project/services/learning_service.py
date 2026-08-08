@@ -47,9 +47,28 @@ def notes_dir_for_root(root_path: str) -> Path:
     return Path(root_path).parent / "notes"
 
 
+def _validated_note_path(notes_dir: Path, note_id: str) -> Path:
+    """Return a contained JSON path for a validated note ID."""
+    if (
+        not isinstance(note_id, str)
+        or len(note_id) > 100
+        or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", note_id)
+    ):
+        raise ValidationError("invalid note_id")
+
+    resolved_notes_dir = notes_dir.resolve()
+    note_path = (resolved_notes_dir / f"{note_id}.json").resolve()
+    if not note_path.is_relative_to(resolved_notes_dir):
+        raise ValidationError("invalid note_id")
+    return note_path
+
+
 def load_note(notes_dir: Path, note_id: str) -> dict[str, Any] | None:
     """Load a single note JSON file by ID."""
-    note_path = notes_dir / f"{note_id}.json"
+    try:
+        note_path = _validated_note_path(notes_dir, note_id)
+    except ValidationError:
+        return None
     if not note_path.exists():
         return None
     try:
@@ -402,16 +421,7 @@ def create_incident_card(
     resolved_note_id = note_id or slugify(title or "")
     if not resolved_note_id:
         raise ValidationError("note_id or title is required")
-    if (
-        not isinstance(resolved_note_id, str)
-        or len(resolved_note_id) > 100
-        or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", resolved_note_id)
-    ):
-        raise ValidationError("invalid note_id")
-
-    note_path = (notes_dir / f"{resolved_note_id}.json").resolve()
-    if not note_path.is_relative_to(notes_dir.resolve()):
-        raise ValidationError("invalid note_id")
+    note_path = _validated_note_path(notes_dir, resolved_note_id)
 
     note = load_note(notes_dir, resolved_note_id)
     normalized_tags = tags or []
