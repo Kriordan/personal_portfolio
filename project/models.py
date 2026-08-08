@@ -171,7 +171,11 @@ class InvitationMixin:
     @property
     def is_expired(self) -> bool:
         """Check if the invitation has expired."""
-        return datetime.now(timezone.utc) > self.expires_at
+        expires_at = self.expires_at
+        if expires_at.tzinfo is None:
+            # Some DB backends/tests may deserialize timezone columns as naive values.
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > expires_at
 
     @property
     def is_accepted(self) -> bool:
@@ -272,12 +276,18 @@ class Job(db.Model):
     posted_date = db.Column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
 
-    def __init__(self, title, company_name, listing_url, posted_date):
+    owner = db.relationship("User")
+
+    def __init__(self, title, company_name, listing_url, posted_date, user_id):
         self.title = title
         self.company_name = company_name
         self.listing_url = listing_url
         self.posted_date = posted_date
+        self.user_id = user_id
 
     def __repr__(self):
         return "<Job %r>" % self.company_name

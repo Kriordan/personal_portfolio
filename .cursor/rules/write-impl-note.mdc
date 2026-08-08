@@ -1,0 +1,108 @@
+---
+description: Generate a thorough implementation note for completed work. Invoke this rule after finishing a todo to auto-generate a doc in docs/notes/.
+alwaysApply: false
+---
+
+# Write Implementation Note
+
+When the user invokes this rule, generate a comprehensive implementation note documenting the work completed in this conversation. The note captures architectural decisions, scope, and context so it remains valuable for future reference and learning.
+
+## Step 1 — Identify the work
+
+Analyze the full conversation to determine:
+
+- **Todo ID**: a short kebab-case slug summarizing the work (e.g. `api-scaffold`, `add-search-index`, `fix-auth-redirect`). If the user provided one, use it. Otherwise derive one from the task description.
+- **Objective**: one-sentence summary of the goal.
+- **Date**: today's date in `YYYY-MM-DD` format.
+
+If the todo ID or objective is ambiguous, ask the user before proceeding.
+
+## Step 2 — Gather evidence
+
+Collect implementation details automatically:
+
+1. **Git diff**: run `git diff HEAD` and `git diff --cached` to see uncommitted changes. If work was already committed, run `git log --oneline -20` and `git diff <base>..HEAD` using the appropriate base commit.
+2. **Files created / modified**: run `git status` and `git diff --name-status` to enumerate every file touched.
+3. **Conversation context**: review all tool calls, code changes, architectural discussions, and decisions made during the chat.
+
+## Step 3 — Write the note
+
+Create the file at:
+
+```
+docs/notes/YYYY/YYYY-MM-DD__<todo-id>.md
+```
+
+Create the year directory if it doesn't exist.
+
+### Required document structure
+
+Follow this template exactly. Every section is required. Scale detail to the size of the work — small todos still get every section, but sections can be brief.
+
+```markdown
+# <Title> (`<todo-id>`)
+
+Date: YYYY-MM-DD
+Todo ID: `<todo-id>`
+
+## Objective
+
+<One or two sentences: what was the goal and why it matters.>
+
+## Scope Delivered
+
+<Bulleted summary of everything that was shipped. Be specific — name files, endpoints, components, configs.>
+
+## Legacy Behavior Ported
+
+<If migrating or porting from existing code, describe what was preserved and how. If not applicable, replace this section with "## Prior Art / Context" and note any relevant existing patterns that informed the work.>
+
+## Architecture and Design Choices
+
+<Numbered subsections for each significant decision area. For each:>
+### N) <Decision area>
+- What was done
+- Why this approach was chosen
+- Trade-offs considered
+- Key implementation details (file paths, config values, API shapes)
+
+## Files Created
+
+<Bulleted list of every new file, grouped logically.>
+
+## Files Modified
+
+<Bulleted list of every modified file with a short note on what changed. Omit if no files were modified.>
+
+## API Contract
+
+<If endpoints, CLI commands, or public interfaces were added, document their signatures, methods, request/response shapes. Omit section if not applicable.>
+
+## Validation and Verification
+
+<Numbered list of steps taken to verify correctness: tests run, manual checks, lint passes, build confirmations.>
+
+## Known Gaps / Follow-ups
+
+<Bulleted list of things intentionally deferred, not yet tested, or requiring future work.>
+
+## How to Run (Current)
+
+<Step-by-step instructions someone can follow right now to exercise the new functionality.>
+```
+
+### Writing guidelines
+
+- **Be concrete**: prefer file paths, function names, config keys, and endpoint URLs over vague descriptions.
+- **Explain the "why"**: every architecture subsection should justify the choice, not just state what was done.
+- **Include code snippets** when they clarify a non-obvious pattern (keep them short — 5-15 lines max).
+- **Link to related notes** if prior implementation notes are referenced (use relative paths like `./2026-03-02__api-scaffold.md`).
+- **No filler**: if a section genuinely doesn't apply, state "N/A — <brief reason>" rather than padding.
+
+## Step 4 — Confirm with user
+
+After writing the file, print:
+
+1. The full path of the created note.
+2. A short summary of what was documented.
+3. Ask if they want any sections expanded, trimmed, or corrected before committing.

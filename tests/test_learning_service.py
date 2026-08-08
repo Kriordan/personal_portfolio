@@ -1,0 +1,89 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from project.services.learning_service import (
+    ValidationError,
+    create_incident_card,
+    load_note,
+)
+
+
+class LoadNoteTests(unittest.TestCase):
+    def test_rejects_path_traversal_to_existing_json_file(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_dir = Path(temporary_directory)
+            notes_dir = base_dir / "notes"
+            notes_dir.mkdir()
+            (base_dir / "outside.json").write_text(
+                '{"id": "outside", "title": "Outside"}',
+                encoding="utf-8",
+            )
+
+            self.assertIsNone(load_note(notes_dir, "../outside"))
+
+    def test_rejects_symlink_to_json_file_outside_notes_directory(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_dir = Path(temporary_directory)
+            notes_dir = base_dir / "notes"
+            notes_dir.mkdir()
+            outside_path = base_dir / "outside.json"
+            outside_path.write_text(
+                '{"id": "outside", "title": "Outside"}',
+                encoding="utf-8",
+            )
+            (notes_dir / "linked-note.json").symlink_to(outside_path)
+
+            self.assertIsNone(load_note(notes_dir, "linked-note"))
+
+
+class CreateIncidentCardTests(unittest.TestCase):
+    def test_creates_note_for_valid_note_id(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            notes_dir = Path(temporary_directory)
+
+            note_id, card_id = create_incident_card(
+                notes_dir=notes_dir,
+                note_id="valid-note-1",
+                title="Valid note",
+                symptom="A symptom",
+                root_cause="A cause",
+                fix="A fix",
+            )
+
+            self.assertEqual(note_id, "valid-note-1")
+            self.assertEqual(card_id, "inc")
+            self.assertTrue((notes_dir / "valid-note-1.json").is_file())
+
+    def test_rejects_invalid_note_ids(self):
+        invalid_note_ids = (
+            "../escape",
+            "nested/note",
+            "..\\escape",
+            ".hidden",
+            "UPPERCASE",
+            "résumé",
+            "trailing-",
+            "a" * 101,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            notes_dir = Path(temporary_directory)
+
+            for note_id in invalid_note_ids:
+                with self.subTest(note_id=note_id):
+                    with self.assertRaisesRegex(ValidationError, "invalid note_id"):
+                        create_incident_card(
+                            notes_dir=notes_dir,
+                            note_id=note_id,
+                            title="Invalid note",
+                            symptom="A symptom",
+                            root_cause="A cause",
+                            fix="A fix",
+                        )
+
+            self.assertEqual(list(notes_dir.iterdir()), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

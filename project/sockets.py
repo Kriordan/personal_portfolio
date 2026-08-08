@@ -9,29 +9,72 @@ This module handles all Socket.IO events for the lists feature, including:
 """
 
 from flask import request
+from flask_jwt_extended import decode_token
 from flask_login import current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from project.models import CustomList
+from project.database import db
+from project.models import User
 
 # Initialize SocketIO instance - configured in __init__.py via register_websockets()
 socketio = SocketIO()
+_socket_user_ids: dict[str, int] = {}
+
+
+def _resolve_authenticated_user() -> User | None:
+    """Resolve the active user for an event from session or JWT socket mapping."""
+    if current_user.is_authenticated:
+        return current_user
+
+    user_id = _socket_user_ids.get(request.sid)
+    if user_id is None:
+        return None
+    return db.session.get(User, user_id)
 
 
 def register_handlers():
     """Register all Socket.IO event handlers."""
 
     @socketio.on("connect")
-    def handle_connect():
-        """Handle client connection."""
-        if not current_user.is_authenticated:
-            return False  # Reject unauthenticated connections
+    def handle_connect(auth=None):
+        """Handle client connection via session auth or JWT token auth."""
+        if current_user.is_authenticated:
+            print(f"Client connected: {request.sid}")
+            return True
+
+        token = None
+        if isinstance(auth, dict):
+            token = auth.get("token")
+        if not token:
+            return False
+
+        try:
+            decoded_token = decode_token(token, allow_expired=False)
+        except Exception:
+            return False
+
+        if decoded_token.get("type") != "access":
+            return False
+
+        identity = decoded_token.get("sub")
+        try:
+            user_id = int(identity)
+        except (TypeError, ValueError):
+            return False
+
+        user = db.session.get(User, user_id)
+        if user is None:
+            return False
+
+        _socket_user_ids[request.sid] = user.id
         print(f"Client connected: {request.sid}")
         return True
 
     @socketio.on("disconnect")
     def handle_disconnect():
         """Handle client disconnection."""
+        _socket_user_ids.pop(request.sid, None)
         print(f"Client disconnected: {request.sid}")
 
     @socketio.on("join_list")
@@ -42,32 +85,33 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id'
         """
-        if not current_user.is_authenticated:
+        user = _resolve_authenticated_user()
+        if user is None:
             return {"success": False, "error": "Not authenticated"}
 
         list_id = data.get("list_id")
         if not list_id:
             return {"success": False, "error": "No list_id provided"}
 
-        custom_list = CustomList.query.get(list_id)
+        custom_list = db.session.get(CustomList, list_id)
         if not custom_list:
             return {"success": False, "error": "List not found"}
 
         if (
-            custom_list.owner_id != current_user.id
-            and current_user not in custom_list.shared_with
+            custom_list.owner_id != user.id
+            and user not in custom_list.shared_with
         ):
             return {"success": False, "error": "Access denied"}
 
         room = f"list_{list_id}"
         join_room(room)
-        print(f"User {current_user.username} joined room {room}")
+        print(f"User {user.username} joined room {room}")
 
         emit(
             "user_joined",
             {
-                "user_id": current_user.id,
-                "username": current_user.username,
+                "user_id": user.id,
+                "username": user.username,
             },
             room=room,
             include_self=False,
@@ -83,17 +127,21 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id'
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return {"success": False, "error": "Not authenticated"}
+
         list_id = data.get("list_id")
         if list_id:
             room = f"list_{list_id}"
             leave_room(room)
-            print(f"User {current_user.username} left room {room}")
+            print(f"User {user.username} left room {room}")
 
             emit(
                 "user_left",
                 {
-                    "user_id": current_user.id,
-                    "username": current_user.username,
+                    "user_id": user.id,
+                    "username": user.username,
                 },
                 room=room,
                 include_self=False,
@@ -107,6 +155,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id', 'item_id', 'completed'
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -118,7 +170,7 @@ def register_handlers():
                 "list_id": list_id,
                 "item_id": data.get("item_id"),
                 "completed": data.get("completed"),
-                "toggled_by": current_user.username,
+                "toggled_by": user.username,
             },
             room=room,
             include_self=False,
@@ -132,6 +184,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id', 'category_id', 'item' details
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -143,7 +199,7 @@ def register_handlers():
                 "list_id": list_id,
                 "category_id": data.get("category_id"),
                 "item": data.get("item"),
-                "added_by": current_user.username,
+                "added_by": user.username,
             },
             room=room,
             include_self=False,
@@ -157,6 +213,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id', 'items' (list of item order data)
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -167,7 +227,7 @@ def register_handlers():
             {
                 "list_id": list_id,
                 "items": data.get("items"),
-                "reordered_by": current_user.username,
+                "reordered_by": user.username,
             },
             room=room,
             include_self=False,
@@ -181,6 +241,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id', 'category' details
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -191,7 +255,7 @@ def register_handlers():
             {
                 "list_id": list_id,
                 "category": data.get("category"),
-                "added_by": current_user.username,
+                "added_by": user.username,
             },
             room=room,
             include_self=False,
@@ -205,6 +269,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id', 'categories' (list of category order data)
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -215,7 +283,7 @@ def register_handlers():
             {
                 "list_id": list_id,
                 "categories": data.get("categories"),
-                "reordered_by": current_user.username,
+                "reordered_by": user.username,
             },
             room=room,
             include_self=False,
@@ -229,6 +297,10 @@ def register_handlers():
         Args:
             data: Dict containing 'list_id' and updated settings
         """
+        user = _resolve_authenticated_user()
+        if user is None:
+            return
+
         list_id = data.get("list_id")
         if not list_id:
             return
@@ -239,7 +311,7 @@ def register_handlers():
             {
                 "list_id": list_id,
                 "completed_display_mode": data.get("completed_display_mode"),
-                "updated_by": current_user.username,
+                "updated_by": user.username,
             },
             room=room,
             include_self=False,

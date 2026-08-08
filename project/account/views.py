@@ -1,10 +1,7 @@
 """This file defines the routes for the account blueprint."""
 
-import secrets
-from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
-import sqlalchemy as sa
 from flask import (
     Blueprint,
     current_app,
@@ -26,26 +23,18 @@ from project.account.forms import (
     ResetPasswordForm,
     SignupForm,
 )
-from project.account.tokens import generate_reset_token, verify_reset_token
-from project.database import db
+from project.account.tokens import generate_reset_token
 from project.foyer.email_templates import (
     get_email_verification_email_content,
     get_password_reset_email_content,
     get_signup_invitation_email_content,
 )
 from project.models import (
-    EmailVerificationAttempt,
-    ListInvitation,
-    PasswordResetAttempt,
-    SiteInvitation,
     User,
 )
+from project.services import auth_service
 
 account_blueprint = Blueprint("account", __name__, template_folder="templates")
-
-MAX_RESET_ATTEMPTS_PER_HOUR = 3
-MAX_VERIFICATION_RESENDS_PER_HOUR = 3
-
 
 @account_blueprint.route("/login", methods=["GET", "POST"])
 def login():
@@ -61,12 +50,11 @@ def login():
     form = LoginForm()
     resend_form = ResendVerificationForm()
     if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).where(User.email == form.email.data))
-        if (
-            user is None
-            or not user.check_password(form.password.data)
-            or not user.is_active
-        ):
+        user = auth_service.authenticate_user(
+            email=form.email.data,
+            password=form.password.data,
+        )
+        if user is None:
             flash("Invalid username or password", "error")
             return redirect(url_for("account.login"))
         if not user.email_verified:
@@ -91,8 +79,7 @@ def login():
 
 def generate_email_verification(user: User) -> None:
     """Generate and store an email verification token for the user."""
-    user.email_verification_token = secrets.token_urlsafe(32)
-    user.email_verification_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    auth_service.generate_email_verification(user)
 
 
 def send_verification_email(user: User) -> None:
@@ -121,16 +108,7 @@ def signup(token):
     if current_user.is_authenticated:
         return redirect(url_for("foyer.home"))
 
-    site_invite = db.session.scalar(
-        sa.select(SiteInvitation).where(SiteInvitation.token == token)
-    )
-    list_invite = None
-    if not site_invite:
-        list_invite = db.session.scalar(
-            sa.select(ListInvitation).where(ListInvitation.token == token)
-        )
-
-    invite = site_invite or list_invite
+    invite = auth_service.get_signup_invitation(token)
     if not invite:
         flash("Invalid invite link.", "danger")
         return redirect(url_for("account.login"))
@@ -151,33 +129,20 @@ def signup(token):
             form.email.data = invite.email
             return render_template("signup.html", form=form)
 
-        existing_user = db.session.scalar(
-            sa.select(User).where(User.email == invite.email)
-        )
-        if existing_user:
+        if auth_service.email_exists(invite.email):
             flash("An account with that email already exists. Please log in.", "info")
             return redirect(url_for("account.login"))
 
-        existing_username = db.session.scalar(
-            sa.select(User).where(User.username == form.username.data)
-        )
-        if existing_username:
+        if auth_service.username_exists(form.username.data):
             flash("That username is already taken.", "danger")
             form.email.data = invite.email
             return render_template("signup.html", form=form)
 
-        user = User(email=invite.email, username=form.username.data)
-        user.set_password(form.password.data)
-        generate_email_verification(user)
-        db.session.add(user)
-
-        # SiteInvitations are accepted immediately at signup.
-        # ListInvitations are intentionally deferred to email verification,
-        # where the user is also added to the list's shared_with (see verify_email).
-        if isinstance(invite, SiteInvitation):
-            invite.accept()
-
-        db.session.commit()
+        user = auth_service.create_user_from_invitation(
+            invite=invite,
+            username=form.username.data,
+            password=form.password.data,
+        )
 
         try:
             send_verification_email(user)
@@ -203,42 +168,21 @@ def verify_email(token):
     """
     Verify a user's email address.
     """
-    user = db.session.scalar(
-        sa.select(User).where(User.email_verification_token == token)
-    )
-    if not user:
+    user = auth_service.get_user_by_verification_token(token)
+    status = auth_service.get_verification_status(user)
+    if status == "invalid":
         flash("Invalid verification link.", "danger")
         return redirect(url_for("account.login"))
 
-    if (
-        user.email_verification_expires_at is None
-        or datetime.now(timezone.utc) > user.email_verification_expires_at
-    ):
+    if status == "expired":
         flash("The verification link has expired. Please request a new one.", "danger")
         return redirect(url_for("account.login"))
 
-    if user.email_verified:
+    if status == "verified":
         flash("Email already verified. Please log in.", "info")
         return redirect(url_for("account.login"))
 
-    user.email_verified = True
-    user.email_verification_token = None
-    user.email_verification_expires_at = None
-
-    pending_list_invites = (
-        ListInvitation.query.filter_by(email=user.email)
-        .filter(ListInvitation.accepted_at.is_(None))
-        .all()
-    )
-    for invite in pending_list_invites:
-        if invite.is_expired:
-            continue
-        custom_list = invite.custom_list
-        if user not in custom_list.shared_with:
-            custom_list.shared_with.append(user)
-        invite.accept()
-
-    db.session.commit()
+    auth_service.verify_email_token(token)
     session.pop("pending_verification_email", None)
     flash("Your email has been verified. Please log in.", "success")
     return redirect(url_for("account.login"))
@@ -256,24 +200,22 @@ def resend_verification():
         flash("No pending verification request found.", "warning")
         return redirect(url_for("account.login"))
 
-    user = db.session.scalar(sa.select(User).where(User.email == email))
-    if not user:
+    user, status = auth_service.prepare_verification_resend(email)
+    if status == "user_not_found":
         flash("No account found for that email.", "danger")
         return redirect(url_for("account.login"))
 
-    if user.email_verified:
+    if status == "already_verified":
         flash("Your email is already verified. Please log in.", "info")
         return redirect(url_for("account.login"))
 
-    if is_verification_rate_limited(email):
+    if status == "rate_limited":
         flash("Too many verification requests. Please try again later.", "warning")
         return redirect(url_for("account.login"))
 
-    log_verification_attempt(email)
-    generate_email_verification(user)
-    db.session.commit()
-
     try:
+        if user is None:
+            raise ValueError("Verification resend user context missing.")
         send_verification_email(user)
     except Exception:
         current_app.logger.exception(
@@ -308,26 +250,21 @@ def admin_invites():
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
 
-        existing_user = db.session.scalar(sa.select(User).where(User.email == email))
-        if existing_user:
+        invite, status = auth_service.create_site_invitation(
+            email=email,
+            invited_by=current_user,
+        )
+        if status == "user_exists":
             flash("An account with that email already exists.", "info")
             return redirect(url_for("account.admin_invites"))
 
-        existing_invite = db.session.scalar(
-            sa.select(SiteInvitation)
-            .where(SiteInvitation.email == email)
-            .where(SiteInvitation.accepted_at.is_(None))
-        )
-        if existing_invite and not existing_invite.is_expired:
+        if status == "invite_exists":
             flash("An active invite already exists for that email.", "info")
             return redirect(url_for("account.admin_invites"))
 
-        invite = SiteInvitation.create_invitation(email=email)
-        invite.invited_by = current_user
-        db.session.add(invite)
-        db.session.commit()
-
         try:
+            if invite is None:
+                raise ValueError("Invitation context missing after creation.")
             invite_url = url_for("account.signup", token=invite.token, _external=True)
             html_content = get_signup_invitation_email_content(invite_url)
             ms = MailerSendClient(api_key=current_app.config["MAILERSEND_API_KEY"])
@@ -347,8 +284,7 @@ def admin_invites():
 
         return redirect(url_for("account.admin_invites"))
 
-    site_invites = SiteInvitation.query.order_by(SiteInvitation.created_at.desc()).all()
-    list_invites = ListInvitation.query.order_by(ListInvitation.created_at.desc()).all()
+    site_invites, list_invites = auth_service.get_admin_invites()
 
     return render_template(
         "admin_invites.html",
@@ -370,39 +306,22 @@ def logout():
 
 def is_rate_limited(email: str) -> bool:
     """Check if the email has exceeded the rate limit for password reset attempts."""
-    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-    recent_attempts = db.session.scalar(
-        sa.select(sa.func.count(PasswordResetAttempt.id)).where(
-            PasswordResetAttempt.email == email,
-            PasswordResetAttempt.attempted_at >= one_hour_ago,
-        )
-    )
-    return recent_attempts >= MAX_RESET_ATTEMPTS_PER_HOUR
+    return auth_service.is_password_reset_rate_limited(email)
 
 
 def log_reset_attempt(email: str) -> None:
     """Log a password reset attempt for rate limiting."""
-    attempt = PasswordResetAttempt(email=email)
-    db.session.add(attempt)
-    db.session.commit()
+    auth_service.log_password_reset_attempt(email)
 
 
 def is_verification_rate_limited(email: str) -> bool:
     """Check if the email has exceeded the rate limit for verification resends."""
-    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-    recent_attempts = db.session.scalar(
-        sa.select(sa.func.count(EmailVerificationAttempt.id)).where(
-            EmailVerificationAttempt.email == email,
-            EmailVerificationAttempt.attempted_at >= one_hour_ago,
-        )
-    )
-    return recent_attempts >= MAX_VERIFICATION_RESENDS_PER_HOUR
+    return auth_service.is_verification_rate_limited(email)
 
 
 def log_verification_attempt(email: str) -> None:
     """Log a verification resend attempt for rate limiting."""
-    attempt = EmailVerificationAttempt(email=email)
-    db.session.add(attempt)
+    auth_service.log_verification_attempt(email)
 
 
 @account_blueprint.route("/forgot-password", methods=["GET", "POST"])
@@ -418,13 +337,10 @@ def forgot_password():
     if form.validate_on_submit():
         email = form.email.data.lower()
 
-        if is_rate_limited(email):
+        user, status = auth_service.prepare_password_reset(email)
+        if status == "rate_limited":
             flash("Too many reset attempts. Please try again later.")
             return render_template("forgot_password.html", form=form)
-
-        log_reset_attempt(email)
-
-        user = db.session.scalar(sa.select(User).where(User.email == email))
 
         if user:
             token = generate_reset_token(email)
@@ -462,12 +378,7 @@ def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for("foyer.home"))
 
-    email = verify_reset_token(token)
-    if not email:
-        flash("The password reset link is invalid or has expired.", "error")
-        return redirect(url_for("account.forgot_password"))
-
-    user = db.session.scalar(sa.select(User).where(User.email == email))
+    user = auth_service.get_user_from_reset_token(token)
     if not user:
         flash("The password reset link is invalid or has expired.", "error")
         return redirect(url_for("account.forgot_password"))
@@ -475,8 +386,7 @@ def reset_password(token):
     form = ResetPasswordForm()
 
     if form.validate_on_submit():
-        user.set_password(form.password.data)
-        db.session.commit()
+        auth_service.reset_user_password(user=user, password=form.password.data)
         flash("Your password has been reset. Please log in with your new password.")
         return redirect(url_for("account.login"))
 

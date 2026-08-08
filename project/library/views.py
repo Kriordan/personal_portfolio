@@ -1,10 +1,8 @@
-# Python
-
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, url_for
 from flask_login import login_required
 
-from project.library.jobs import export_subscriptions_to_json, sync_playlists_and_videos
-from project.models import Playlist, Video
+from project.library.jobs import export_subscriptions_to_json
+from project.services import library_service
 
 library_blueprint = Blueprint(
     "library", __name__, template_folder="templates", url_prefix="/lib"
@@ -14,8 +12,8 @@ library_blueprint = Blueprint(
 @library_blueprint.route("/", methods=["GET"])
 @login_required
 def library_home():
-    """Renders the library.html template."""
-    playlists = Playlist.query.all()
+    """Renders the playlists overview."""
+    playlists = library_service.list_playlists()
 
     return render_template("playlists.html", playlists=playlists)
 
@@ -23,9 +21,11 @@ def library_home():
 @library_blueprint.route("/playlist/<playlist_id>", methods=["GET"])
 @login_required
 def view_playlist(playlist_id):
-    """Renders the library.html template."""
-    playlist = Playlist.query.get(playlist_id)
-    videos = Video.query.filter_by(playlist_id=playlist_id).all()
+    """Renders a single playlist with its videos."""
+    try:
+        playlist, videos = library_service.get_playlist_with_videos(playlist_id=playlist_id)
+    except library_service.NotFoundError:
+        return render_template("404.html"), 404
 
     return render_template("playlist.html", playlist=playlist, videos=videos)
 
@@ -33,7 +33,10 @@ def view_playlist(playlist_id):
 @library_blueprint.route("/videos/<video_id>")
 @login_required
 def view_video(video_id):
-    video = Video.query.get(video_id)
+    try:
+        video = library_service.get_video(video_id=video_id)
+    except library_service.NotFoundError:
+        return render_template("404.html"), 404
 
     return render_template("video.html", video=video)
 
@@ -42,7 +45,7 @@ def view_video(video_id):
 @login_required
 def sync_playlists():
     """Synchronizes playlists and videos."""
-    sync_playlists_and_videos()
+    library_service.sync_library()
 
     return redirect(url_for("foyer.utilities"))
 
@@ -57,16 +60,18 @@ def export_subscriptions():
             f"Successfully exported {result['total_subscriptions']} subscriptions to youtube-subscriptions.json",
             "success",
         )
-    except ValueError as e:
+    except ValueError as error:
         # Handle authentication errors
-        if "credentials not found" in str(e).lower():
+        if "credentials not found" in str(error).lower():
             flash(
                 "YouTube authorization required. Please authorize the app first.",
                 "error",
             )
             return redirect(url_for("oauth.authorize"))
-        flash(f"Error: {str(e)}", "error")
-    except Exception as e:
-        flash(f"Error exporting subscriptions: {str(e)}", "error")
+        current_app.logger.exception("Invalid YouTube subscription export request")
+        flash("Unable to export subscriptions.", "error")
+    except Exception:
+        current_app.logger.exception("Failed to export YouTube subscriptions")
+        flash("Unable to export subscriptions.", "error")
 
     return redirect(url_for("foyer.utilities"))
