@@ -1,36 +1,75 @@
 {% extends "base.html" %}
 
 {% block title %}Learning{% endblock title %}
+{% block meta_description %}Learning notes and durable technical references by Keith Riordan, covering web development concepts from first principles.{% endblock meta_description %}
 
 {% block body %}
   <section class="learning-hero">
-    <h1>Learning Notes</h1>
-    <p class="learning-subtitle">
-      {{ total_due }} card{{ "s" if total_due != 1 }} due
+    <p class="learning-eyebrow">Learning</p>
+    <h1>Notes for building on the web</h1>
+    <p class="learning-intro">
+      Long-lived technical references, written from first principles and reviewed as the platform evolves.
     </p>
-    <a class="button" href="{{ url_for('learning.review') }}">Start review</a>
   </section>
 
-  <section class="learning-notes">
-    <h2>All Notes</h2>
-    {% if notes %}
-      <ul class="learning-note-list">
-        {% for note in notes %}
-          <li class="learning-note-item">
-            <a class="learning-note-link" href="{{ url_for('learning.note', note_id=note.id) }}">
-              {{ note.title }}
-            </a>
-            <span class="learning-note-meta">
-              {{ note.flashcard_count }} cards
-              {% if note.due_count %}
-                · {{ note.due_count }} due
-              {% endif %}
-            </span>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No learning notes yet.</p>
-    {% endif %}
+  <section class="learning-library" aria-labelledby="web-performance-heading">
+    <div class="learning-topic-heading">
+      <p class="learning-topic-number" aria-hidden="true">01</p>
+      <div>
+        <h2 id="web-performance-heading">Web Performance</h2>
+        <p>Practical mental models for shipping fast, resilient web experiences.</p>
+      </div>
+    </div>
+
+    <article class="learning-reference-card">
+      <div>
+        <p class="learning-reference-meta">Reference · Reviewed August 7, 2026</p>
+        <h3>
+          <a href="{{ url_for('learning.web_performance_media') }}">
+            Modern Images, Video, Lazy Loading &amp; Responsive Media
+          </a>
+        </h3>
+        <p>
+          A first-principles guide to image formats, video codecs and containers,
+          responsive selection, and loading strategy.
+        </p>
+      </div>
+      <a class="learning-reference-arrow" href="{{ url_for('learning.web_performance_media') }}" aria-label="Read Modern Images, Video, Lazy Loading and Responsive Media">Read <span aria-hidden="true">→</span></a>
+    </article>
   </section>
+
+  {% if current_user.is_authenticated %}
+    <section class="learning-study" aria-labelledby="study-notes-heading">
+      <div class="learning-study-heading">
+        <div>
+          <p class="learning-eyebrow">Private study area</p>
+          <h2 id="study-notes-heading">Flashcard notes</h2>
+          <p class="learning-subtitle">
+            {{ total_due }} card{{ "s" if total_due != 1 }} due
+          </p>
+        </div>
+        <a class="button" href="{{ url_for('learning.review') }}">Start review</a>
+      </div>
+
+      {% if notes %}
+        <ul class="learning-note-list">
+          {% for note in notes %}
+            <li class="learning-note-item">
+              <a class="learning-note-link" href="{{ url_for('learning.note', note_id=note.id) }}">
+                {{ note.title }}
+              </a>
+              <span class="learning-note-meta">
+                {{ note.flashcard_count }} cards
+                {% if note.due_count %}
+                  · {{ note.due_count }} due
+                {% endif %}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No flashcard notes yet.</p>
+      {% endif %}
+    </section>
+  {% endif %}
 {% endblock body %}

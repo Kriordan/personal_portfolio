@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}Modern Images, Video, Lazy Loading &amp; Responsive Media{% endblock title %}
+{% block meta_description %}A practical web performance reference covering modern image formats, responsive images, native lazy loading, video containers, and codecs.{% endblock meta_description %}
+{% block metadata %}
+    <link rel="canonical" href="{{ request.base_url }}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Modern Images, Video, Lazy Loading &amp; Responsive Media" />
+    <meta property="og:description" content="A first-principles guide to choosing, sizing, and loading media efficiently on the modern web." />
+    <meta property="og:url" content="{{ request.base_url }}" />
+    <meta property="article:modified_time" content="2026-08-07" />
+{% endblock metadata %}
+
+{% block body %}
+  <article class="reference-page">
+    <nav class="reference-breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="{{ url_for('learning.index') }}">Learning</a></li>
+        <li><a href="{{ url_for('learning.index') }}#web-performance-heading">Web Performance</a></li>
+        <li aria-current="page">Responsive media</li>
+      </ol>
+    </nav>
+
+    <header class="reference-header">
+      <p class="reference-kicker">Web Performance</p>
+      <h1>Modern Images, Video, Lazy Loading &amp; Responsive Media</h1>
+      <p class="reference-deck">
+        A practical mental model for choosing, sizing, and loading media efficiently
+        without confusing file formats, containers, and codecs.
+      </p>
+      <p class="reference-reviewed"><span>Last reviewed:</span> August 7, 2026</p>
+    </header>
+
+    <div class="reference-layout">
+      <aside class="reference-toc">
+        <nav aria-labelledby="reference-toc-heading">
+          <h2 id="reference-toc-heading">On this page</h2>
+          <ol>
+            <li><a href="#core-mental-model">The core mental model</a></li>
+            <li><a href="#modern-image-formats">Modern image formats</a></li>
+            <li><a href="#practical-image-strategy">A practical image strategy</a></li>
+            <li><a href="#responsive-images">Responsive images</a></li>
+            <li><a href="#lazy-loading">Lazy loading</a></li>
+            <li><a href="#video">Video</a></li>
+            <li><a href="#whats-next">What’s next</a></li>
+            <li><a href="#rules-of-thumb">Rules of thumb</a></li>
+            <li><a href="#further-reading">Further reading</a></li>
+          </ol>
+        </nav>
+      </aside>
+
+      <div class="reference-content">
+        <section aria-labelledby="core-mental-model">
+          <h2 id="core-mental-model">The core mental model</h2>
+          <p>
+            The concepts that matter most are <strong>file formats, containers, and codecs</strong>.
+            In everyday image work, JPEG, PNG, GIF, WebP, AVIF, SVG, and JPEG XL are
+            discussed as image formats. Video needs a more explicit distinction.
+          </p>
+
+          <div class="reference-definition-grid">
+            <div>
+              <p class="reference-definition-label">Container</p>
+              <p>The box that packages video, audio, captions, and metadata.</p>
+              <p class="reference-examples">Examples: MP4, WebM</p>
+            </div>
+            <div>
+              <p class="reference-definition-label">Codec</p>
+              <p>The method used to encode, compress, and later decode media.</p>
+              <p class="reference-examples">Examples: H.264, AV1, AV2</p>
+            </div>
+          </div>
+
+          <p>
+            Saying “MP4 versus AV1” mixes two layers. An MP4 container can carry video
+            encoded with H.264 or, in compatible workflows, AV1. The compact analogy is:
+          </p>
+          <blockquote class="reference-pullquote">
+            <p><strong>Container = box.</strong> <strong>Codec = the method used to compress what is inside.</strong></p>
+          </blockquote>
+        </section>
+
+        <section aria-labelledby="modern-image-formats">
+          <h2 id="modern-image-formats">Images: from the old model to the modern one</h2>
+          <p>
+            The older rule of thumb was JPEG for photographs, PNG for transparent or
+            lossless graphics, and GIF for animation. That model remains useful context,
+            but it is no longer a complete delivery strategy.
+          </p>
+
+          <h3 id="svg">SVG</h3>
+          <p>
+            If the source artwork is vector-based—logos, icons, diagrams, or simple
+            illustrations—<strong>SVG is often the first format to consider</strong>. The browser
+            renders geometry rather than enlarging a fixed pixel grid, so the result stays
+            sharp at any resolution. WebP and AVIF do not automatically replace PNG for
+            every logo; for suitable artwork, SVG is usually the better replacement.
+          </p>
+
+          <h3 id="avif">AVIF</h3>
+          <p>
+            AVIF stands for <strong>AV1 Image File Format</strong>. It uses AV1 image coding and
+            can provide excellent compression while supporting transparency, high bit depth,
+            wide-gamut and HDR-oriented color, and both lossy and lossless modes. For
+            photographic raster imagery in a modern delivery pipeline, AVIF is a strong
+            default candidate.
+          </p>
+
+          <h3 id="webp">WebP</h3>
+          <p>
+            WebP was developed by Google as an efficient web image format. It supports
+            lossy and lossless compression, transparency, and animation. Its mature browser
+            and tooling ecosystem makes it a useful modern format and a practical fallback
+            when AVIF is not the right fit.
+          </p>
+
+          <h3 id="jpeg-png-gif">JPEG, PNG, and GIF</h3>
+          <p>
+            JPEG and PNG are not obsolete. JPEG remains a highly compatible photographic
+            format. PNG remains valuable when exact lossless pixel reproduction matters,
+            including some screenshots, graphics, and source assets. The difference today
+            is that photographic or transparent content does not force either choice.
+          </p>
+          <p>
+            GIF is an image format whose multiple frames created the familiar looping
+            animation. For new work, animated WebP, animated AVIF, APNG, or an actual
+            <code>&lt;video&gt;</code> element will often be more efficient. Longer or
+            photographic animation is usually a signal to treat the content as video.
+          </p>
+        </section>
+
+        <section aria-labelledby="practical-image-strategy">
+          <h2 id="practical-image-strategy">A practical image strategy</h2>
+          <dl class="reference-strategy-list">
+            <div>
+              <dt>Photographic content</dt>
+              <dd>AVIF → WebP → JPEG</dd>
+            </div>
+            <div>
+              <dt>Vector logos and icons</dt>
+              <dd>SVG</dd>
+            </div>
+            <div>
+              <dt>Exact lossless raster reproduction</dt>
+              <dd>PNG, lossless WebP, or lossless AVIF, based on requirements and tooling</dd>
+            </div>
+          </dl>
+          <p>
+            These variants do not always need to be made by hand. Frameworks, build
+            pipelines, image CDNs, and optimization services can generate them from a
+            high-quality source asset. Test visual quality against real content instead of
+            assuming one format always wins.
+          </p>
+        </section>
+
+        <section aria-labelledby="responsive-images">
+          <h2 id="responsive-images">Responsive images: <code>srcset</code> and <code>sizes</code></h2>
+          <p>
+            Compression format is only one part of image performance. A 3000-pixel-wide
+            AVIF is still wasteful when it is displayed at 400 CSS pixels.
+          </p>
+
+          <pre aria-label="Responsive image example"><code>&lt;img
+  src="/images/property-1200.jpg"
+  srcset="
+    /images/property-480.jpg 480w,
+    /images/property-768.jpg 768w,
+    /images/property-1200.jpg 1200w,
+    /images/property-1600.jpg 1600w
+  "
+  sizes="
+    (min-width: 1024px) 50vw,
+    100vw
+  "
+  width="1600"
+  height="900"
+  alt="Landscaped property"
+/&gt;</code></pre>
+
+          <ul class="reference-key-list">
+            <li><code>srcset</code> lists image candidates and their intrinsic widths.</li>
+            <li><code>sizes</code> describes the image’s approximate layout width under different conditions.</li>
+            <li>The browser combines those hints with the layout, device pixel ratio, zoom, and other conditions to choose a candidate.</li>
+          </ul>
+
+          <div class="reference-callout">
+            <p class="reference-callout-title"><code>srcset</code> does not resize or generate files</p>
+            <p>
+              If the markup lists <code>480w</code>, <code>768w</code>, <code>1200w</code>, and
+              <code>1600w</code>, those files must actually exist and each width descriptor
+              must match that file’s intrinsic width. Plain HTML only describes the choices.
+            </p>
+          </div>
+
+          <p>
+            There is no universal correct number of variants. A modest ladder of widths
+            should cover the sizes the image really occupies. Let an automated pipeline
+            produce that ladder when the project supports one.
+          </p>
+
+          <h3 id="orientation-changes">What happens when the device rotates?</h3>
+          <p>
+            When viewport dimensions or layout conditions change—for example, from portrait
+            to landscape—the browser can re-evaluate responsive image selection. That does
+            not guarantee a second download: the current candidate, browser cache, updated
+            resolution needs, and browser implementation all affect the result.
+          </p>
+          <p><strong>You provide candidates and layout information; the browser owns candidate selection.</strong></p>
+
+          <h3 id="picture-element">Combining formats and responsive sizes</h3>
+          <p>
+            The <code>&lt;picture&gt;</code> element combines format negotiation with responsive
+            candidates. The browser evaluates the sources and requests a suitable candidate;
+            it does not download every listed format.
+          </p>
+
+          <pre aria-label="Picture element with AVIF, WebP, and JPEG sources"><code>&lt;picture&gt;
+  &lt;source
+    type="image/avif"
+    srcset="
+      /images/property-480.avif 480w,
+      /images/property-768.avif 768w,
+      /images/property-1200.avif 1200w,
+      /images/property-1600.avif 1600w
+    "
+  /&gt;
+
+  &lt;source
+    type="image/webp"
+    srcset="
+      /images/property-480.webp 480w,
+      /images/property-768.webp 768w,
+      /images/property-1200.webp 1200w,
+      /images/property-1600.webp 1600w
+    "
+  /&gt;
+
+  &lt;img
+    src="/images/property-1200.jpg"
+    srcset="
+      /images/property-480.jpg 480w,
+      /images/property-768.jpg 768w,
+      /images/property-1200.jpg 1200w,
+      /images/property-1600.jpg 1600w
+    "
+    sizes="(min-width: 1024px) 50vw, 100vw"
+    width="1600"
+    height="900"
+    alt="Landscaped property"
+    loading="lazy"
+  /&gt;
+&lt;/picture&gt;</code></pre>
+        </section>
+
+        <section aria-labelledby="lazy-loading">
+          <h2 id="lazy-loading">Lazy loading</h2>
+          <p>Native image lazy loading is a browser feature:</p>
+
+          <pre aria-label="Native lazy loading example"><code>&lt;img src="/photo.avif" loading="lazy" alt="…" /&gt;</code></pre>
+
+          <p>
+            This does not install a JavaScript scroll handler. The browser discovers the
+            image, may defer its request while it is far from the viewport, and normally
+            starts fetching before it literally crosses into view. The exact distance and
+            timing are implementation details.
+          </p>
+
+          <ol class="reference-flow" aria-label="Conceptual lazy loading flow">
+            <li>Browser parses the HTML and discovers the image.</li>
+            <li>The image is far from the viewport, so the browser may defer it.</li>
+            <li>The user approaches the image or the browser predicts it will soon be needed.</li>
+            <li>The browser requests the selected candidate, decodes it, and renders it.</li>
+          </ol>
+
+          <h3 id="do-not-lazy-load-everything">Do not lazy-load everything</h3>
+          <p>
+            Images visible on initial load—especially the image responsible for Largest
+            Contentful Paint—should generally load eagerly. For an important LCP image,
+            <code>fetchpriority="high"</code> can be a useful hint when measurement shows it
+            is needed. Below-the-fold images are the natural candidates for
+            <code>loading="lazy"</code>.
+          </p>
+          <p>
+            Supply intrinsic <code>width</code> and <code>height</code> whenever possible so the
+            browser can reserve the correct aspect-ratio space before the image arrives,
+            reducing layout shift.
+          </p>
+        </section>
+
+        <section aria-labelledby="video">
+          <h2 id="video">Video</h2>
+          <h3 id="video-codec-container">Keep codecs and containers separate</h3>
+          <div class="reference-fact-list">
+            <p><strong>H.264, AV1, and AV2 are codecs.</strong></p>
+            <p><strong>MP4 and WebM are containers.</strong></p>
+          </div>
+          <p>
+            A <code>.mp4</code> file is not synonymous with H.264, even though H.264 video
+            with AAC audio in an MP4 container has long been a common web combination.
+            Similarly, AV1 video is normally packaged in a container such as WebM or MP4,
+            not delivered as a mysterious <code>.av1</code> web video.
+          </p>
+
+          <h3 id="h264">H.264</h3>
+          <p>
+            H.264, also called AVC, has been a web video workhorse for years. Its largest
+            practical advantage is the broad playback ecosystem built around it. A common
+            compatibility-oriented stack is:
+          </p>
+          <pre aria-label="Compatibility-oriented video stack"><code>MP4 container
+H.264 video
+AAC audio</code></pre>
+
+          <h3 id="av1">AV1</h3>
+          <p>
+            AV1 was developed by the Alliance for Open Media. Its main benefit over older
+            codecs is compression efficiency: comparable visual quality can generally be
+            delivered with fewer bits, reducing bandwidth and storage. The tradeoff is more
+            encoding work, and real playback capability depends on the browser, operating
+            system, device, profile, and available hardware acceleration.
+          </p>
+
+          <h3 id="practical-video-strategy">A practical video strategy</h3>
+          <p>
+            For ordinary self-hosted video, multiple sources can pair modern compression
+            with a compatibility fallback:
+          </p>
+
+          <pre aria-label="Video with AV1 and H.264 sources"><code>&lt;video controls preload="metadata" poster="/images/demo-poster.avif"&gt;
+  &lt;source
+    src="/video/demo-av1.webm"
+    type='video/webm; codecs="av01, opus"'
+  /&gt;
+
+  &lt;source
+    src="/video/demo-h264.mp4"
+    type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'
+  /&gt;
+
+  Your browser does not support HTML video.
+&lt;/video&gt;</code></pre>
+
+          <p>
+            The precise comparison is <strong>WebM containing AV1 → MP4 containing H.264</strong>,
+            not “AV1 → MP4.” In production, the codec strings must match the profiles and
+            codecs actually encoded in each file.
+          </p>
+          <p>
+            Larger streaming systems eventually need more than a handful of static files.
+            Adaptive streaming with HLS or DASH can offer multiple resolutions and bitrates
+            so playback responds to network and device conditions.
+          </p>
+        </section>
+
+        <section aria-labelledby="whats-next">
+          <h2 id="whats-next">What’s next?</h2>
+          <h3 id="jpeg-xl">JPEG XL</h3>
+          <p>
+            JPEG XL is worth following for progressive decoding, high bit depth,
+            wide-gamut and HDR-oriented workflows, and efficient lossless recompression of
+            existing JPEGs. Its browser adoption has changed over time and is not universal.
+            As of this review, WebKit ships JPEG XL support in current Safari generations,
+            but production use should still include a fallback through
+            <code>&lt;picture&gt;</code> unless the audience is tightly controlled.
+          </p>
+
+          <h3 id="av2">AV2</h3>
+          <p>
+            AV2 is AOMedia’s successor to AV1. Version 1.0 of the bitstream and decoding
+            specification became a final deliverable on May 28, 2026. Its goal is another
+            major step in compression efficiency and capability, but a finished specification
+            does not make a codec an immediate production default.
+          </p>
+          <p>
+            Adoption also requires mature encoders and decoders, browser and operating-system
+            integration, hardware acceleration, streaming infrastructure, tooling, and a
+            large installed base. AV1 remains the modern production codec to understand today;
+            AV2 is the next generation to watch.
+          </p>
+        </section>
+
+        <section aria-labelledby="rules-of-thumb">
+          <h2 id="rules-of-thumb">Current rules of thumb</h2>
+          <ul class="reference-checklist">
+            <li>Use SVG for suitable vector artwork.</li>
+            <li>For photographs, prefer AVIF with WebP and/or JPEG fallbacks when compatibility requirements warrant them.</li>
+            <li>Pair efficient formats with <code>srcset</code> and accurate <code>sizes</code>.</li>
+            <li>Remember that <code>srcset</code> selects existing files; it does not generate them.</li>
+            <li>Lazy-load below-the-fold media, not critical LCP content.</li>
+            <li>Specify image dimensions so the browser can reserve layout space.</li>
+            <li>Keep video codecs separate from their containers.</li>
+            <li>Use MP4 with H.264/AAC when broad compatibility matters.</li>
+            <li>Consider AV1 in WebM or MP4 for more efficient modern delivery, with an appropriate fallback.</li>
+            <li>Watch JPEG XL and AV2 as their ecosystems evolve.</li>
+          </ul>
+
+          <p class="reference-equation">
+            <strong>Efficient encoding</strong>
+            <span>+</span>
+            <strong>correct dimensions</strong>
+            <span>+</span>
+            <strong>intelligent loading</strong>
+            <span>+</span>
+            <strong>caching and delivery</strong>
+            <span>+</span>
+            <strong>browser-native selection</strong>
+          </p>
+        </section>
+
+        <section class="reference-further-reading" aria-labelledby="further-reading">
+          <h2 id="further-reading">Further reading</h2>
+          <ul>
+            <li>
+              <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Responsive_images">Responsive images</a>
+              <span>MDN</span>
+            </li>
+            <li>
+              <a href="https://web.dev/articles/browser-level-image-lazy-loading">Browser-level image lazy loading</a>
+              <span>web.dev</span>
+            </li>
+            <li>
+              <a href="https://developers.google.com/speed/webp">An image format for the Web</a>
+              <span>Google for Developers</span>
+            </li>
+            <li>
+              <a href="https://developer.chrome.com/docs/lighthouse/performance/uses-responsive-images/">Properly size images</a>
+              <span>Chrome for Developers</span>
+            </li>
+            <li>
+              <a href="https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs">Web video codec guide</a>
+              <span>MDN</span>
+            </li>
+            <li>
+              <a href="https://aomedia.org/specifications/av1/">AV1 video codec and specifications</a>
+              <span>Alliance for Open Media</span>
+            </li>
+            <li>
+              <a href="https://av2.aomedia.org/v1.0.0/20260528_38f28e7_AV2_Spec_v1.0.0.pdf">AV2 bitstream and decoding process specification</a>
+              <span>Alliance for Open Media</span>
+            </li>
+            <li>
+              <a href="https://webkit.org/blog/14445/webkit-features-in-safari-17-0/#jpeg-xl">JPEG XL in WebKit</a>
+              <span>WebKit</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </article>
+{% endblock body %}
