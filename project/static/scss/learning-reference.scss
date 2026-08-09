@@ -1,0 +1,537 @@
+.learning-eyebrow,
+.reference-kicker,
+.learning-reference-meta {
+  color: #616161;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.65rem;
+  text-transform: uppercase;
+}
+
+.learning-hero {
+  border-bottom: 1px solid #e5e5e5;
+  padding: 2.5rem 0 2.75rem;
+}
+
+.learning-hero h1 {
+  margin-bottom: 0.8rem;
+  max-width: 720px;
+}
+
+.learning-intro {
+  color: #555;
+  font-size: 1.1rem;
+  margin: 0;
+  max-width: 650px;
+}
+
+.learning-library {
+  margin: 3rem 0 4rem;
+}
+
+.learning-topic-heading {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  margin-bottom: 1.4rem;
+}
+
+.learning-topic-heading h2 {
+  font-size: 1.8rem;
+  margin: 0 0 0.2rem;
+}
+
+.learning-topic-heading p {
+  color: #616161;
+  margin: 0;
+}
+
+.learning-topic-number {
+  border-top: 2px solid #222;
+  color: #616161;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.75rem;
+  padding-top: 0.4rem;
+}
+
+.learning-reference-card {
+  align-items: end;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-left: 3.5rem;
+  padding: 1.5rem;
+}
+
+.learning-reference-card h3 {
+  font-size: 1.45rem;
+  font-weight: 400;
+  margin-bottom: 0.55rem;
+}
+
+.learning-reference-card h3 a:hover,
+.learning-reference-card h3 a:focus,
+.learning-reference-arrow:hover,
+.learning-reference-arrow:focus {
+  text-decoration: underline;
+}
+
+.learning-reference-card p:last-child {
+  color: #555;
+  margin: 0;
+  max-width: 660px;
+}
+
+.learning-reference-arrow {
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.learning-study {
+  border-top: 1px solid #e5e5e5;
+  margin: 4rem 0 2rem;
+  padding-top: 2.5rem;
+}
+
+.learning-study-heading {
+  align-items: center;
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+}
+
+.reference-page {
+  margin: 1.5rem 0 4rem;
+}
+
+.reference-breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.82rem;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0 0 2.4rem;
+}
+
+.reference-breadcrumbs li:not(:last-child)::after {
+  color: #9e9e9e;
+  content: "/";
+  margin-left: 0.45rem;
+}
+
+.reference-breadcrumbs a {
+  color: #555;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.reference-header {
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 2.5rem;
+  padding-bottom: 2.25rem;
+}
+
+.reference-header h1 {
+  font-size: clamp(2.25rem, 6vw, 4.25rem);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0 0 1.15rem;
+  max-width: 850px;
+}
+
+.reference-deck {
+  color: #4a4a4a;
+  font-size: 1.13rem;
+  line-height: 1.7;
+  margin-bottom: 1.4rem;
+  max-width: 720px;
+}
+
+.reference-reviewed {
+  color: #616161;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.reference-reviewed span {
+  font-weight: 600;
+}
+
+.reference-layout {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 1fr) 13rem;
+}
+
+.reference-toc {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.reference-toc nav {
+  border-left: 1px solid #d5d5d5;
+  padding-left: 1rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.reference-toc h2 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+.reference-toc ol {
+  list-style: none;
+  margin: 0;
+}
+
+.reference-toc li {
+  line-height: 1.35;
+  margin-bottom: 0.55rem;
+}
+
+.reference-toc a {
+  color: #555;
+  font-size: 0.82rem;
+}
+
+.reference-toc a:hover,
+.reference-toc a:focus {
+  color: #111;
+  text-decoration: underline;
+}
+
+.reference-content {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.reference-content section {
+  margin-bottom: 3.5rem;
+}
+
+.reference-content h2,
+.reference-content h3 {
+  scroll-margin-top: 1.5rem;
+}
+
+.reference-content h2 {
+  border-top: 1px solid #ddd;
+  font-size: 2rem;
+  margin: 0 0 1.2rem;
+  padding-top: 1.1rem;
+}
+
+.reference-content section:first-child h2 {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.reference-content h3 {
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin: 2rem 0 0.6rem;
+}
+
+.reference-content p,
+.reference-content li,
+.reference-content dd {
+  color: #333;
+  line-height: 1.75;
+}
+
+.reference-content p {
+  margin-bottom: 1.15rem;
+}
+
+.reference-content a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+.reference-content code {
+  background: #f2f2f2;
+  border-radius: 3px;
+  color: #7d1115;
+  font-size: 0.9em;
+  font-weight: 500;
+  padding: 0.08rem 0.26rem;
+}
+
+.reference-content pre {
+  background: #15191e;
+  border-radius: 6px;
+  color: #f4f5f6;
+  line-height: 1.55;
+  margin: 1.25rem 0 1.6rem;
+  overflow-x: auto;
+  padding: 1.15rem 1.25rem;
+  tab-size: 2;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reference-content pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 400;
+  padding: 0;
+}
+
+.reference-definition-grid {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.reference-definition-grid > div {
+  background: #f5f5f5;
+  border-top: 3px solid #333;
+  padding: 1.15rem;
+}
+
+.reference-definition-grid p {
+  margin-bottom: 0.45rem;
+}
+
+.reference-definition-label {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+
+.reference-definition-grid .reference-examples {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0.65rem 0 0;
+}
+
+.reference-pullquote {
+  border-left: 3px solid #222;
+  margin: 1.5rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+}
+
+.reference-pullquote p {
+  color: #222;
+  font-size: 1.12rem;
+  margin: 0;
+}
+
+.reference-strategy-list {
+  border-bottom: 1px solid #ddd;
+  margin: 1.5rem 0;
+}
+
+.reference-strategy-list > div {
+  border-top: 1px solid #ddd;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(0, 1.4fr);
+  padding: 0.9rem 0;
+}
+
+.reference-strategy-list dt,
+.reference-strategy-list dd {
+  margin: 0;
+}
+
+.reference-strategy-list dt {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-weight: 600;
+}
+
+.reference-key-list,
+.reference-checklist {
+  margin: 1.2rem 0 1.5rem;
+  padding-left: 0.35rem;
+}
+
+.reference-key-list li,
+.reference-checklist li {
+  margin-bottom: 0.55rem;
+  padding-left: 0.3rem;
+}
+
+.reference-callout {
+  background: #f7f7f7;
+  border-left: 3px solid #333;
+  margin: 1.5rem 0;
+  padding: 1rem 1.1rem;
+}
+
+.reference-callout .reference-callout-title {
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+}
+
+.reference-callout p:last-child {
+  margin-bottom: 0;
+}
+
+.reference-flow {
+  border-left: 1px solid #ccc;
+  counter-reset: flow;
+  list-style: none;
+  margin: 1.5rem 0 2rem 0.8rem;
+  padding-left: 1.5rem;
+}
+
+.reference-flow li {
+  counter-increment: flow;
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.reference-flow li::before {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #777;
+  border-radius: 50%;
+  content: counter(flow);
+  display: flex;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.68rem;
+  height: 1.35rem;
+  justify-content: center;
+  left: -2.2rem;
+  position: absolute;
+  top: 0.2rem;
+  width: 1.35rem;
+}
+
+.reference-fact-list {
+  background: #f5f5f5;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+}
+
+.reference-fact-list p {
+  margin-bottom: 0.3rem;
+}
+
+.reference-fact-list p:last-child {
+  margin-bottom: 0;
+}
+
+.reference-equation {
+  align-items: center;
+  background: #222;
+  color: #fff !important;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.88rem;
+  gap: 0.6rem;
+  margin-top: 1.8rem;
+  padding: 1rem;
+}
+
+.reference-equation span {
+  color: #aaa;
+}
+
+.reference-further-reading ul {
+  border-top: 1px solid #ddd;
+  list-style: none;
+  margin: 1rem 0 0;
+}
+
+.reference-further-reading li {
+  align-items: baseline;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+}
+
+.reference-further-reading li span {
+  color: #666;
+  flex: 0 0 auto;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 760px) {
+  .learning-reference-card {
+    align-items: start;
+    grid-template-columns: 1fr;
+    margin-left: 0;
+  }
+
+  .learning-study-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reference-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reference-toc,
+  .reference-content {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .reference-toc nav {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    padding: 1rem;
+    position: static;
+  }
+
+  .reference-content h2 {
+    font-size: 1.7rem;
+  }
+
+  .reference-definition-grid,
+  .reference-strategy-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .reference-strategy-list > div {
+    gap: 0.2rem;
+  }
+
+  .reference-further-reading li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+@media print {
+  .reference-breadcrumbs,
+  .reference-toc,
+  .Header,
+  footer {
+    display: none;
+  }
+
+  .reference-layout {
+    display: block;
+  }
+
+  .reference-content pre {
+    white-space: pre-wrap;
+  }
+}

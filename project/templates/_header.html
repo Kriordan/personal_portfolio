@@ -29,6 +29,9 @@
     <a
       {% if request.path == '/contact' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.contact' )}}">Contact</a>
+    <a
+      {% if request.path.startswith('/learning') %}class="active"{% endif %}
+      href="{{ url_for( 'learning.index' )}}">Learning</a>
     {% if not current_user.is_anonymous %}
       <a
         {% if request.path == '/jobwizard' %}class="active"{% endif %}
@@ -39,9 +42,6 @@
       <a
         {% if request.path == '/lib' %}class="active"{% endif %}
         href="{{ url_for( 'library.library_home' )}}">Library</a>
-      <a
-        {% if request.path.startswith('/learning') %}class="active"{% endif %}
-        href="{{ url_for( 'learning.index' )}}">Notes</a>
     {% endif %}
   </nav>
 </header>

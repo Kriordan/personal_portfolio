@@ -5,20 +5,30 @@ from project.services import learning_service
 
 from . import learning_blueprint
 
-@learning_blueprint.route("/")
-@login_required
+
+@learning_blueprint.route("/", strict_slashes=False)
 def index():
-    notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
-    notes = learning_service.load_notes(notes_dir)
-    notes, total_due = learning_service.summarize_notes_for_user(
-        notes,
-        user_id=current_user.id,
-    )
+    notes = []
+    total_due = 0
+    if current_user.is_authenticated:
+        notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+        notes = learning_service.load_notes(notes_dir)
+        notes, total_due = learning_service.summarize_notes_for_user(
+            notes,
+            user_id=current_user.id,
+        )
     return render_template(
         "learning/index.html",
         notes=notes,
         total_due=total_due,
     )
+
+
+@learning_blueprint.route(
+    "/web-performance/modern-images-video-lazy-loading-responsive-media"
+)
+def web_performance_media():
+    return render_template("learning/web_performance_media.html")
 
 
 @learning_blueprint.route("/review")
