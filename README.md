@@ -9,7 +9,10 @@
 ### Frontend
 
 Install dependencies
-`npm i`
+`npm ci`
+
+The project disables automatic npm lifecycle scripts in `.npmrc`. Review any
+package that requires an installation script before explicitly enabling it.
 
 The frontend uses gulp to watch the less files and compile them to css.
 
@@ -67,16 +70,32 @@ poetry show -o
 
 ### JavaScript dependencies
 
-```javascript
-// Find outdated packages
+```bash
+# Find outdated packages and known vulnerabilities (also run in mobile/).
 npm outdated
+npm audit
 
-// Update to 'safe' versions of all packages
-npm update
+# After selecting and reviewing a fixed version, prepare a lockfile-only change.
+# Replace PACKAGE and VERSION with the reviewed package and version.
+npm install PACKAGE@VERSION --save-exact --package-lock-only --ignore-scripts
 
-// Update to latest version of a package
-npm install <packagename>@latest
+# Review the manifest/lockfile diff before installing in a temporary environment.
+npm ci --ignore-scripts
+npm audit signatures
 ```
+
+Semver-compatible does not mean security-reviewed. Check release notes, package
+sources, new dependencies, and lifecycle scripts; avoid blanket `npm audit fix
+--force` updates. Installation scripts being disabled does not sandbox commands
+such as `npm run`, builds, tests, or `npx`.
+
+Dependabot checks for routine version updates in both npm projects and Poetry weekly. These updates
+have a seven-day cooldown; security updates require prompt individual review and
+are not delayed by that cooldown. This configuration does not enable GitHub's
+security-update setting or enforce branch protection, and it does not enable
+automatic merging. Run the checks in [the verification runbook](docs/verification-runbook.md)
+before merging. See [the September 2026 dependency review](docs/security/dependabot-2026-09-16.md)
+for the current fixes and remaining alerts.
 
 ## Utilities
 
