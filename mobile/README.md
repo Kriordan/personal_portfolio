@@ -32,6 +32,72 @@ The API base URL is resolved in `src/lib/config.ts`:
 
 For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. `http://192.168.1.20:5001`, and make sure the device is on the same network. A quick way to verify the right IP is to match the host shown in Metro's dev-client URL. After changing `.env`, fully reload the development build so Expo re-inlines the value into the JavaScript bundle.
 
+## Physical iPhone development build (EAS)
+
+The app is linked to `@kriordan/personal-portfolio` on Expo, with bundle identifier `com.kriordan.personalportfolio`. The `development` profile in `eas.json` builds an internally distributed app containing `expo-dev-client`. Building for a physical iPhone through EAS requires an Apple Developer Program membership; Xcode and a local signing certificate are not required for this cloud build workflow.
+
+### Build or replace the installed app
+
+From `mobile/`:
+
+```bash
+npm ci
+npx eas-cli@latest login --browser
+npx eas-cli@latest whoami
+npx eas-cli@latest build:list --platform ios --limit 3
+npx eas-cli@latest device:list
+```
+
+Use the `kriordan` Expo account and the existing Apple team. If the iPhone is already registered, reuse it. For a new phone, run `npx eas-cli@latest device:create`, choose website registration, and open the generated link in Safari on the iPhone to complete registration. Include that phone when the build command selects devices.
+
+```bash
+npx eas-cli@latest build --platform ios --profile development
+```
+
+Reuse the existing EAS-managed signing credentials when offered. Apple sign-in may be needed to create or refresh credentials or update the device list. When the build finishes, open its Expo build page in Safari on the iPhone and install the app. Enable Developer Mode under Settings → Privacy & Security if prompted, completing the restart and confirmation.
+
+Adding a native dependency requires another native build and installation. For example, `Cannot find native module 'ExpoCrypto'` means the installed app lacks the native module used by the current JavaScript. Installing npm dependencies or restarting Metro alone cannot add it to the phone. JavaScript-only changes normally need only a reload.
+
+### Connect the phone to this Mac
+
+1. Find the Mac's Wi-Fi address with `ipconfig getifaddr en0` (or check Network settings if Wi-Fi uses another interface).
+2. Set `EXPO_PUBLIC_API_URL=http://<MAC_LAN_IP>:5001` in `mobile/.env`; update it when switching Macs or networks.
+3. In a terminal at the repository root, start the API:
+
+   ```bash
+   poetry run flask --app project run --host 0.0.0.0 --port 5001 --debug --no-debugger --no-reload
+   ```
+
+4. In another terminal at `mobile/`, start Metro:
+
+   ```bash
+   npm start -- --dev-client --lan
+   ```
+
+5. Keep the phone on the same Wi-Fi, allow the app Local Network access, and select the development server. If discovery does not find it, enter `http://<MAC_LAN_IP>:8081` manually in the app's launcher.
+6. Sign in, open Lists, check the Live badge, then open Learning and its review screen. Close and reopen the app to verify session restoration.
+
+The two ports serve different purposes: `8081` loads the app's JavaScript; `5001` serves the Flask API. On the iPhone, opening `http://<MAC_LAN_IP>:5001/api/v1/auth/me` in Safari should return a JSON authentication error (HTTP 401), confirming API reachability without signing in. A JavaScript error screen confirms Metro was reached, but does not confirm API connectivity.
+
+This development workflow requires Metro and the API to keep running. The separate `preview` profile bundles JavaScript for standalone testing, but still needs a reachable backend and an API URL configured for the EAS build. The gitignored local `.env` is not uploaded to EAS.
+
+### Moving to another Mac
+
+- Restore the root `.env` and recreate `mobile/.env` with the new LAN address. Install Python/Poetry and Node dependencies from their lockfiles.
+- Sign in to Expo to reuse hosted builds and signing credentials. Local `node_modules`, generated `ios/` and `android/` folders, and build caches can be regenerated.
+- Check the database separately: Git and EAS do not carry local users, lists, gifts, or other database records. Preserve an old database backup if that data is needed, even if the new database's migrations are current.
+- For YouTube sync, check the ignored `client_secret.json`, `project/data/youtube_token.json`, and `project/data/jsonfiles/` inputs. OAuth credentials can be restored or authorization repeated as appropriate.
+- For optional integrations, check the credentials listed in `docs/verification-runbook.md`, including `APILEAP_ACCESS_KEY` for job screenshots and AWS access for uploads. Keep secrets out of Git.
+
+References: [Expo iPhone builds](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/), [managed signing credentials](https://docs.expo.dev/app-signing/managed-credentials/), and [development builds and native dependency changes](https://docs.expo.dev/develop/development-builds/introduction/).
+
+### New Mac verification — 2026-09-14
+
+- [iPhone development build](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/1e1b51ee-8adc-4200-b1b0-ee516b7e8f4b) completed using existing EAS-managed signing credentials and the previously registered iPhone.
+- Xcode's build log confirmed `ExpoCrypto` compiled and the archive succeeded. TypeScript, lint, and iOS JavaScript export checks also passed locally.
+- After installing the replacement build, the user confirmed successful login and navigation between app sections using Metro and Flask on the new Mac.
+- Old database completeness and optional external integration flows were not verified by this check.
+
 ## Project structure
 
 | Path | Purpose |
