@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -173,10 +173,6 @@ export default function ReviewScreen() {
     staleTime: Infinity,
     refetchOnMount: 'always',
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (queueQuery.isPending) {
     return (

@@ -77,8 +77,4 @@ export const listsApi = {
   },
 };
 
-export const listsKeys = {
-  all: ['lists'] as const,
-  overview: () => ['lists', 'overview'] as const,
-  detail: (listId: number) => ['lists', 'detail', listId] as const,
-};
+export { listsKeys } from './lists-cache';

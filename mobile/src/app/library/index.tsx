@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -66,10 +66,6 @@ export default function LibraryScreen() {
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (playlistsQuery.isPending) {
     return (

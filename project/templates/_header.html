@@ -34,6 +34,9 @@
       href="{{ url_for( 'learning.index' )}}">Learning</a>
     {% if not current_user.is_anonymous %}
       <a
+        {% if request.blueprint == 'lists' %}class="active"{% endif %}
+        href="{{ url_for( 'lists.list_lists' )}}">Grocery</a>
+      <a
         {% if request.path == '/jobwizard' %}class="active"{% endif %}
         href="{{ url_for( 'jobwizard.home' )}}">Jobwizard</a>
       <a

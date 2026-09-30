@@ -1,6 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
-import { ApiError, authApi, setUnauthorizedListener, type ApiUser } from '@/lib/api-client';
+import {
+  ApiError,
+  authApi,
+  setUnauthorizedListener,
+  type ApiUser,
+} from '@/lib/api-client';
 import { disconnectListSocket } from '@/lib/list-socket';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
@@ -14,10 +28,16 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState | null>(null);
+const profileKey = ['auth', 'me'] as const;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [user, setUser] = useState<ApiUser | null>(null);
+  const profile = useQuery({
+    queryKey: profileKey,
+    queryFn: authApi.me,
+    enabled: isAuthenticated === true,
+  });
+  const user = profile.data?.user ?? null;
 
   useEffect(() => {
     // If a request 401s even after refresh, the session is unrecoverable.
@@ -26,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       disconnectListSocket();
       tokenStorage.clear();
       queryClient.clear();
-      setUser(null);
       setIsAuthenticated(false);
     });
     return () => setUnauthorizedListener(null);
@@ -41,24 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setIsAuthenticated(false);
         return;
       }
-      // Render the authenticated shell immediately; validation happens below.
+      // The profile query validates the session and recovers after reconnect.
       if (!cancelled) setIsAuthenticated(true);
-      try {
-        const { user: restoredUser } = await authApi.me();
-        if (!cancelled) setUser(restoredUser);
-      } catch (error) {
-        // A 401 is already handled by the unauthorized listener. A 404 means
-        // the account no longer exists, so the session is invalid too.
-        if (error instanceof ApiError && error.status === 404) {
-          await tokenStorage.clear();
-          queryClient.clear();
-          if (!cancelled) {
-            setUser(null);
-            setIsAuthenticated(false);
-          }
-        }
-        // Network/server errors keep the session; user data loads on retry.
-      }
     }
 
     restoreSession();
@@ -67,12 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    // A 401 is handled by the unauthorized listener; a missing account also
+    // invalidates the session. Network failures preserve it for query recovery.
+    if (!(profile.error instanceof ApiError) || profile.error.status !== 404)
+      return;
+    let cancelled = false;
+    async function clearMissingAccount() {
+      disconnectListSocket();
+      await tokenStorage.clear();
+      if (cancelled) return;
+      queryClient.clear();
+      setIsAuthenticated(false);
+    }
+    void clearMissingAccount();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.error]);
+
   const signOut = useCallback(async () => {
     disconnectListSocket();
     await authApi.logout();
     await tokenStorage.clear();
     queryClient.clear();
-    setUser(null);
     setIsAuthenticated(false);
   }, []);
 
@@ -82,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken: response.access_token,
       refreshToken: response.refresh_token,
     });
-    setUser(response.user);
+    queryClient.setQueryData(profileKey, { user: response.user });
     setIsAuthenticated(true);
   }, []);
 

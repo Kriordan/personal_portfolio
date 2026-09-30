@@ -1,216 +1,145 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { RefreshControl, SectionList, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { NativeField, NativeFormSheet } from '@/components/native-form';
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-} from 'react-native';
-
+  InlineError,
+  NativeAction,
+  NavRow,
+  PageHeading,
+  ScreenState,
+  SectionHeading,
+  screenStyles,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useCreateList, useListsOverview } from '@/hooks/use-lists';
+import { useSubmission } from '@/hooks/use-submission';
+import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/lib/auth-context';
-import { listsApi, listsKeys, type ListSummary } from '@/lib/lists-api';
-
-function ListRow({ list, onPress }: { list: ListSummary; onPress: () => void }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
-      ]}
-    >
-      <ThemedText>{list.title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        ›
-      </ThemedText>
-    </Pressable>
-  );
-}
 
 export default function ListsScreen() {
-  const theme = useTheme();
+  const lists = useListsOverview();
+  const create = useCreateList();
+  const submission = useSubmission();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
-  const [newTitle, setNewTitle] = useState('');
-
-  const overviewQuery = useQuery({
-    queryKey: listsKeys.overview(),
-    queryFn: listsApi.getLists,
-    enabled: isAuthenticated === true,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (title: string) => listsApi.createList(title),
-    onSuccess: ({ list }) => {
-      setNewTitle('');
-      queryClient.invalidateQueries({ queryKey: listsKeys.overview() });
-      router.push(`/lists/${list.id}`);
-    },
-  });
-
-  const canCreate = newTitle.trim().length > 0 && !createMutation.isPending;
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
-
-  if (overviewQuery.isPending) {
+  const theme = useTheme();
+  const [presented, setPresented] = useState(false);
+  const title = useNativeText();
+  const submit = () => {
+    const currentTitle = title.read();
+    if (!currentTitle.trim()) return;
+    void submission.run(async () => {
+      const result = await create.mutateAsync(currentTitle.trim());
+      title.clear();
+      setPresented(false);
+      router.push(`/lists/${result.list.id}`);
+    });
+  };
+  if (!lists.data && lists.isPending)
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
+      <ScreenState
+        loading={!lists.isPaused}
+        title={lists.isPaused ? 'You’re offline' : 'Loading your lists'}
+        message={lists.isPaused ? 'Reconnect to load Grocery.' : undefined}
+      />
     );
-  }
-
-  if (overviewQuery.isError) {
+  if (!lists.data)
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">Couldn’t load your lists.</ThemedText>
-        <Pressable style={styles.button} onPress={() => overviewQuery.refetch()}>
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            Retry
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
+      <ScreenState
+        title="Couldn’t load Grocery"
+        message="Check your connection and try again."
+        onRetry={() => void lists.refetch()}
+      />
     );
-  }
-
-  const { owned, shared } = overviewQuery.data;
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[styles.screen, { backgroundColor: theme.background }]}
+    >
+      <SectionList
+        sections={[
+          {
+            title: 'Your lists',
+            data: lists.data.owned,
+            empty: 'Your next shop starts here. Create your first list.',
+          },
+          {
+            title: 'Shared with you',
+            data: lists.data.shared,
+            empty: 'Lists shared with your account will appear here.',
+          },
+        ]}
+        keyExtractor={(list) => String(list.id)}
+        contentContainerStyle={screenStyles.collection}
+        contentInsetAdjustmentBehavior="automatic"
+        stickySectionHeadersEnabled={false}
         refreshControl={
           <RefreshControl
-            refreshing={overviewQuery.isRefetching}
-            onRefresh={() => overviewQuery.refetch()}
+            refreshing={lists.isRefetching}
+            onRefresh={() => void lists.refetch()}
           />
         }
-      >
-        <ThemedView style={styles.createRow}>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-            placeholder="New list title"
-            placeholderTextColor={theme.textSecondary}
-            value={newTitle}
-            onChangeText={setNewTitle}
-            onSubmitEditing={() => canCreate && createMutation.mutate(newTitle.trim())}
-            editable={!createMutation.isPending}
-          />
-          <Pressable
-            style={[styles.button, !canCreate && styles.buttonDisabled]}
-            disabled={!canCreate}
-            onPress={() => createMutation.mutate(newTitle.trim())}
-          >
-            {createMutation.isPending ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <ThemedText type="smallBold" style={styles.buttonText}>
-                Create
-              </ThemedText>
-            )}
-          </Pressable>
-        </ThemedView>
-        {createMutation.isError && (
-          <ThemedText type="small" style={styles.error}>
-            {createMutation.error instanceof Error
-              ? createMutation.error.message
-              : 'Failed to create list.'}
-          </ThemedText>
+        ListHeaderComponent={
+          <View style={screenStyles.gap}>
+            <PageHeading
+              title="A good shop starts with a list."
+              subtitle="Keep your essentials together, wherever you are."
+            />
+            <NativeAction
+              label="Create a list"
+              onPress={() => setPresented(true)}
+            />
+            {lists.isError ? (
+              <InlineError
+                message="Couldn’t refresh. These are the last loaded lists."
+                onRetry={() => void lists.refetch()}
+              />
+            ) : null}
+          </View>
+        }
+        renderSectionHeader={({ section }) => (
+          <SectionHeading>{section.title}</SectionHeading>
         )}
-
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-          MY LISTS
-        </ThemedText>
-        {owned.length === 0 ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            No lists yet. Create one above.
-          </ThemedText>
-        ) : (
-          owned.map((list) => (
-            <ListRow key={list.id} list={list} onPress={() => router.push(`/lists/${list.id}`)} />
-          ))
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <NavRow title={item.title} href={`/lists/${item.id}`} />
+          </View>
         )}
-
-        {shared.length > 0 && (
-          <>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-              SHARED WITH ME
+        renderSectionFooter={({ section }) =>
+          section.data.length ? null : (
+            <ThemedText style={styles.empty} themeColor="textSecondary">
+              {section.empty}
             </ThemedText>
-            {shared.map((list) => (
-              <ListRow key={list.id} list={list} onPress={() => router.push(`/lists/${list.id}`)} />
-            ))}
-          </>
-        )}
-      </ScrollView>
-    </ThemedView>
+          )
+        }
+      />
+      <NativeFormSheet
+        title="New grocery list"
+        presented={presented}
+        onDismiss={() => setPresented(false)}
+        onSubmit={() => submit()}
+        submitLabel="Create list"
+        pending={submission.pending}
+        disabled={!title.text.trim()}
+        error={submission.error}
+      >
+        <NativeField
+          label="List name"
+          placeholder="For example, Weekly groceries"
+          {...title.input}
+          editable={!submission.pending}
+          returnKeyType="done"
+          onSubmitEditing={submit}
+        />
+      </NativeFormSheet>
+    </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  scrollContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  createRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  input: {
-    flex: 1,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  sectionHeader: {
-    marginTop: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  button: {
-    backgroundColor: '#3c87f7',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#ffffff',
-  },
-  error: {
-    color: '#d64545',
-  },
+  screen: { flex: 1 },
+  row: { marginBottom: 8 },
+  empty: { paddingVertical: 16, paddingHorizontal: 4 },
 });

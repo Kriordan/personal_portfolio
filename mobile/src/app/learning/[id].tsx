@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -58,10 +58,6 @@ export default function NoteDetailScreen() {
     queryFn: () => learningApi.getNote(noteId),
     enabled: noteId.length > 0 && isAuthenticated === true,
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (noteQuery.isPending) {
     return (

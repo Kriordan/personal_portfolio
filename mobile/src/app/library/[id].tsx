@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -58,10 +58,6 @@ export default function PlaylistDetailScreen() {
     queryFn: () => libraryApi.getPlaylist(id),
     enabled: Boolean(id) && isAuthenticated === true,
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (playlistQuery.isPending) {
     return (

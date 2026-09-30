@@ -2,7 +2,7 @@
 
 Operational entry point for verifying the Flask backend and its `/api/v1/` surface. Use this document to confirm the backend is ready for local development, review, or mobile-client work. The dated files under `docs/notes/` are historical implementation notes; this runbook supersedes them for day-to-day verification.
 
-Last verified: 2026-07-07 (54 tests passing in the focused API/socket suite; 77 passing in the full suite).
+Last verified: 2026-09-28 (92 tests passing in the full suite). See [mobile UI validation](mobile-ui-validation.md) for the native Grocery and website interoperability checks.
 
 ## 1. Local setup
 
@@ -89,6 +89,7 @@ Focused API/auth/socket regression suite (the standard pre-merge check):
 poetry run python -m unittest \
   tests.test_api_auth \
   tests.test_api_feature_registration \
+  tests.test_api_lists \
   tests.test_api_learning \
   tests.test_api_wishlist \
   tests.test_api_library \
@@ -96,7 +97,7 @@ poetry run python -m unittest \
   tests.test_socket_auth
 ```
 
-Expected: `Ran 54 tests ... OK`.
+Expected: all tests pass (`OK`).
 
 Other useful invocations:
 
@@ -111,7 +112,7 @@ poetry run python -m unittest tests.test_api_jobwizard
 poetry run python -m unittest tests.test_jobwizard_service
 ```
 
-The full suite (`discover -s tests`) is expected to pass: `Ran 77 tests ... OK`.
+The full suite (`discover -s tests`) is expected to pass: `Ran 92 tests ... OK`.
 
 What the API tests cover:
 
@@ -119,11 +120,12 @@ What the API tests cover:
 | --- | --- |
 | `tests/test_api_auth.py` | Login/refresh/signup/reset, CORS scoping |
 | `tests/test_api_feature_registration.py` | Route registration smoke: protected routes return 401, not 404 |
+| `tests/test_api_lists.py` | Shared-member access, owner-only actions, cross-list IDs, revoked membership, and display settings |
 | `tests/test_api_learning.py` | Notes, review queue, rating contracts |
 | `tests/test_api_wishlist.py` | Gift CRUD, owner scoping, S3 mock |
 | `tests/test_api_library.py` | Playlists/videos, sync trigger mock |
 | `tests/test_api_jobwizard.py` | Job list/create/detail, ownership, screenshot mock |
-| `tests/test_socket_auth.py` | Socket.IO JWT handshake and room join |
+| `tests/test_socket_auth.py` | Socket.IO JWT/session authentication, room access, and website/mobile interoperability |
 
 ## 3. JWT login and refresh flow
 
