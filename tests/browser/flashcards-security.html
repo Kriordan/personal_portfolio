@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Flashcard Markdown security regression</title>
+<h1>Flashcard Markdown security regression</h1>
+<pre id="results">RUNNING</pre>
+<div id="fixtures"></div>
+<script src="../../node_modules/marked/lib/marked.umd.js"></script>
+<script src="../../node_modules/dompurify/dist/purify.min.js"></script>
+<script>
+  // Load the application's real renderer against untrusted text, as Jinja does.
+  const fixtures = document.getElementById("fixtures");
+  const cases = [
+    ["formatting", "**bold** and *italic*", (el) => el.querySelector("strong")?.textContent === "bold" && el.querySelector("em")?.textContent === "italic"],
+    ["safe link", "[example](https://example.com)", (el) => el.querySelector("a")?.getAttribute("href") === "https://example.com"],
+    ["code", "```html\n<img onerror=alert(1)>\n```", (el) => el.querySelector("code")?.textContent.includes("<img onerror=alert(1)>") && !el.querySelector("img")],
+    ["script element", '<script>window.__xss = true;<\/script>', (el) => !el.querySelector("script")],
+    ["image event", '<img src="data:image/png;base64,broken" onerror="window.__xss = true">', (el) => !el.querySelector("[onerror]")],
+    ["SVG event", '<svg onload="window.__xss = true"><circle /></svg>', (el) => !el.querySelector("[onload]")],
+    ["JavaScript link", '[bad](javascript:alert(1))', (el) => !el.querySelector("a[href]")],
+    ["encoded JavaScript link", '<a href="java&#x73;cript:alert(1)">bad</a>', (el) => !el.querySelector("a[href]")],
+    ["embedded document", '<iframe srcdoc="<script>parent.__xss=true;<\/script>"></iframe>', (el) => !el.querySelector("iframe")],
+    ["rawtext breakout", '<img alt="</noscript><img src=x onerror=window.__xss=true>">', (el) => !el.querySelector("[onerror]")],
+    ["MathML mutation", '<math><mtext><table><mglyph><style><!--</style><img title="--><img src=x onerror=window.__xss=true>">', (el) => !el.querySelector("[onerror]")],
+  ];
+  window.__xss = false;
+  const elements = cases.map(([, input]) => {
+    const el = document.createElement("div");
+    el.dataset.markdown = "";
+    el.textContent = input;
+    fixtures.append(el);
+    return el;
+  });
+  const loadRenderer = () => new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "../../project/static/js/flashcards.js";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.append(script);
+  });
+  (async () => {
+    if (!window.marked || !window.DOMPurify) throw new Error("Install the locked browser dependencies first");
+    const version = DOMPurify.version;
+    await loadRenderer();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const outcomes = cases.map(([name, , check], i) => [name, check(elements[i])]);
+    outcomes.push(["no payload executed", window.__xss === false]);
+
+    // If the CDN or its integrity check fails, the renderer must use plain text.
+    window.DOMPurify = undefined;
+    const fallback = document.createElement("div");
+    fallback.dataset.markdown = "";
+    const dirty = '<img src=x onerror="window.__xss=true"> **plain**';
+    fallback.textContent = dirty;
+    fixtures.append(fallback);
+    await loadRenderer();
+    outcomes.push(["missing sanitizer falls back to text", !fallback.querySelector("img, strong") && fallback.textContent === dirty]);
+    const failed = outcomes.filter(([, passed]) => !passed);
+    document.getElementById("results").textContent = `${failed.length ? "FAIL" : "PASS"}: ${outcomes.length} checks; DOMPurify ${version}\n` + outcomes.map(([name, passed]) => `${passed ? "PASS" : "FAIL"} ${name}`).join("\n");
+    document.documentElement.dataset.testResult = failed.length ? "fail" : "pass";
+  })().catch((error) => {
+    document.getElementById("results").textContent = `FAIL: ${error.message}`;
+    document.documentElement.dataset.testResult = "fail";
+  });
+</script>

@@ -104,6 +104,12 @@ The user subsequently confirmed successful installation on their physical iPhone
 
 That check exposed a missing website navigation link: `/lists` already exists in production, but the authenticated header did not link to it. A Grocery link has been added locally and its signed-in, signed-out, overview, and detail rendering checked. The navigation fix is not yet deployed; the direct Lists URL works now.
 
+## PR integration — September 30, 2026
+
+The branch incorporates `main` through `01a8035`, preserving its dependency-security changes, install-script policy, UUID override, dependency compatibility check, and existing development-build documentation. The mobile lockfile was regenerated from that security-fixed baseline while retaining every direct dependency version used by the installed iPhone preview. After installing the merged mobile and Python lockfiles, TypeScript, lint, all 10 mobile tests, the dependency compatibility checks, all 92 backend tests, and a production iOS JavaScript/Hermes export passed. Local Expo dependency validation also passed in offline mode.
+
+The existing iPhone preview predates this merge's transitive dependency updates. It remains the UI smoke-test build; a fresh native preview should be produced before promoting the merged dependency tree. A fresh npm audit reports the previously documented decoder issue (three moderate entries through its parents) and newer brace-expansion advisories (one high entry). The affected brace-expansion versions match `main`; the UI change does not resolve those newly reported advisories.
+
 ## Remaining release checks
 
 Use the [iPhone smoke-test checklist](iphone-smoke-test.md) for the physical-device pass. PR screenshots were captured from the iOS simulator using the isolated fixture: [Home](screenshots/mobile-redesign/ios-home.png) and [Grocery detail](screenshots/mobile-redesign/ios-grocery.png). The floating gear belongs to the development client and is absent from the standalone preview.
