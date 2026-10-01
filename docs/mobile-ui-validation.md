@@ -122,9 +122,15 @@ New regression tests first reproduced the missing website broadcasts, then passe
 
 The running iOS 27 simulator received website-created items (including quantity/notes) and categories without refreshing. A separate item created through the local REST API without a socket event appeared automatically when the app returned from the Home Screen; logs confirm foreground reads and expired-token recovery. These checks used the isolated fixture, not production. The under-30-second recovery boundary is covered by the automated QueryObserver tests.
 
-The installed September 30 preview and deployed website still contain the reported bug. Retest on the physical iPhone after deploying the website fix and installing a replacement preview. Android's earlier coverage remains valid for its stated paths; this follow-up has not yet been rerun on Android.
+The September 30 preview contains the reported foreground-recovery bug. Retest on the physical iPhone with the replacement preview and website release v123 described below. Android's earlier coverage remains valid for its stated paths; this follow-up has not yet been rerun on Android.
 
-The [October 1 replacement iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) built successfully from commit `53c00ca7e0decb66c037ce0120a88fa5ac4b5143`, finishing at 12:06:50 UTC. It includes the foreground recovery fix and the merged dependency updates. EAS reports a finished internal-distribution physical-device build with an installable artifact, signed using the existing registered-iPhone profile. Installation and physical-device retesting are pending. The live website remains on Heroku v122 (`ae68ac24`) until deployment is authorized; the branch introduces no database migrations relative to that release.
+The [October 1 replacement iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) built successfully from commit `53c00ca7e0decb66c037ce0120a88fa5ac4b5143`, finishing at 12:06:50 UTC. It includes the foreground recovery fix and the merged dependency updates. EAS reports a finished internal-distribution physical-device build with an installable artifact, signed using the existing registered-iPhone profile. Installation and physical-device retesting are pending.
+
+### Website deployment — October 1
+
+The user's initial `git push heroku mobile-redesign` uploaded a feature branch, which Heroku explicitly skipped building. Deploying with `git push heroku mobile-redesign:main` built commit `9f69b1c0` successfully and released **v123** at 13:43:40 UTC. This includes the website creation broadcasts, Grocery navigation link, and merged backend dependency fixes. There are no database migrations relative to the previous live release v122 (`ae68ac24`).
+
+After release, Heroku reports `web.1` up; the website returns HTTP 200, `/api/v1/auth/me` returns the expected JSON 401 without credentials, and `/lists` redirects unauthenticated requests with HTTP 302. These verify startup and routing, not an authenticated production sync test. The physical iPhone retest remains the next check. The GitHub PR remains open for those results.
 
 ### Outstanding checks
 

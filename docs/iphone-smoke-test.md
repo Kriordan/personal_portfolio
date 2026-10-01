@@ -1,6 +1,6 @@
 # iPhone smoke test: Home, Tools, Me, and Grocery
 
-Use the [October 1 replacement preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) and the same account on the [website's Lists page](https://keithriordan.herokuapp.com/lists). This build uses live data. Use a list named **iPhone smoke test** to keep the checks easy to recognize. Website-to-phone live creation also requires deploying the website fix; that deployment is pending.
+Use the [October 1 replacement preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) and the same account on the [website's Lists page](https://keithriordan.herokuapp.com/lists). This build uses live data. Use a list named **iPhone smoke test** to keep the checks easy to recognize. The website fix is deployed as Heroku **v123** (October 1); reload an already-open website tab once before starting the retest.
 
 Allow about 15–20 minutes. Tick each box when its expected result holds. For a failure, note the step, what happened, and whether you were on Wi-Fi or cellular; a screenshot or short recording helps.
 
@@ -15,9 +15,9 @@ Allow about 15–20 minutes. Tick each box when its expected result holds. For a
 
 The original preview fails **Website → phone, live** and **Background recovery** for newly created website items. Pull-to-refresh retrieves them; completion then works. These are recorded failures, not additional setup steps for the tester.
 
-The fix is in PR #89: website form saves now broadcast creation events, and Grocery always refetches on foreground/network recovery. Local tests and the iOS simulator pass. The replacement preview linked above built successfully from commit `53c00ca` on October 1. Physical-device retesting is pending its installation and a website deployment; the [original September 30 preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2c5db3b7-ac92-4a66-befe-cd7af0186eba) is unchanged.
+The fix is in PR #89: website form saves now broadcast creation events, and Grocery always refetches on foreground/network recovery. Local tests and the iOS simulator pass. The replacement preview linked above built successfully from commit `53c00ca` on October 1. The website fix is now live in v123 (`9f69b1c`); physical-device retesting with the replacement preview remains pending. The [original September 30 preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2c5db3b7-ac92-4a66-befe-cd7af0186eba) is unchanged.
 
-When both updates are available, retest:
+With the replacement preview installed, retest:
 
 1. With the list foregrounded on the phone, create an item with quantity/notes on the website. It should appear immediately, once, without pull-to-refresh.
 2. Create a category on the website, then an item in it. Both should appear on the phone.
@@ -66,4 +66,4 @@ Reproduction steps:
 Screenshot / recording:
 ```
 
-Android emulator coverage and automated results are recorded in [mobile-ui-validation.md](mobile-ui-validation.md). The remaining checks can use the installed preview without a running Mac; retesting the reported realtime/recovery failures requires the replacement preview and website deployment described above.
+Android emulator coverage and automated results are recorded in [mobile-ui-validation.md](mobile-ui-validation.md). These checks need no running Mac. Use the replacement preview for the realtime/recovery retest; the corresponding website fix is already deployed.
