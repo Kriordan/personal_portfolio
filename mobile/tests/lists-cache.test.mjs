@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { QueryClient, QueryObserver } from '@tanstack/react-query';
+import { focusManager, onlineManager, QueryClient, QueryObserver } from '@tanstack/react-query';
 import {
   createListRoomHandlers,
   grocerySections,
   listsKeys,
+  listsRefreshOptions,
   patchList,
   withCategoryAdded,
   withItemAdded,
@@ -38,6 +39,83 @@ const detail = (mode = 'category_section') => ({
   ],
 });
 const tick = () => new Promise((resolve) => setImmediate(resolve));
+
+for (const recovery of ['foreground', 'network reconnect']) {
+  test(`${recovery} fetches missed items even when the list is still fresh and the socket has not rejoined`, async (t) => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    focusManager.setFocused(true);
+    onlineManager.setOnline(true);
+    client.mount();
+    let server = detail();
+    let reads = 0;
+    const queryKey = listsKeys.detail(1);
+    const observer = new QueryObserver(client, {
+      ...listsRefreshOptions,
+      queryKey,
+      queryFn: async () => {
+        reads++;
+        return { list: structuredClone(server) };
+      },
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    t.after(() => {
+      unsubscribe();
+      client.unmount();
+      client.clear();
+      focusManager.setFocused(undefined);
+      onlineManager.setOnline(true);
+    });
+    await tick();
+    assert.equal(reads, 1);
+    assert.equal(observer.getCurrentResult().isStale, false);
+    if (recovery === 'foreground') focusManager.setFocused(false);
+    else onlineManager.setOnline(false);
+    server = withItemAdded(server, 10, item(99));
+    // No socket callback: iOS can suspend JS without an immediate disconnect.
+    if (recovery === 'foreground') focusManager.setFocused(true);
+    else onlineManager.setOnline(true);
+    await tick();
+    assert.equal(reads, 2);
+    assert.deepEqual(client.getQueryData(queryKey), { list: server });
+  });
+}
+
+test('website item events add one row immediately, and fetch a missed category when needed', async (t) => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  let server = detail();
+  let reads = 0;
+  const queryKey = listsKeys.detail(1);
+  const observer = new QueryObserver(client, {
+    queryKey,
+    queryFn: async () => {
+      reads++;
+      return { list: structuredClone(server) };
+    },
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  t.after(() => { unsubscribe(); client.clear(); });
+  await tick();
+  const handlers = createListRoomHandlers(client, 1);
+  const added = item(99);
+  server = withItemAdded(server, 10, added);
+  const event = { list_id: 1, category_id: 10, item: added, added_by: 'website' };
+  handlers.onItemAdded(event);
+  handlers.onItemAdded(event);
+  await tick();
+  assert.equal(reads, 1, 'A received item in a known category needs no manual refresh');
+  assert.deepEqual(client.getQueryData(queryKey), { list: server });
+
+  const missedItem = item(100, false, 30);
+  server = withCategoryAdded(server, { id: 30, name: 'New', ordering: 3, items: [missedItem] });
+  handlers.onItemAdded({ list_id: 1, category_id: 30, item: missedItem, added_by: 'website' });
+  await tick();
+  assert.equal(reads, 2);
+  assert.deepEqual(client.getQueryData(queryKey), { list: server });
+});
 
 test('website DOM string IDs update the same item as mobile numeric IDs', async () => {
   const client = new QueryClient();

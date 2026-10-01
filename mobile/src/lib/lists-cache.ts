@@ -10,6 +10,13 @@ export const listsKeys = {
   detail: (listId: number) => ['lists', 'detail', listId] as const,
 };
 
+// A short background/offline interval can miss website changes while this cache
+// is still fresh. Recover independently of whether Socket.IO has disconnected.
+export const listsRefreshOptions = {
+  refetchOnWindowFocus: 'always',
+  refetchOnReconnect: 'always',
+} as const;
+
 export function withItemToggled(
   detail: ListDetail,
   itemId: number,

@@ -9,6 +9,20 @@ Allow about 15–20 minutes. Tick each box when its expected result holds. For a
 - [x] The preview installs and opens on the physical iPhone.
 - [x] A list created on the phone appears on the website under the same account.
 - [x] Initial visual inspection looks good.
+- [x] Phone-created items reach the website without manual reload; completion changes work in both directions for visible items.
+
+## Reported failures — September 30
+
+The original preview fails **Website → phone, live** and **Background recovery** for newly created website items. Pull-to-refresh retrieves them; completion then works. These are recorded failures, not additional setup steps for the tester.
+
+The fix is in PR #89: website form saves now broadcast creation events, and Grocery always refetches on foreground/network recovery. Local tests and the iOS simulator pass. Physical-device retesting is pending a website deployment and replacement preview; the original preview linked above is unchanged.
+
+When both updates are available, retest:
+
+1. With the list foregrounded on the phone, create an item with quantity/notes on the website. It should appear immediately, once, without pull-to-refresh.
+2. Create a category on the website, then an item in it. Both should appear on the phone.
+3. Check and uncheck the new item from each client; both stay synchronized.
+4. Return to the iPhone Home Screen, add an item on the website, and reopen the app within 30 seconds. Repeat after a longer background interval. Both times the item should appear automatically.
 
 ## Main flow
 
@@ -16,7 +30,7 @@ Allow about 15–20 minutes. Tick each box when its expected result holds. For a
 - [ ] **Enter a complete item.** Add categories **Produce** and **Pantry**. Add **Apples**, quantity **6**, notes **For lunches — keep every character**, under Produce. Add **Olive oil** under Pantry. The keyboard leaves the save controls reachable; names, quantity, notes, and category are correct after saving. Reopening the item form starts with empty fields.
 - [ ] **Avoid duplicate saves.** Create one more item, **Bread**, and tap Save twice quickly. Exactly one item is created. The save control is disabled while saving.
 - [ ] **Complete and undo.** Check Apples, then uncheck it. Its checked appearance, placement, and remaining/completed counts update correctly. Taps do not toggle it twice.
-- [ ] **Phone → website, live.** Keep this list's detail page open in both clients. Add an item and check it on the phone. The website updates without a manual reload.
+- [x] **Phone → website, live.** Keep this list's detail page open in both clients. Add an item and check it on the phone. The website updates without a manual reload.
 - [ ] **Website → phone, live.** Add **From the website** and toggle an item on the website. The phone updates without leaving the list. Leave its screen unlocked and foregrounded for this check.
 
 ## Recovery and navigation
@@ -52,4 +66,4 @@ Reproduction steps:
 Screenshot / recording:
 ```
 
-Android emulator coverage and automated results are recorded in [mobile-ui-validation.md](mobile-ui-validation.md). This checklist is for the installed iPhone preview; it does not require another build or a running Mac.
+Android emulator coverage and automated results are recorded in [mobile-ui-validation.md](mobile-ui-validation.md). The remaining checks can use the installed preview without a running Mac; retesting the reported realtime/recovery failures requires the replacement preview and website deployment described above.

@@ -2,7 +2,7 @@
 
 ## Delivered
 
-The SDK 57 compatibility update and the Home / Tools / Me shell plus Grocery slice are implemented. The architecture remains Expo Router, TanStack Query, the existing typed API clients, and Flask domain services. No Flask endpoint, response schema, database migration, or Socket.IO protocol was changed.
+The SDK 57 compatibility update and the Home / Tools / Me shell plus Grocery slice are implemented. The architecture remains Expo Router, TanStack Query, the existing typed API clients, and Flask domain services. Website item/category form handlers now broadcast the existing Socket.IO events after saving. Endpoint URLs, response schemas, database schema, and Socket.IO payloads are unchanged.
 
 - Expo 57.0.25, React Native 0.86.3, matching Expo packages, Reanimated 4.5.1 and Worklets 0.10.1; Node minimum 22.13.
 - `expo-build-properties` enables the scene lifecycle required by Xcode 27. Native projects remain generated and ignored.
@@ -30,8 +30,8 @@ poetry run python -m unittest discover -s tests
 | --- | --- |
 | Strict TypeScript | Passed |
 | Expo ESLint | Passed, no warnings |
-| Mobile regression tests | 10 passed |
-| Backend unittest suite | 92 passed |
+| Mobile regression tests | 13 passed |
+| Backend unittest suite | 96 passed |
 | `npx expo install --check` in `mobile/` | Dependencies compatible |
 | iOS development-client build with Xcode 27 | Succeeded, zero errors |
 | EAS iPhone preview against the live API | Succeeded September 30; user confirmed physical installation and a created list visible on the website |
@@ -54,7 +54,7 @@ Verified:
 - Cold development-client launch, restored session, login, expired-token refresh, sign-out to the protected login screen, and account display.
 - Home counts and list links; Tools filtering; create-list navigation and back navigation.
 - Native category/item sheets, keyboard submission, item quantity, completion updates, and connected/disconnected indicators.
-- Two-way live item updates between the iOS app and the existing Flask website.
+- Phone-to-website additions and two-way completion updates. Website-to-phone additions were not adequately isolated from refetches in the original check; see the September 30 correction below.
 - A failed category submission retains its text; restoring the API and retrying saves it. Rejoining refreshes missed state.
 - Light/dark rendering and the largest Dynamic Type setting. Heading scale is capped at 2×; body text and native controls follow the system size. Runtime size changes restore normal layout without a reload. Error recovery screens scroll at large sizes.
 - Item checkbox roles and checked/busy states in the native accessibility tree.
@@ -81,7 +81,7 @@ Verified:
 - Login, invalid-credential feedback, restored session, expired-token refresh during reads and writes, account display, and sign-out to the protected login screen.
 - Home counts and real list links; Tools name filtering; owned/shared Grocery sections; create-list navigation and normal Back navigation.
 - Create category, keyboard submission, native item sheet and category picker, and exact preservation of item name, quantity, and notes.
-- Two-way completion changes and new items between Android and the website, with connected/disconnected feedback.
+- Two-way completion changes and phone-to-website additions, with connected/disconnected feedback. The original claim of two-way live additions was too broad; see the September 30 correction below.
 - Returning from the background refetches changes made on the website. Disabling emulator connectivity produces an immediate failed category submission without losing its draft. Reconnecting and retrying saves the draft and restores items added while disconnected.
 - Category and global completed-item sections, with the global setting loaded after reopening the list.
 - Light/dark rendering, maximum Android font size, collection scrolling, and reachable sheet actions. Normal text size, light appearance, and connectivity were restored afterward.
@@ -111,6 +111,20 @@ The branch incorporates `main` through `01a8035`, preserving its dependency-secu
 The existing iPhone preview predates this merge's transitive dependency updates. It remains the UI smoke-test build; a fresh native preview should be produced before promoting the merged dependency tree. A fresh npm audit reports the previously documented decoder issue (three moderate entries through its parents) and newer brace-expansion advisories (one high entry). The affected brace-expansion versions match `main`; the UI change does not resolve those newly reported advisories.
 
 ## Remaining release checks
+
+### Physical-device realtime bug and correction — September 30
+
+Keith confirmed phone-to-website additions and two-way completion updates, but website-created items required pull-to-refresh on the iPhone, including after returning from the background. The website's item/category forms saved successfully without broadcasting any creation event. The original interoperability tests emitted socket events directly and missed this real form path. The native checks above therefore overstated website-to-phone live creation coverage.
+
+The website now emits `item_added` and `category_added` after persistence, using the same serializers as the REST responses. Broadcast failures are logged without reporting an already-saved item as a failed save. Grocery detail and overview queries refetch on foreground/network recovery even within the 30-second freshness window and independently of a socket rejoin.
+
+New regression tests first reproduced the missing website broadcasts, then passed after the fix. They exercise real owner/shared-member form submissions to a JWT room listener, exact REST/event payload equality, room isolation, rejected forms, and transport failure after persistence. Mobile tests cover immediate item reconciliation, a missing category, and recovery of fresh data without a socket callback. TypeScript, lint, all 13 mobile tests, all 96 backend tests, and `git diff --check` pass.
+
+The running iOS 27 simulator received website-created items (including quantity/notes) and categories without refreshing. A separate item created through the local REST API without a socket event appeared automatically when the app returned from the Home Screen; logs confirm foreground reads and expired-token recovery. These checks used the isolated fixture, not production. The under-30-second recovery boundary is covered by the automated QueryObserver tests.
+
+The installed September 30 preview and deployed website still contain the reported bug. Retest on the physical iPhone after deploying the website fix and installing a replacement preview. Android's earlier coverage remains valid for its stated paths; this follow-up has not yet been rerun on Android.
+
+### Outstanding checks
 
 Use the [iPhone smoke-test checklist](iphone-smoke-test.md) for the physical-device pass. PR screenshots were captured from the iOS simulator using the isolated fixture: [Home](screenshots/mobile-redesign/ios-home.png) and [Grocery detail](screenshots/mobile-redesign/ios-grocery.png). The floating gear belongs to the development client and is absent from the standalone preview.
 

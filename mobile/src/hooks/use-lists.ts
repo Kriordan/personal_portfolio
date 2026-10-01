@@ -12,6 +12,7 @@ import {
 import {
   createListRoomHandlers,
   listsKeys,
+  listsRefreshOptions,
   patchList,
   withCategoryAdded,
   withItemAdded,
@@ -21,6 +22,7 @@ import {
 export function useListsOverview() {
   const { isAuthenticated } = useAuth();
   return useQuery({
+    ...listsRefreshOptions,
     queryKey: listsKeys.overview(),
     queryFn: listsApi.getLists,
     enabled: isAuthenticated === true,
@@ -47,6 +49,7 @@ export function useGroceryList(listId: number) {
   const focused = useIsFocused();
   const validId = Number.isSafeInteger(listId) && listId > 0;
   const query = useQuery({
+    ...listsRefreshOptions,
     queryKey: listsKeys.detail(listId),
     queryFn: () => listsApi.getList(listId),
     enabled: validId && isAuthenticated === true,

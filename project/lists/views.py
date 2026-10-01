@@ -14,10 +14,20 @@ from mailersend import EmailBuilder, MailerSendClient
 
 from project.foyer.email_templates import get_list_invitation_email_content
 from project.lists.forms import CategoryForm, ItemForm, ListForm
+from project.lists.serialization import serialize_category, serialize_item
 from project.models import db
 from project.services import lists_service
+from project.sockets import broadcast_to_list
 
 lists_blueprint = Blueprint("lists", __name__, template_folder="templates")
+
+
+def _broadcast_saved_change(list_id, event, data):
+    # Persistence already succeeded. A transport failure must not invite a duplicate save.
+    try:
+        broadcast_to_list(list_id, event, {"list_id": list_id, **data})
+    except Exception:
+        current_app.logger.exception("Failed to broadcast %s for list %s", event, list_id)
 
 
 @lists_blueprint.route("/lists")
@@ -202,7 +212,10 @@ def view_list(list_id):
     item_form = ItemForm()
 
     if cat_form.validate_on_submit():
-        lists_service.add_category(custom_list=custom_list, name=cat_form.name.data)
+        category = lists_service.add_category(custom_list=custom_list, name=cat_form.name.data)
+        _broadcast_saved_change(list_id, "category_added", {
+            "category": serialize_category(category), "added_by": current_user.username,
+        })
         flash("Category added successfully.", "success")
         return redirect(url_for("lists.view_list", list_id=list_id))
 
@@ -229,19 +242,24 @@ def add_item(list_id):
 
     if form.validate_on_submit():
         try:
-            lists_service.add_item(
+            item = lists_service.add_item(
                 custom_list_id=list_id,
                 name=form.name.data,
                 quantity=form.quantity.data,
                 notes=form.notes.data,
                 category_id_raw=request.form.get("category_id"),
             )
-            flash("Item added successfully.", "success")
         except ValueError:
             flash("Invalid category ID.", "danger")
         except Exception:
             flash("Error adding item.", "danger")
             db.session.rollback()
+        else:
+            _broadcast_saved_change(list_id, "item_added", {
+                "category_id": item.category_id, "item": serialize_item(item),
+                "added_by": current_user.username,
+            })
+            flash("Item added successfully.", "success")
     else:
         for field, errors in form.errors.items():
             for error in errors:

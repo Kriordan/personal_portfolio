@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 
 from project.database import db
 from project.foyer.email_templates import get_list_invitation_email_content
+from project.lists.serialization import serialize_category, serialize_item
 from project.models import CustomList, ListCategory, ListItem, User
 from project.services import lists_service
 
@@ -27,29 +28,6 @@ def _current_user_from_jwt() -> User | None:
         return None
 
 
-def _serialize_item(item: ListItem) -> dict[str, Any]:
-    return {
-        "id": item.id,
-        "name": item.name,
-        "quantity": item.quantity,
-        "notes": item.notes,
-        "completed": item.completed,
-        "ordering": item.ordering,
-        "category_id": item.category_id,
-    }
-
-
-def _serialize_category(category: ListCategory) -> dict[str, Any]:
-    return {
-        "id": category.id,
-        "name": category.name,
-        "ordering": category.ordering,
-        "items": [
-            _serialize_item(item) for item in category.items.order_by(ListItem.ordering.asc()).all()
-        ],
-    }
-
-
 def _serialize_list_summary(custom_list: CustomList) -> dict[str, Any]:
     return {
         "id": custom_list.id,
@@ -64,7 +42,7 @@ def _serialize_list_summary(custom_list: CustomList) -> dict[str, Any]:
 def _serialize_list_detail(custom_list: CustomList) -> dict[str, Any]:
     payload = _serialize_list_summary(custom_list)
     payload["categories"] = [
-        _serialize_category(category)
+        serialize_category(category)
         for category in custom_list.categories.order_by(ListCategory.ordering.asc()).all()
     ]
     return payload
@@ -176,7 +154,7 @@ def api_add_item(list_id: int):
     except NotFound:
         return jsonify({"error": "Category not found."}), 404
 
-    return jsonify({"item": _serialize_item(item)}), 201
+    return jsonify({"item": serialize_item(item)}), 201
 
 
 @lists_api_blueprint.post("/<int:list_id>/items/<int:item_id>/toggle")
@@ -250,7 +228,7 @@ def api_add_category(list_id: int):
         return jsonify({"error": "Category name is required."}), 400
 
     category = lists_service.add_category(custom_list=custom_list, name=name)
-    return jsonify({"category": _serialize_category(category)}), 201
+    return jsonify({"category": serialize_category(category)}), 201
 
 
 @lists_api_blueprint.post("/<int:list_id>/categories/reorder")
