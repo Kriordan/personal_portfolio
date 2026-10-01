@@ -1,6 +1,6 @@
 # iPhone smoke test: Home, Tools, Me, and Grocery
 
-Use the [September 30 preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2c5db3b7-ac92-4a66-befe-cd7af0186eba) and the same account on the [website's Lists page](https://keithriordan.herokuapp.com/lists). This build uses live data. Use a list named **iPhone smoke test** to keep the checks easy to recognize.
+Use the [October 1 replacement preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) and the same account on the [website's Lists page](https://keithriordan.herokuapp.com/lists). This build uses live data. Use a list named **iPhone smoke test** to keep the checks easy to recognize. Website-to-phone live creation also requires deploying the website fix; that deployment is pending.
 
 Allow about 15–20 minutes. Tick each box when its expected result holds. For a failure, note the step, what happened, and whether you were on Wi-Fi or cellular; a screenshot or short recording helps.
 
@@ -15,7 +15,7 @@ Allow about 15–20 minutes. Tick each box when its expected result holds. For a
 
 The original preview fails **Website → phone, live** and **Background recovery** for newly created website items. Pull-to-refresh retrieves them; completion then works. These are recorded failures, not additional setup steps for the tester.
 
-The fix is in PR #89: website form saves now broadcast creation events, and Grocery always refetches on foreground/network recovery. Local tests and the iOS simulator pass. Physical-device retesting is pending a website deployment and replacement preview; the original preview linked above is unchanged.
+The fix is in PR #89: website form saves now broadcast creation events, and Grocery always refetches on foreground/network recovery. Local tests and the iOS simulator pass. The replacement preview linked above built successfully from commit `53c00ca` on October 1. Physical-device retesting is pending its installation and a website deployment; the [original September 30 preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2c5db3b7-ac92-4a66-befe-cd7af0186eba) is unchanged.
 
 When both updates are available, retest:
 
@@ -58,7 +58,7 @@ Copy this and fill in only what is useful:
 
 ```text
 iPhone model / iOS version:
-Preview: September 30, 2026
+Preview: October 1 replacement (cc6436f8)
 Passed steps:
 Failed or confusing steps:
 Expected → actual:

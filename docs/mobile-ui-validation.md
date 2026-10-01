@@ -1,4 +1,4 @@
-# Mobile UI first slice — updated September 30, 2026
+# Mobile UI first slice — updated October 1, 2026
 
 ## Delivered
 
@@ -123,6 +123,8 @@ New regression tests first reproduced the missing website broadcasts, then passe
 The running iOS 27 simulator received website-created items (including quantity/notes) and categories without refreshing. A separate item created through the local REST API without a socket event appeared automatically when the app returned from the Home Screen; logs confirm foreground reads and expired-token recovery. These checks used the isolated fixture, not production. The under-30-second recovery boundary is covered by the automated QueryObserver tests.
 
 The installed September 30 preview and deployed website still contain the reported bug. Retest on the physical iPhone after deploying the website fix and installing a replacement preview. Android's earlier coverage remains valid for its stated paths; this follow-up has not yet been rerun on Android.
+
+The [October 1 replacement iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) built successfully from commit `53c00ca7e0decb66c037ce0120a88fa5ac4b5143`, finishing at 12:06:50 UTC. It includes the foreground recovery fix and the merged dependency updates. EAS reports a finished internal-distribution physical-device build with an installable artifact, signed using the existing registered-iPhone profile. Installation and physical-device retesting are pending. The live website remains on Heroku v122 (`ae68ac24`) until deployment is authorized; the branch introduces no database migrations relative to that release.
 
 ### Outstanding checks
 
