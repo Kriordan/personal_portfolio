@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,14 +14,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/lib/auth-context';
 import { jobwizardApi, jobwizardKeys, type JobInput } from '@/lib/jobwizard-api';
 
 export default function NewJobScreen() {
   const router = useRouter();
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
 
   const [title, setTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -34,10 +32,6 @@ export default function NewJobScreen() {
       router.back();
     },
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   const submitting = createMutation.isPending;
   const canSubmit =

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -26,10 +26,6 @@ export default function JobDetailScreen() {
     queryFn: () => jobwizardApi.getJob(jobId),
     enabled: Number.isFinite(jobId) && isAuthenticated === true,
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (jobQuery.isPending) {
     return (

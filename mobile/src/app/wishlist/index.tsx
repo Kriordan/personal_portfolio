@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -52,10 +52,6 @@ export default function WishlistScreen() {
     queryFn: wishlistApi.getGifts,
     enabled: isAuthenticated === true,
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (giftsQuery.isPending) {
     return (

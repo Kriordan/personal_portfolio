@@ -9,7 +9,8 @@ import type { ListCategory, ListItem } from '@/lib/lists-api';
 
 export interface ItemToggledEvent {
   list_id: number;
-  item_id: number;
+  // The website emits DOM dataset IDs as strings; REST/mobile IDs are numeric.
+  item_id: number | string;
   completed: boolean;
   toggled_by: string;
 }
@@ -113,17 +114,38 @@ export function useListRoom(
     if (!enabled) return;
     const activeSocket = getListSocket();
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let active = true;
+    let joinAttempt = 0;
 
     const joinRoom = () => {
-      setStatus('connected');
-      activeSocket.emit('join_list', { list_id: listId }, (response?: { success?: boolean }) => {
-        if (response?.success) {
-          handlersRef.current.onJoined?.();
-        }
-      });
+      if (retryTimer) clearTimeout(retryTimer);
+      const attempt = ++joinAttempt;
+      setStatus('connecting');
+      activeSocket
+        .timeout(8_000)
+        .emit(
+          'join_list',
+          { list_id: listId },
+          (error: Error | null, response?: { success?: boolean }) => {
+            if (!active || attempt !== joinAttempt || !activeSocket.connected)
+              return;
+            if (!error && response?.success) {
+              setStatus('connected');
+              handlersRef.current.onJoined?.();
+            } else {
+              setStatus('disconnected');
+              // A timeout is transient. A rejected membership must not look like a live room.
+              if (error) retryTimer = setTimeout(joinRoom, 5_000);
+            }
+          },
+        );
     };
 
-    const handleDisconnect = () => setStatus('disconnected');
+    const handleDisconnect = () => {
+      joinAttempt++;
+      if (retryTimer) clearTimeout(retryTimer);
+      setStatus('disconnected');
+    };
 
     // Engine-level failures reconnect automatically, but a server-side
     // rejection (bad/missing token) does not, so schedule a manual retry —
@@ -145,8 +167,12 @@ export function useListRoom(
         if (event.list_id === listId) handler(event);
       };
 
-    const onItemToggled = forList<ItemToggledEvent>((e) => handlersRef.current.onItemToggled?.(e));
-    const onItemAdded = forList<ItemAddedEvent>((e) => handlersRef.current.onItemAdded?.(e));
+    const onItemToggled = forList<ItemToggledEvent>((e) =>
+      handlersRef.current.onItemToggled?.(e),
+    );
+    const onItemAdded = forList<ItemAddedEvent>((e) =>
+      handlersRef.current.onItemAdded?.(e),
+    );
     const onItemsReordered = forList<ItemsReorderedEvent>((e) =>
       handlersRef.current.onItemsReordered?.(e),
     );
@@ -178,6 +204,7 @@ export function useListRoom(
     }
 
     return () => {
+      active = false;
       if (retryTimer) clearTimeout(retryTimer);
       activeSocket.off('connect', joinRoom);
       activeSocket.off('disconnect', handleDisconnect);
@@ -194,7 +221,7 @@ export function useListRoom(
     };
   }, [listId, enabled]);
 
-  return status;
+  return enabled ? status : 'disconnected';
 }
 
 /**

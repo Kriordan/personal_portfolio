@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -56,10 +56,6 @@ export default function LearningScreen() {
     queryFn: learningApi.getNotes,
     enabled: isAuthenticated === true,
   });
-
-  if (isAuthenticated === false) {
-    return <Redirect href="/login" />;
-  }
 
   if (notesQuery.isPending) {
     return (
