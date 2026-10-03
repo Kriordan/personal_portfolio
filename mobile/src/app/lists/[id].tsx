@@ -29,21 +29,28 @@ import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import type { ListItem } from '@/lib/lists-api';
 
-function EditAction({ label, onPress, disabled }: {
+function OptionsAction({ label, hint, onPress }: {
   label: string;
+  hint: string;
   onPress: () => void;
-  disabled?: boolean;
 }) {
+  const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityHint={hint}
       onPress={onPress}
-      style={styles.editAction}
+      style={({ pressed }) => [
+        styles.optionsAction,
+        { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' },
+      ]}
     >
-      <ThemedText type="smallBold" themeColor="accent">Edit</ThemedText>
+      <View accessible={false} style={styles.optionsIcon}>
+        {[0, 1, 2].map((dot) => (
+          <View key={dot} style={[styles.optionsDot, { backgroundColor: theme.textSecondary }]} />
+        ))}
+      </View>
     </Pressable>
   );
 }
@@ -66,9 +73,7 @@ const ItemRow = memo(function ItemRow({
     <View style={[styles.item, { backgroundColor: theme.backgroundElement }]}>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityLabel={[item.name, item.quantity, item.notes]
-          .filter(Boolean)
-          .join(', ')}
+        accessibilityLabel={item.name}
         accessibilityState={{ checked: item.completed, disabled, busy: pending }}
         accessibilityHint={
           item.completed ? 'Mark as still needed' : 'Mark as completed'
@@ -76,7 +81,7 @@ const ItemRow = memo(function ItemRow({
         disabled={disabled}
         onPress={() => onToggle(item)}
         style={({ pressed }) => [
-          styles.checkableItem,
+          styles.checkboxAction,
           {
             backgroundColor: pressed
               ? theme.backgroundSelected
@@ -105,30 +110,38 @@ const ItemRow = memo(function ItemRow({
             </ThemedText>
           ) : null}
         </View>
-        <View style={styles.itemBody}>
-          <ThemedText
-            style={item.completed ? styles.completed : undefined}
-            themeColor={item.completed ? 'textSecondary' : 'text'}
-          >
-            {item.name}
-          </ThemedText>
-          {item.quantity ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {item.quantity}
-            </ThemedText>
-          ) : null}
-          {item.notes ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {item.notes}
-            </ThemedText>
-          ) : null}
-        </View>
       </Pressable>
-      <EditAction
-        label={`Edit item ${item.name}`}
-        onPress={() => onEdit(item)}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={[`Edit item ${item.name}`, item.quantity, item.notes]
+          .filter(Boolean)
+          .join(', ')}
+        accessibilityHint="Edit the item’s name, quantity, notes, or category, or delete it"
+        accessibilityState={{ disabled }}
         disabled={disabled}
-      />
+        onPress={() => onEdit(item)}
+        style={({ pressed }) => [
+          styles.itemDetails,
+          { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
+        ]}
+      >
+        <ThemedText
+          style={item.completed ? styles.completed : undefined}
+          themeColor={item.completed ? 'textSecondary' : 'text'}
+        >
+          {item.name}
+        </ThemedText>
+        {item.quantity ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {item.quantity}
+          </ThemedText>
+        ) : null}
+        {item.notes ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {item.notes}
+          </ThemedText>
+        ) : null}
+      </Pressable>
     </View>
   );
 });
@@ -239,8 +252,9 @@ function GroceryDetail({ listId }: { listId: number }) {
                 />
               </View>
               {user?.id === list.owner_id ? (
-                <EditAction
-                  label={`Edit list ${list.title}`}
+                <OptionsAction
+                  label={`List options for ${list.title}`}
+                  hint="Rename or delete this list"
                   onPress={() => setForm({ kind: 'list' })}
                 />
               ) : null}
@@ -298,8 +312,9 @@ function GroceryDetail({ listId }: { listId: number }) {
                 <SectionHeading>{section.title}</SectionHeading>
               </View>
               {category ? (
-                <EditAction
-                  label={`Edit category ${category.name}`}
+                <OptionsAction
+                  label={`Category options for ${category.name}`}
+                  hint="Rename or delete this category"
                   onPress={() => setForm({ kind: 'category', category })}
                 />
               ) : null}
@@ -357,26 +372,37 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   item: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     minHeight: 64,
     borderRadius: 14,
     marginBottom: 6,
   },
-  checkableItem: {
-    flex: 1,
-    flexDirection: 'row',
+  checkboxAction: {
+    width: 60,
+    minHeight: 64,
     alignItems: 'center',
-    padding: 16,
-    gap: 14,
-    borderRadius: 14,
+    justifyContent: 'center',
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
-  editAction: {
-    minHeight: 44,
-    minWidth: 48,
-    paddingHorizontal: 12,
+  itemDetails: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingRight: 16,
+    gap: 3,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  optionsAction: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  optionsIcon: { flexDirection: 'row', gap: 3 },
+  optionsDot: { width: 4, height: 4, borderRadius: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center' },
   itemBody: { flex: 1, gap: 3 },
   checkbox: {
