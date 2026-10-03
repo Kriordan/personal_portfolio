@@ -1,5 +1,7 @@
 # iPhone smoke test: Home, Tools, Me, and Grocery
 
+Keith subsequently reported successful retesting and merged PR #89. The new edit/delete and duplicate-warning feature has its own [Grocery editing checklist](grocery-editing-smoke-test.md); the original checklist below remains a record of the first slice.
+
 Use the [October 1 replacement preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/cc6436f8-861c-4df2-be59-e96d3207dc17) and the same account on the [website's Lists page](https://keithriordan.herokuapp.com/lists). This build uses live data. Use a list named **iPhone smoke test** to keep the checks easy to recognize. The website fix is deployed as Heroku **v123** (October 1); reload an already-open website tab once before starting the retest.
 
 Allow about 15–20 minutes. Tick each box when its expected result holds. For a failure, note the step, what happened, and whether you were on Wi-Fi or cellular; a screenshot or short recording helps.

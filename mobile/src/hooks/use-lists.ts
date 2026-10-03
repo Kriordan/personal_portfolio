@@ -4,7 +4,7 @@ import { useIsFocused } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api-client';
 import { emitListEvent, useListRoom } from '@/lib/list-socket';
-import { listsApi } from '@/lib/lists-api';
+import { listsApi, type ListItemInput } from '@/lib/lists-api';
 import {
   listMutationOptions,
   requireConnection,
@@ -119,5 +119,57 @@ export function useGroceryList(listId: number) {
       });
     },
   });
-  return { query, status, validId, addCategory, addItem, toggle };
+  const refreshList = () => {
+    void client.invalidateQueries({ queryKey: listsKeys.detail(listId), exact: true });
+  };
+  const refreshListAndOverview = () => {
+    refreshList();
+    void client.invalidateQueries({ queryKey: listsKeys.overview(), exact: true });
+  };
+  const editOptions = { ...listMutationOptions, onSuccess: refreshList, onError: refreshList };
+  const updateItem = useMutation({
+    ...editOptions,
+    mutationFn: ({ itemId, input }: { itemId: number; input: ListItemInput }) => {
+      requireConnection();
+      return listsApi.updateItem(listId, itemId, input);
+    },
+  });
+  const deleteItem = useMutation({
+    ...editOptions,
+    mutationFn: (itemId: number) => {
+      requireConnection();
+      return listsApi.deleteItem(listId, itemId);
+    },
+  });
+  const renameCategory = useMutation({
+    ...editOptions,
+    mutationFn: ({ categoryId, name }: { categoryId: number; name: string }) => {
+      requireConnection();
+      return listsApi.renameCategory(listId, categoryId, name);
+    },
+  });
+  const deleteCategory = useMutation({
+    ...editOptions,
+    mutationFn: (categoryId: number) => {
+      requireConnection();
+      return listsApi.deleteCategory(listId, categoryId);
+    },
+  });
+  const renameList = useMutation({
+    ...editOptions,
+    mutationFn: (title: string) => {
+      requireConnection();
+      return listsApi.renameList(listId, title);
+    },
+    onSuccess: refreshListAndOverview,
+  });
+  const deleteList = useMutation({
+    ...editOptions,
+    mutationFn: () => {
+      requireConnection();
+      return listsApi.deleteList(listId);
+    },
+    onSuccess: refreshListAndOverview,
+  });
+  return { query, status, validId, addCategory, addItem, toggle, updateItem, deleteItem, renameCategory, deleteCategory, renameList, deleteList };
 }

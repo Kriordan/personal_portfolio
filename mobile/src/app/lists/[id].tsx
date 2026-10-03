@@ -1,4 +1,3 @@
-import { Picker, Text } from '@expo/ui';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
 import {
@@ -12,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { NativeField, NativeFormSheet } from '@/components/native-form';
+import { GroceryForm, type GroceryEditor } from '@/components/grocery-form';
 import {
   InlineError,
   NativeAction,
@@ -24,85 +23,113 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { useGroceryList } from '@/hooks/use-lists';
 import { useSubmission } from '@/hooks/use-submission';
-import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
 import { grocerySections } from '@/lib/lists-cache';
 import { ApiError } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-context';
 import type { ListItem } from '@/lib/lists-api';
+
+function EditAction({ label, onPress, disabled }: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={styles.editAction}
+    >
+      <ThemedText type="smallBold" themeColor="accent">Edit</ThemedText>
+    </Pressable>
+  );
+}
 
 const ItemRow = memo(function ItemRow({
   item,
   pending,
   disabled,
   onToggle,
+  onEdit,
 }: {
   item: ListItem;
   pending: boolean;
   disabled: boolean;
   onToggle: (item: ListItem) => void;
+  onEdit: (item: ListItem) => void;
 }) {
   const theme = useTheme();
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityLabel={[item.name, item.quantity, item.notes]
-        .filter(Boolean)
-        .join(', ')}
-      accessibilityState={{ checked: item.completed, disabled, busy: pending }}
-      accessibilityHint={
-        item.completed ? 'Mark as still needed' : 'Mark as completed'
-      }
-      disabled={disabled}
-      onPress={() => onToggle(item)}
-      style={({ pressed }) => [
-        styles.item,
-        {
-          backgroundColor: pressed
-            ? theme.backgroundSelected
-            : theme.backgroundElement,
-        },
-      ]}
-    >
-      <View
-        accessible={false}
-        style={[
-          styles.checkbox,
+    <View style={[styles.item, { backgroundColor: theme.backgroundElement }]}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityLabel={[item.name, item.quantity, item.notes]
+          .filter(Boolean)
+          .join(', ')}
+        accessibilityState={{ checked: item.completed, disabled, busy: pending }}
+        accessibilityHint={
+          item.completed ? 'Mark as still needed' : 'Mark as completed'
+        }
+        disabled={disabled}
+        onPress={() => onToggle(item)}
+        style={({ pressed }) => [
+          styles.checkableItem,
           {
-            borderColor: item.completed ? theme.accent : theme.textSecondary,
-            backgroundColor: item.completed ? theme.accent : 'transparent',
+            backgroundColor: pressed
+              ? theme.backgroundSelected
+              : theme.backgroundElement,
           },
         ]}
       >
-        {pending ? (
-          <ActivityIndicator
-            size="small"
-            color={item.completed ? theme.background : theme.accent}
-          />
-        ) : item.completed ? (
-          <ThemedText style={{ color: theme.background }} accessible={false}>
-            ✓
-          </ThemedText>
-        ) : null}
-      </View>
-      <View style={styles.itemBody}>
-        <ThemedText
-          style={item.completed ? styles.completed : undefined}
-          themeColor={item.completed ? 'textSecondary' : 'text'}
+        <View
+          accessible={false}
+          style={[
+            styles.checkbox,
+            {
+              borderColor: item.completed ? theme.accent : theme.textSecondary,
+              backgroundColor: item.completed ? theme.accent : 'transparent',
+            },
+          ]}
         >
-          {item.name}
-        </ThemedText>
-        {item.quantity ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {item.quantity}
+          {pending ? (
+            <ActivityIndicator
+              size="small"
+              color={item.completed ? theme.background : theme.accent}
+            />
+          ) : item.completed ? (
+            <ThemedText style={{ color: theme.background }} accessible={false}>
+              ✓
+            </ThemedText>
+          ) : null}
+        </View>
+        <View style={styles.itemBody}>
+          <ThemedText
+            style={item.completed ? styles.completed : undefined}
+            themeColor={item.completed ? 'textSecondary' : 'text'}
+          >
+            {item.name}
           </ThemedText>
-        ) : null}
-        {item.notes ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {item.notes}
-          </ThemedText>
-        ) : null}
-      </View>
-    </Pressable>
+          {item.quantity ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {item.quantity}
+            </ThemedText>
+          ) : null}
+          {item.notes ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {item.notes}
+            </ThemedText>
+          ) : null}
+        </View>
+      </Pressable>
+      <EditAction
+        label={`Edit item ${item.name}`}
+        onPress={() => onEdit(item)}
+        disabled={disabled}
+      />
+    </View>
   );
 });
 
@@ -113,18 +140,14 @@ export default function ListDetailScreen() {
 }
 
 function GroceryDetail({ listId }: { listId: number }) {
-  const { query, status, validId, addCategory, addItem, toggle } =
-    useGroceryList(listId);
+  const actions = useGroceryList(listId);
+  const { query, status, validId, toggle } = actions;
+  const { user } = useAuth();
   const theme = useTheme();
-  const categorySubmission = useSubmission();
-  const itemSubmission = useSubmission();
   const toggleSubmission = useSubmission();
-  const [form, setForm] = useState<'category' | 'item' | null>(null);
-  const categoryName = useNativeText();
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const itemName = useNativeText();
-  const quantity = useNativeText();
-  const notes = useNativeText();
+  const [form, setForm] = useState<GroceryEditor | null>(null);
+  const [categoryId, setCategoryId] = useState<number>();
+  const onEditItem = useCallback((item: ListItem) => setForm({ kind: 'item', item }), []);
 
   const { run: runToggle } = toggleSubmission;
   const { mutateAsync: toggleItem } = toggle;
@@ -175,45 +198,12 @@ function GroceryDetail({ listId }: { listId: number }) {
   const sections = grocerySections(list);
   const items = list.categories.flatMap((category) => category.items);
   const completed = items.filter((item) => item.completed).length;
-  const selectedCategory = list.categories.some(
-    (category) => category.id === categoryId,
-  )
-    ? categoryId!
-    : list.categories[0]?.id;
   const connectionLabel =
     status === 'connected'
       ? 'Live updates connected'
       : status === 'connecting'
         ? 'Connecting to live updates…'
         : 'Live updates disconnected · Pull to refresh';
-  const submitCategory = () => {
-    const currentName = categoryName.read();
-    if (!currentName.trim()) return;
-    void categorySubmission.run(async () => {
-      const result = await addCategory.mutateAsync(currentName.trim());
-      categoryName.clear();
-      setCategoryId(result.category.id);
-      setForm(null);
-    });
-  };
-  const submitItem = () => {
-    const name = itemName.read().trim();
-    const currentQuantity = quantity.read().trim();
-    const currentNotes = notes.read().trim();
-    if (!name || !selectedCategory) return;
-    void itemSubmission.run(async () => {
-      await addItem.mutateAsync({
-        name,
-        category_id: selectedCategory,
-        quantity: currentQuantity || undefined,
-        notes: currentNotes || undefined,
-      });
-      itemName.clear();
-      quantity.clear();
-      notes.clear();
-      setForm(null);
-    });
-  };
 
   return (
     <SafeAreaView
@@ -237,14 +227,24 @@ function GroceryDetail({ listId }: { listId: number }) {
         }
         ListHeaderComponent={
           <View style={screenStyles.gap}>
-            <PageHeading
-              title={list.title}
-              subtitle={
-                items.length
-                  ? `${items.length - completed} still needed · ${completed} completed`
-                  : 'A little planning. A smoother shop.'
-              }
-            />
+            <View style={styles.sectionHeader}>
+              <View style={styles.itemBody}>
+                <PageHeading
+                  title={list.title}
+                  subtitle={
+                    items.length
+                      ? `${items.length - completed} still needed · ${completed} completed`
+                      : 'A little planning. A smoother shop.'
+                  }
+                />
+              </View>
+              {user?.id === list.owner_id ? (
+                <EditAction
+                  label={`Edit list ${list.title}`}
+                  onPress={() => setForm({ kind: 'list' })}
+                />
+              ) : null}
+            </View>
             <View style={styles.connection}>
               <View
                 style={[
@@ -272,7 +272,7 @@ function GroceryDetail({ listId }: { listId: number }) {
                   : 'Add your first category'
               }
               onPress={() =>
-                setForm(list.categories.length ? 'item' : 'category')
+                setForm({ kind: list.categories.length ? 'item' : 'category' })
               }
             />
             {query.isError ? (
@@ -290,15 +290,29 @@ function GroceryDetail({ listId }: { listId: number }) {
             ) : null}
           </View>
         }
-        renderSectionHeader={({ section }) => (
-          <SectionHeading>{section.title}</SectionHeading>
-        )}
+        renderSectionHeader={({ section }) => {
+          const category = list.categories.find((entry) => entry.id === section.categoryId);
+          return (
+            <View style={styles.sectionHeader}>
+              <View style={styles.itemBody}>
+                <SectionHeading>{section.title}</SectionHeading>
+              </View>
+              {category ? (
+                <EditAction
+                  label={`Edit category ${category.name}`}
+                  onPress={() => setForm({ kind: 'category', category })}
+                />
+              ) : null}
+            </View>
+          );
+        }}
         renderItem={({ item }) => (
           <ItemRow
             item={item}
             pending={toggle.isPending && toggle.variables === item.id}
             disabled={toggleSubmission.pending}
             onToggle={onToggle}
+            onEdit={onEditItem}
           />
         )}
         renderSectionFooter={({ section }) =>
@@ -319,76 +333,23 @@ function GroceryDetail({ listId }: { listId: number }) {
               <NativeAction
                 label="Add a category"
                 secondary
-                onPress={() => setForm('category')}
+                onPress={() => setForm({ kind: 'category' })}
               />
             )}
           </View>
         }
       />
-      <NativeFormSheet
-        title="New category"
-        presented={form === 'category'}
-        onDismiss={() => setForm(null)}
-        onSubmit={() => submitCategory()}
-        submitLabel="Add category"
-        pending={categorySubmission.pending}
-        disabled={!categoryName.text.trim()}
-        error={categorySubmission.error}
-      >
-        <NativeField
-          label="Category name"
-          placeholder="For example, Produce"
-          {...categoryName.input}
-          editable={!categorySubmission.pending}
-          onSubmitEditing={submitCategory}
-          returnKeyType="done"
+      {form ? (
+        <GroceryForm
+          key={`${form.kind}-${form.kind === 'item' ? form.item?.id ?? 'new' : form.kind === 'category' ? form.category?.id ?? 'new' : list.id}`}
+          editor={form}
+          list={list}
+          actions={actions}
+          initialCategoryId={categoryId}
+          onCategoryCreated={setCategoryId}
+          onClose={() => setForm(null)}
         />
-      </NativeFormSheet>
-      <NativeFormSheet
-        title="Add an item"
-        presented={form === 'item'}
-        onDismiss={() => setForm(null)}
-        onSubmit={submitItem}
-        submitLabel="Add item"
-        pending={itemSubmission.pending}
-        disabled={!itemName.text.trim() || !selectedCategory}
-        error={itemSubmission.error}
-      >
-        <NativeField
-          label="Item name"
-          placeholder="For example, Apples"
-          {...itemName.input}
-          editable={!itemSubmission.pending}
-        />
-        <Text>Category</Text>
-        {selectedCategory ? (
-          <Picker
-            selectedValue={selectedCategory}
-            onValueChange={setCategoryId}
-            enabled={!itemSubmission.pending}
-          >
-            {list.categories.map((category) => (
-              <Picker.Item
-                key={category.id}
-                label={category.name}
-                value={category.id}
-              />
-            ))}
-          </Picker>
-        ) : null}
-        <NativeField
-          label="Quantity (optional)"
-          placeholder="For example, 6 or 1 kg"
-          {...quantity.input}
-          editable={!itemSubmission.pending}
-        />
-        <NativeField
-          label="Notes (optional)"
-          {...notes.input}
-          editable={!itemSubmission.pending}
-          multiline
-        />
-      </NativeFormSheet>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -397,12 +358,26 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
     minHeight: 64,
-    gap: 14,
     borderRadius: 14,
     marginBottom: 6,
   },
+  checkableItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 14,
+    borderRadius: 14,
+  },
+  editAction: {
+    minHeight: 44,
+    minWidth: 48,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center' },
   itemBody: { flex: 1, gap: 3 },
   checkbox: {
     width: 28,

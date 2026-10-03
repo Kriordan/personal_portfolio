@@ -111,13 +111,13 @@ class CustomList(db.Model):
     )
     owner: Mapped["User"] = relationship("User", back_populates="custom_lists")
     categories: Mapped[list["ListCategory"]] = relationship(
-        "ListCategory", back_populates="custom_list", lazy="dynamic"
+        "ListCategory", back_populates="custom_list", lazy="dynamic", cascade="all, delete-orphan"
     )
     shared_with: Mapped[list["User"]] = relationship(
         "User", secondary=list_shares, back_populates="shared_lists", lazy="dynamic"
     )
     invitations: Mapped[list["ListInvitation"]] = relationship(
-        "ListInvitation", back_populates="custom_list", lazy="dynamic"
+        "ListInvitation", back_populates="custom_list", lazy="dynamic", cascade="all, delete-orphan"
     )
 
 
@@ -132,7 +132,7 @@ class ListCategory(db.Model):
         "CustomList", back_populates="categories"
     )
     items: Mapped[list["ListItem"]] = relationship(
-        "ListItem", back_populates="category", lazy="dynamic"
+        "ListItem", back_populates="category", lazy="dynamic", cascade="all, delete-orphan"
     )
 
 

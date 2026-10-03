@@ -37,6 +37,13 @@ export interface ListsOverview {
   shared: ListSummary[];
 }
 
+export interface ListItemInput {
+  name: string;
+  category_id: number;
+  quantity?: string;
+  notes?: string;
+}
+
 export const listsApi = {
   getLists(): Promise<ListsOverview> {
     return apiRequest<ListsOverview>('/lists/');
@@ -53,6 +60,30 @@ export const listsApi = {
     return apiRequest<{ list: ListDetail }>(`/lists/${listId}`);
   },
 
+  renameList(listId: number, title: string): Promise<{ list: ListSummary }> {
+    return apiRequest(`/lists/${listId}`, { method: 'PATCH', body: { title } });
+  },
+
+  deleteList(listId: number): Promise<void> {
+    return apiRequest(`/lists/${listId}`, { method: 'DELETE' });
+  },
+
+  renameCategory(listId: number, categoryId: number, name: string): Promise<{ category: ListCategory }> {
+    return apiRequest(`/lists/${listId}/categories/${categoryId}`, { method: 'PATCH', body: { name } });
+  },
+
+  deleteCategory(listId: number, categoryId: number): Promise<void> {
+    return apiRequest(`/lists/${listId}/categories/${categoryId}`, { method: 'DELETE' });
+  },
+
+  updateItem(listId: number, itemId: number, input: ListItemInput): Promise<{ item: ListItem }> {
+    return apiRequest(`/lists/${listId}/items/${itemId}`, { method: 'PATCH', body: input });
+  },
+
+  deleteItem(listId: number, itemId: number): Promise<void> {
+    return apiRequest(`/lists/${listId}/items/${itemId}`, { method: 'DELETE' });
+  },
+
   addCategory(listId: number, name: string): Promise<{ category: ListCategory }> {
     return apiRequest<{ category: ListCategory }>(`/lists/${listId}/categories`, {
       method: 'POST',
@@ -62,7 +93,7 @@ export const listsApi = {
 
   addItem(
     listId: number,
-    input: { name: string; category_id: number; quantity?: string; notes?: string },
+    input: ListItemInput,
   ): Promise<{ item: ListItem }> {
     return apiRequest<{ item: ListItem }>(`/lists/${listId}/items`, {
       method: 'POST',
