@@ -2,7 +2,7 @@
 
 This follow-up adds Edit controls beside the list title, category headings, and item rows. Open Edit to rename or delete; item editing also changes quantity, notes, and category. Only the owner can rename or delete a whole list. Shared members can edit and delete its items and categories.
 
-**Release status:** the October 1 preview does not contain these controls. A new preview and the corresponding Flask backend deployment are required. Build/deployment results will be recorded below when available.
+**Release status:** the [October 3 iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/5acf57e2-adcf-43ec-b48f-e22fb7894772) built successfully from `0e603ea`. It contains these controls, but **wait for the corresponding backend deployment before testing edit/delete**. Deployment is awaiting Keith's choice; this change is in [PR #94](https://github.com/Kriordan/personal_portfolio/pull/94). The October 1 preview does not contain these controls.
 
 Use a disposable list named **Editing smoke test**, with **Produce** and **Pantry** categories. Keep the same list open on the [website](https://keithriordan.herokuapp.com/lists), using the same account. Reload the website once after the backend release to load its new event listeners. This preview uses live data; only delete test entries you intend to remove.
 
