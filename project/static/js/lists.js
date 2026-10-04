@@ -732,6 +732,17 @@
       handleRemoteCategoryAdded(data);
     });
 
+    // Edits/deletions are broadcast by the API after committing, including for
+    // mobile clients. Reload the rendered rows instead of retaining stale data.
+    ["item_updated", "item_deleted", "category_updated", "category_deleted", "list_updated"].forEach((event) => {
+      socket.on(event, (data) => {
+        if (data.list_id === config.listId) location.reload();
+      });
+    });
+    socket.on("list_deleted", (data) => {
+      if (data.list_id === config.listId) location.assign("/lists");
+    });
+
     socket.on("settings_updated", (data) => {
       if (data.list_id !== config.listId) return;
       handleRemoteSettingsUpdate(data);

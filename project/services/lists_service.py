@@ -196,6 +196,79 @@ def toggle_item_completion(*, item: ListItem, user: User) -> bool:
     return item.completed
 
 
+def _edit_text(value: Any, label: str, limit: int | None, *, required: bool = True) -> str | None:
+    if value is None and not required:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{label} must be text.")
+    value = value.strip()
+    if required and not value:
+        raise ValueError(f"{label} is required.")
+    if limit and len(value) > limit:
+        raise ValueError(f"{label} must be {limit} characters or fewer.")
+    return value or None
+
+
+def rename_list(*, custom_list: CustomList, user: User, title: Any) -> CustomList:
+    ensure_list_owner(custom_list, user)
+    custom_list.title = _edit_text(title, "Title", 128)
+    db.session.commit()
+    return custom_list
+
+
+def delete_list(*, custom_list: CustomList, user: User) -> None:
+    ensure_list_owner(custom_list, user)
+    # ORM cascades remove categories/items/invitations; the secondary relationship
+    # removes sharing rows. Everything commits in the same transaction.
+    db.session.delete(custom_list)
+    db.session.commit()
+
+
+def rename_category(*, category: ListCategory, user: User, name: Any) -> ListCategory:
+    ensure_list_access(category.custom_list, user)
+    category.name = _edit_text(name, "Category name", 64)
+    db.session.commit()
+    return category
+
+
+def delete_category(*, category: ListCategory, user: User) -> None:
+    ensure_list_access(category.custom_list, user)
+    db.session.delete(category)
+    db.session.commit()
+
+
+def update_item(*, item: ListItem, user: User, changes: dict[str, Any]) -> ListItem:
+    custom_list = item.category.custom_list
+    ensure_list_access(custom_list, user)
+    if not changes or set(changes) - {"name", "quantity", "notes", "category_id"}:
+        raise ValueError("Supply item name, quantity, notes, or category_id.")
+    validated = {}
+    for key, label, limit in (("name", "Item name", 128), ("quantity", "Quantity", 32), ("notes", "Notes", None)):
+        if key in changes:
+            validated[key] = _edit_text(changes[key], label, limit, required=key == "name")
+    destination = None
+    if "category_id" in changes:
+        category_id = changes["category_id"]
+        if type(category_id) is not int or category_id <= 0:
+            raise ValueError("Invalid category ID.")
+        destination = ListCategory.query.filter_by(id=category_id, custom_list_id=custom_list.id).first_or_404()
+    # Validate the complete patch before changing any model attributes.
+    for key, value in validated.items():
+        setattr(item, key, value)
+    if destination and destination.id != item.category_id:
+        max_order = db.session.query(db.func.max(ListItem.ordering)).filter_by(category_id=destination.id).scalar() or 0
+        item.category = destination
+        item.ordering = max_order + 1
+    db.session.commit()
+    return item
+
+
+def delete_item(*, item: ListItem, user: User) -> None:
+    ensure_list_access(item.category.custom_list, user)
+    db.session.delete(item)
+    db.session.commit()
+
+
 def reorder_items(
     *,
     custom_list: CustomList,
@@ -266,4 +339,3 @@ def get_list_debug_payload(*, custom_list: CustomList, user: User) -> dict[str, 
         debug_data["categories"].append(category_payload)
 
     return debug_data
-

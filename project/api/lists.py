@@ -14,8 +14,98 @@ from project.foyer.email_templates import get_list_invitation_email_content
 from project.lists.serialization import serialize_category, serialize_item
 from project.models import CustomList, ListCategory, ListItem, User
 from project.services import lists_service
+from project.sockets import broadcast_to_list
 
 lists_api_blueprint = Blueprint("api_lists", __name__, url_prefix="/lists")
+
+
+def _broadcast_edit(list_id: int, event: str, **data) -> None:
+    # The database commit is authoritative, even if the realtime transport fails.
+    try:
+        broadcast_to_list(list_id, event, {"list_id": list_id, **data})
+    except Exception:
+        current_app.logger.exception("Failed to broadcast %s for list %s", event, list_id)
+
+
+def _edit_payload() -> dict[str, Any]:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValueError("A JSON object is required.")
+    return payload
+
+
+@lists_api_blueprint.route("/<int:list_id>", methods=["PATCH", "DELETE"])
+@jwt_required()
+def api_edit_list(list_id: int):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    try:
+        custom_list = lists_service.get_list_or_404(list_id)
+        lists_service.ensure_list_owner(custom_list, user)
+        if request.method == "DELETE":
+            lists_service.delete_list(custom_list=custom_list, user=user)
+            _broadcast_edit(list_id, "list_deleted")
+            return "", 204
+        custom_list = lists_service.rename_list(custom_list=custom_list, user=user, title=_edit_payload().get("title"))
+    except NotFound:
+        return jsonify({"error": "List not found."}), 404
+    except PermissionError:
+        return jsonify({"error": "Only the list owner can rename or delete this list."}), 403
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    _broadcast_edit(list_id, "list_updated")
+    return jsonify({"list": _serialize_list_summary(custom_list)}), 200
+
+
+@lists_api_blueprint.route("/<int:list_id>/categories/<int:category_id>", methods=["PATCH", "DELETE"])
+@jwt_required()
+def api_edit_category(list_id: int, category_id: int):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    try:
+        custom_list = lists_service.get_list_or_404(list_id)
+        lists_service.ensure_list_access(custom_list, user)
+        category = ListCategory.query.filter_by(id=category_id, custom_list_id=list_id).first_or_404()
+        if request.method == "DELETE":
+            lists_service.delete_category(category=category, user=user)
+            _broadcast_edit(list_id, "category_deleted", category_id=category_id)
+            return "", 204
+        category = lists_service.rename_category(category=category, user=user, name=_edit_payload().get("name"))
+    except NotFound:
+        return jsonify({"error": "List or category not found."}), 404
+    except PermissionError:
+        return jsonify({"error": "Access denied."}), 403
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    _broadcast_edit(list_id, "category_updated", category_id=category_id)
+    return jsonify({"category": serialize_category(category)}), 200
+
+
+@lists_api_blueprint.route("/<int:list_id>/items/<int:item_id>", methods=["PATCH", "DELETE"])
+@jwt_required()
+def api_edit_item(list_id: int, item_id: int):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    try:
+        custom_list = lists_service.get_list_or_404(list_id)
+        lists_service.ensure_list_access(custom_list, user)
+        item = ListItem.query.join(ListCategory).filter(ListItem.id == item_id, ListCategory.custom_list_id == list_id).first_or_404()
+        if request.method == "DELETE":
+            lists_service.delete_item(item=item, user=user)
+            _broadcast_edit(list_id, "item_deleted", item_id=item_id)
+            return "", 204
+        item = lists_service.update_item(item=item, user=user, changes=_edit_payload())
+    except NotFound:
+        return jsonify({"error": "List or item not found."}), 404
+    except PermissionError:
+        return jsonify({"error": "Access denied."}), 403
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    _broadcast_edit(list_id, "item_updated", item_id=item_id)
+    return jsonify({"item": serialize_item(item)}), 200
 
 
 def _current_user_from_jwt() -> User | None:
