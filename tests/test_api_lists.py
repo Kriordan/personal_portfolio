@@ -6,6 +6,7 @@ from flask_jwt_extended import create_access_token
 from project import create_app
 from project.database import db
 from project.models import CustomList, ListCategory, ListInvitation, ListItem, User, list_shares
+from project.services import lists_service
 from project.sockets import socketio
 
 
@@ -229,6 +230,82 @@ class ApiListsSecurityTests(unittest.TestCase):
         with self.app.app_context():
             item = db.session.get(ListItem, item_id)
             self.assertEqual((item.name, item.quantity, item.completed), ("Apples", "2", True))
+
+    def test_edit_validation_returns_specific_safe_messages(self):
+        item_id = self._editing_item()
+        category_path = f"/categories/{self.category_id}"
+        item_path = f"/items/{item_id}"
+        cases = (
+            ("", [], "A JSON object is required."),
+            (category_path, "wrong", "A JSON object is required."),
+            (item_path, [], "A JSON object is required."),
+            ("", {"title": 3}, "Title must be text."),
+            ("", {"title": " "}, "Title is required."),
+            ("", {"title": "x" * 129}, "Title must be 128 characters or fewer."),
+            (category_path, {"name": []}, "Category name must be text."),
+            (category_path, {"name": " "}, "Category name is required."),
+            (category_path, {"name": "x" * 65}, "Category name must be 64 characters or fewer."),
+            (item_path, {}, "Supply item name, quantity, notes, or category_id."),
+            (item_path, {"completed": False}, "Supply item name, quantity, notes, or category_id."),
+            (item_path, {"name": 3}, "Item name must be text."),
+            (item_path, {"name": " "}, "Item name is required."),
+            (item_path, {"name": "x" * 129}, "Item name must be 128 characters or fewer."),
+            (item_path, {"quantity": []}, "Quantity must be text."),
+            (item_path, {"quantity": "x" * 33}, "Quantity must be 32 characters or fewer."),
+            (item_path, {"notes": []}, "Notes must be text."),
+            (item_path, {"category_id": True}, "Invalid category ID."),
+        )
+        for path, payload, message in cases:
+            with self.subTest(path=path, payload=payload):
+                response = self._edit_request("PATCH", path, payload=payload)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.get_json(), {"error": message})
+
+    def test_edit_commit_failures_hide_details_and_roll_back_changes(self):
+        item_id = self._editing_item()
+        sensitive_detail = "database credentials: should-not-leak"
+        cases = (
+            ("", {"title": "Must not persist"}),
+            (f"/categories/{self.category_id}", {"name": "Must not persist"}),
+            (f"/items/{item_id}", {"name": "Must not persist"}),
+        )
+        for method in ("PATCH", "DELETE"):
+            for path, payload in cases:
+                with self.subTest(method=method, path=path):
+                    with patch("project.services.lists_service.db.session.commit", side_effect=ValueError(sensitive_detail)):
+                        with patch("project.api.lists.broadcast_to_list") as broadcast:
+                            with self.assertLogs(self.app.logger, level="ERROR") as logs:
+                                response = self._edit_request(method, path, payload=payload)
+                    self.assertEqual(response.status_code, 500)
+                    self.assertEqual(response.get_json(), {"error": "Couldn't save this change. Please try again."})
+                    self.assertNotIn(sensitive_detail, response.get_data(as_text=True))
+                    self.assertIn(sensitive_detail, "\n".join(logs.output))
+                    broadcast.assert_not_called()
+                    with self.app.app_context():
+                        self.assertEqual(db.session.get(CustomList, self.list_id).title, "Groceries")
+                        self.assertEqual(db.session.get(ListCategory, self.category_id).name, "Produce")
+                        self.assertEqual(db.session.get(ListItem, item_id).name, "Apples")
+
+    def test_edit_validation_codes_cannot_reflect_exception_details(self):
+        item_id = self._editing_item()
+        sensitive_detail = "storage credentials: should-not-leak"
+        cases = (
+            ("rename_list", "", {"title": "New title"}, "title_required", "Title is required."),
+            ("rename_category", f"/categories/{self.category_id}", {"name": "Fresh"}, "category_name_required", "Category name is required."),
+            ("update_item", f"/items/{item_id}", {"name": "Pears"}, "name_required", "Item name is required."),
+        )
+        for service, path, payload, code, message in cases:
+            for actual_code, expected in ((code, message), (sensitive_detail, "Invalid edit request.")):
+                with self.subTest(service=service, code=actual_code):
+                    error = lists_service.EditValidationError(actual_code)
+                    error.args = (sensitive_detail,)
+                    with patch(f"project.api.lists.lists_service.{service}", side_effect=error):
+                        with patch("project.api.lists.broadcast_to_list") as broadcast:
+                            response = self._edit_request("PATCH", path, payload=payload)
+                    self.assertEqual(response.status_code, 400)
+                    self.assertEqual(response.get_json(), {"error": expected})
+                    self.assertNotIn(sensitive_detail, response.get_data(as_text=True))
+                    broadcast.assert_not_called()
 
     def test_edits_and_deletes_broadcast_only_after_persistence_to_the_list_room(self):
         item_id = self._editing_item()

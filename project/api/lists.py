@@ -18,6 +18,37 @@ from project.sockets import broadcast_to_list
 
 lists_api_blueprint = Blueprint("api_lists", __name__, url_prefix="/lists")
 
+# Only these application-owned messages may cross the API boundary. Exception
+# text, arguments, and unknown validation codes are never included in responses.
+_EDIT_VALIDATION_MESSAGES = {
+    "json_object": "A JSON object is required.",
+    "title_text": "Title must be text.",
+    "title_required": "Title is required.",
+    "title_length": "Title must be 128 characters or fewer.",
+    "category_name_text": "Category name must be text.",
+    "category_name_required": "Category name is required.",
+    "category_name_length": "Category name must be 64 characters or fewer.",
+    "name_text": "Item name must be text.",
+    "name_required": "Item name is required.",
+    "name_length": "Item name must be 128 characters or fewer.",
+    "quantity_text": "Quantity must be text.",
+    "quantity_length": "Quantity must be 32 characters or fewer.",
+    "notes_text": "Notes must be text.",
+    "item_fields": "Supply item name, quantity, notes, or category_id.",
+    "category_id": "Invalid category ID.",
+}
+
+
+def _edit_validation_response(error: lists_service.EditValidationError):
+    message = _EDIT_VALIDATION_MESSAGES.get(error.code, "Invalid edit request.")
+    return jsonify({"error": message}), 400
+
+
+def _unexpected_edit_error(list_id: int):
+    db.session.rollback()
+    current_app.logger.exception("Unexpected value error while changing list %s", list_id)
+    return jsonify({"error": "Couldn't save this change. Please try again."}), 500
+
 
 def _broadcast_edit(list_id: int, event: str, **data) -> None:
     # The database commit is authoritative, even if the realtime transport fails.
@@ -30,7 +61,7 @@ def _broadcast_edit(list_id: int, event: str, **data) -> None:
 def _edit_payload() -> dict[str, Any]:
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        raise ValueError("A JSON object is required.")
+        raise lists_service.EditValidationError("json_object")
     return payload
 
 
@@ -52,8 +83,10 @@ def api_edit_list(list_id: int):
         return jsonify({"error": "List not found."}), 404
     except PermissionError:
         return jsonify({"error": "Only the list owner can rename or delete this list."}), 403
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except lists_service.EditValidationError as error:
+        return _edit_validation_response(error)
+    except ValueError:
+        return _unexpected_edit_error(list_id)
     _broadcast_edit(list_id, "list_updated")
     return jsonify({"list": _serialize_list_summary(custom_list)}), 200
 
@@ -77,8 +110,10 @@ def api_edit_category(list_id: int, category_id: int):
         return jsonify({"error": "List or category not found."}), 404
     except PermissionError:
         return jsonify({"error": "Access denied."}), 403
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except lists_service.EditValidationError as error:
+        return _edit_validation_response(error)
+    except ValueError:
+        return _unexpected_edit_error(list_id)
     _broadcast_edit(list_id, "category_updated", category_id=category_id)
     return jsonify({"category": serialize_category(category)}), 200
 
@@ -102,8 +137,10 @@ def api_edit_item(list_id: int, item_id: int):
         return jsonify({"error": "List or item not found."}), 404
     except PermissionError:
         return jsonify({"error": "Access denied."}), 403
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except lists_service.EditValidationError as error:
+        return _edit_validation_response(error)
+    except ValueError:
+        return _unexpected_edit_error(list_id)
     _broadcast_edit(list_id, "item_updated", item_id=item_id)
     return jsonify({"item": serialize_item(item)}), 200
 
