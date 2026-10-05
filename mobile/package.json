@@ -19,7 +19,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
-    "react": "19.2.3",
+    "react": "19.3.0",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
@@ -31,7 +31,7 @@
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
+    "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
