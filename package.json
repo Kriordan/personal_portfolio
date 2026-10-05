@@ -10,11 +10,13 @@
     "sass": "^1.97.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/check-npm-audit.test.cjs && node scripts/check-browser-dependencies.cjs",
     "gulp": "gulp",
     "sass": "gulp sass",
     "watch": "gulp watch",
-    "dev": "gulp"
+    "dev": "gulp",
+    "test:browser": "node tests/browser/run-security-check.cjs",
+    "audit:security": "node scripts/check-npm-audit.cjs"
   },
   "repository": {
     "type": "git",
@@ -27,7 +29,7 @@
   },
   "homepage": "https://github.com/Kriordan/personal_portfolio",
   "dependencies": {
-    "dompurify": "3.4.13",
+    "dompurify": "3.4.16",
     "marked": "^17.0.1"
   }
 }
