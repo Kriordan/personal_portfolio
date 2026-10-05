@@ -47,6 +47,8 @@ export interface SettingsUpdatedEvent {
 }
 
 export interface ListRoomHandlers {
+  onContentChanged?: (event: { list_id: number }) => void;
+  onListChanged?: (event: { list_id: number }) => void;
   onItemToggled?: (event: ItemToggledEvent) => void;
   onItemAdded?: (event: ItemAddedEvent) => void;
   onItemsReordered?: (event: ItemsReorderedEvent) => void;
@@ -185,6 +187,10 @@ export function useListRoom(
     const onSettingsUpdated = forList<SettingsUpdatedEvent>((e) =>
       handlersRef.current.onSettingsUpdated?.(e),
     );
+    const onContentChanged = forList((e) => handlersRef.current.onContentChanged?.(e));
+    const onListChanged = forList((e) => handlersRef.current.onListChanged?.(e));
+    const contentEvents = ['item_updated', 'item_deleted', 'category_updated', 'category_deleted'];
+    const listEvents = ['list_updated', 'list_deleted'];
 
     activeSocket.on('connect', joinRoom);
     activeSocket.on('disconnect', handleDisconnect);
@@ -195,6 +201,8 @@ export function useListRoom(
     activeSocket.on('category_added', onCategoryAdded);
     activeSocket.on('categories_reordered', onCategoriesReordered);
     activeSocket.on('settings_updated', onSettingsUpdated);
+    contentEvents.forEach((event) => activeSocket.on(event, onContentChanged));
+    listEvents.forEach((event) => activeSocket.on(event, onListChanged));
 
     if (activeSocket.connected) {
       joinRoom();
@@ -215,6 +223,8 @@ export function useListRoom(
       activeSocket.off('category_added', onCategoryAdded);
       activeSocket.off('categories_reordered', onCategoriesReordered);
       activeSocket.off('settings_updated', onSettingsUpdated);
+      contentEvents.forEach((event) => activeSocket.off(event, onContentChanged));
+      listEvents.forEach((event) => activeSocket.off(event, onListChanged));
       if (activeSocket.connected) {
         activeSocket.emit('leave_list', { list_id: listId });
       }

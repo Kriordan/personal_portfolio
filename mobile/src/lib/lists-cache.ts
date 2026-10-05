@@ -98,6 +98,11 @@ export function createListRoomHandlers(
     });
   };
   return {
+    onContentChanged: refresh,
+    onListChanged: () => {
+      refresh();
+      void client.invalidateQueries({ queryKey: listsKeys.overview(), exact: true });
+    },
     onItemToggled: ({ item_id, completed }) => {
       void patchList(client, listId, (list) =>
         withItemToggled(list, Number(item_id), completed),

@@ -49,6 +49,8 @@ export function NativeFormSheet({
   pending,
   disabled,
   error,
+  destructive = false,
+  pendingLabel = 'Saving…',
 }: {
   title: string;
   presented: boolean;
@@ -59,6 +61,8 @@ export function NativeFormSheet({
   pending: boolean;
   disabled?: boolean;
   error: string | null;
+  destructive?: boolean;
+  pendingLabel?: string;
 }) {
   const theme = useTheme();
   return (
@@ -75,12 +79,12 @@ export function NativeFormSheet({
             <PageHeading title={title} />
             {error ? <InlineError message={error} /> : null}
           </View>
-          <Host style={styles.form} seedColor={theme.accent}>
+          <Host style={styles.form} seedColor={destructive ? theme.danger : theme.accent}>
             <FieldGroup>
               <FieldGroup.Section>{children}</FieldGroup.Section>
               <FieldGroup.Section>
                 <Button
-                  label={pending ? 'Saving…' : submitLabel}
+                  label={pending ? pendingLabel : submitLabel}
                   onPress={onSubmit}
                   disabled={pending || disabled}
                 />

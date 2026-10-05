@@ -40,6 +40,28 @@ const detail = (mode = 'category_section') => ({
 });
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+test('server edit/delete events replace cached rows and list changes refresh overview', async (t) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  const queryKey = listsKeys.detail(1);
+  let server = detail();
+  const observer = new QueryObserver(client, { queryKey, queryFn: async () => ({ list: structuredClone(server) }) });
+  const unsubscribe = observer.subscribe(() => {});
+  t.after(() => { unsubscribe(); client.clear(); });
+  await tick();
+  client.setQueryData(listsKeys.overview(), { owned: [{ id: 1, title: 'Groceries' }], shared: [] });
+  client.setQueryData(listsKeys.detail(2), { list: { ...detail(), id: 2 } });
+  const handlers = createListRoomHandlers(client, 1);
+  server.categories[0].items = server.categories[0].items.filter((item) => item.id !== 3);
+  server.categories[1].name = 'Fresh produce';
+  handlers.onContentChanged({ list_id: 1 });
+  await tick();
+  assert.deepEqual(client.getQueryData(queryKey), { list: server });
+  assert.equal(client.getQueryState(listsKeys.overview()).isInvalidated, false);
+  handlers.onListChanged({ list_id: 1 });
+  assert.equal(client.getQueryState(listsKeys.overview()).isInvalidated, true);
+  assert.equal(client.getQueryState(listsKeys.detail(2)).isInvalidated, false);
+});
+
 for (const recovery of ['foreground', 'network reconnect']) {
   test(`${recovery} fetches missed items even when the list is still fresh and the socket has not rejoined`, async (t) => {
     const client = new QueryClient({
