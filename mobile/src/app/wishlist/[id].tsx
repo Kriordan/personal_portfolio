@@ -36,7 +36,8 @@ export default function GiftDetailScreen() {
       {date && Number.isFinite(date.getTime()) ? <ThemedText type="small" themeColor="textSecondary">Added {date.toLocaleDateString()}</ThemedText> : null}
       {query.isError ? <InlineError message="Couldn’t refresh. This is the last loaded gift." onRetry={() => void query.refetch()} /> : null}
     </Screen>
-    {editing ? <GiftForm gift={editing} onSaved={() => setEditing(null)} onClose={() => setEditing(null)} onDeleted={() => { setEditing(null); router.dismissTo('/wishlist'); }} /> : null}
+    {/* Preserve the draft's text baseline while renewing its existing photo URL. */}
+    {editing ? <GiftForm gift={{ ...editing, image_url: gift.image_url }} onSaved={() => setEditing(null)} onClose={() => setEditing(null)} onDeleted={() => { setEditing(null); router.dismissTo('/wishlist'); }} /> : null}
   </>;
 }
 const styles = StyleSheet.create({
