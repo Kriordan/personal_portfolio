@@ -5,6 +5,19 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const xcode = require('xcode');
+const semver = require('semver');
+const manifest = require('../package.json');
+const expo = require('expo/package.json');
+const bundled = require('expo/bundledNativeModules.json');
+
+assert.ok(semver.satisfies(expo.version, '57.x'), 'Review SDK upgrades as a coordinated change');
+for (const name of Object.keys(manifest.dependencies)) {
+  if (!bundled[name]) continue;
+  const installed = require(`${name}/package.json`).version;
+  assert.ok(semver.satisfies(installed, bundled[name]),
+    `${name}@${installed} is incompatible with Expo ${expo.version}; expected ${bundled[name]}`);
+}
+console.log(`PASS: installed dependencies match Expo ${expo.version}'s bundled compatibility ranges`);
 
 for (const plist of [require('@expo/plist').default, require('plist')]) {
   const value = { name: 'Portfolio & safety', enabled: true, count: 2, items: ['a', 'b'] };

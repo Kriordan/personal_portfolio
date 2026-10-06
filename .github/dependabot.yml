@@ -17,6 +17,26 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 3
+    # Coordinate native/React upgrades with Expo's bundled compatibility matrix.
+    # These update-types suppress version PRs, not security updates. CI checks
+    # all installed SDK-managed packages, including patch-version compatibility.
+    ignore:
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react-native-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: pip
     directory: /

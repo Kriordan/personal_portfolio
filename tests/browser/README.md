@@ -14,3 +14,10 @@ For headless Chrome, use a temporary profile with `--headless --dump-dom
 contains `data-test-result="pass"`; Chrome's exit status alone does not report
 failed assertions. These regression checks do not prove the sanitizer handles
 every possible malicious input.
+
+`npm run test:browser` automates that headless check and fails on assertion,
+browser, or timeout errors. Set `CHROME_BIN` to select an executable (for example,
+Chrome Canary on macOS); Linux CI uses `google-chrome`. `npm test` also checks that
+the locked DOMPurify version, both CDN references, and SHA-384 integrity match the
+installed browser bundle. The [October dependency review](../../docs/security/dependabot-2026-10-05.md)
+documents the audit exceptions and remaining exposure.

@@ -1,0 +1,38 @@
+{
+  ".": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "version": "3.0.3",
+      "severity": "high",
+      "reviewBy": "2026-11-05",
+      "reason": "No patched release; Gulp/BrowserSync build-time glob parsing. See dependabot-2026-10-05.md."
+    }
+  ],
+  "mobile": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "version": "3.0.3",
+      "severity": "high",
+      "reviewBy": "2026-11-05",
+      "reason": "No patched release; Metro/build-tool glob parsing. See dependabot-2026-10-05.md."
+    },
+    {
+      "id": "GHSA-86w9-cpqp-85rv",
+      "package": "node-forge",
+      "version": "1.4.0",
+      "severity": "high",
+      "reviewBy": "2026-11-05",
+      "reason": "No patched release; Expo CLI/certificate tooling verification risk. See dependabot-2026-10-05.md."
+    },
+    {
+      "id": "GHSA-vcc3-ghjq-m6fr",
+      "package": "decode-uri-component",
+      "version": "0.2.2",
+      "severity": "moderate",
+      "reviewBy": "2026-11-05",
+      "reason": "Router 57 uses query-string 7 CommonJS; patched decoder 0.5 is ESM-only. Deep-link DoS remains. See dependabot-2026-10-05.md."
+    }
+  ]
+}
