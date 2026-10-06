@@ -2,8 +2,11 @@
 
 {% block body %}
   <h1 class="Wishlist-title">My Wishlist</h1>
+  {% if save_error %}<p role="alert">{{ save_error }} Reopen Add a gift to retry; choose your photo again.</p>{% endif %}
+  {% if form.errors %}<p role="alert">Check the gift fields. Title and description are required, up to 140 characters each.</p>{% endif %}
   <button id="openModal" class="Wishlist-modal" onclick="openModal()">+</button>
   {% include "modal.html" %}
+  {% if show_form %}<script>window.addEventListener('load', function () { openModal(); });</script>{% endif %}
   {% if gifts is defined %}
     <section class="Wishlist-list">
       {% for item in gifts %}

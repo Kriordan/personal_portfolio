@@ -182,3 +182,39 @@ Regression coverage first reproduced the old behavior, then passed after the fix
 Commit `1d63b8a149ae060440312836732506b8a23e083e` was pushed to PR #94. The Python and JavaScript/TypeScript CodeQL analyses completed successfully at approximately 19:37 UTC with **zero findings**. The PR alert query returned no open alerts, and alerts [30](https://github.com/Kriordan/personal_portfolio/security/code-scanning/30), [31](https://github.com/Kriordan/personal_portfolio/security/code-scanning/31), and [32](https://github.com/Kriordan/personal_portfolio/security/code-scanning/32) each report their PR occurrence as **fixed**. None were dismissed.
 
 The same commit was deployed as **Heroku v125** at 20:10:42 UTC, replacing v124. Heroku reports the build succeeded, v125 is current/succeeded, and `web.1` is up. Startup logs show Alembic initialization without any revision upgrade, followed by successful Flask startup. Read-only checks returned website 200, unauthenticated account JSON 401, Lists login redirect 302, and OPTIONS 200 with PATCH/DELETE for all three edit routes. These establish startup and route availability; error handling and rollback were tested locally without injecting failures into live data. The installed iPhone preview requires no replacement for this backend fix.
+
+## Wishlist modernization — October 6, 2026
+
+The implementation starts from the security-fixed `9db7c9c` tree, then advances to its unchanged merge tree `b03b5f5` (PR #98). Expo remains 57.0.25 with the existing React/React Native/Router matrix. Dependency security floors and narrow audit exceptions remain intact.
+
+Wishlist uses virtualized photo rows, newest-first local search, readable detail/photo fallbacks, a New gift route, and a native edit sheet opened by the three-dot button. The same sheet contains confirmed deletion, matching Grocery's interaction. Native text is read synchronously on submission; failed drafts are retained. Forms protect changed drafts and lock pending submissions. Their headings scroll with the fields so large text cannot consume the entire form viewport.
+
+TanStack Query keeps authoritative REST results, cancels obsolete reads, refreshes on focus/foreground/reconnect, and blocks offline queuing or automatic mutation retries. A late mutation cannot restore private data after logout. Lost-response messaging directs users to check saved data before repeating a create; exactly-once creation is not claimed. Wishlist does not add realtime events.
+
+### Photo contract and compatibility
+
+- POST/PUT URLs and response fields stay the same. PUT accepts `remove_image: true` (JSON boolean or multipart `"true"`) to clear the reference; omitted/false preserves it. Upload replaces the photo. Removal plus upload, invalid flags, and removal on POST are rejected.
+- Both text fields must contain trimmed text of at most 140 Unicode code points. PUT still accepts omitted text fields. Website validation and safe error rendering use the same service.
+- Native selection converts one still photo to JPEG at quality 0.8 with a maximum 2048px edge, without upscaling. Expo 57's default fetch **rejects the old `{uri, name, type}` multipart descriptor**. Native now sends an Expo File; browsers send a Blob/File. A regression executes the installed Expo multipart converter.
+- Pillow validates actual JPEG/PNG bytes, rejects animation/corruption, caps input at 5 MiB/25 megapixels, fixes orientation, resizes, and re-encodes without metadata. Wishlist requests have a 6 MiB ceiling. Unique compact S3 keys prevent filename collisions and set the correct content type.
+- Missing storage configuration/credentials or upload failure returns a safe explicit error without saving the requested database change. Database failures roll back. Removal and gift deletion work without S3 access.
+- Removing/replacing/deleting a photo does **not** delete stored objects. Existing public URLs remain public; upload-success/database-failure can leave an orphan. Object tracking, cleanup, private media, camera, galleries, and schema migrations are outside this slice.
+- Native testing also found that `User.gifts` was annotated as a scalar relationship. Adding a second gift attempted to clear an existing gift's owner. It is now a collection, with a multi-gift creation regression. This is an ORM mapping correction, not a database migration.
+
+### Verification completed during implementation
+
+- Full backend suite: **124 tests passed**, including 24 Wishlist tests. Mobile suite: **29 tests passed**. TypeScript, ESLint, Expo dependency compatibility, all-platform JavaScript/Hermes exports, and `git diff --check` passed.
+- Python audit: no known vulnerabilities. Root/mobile npm gates passed with the same documented exceptions from the October 5 security review. Root audit-gate/CDN checks and Sass build passed; existing Sass deprecation warnings remain.
+- iOS 27 / iPhone 18 Pro development-client build succeeded with zero errors and one existing build-phase warning. Android ARM64 development APK built successfully and installed on the existing emulator. These are native builds, separately from exports.
+- On iPhone, the disposable Flask fixture verified login, browse/detail, native text entry, form scrolling, selected JPEG conversion/upload, expired-token refresh with multipart replay, editing, saved-photo removal, canceling discard while preserving text/photo state, canceling deletion, and server-confirmed deletion. All entered punctuation and final characters persisted. The fixture uses temporary storage, not S3 or production data.
+- Native testing fixed a too-narrow photo preview at the React Native/Expo UI boundary and replaced overlapping option/edit sheet transitions with one editor.
+
+### Remaining acceptance gates
+
+The Mac locked during testing and computer control could not unlock it. Android interaction testing, final form-heading layout verification, swipe-dismiss recovery, the larger-text/software-keyboard and full VoiceOver/TalkBack passes, smaller-device checks, screenshot capture, web interaction testing, and cold preview links remain pending. The iPhone deletion response succeeded; final post-deletion navigation still needs visual confirmation.
+
+Use the [Wishlist smoke-test checklist](wishlist-smoke-test.md). A fresh EAS iPhone preview and deployed backend/storage results will be recorded here after creation. Physical installation and the user's live smoke test are required before describing this slice as fully validated.
+
+Production inspection found that `WISHLIST_S3_BUCKET` is unset. The new API explicitly rejects photo saves in this state; text-only changes and photo removal remain available. Live upload readiness is blocked until the intended bucket is supplied and tested. No bucket, access policy, or signing configuration has been created or changed.
+
+The local EAS archive inspection included the Wishlist sources and excluded local environment files, credentials, databases, dependencies, and generated native projects. The tracked `.env.example` contains only development URL examples and is included intentionally. The existing headless browser security runner is separate from interactive Wishlist web testing.
