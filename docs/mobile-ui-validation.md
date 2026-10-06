@@ -220,6 +220,10 @@ There are no migration-file changes relative to the previous deployed code. Star
 
 The deployment includes the merged backend dependency-security fixes and Pillow 12.3.0. Heroku reported that a newer Python 3.13 patch and stack are available; this deployment retained the approved commit's Python 3.13.11 and Heroku-24 configuration. Runtime upgrades remain separate from this slice.
 
+### New mobile dependency gate — October 6
+
+The release-documentation update triggered [mobile CI run 37487943035](https://github.com/Kriordan/personal_portfolio/actions/runs/37487943035), which failed its audit gate on [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv). This critical `shell-quote` advisory was published at **9:40 a.m. EDT**, after the earlier successful implementation checks. The mobile lockfile resolves version **1.9.0**; the maintainer identifies **1.11.0** as the first patched version. Exploitation requires quoting an attacker-controlled line terminator after a comment token and executing the resulting shell command. Dependency-path presence is not proof of exploitability in the shipped app, but the audit failure remains a release blocker pending the separate dependency-security update. No exception or suppression was added. Backend, web, and both CodeQL scan jobs passed on the documentation revision; the Flask deployment and startup checks above succeeded.
+
 ### Remaining acceptance gates
 
 The Mac locked during testing and computer control could not unlock it. Android interaction testing, final form-heading layout verification, swipe-dismiss recovery, the larger-text/software-keyboard and full VoiceOver/TalkBack passes, smaller-device checks, screenshot capture, web interaction testing, and cold preview links remain pending. The iPhone deletion response succeeded; final post-deletion navigation still needs visual confirmation.
