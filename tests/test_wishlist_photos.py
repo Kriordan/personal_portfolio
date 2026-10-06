@@ -44,17 +44,18 @@ class WishlistPhotoTests(WishlistTestCase):
         }, content_type="multipart/form-data")
 
     @patch.dict(os.environ, {"WISHLIST_S3_BUCKET": "wishlist-test"})
-    @patch("project.services.wishlist_service.boto3.client")
+    @patch("project.wishlist_storage.boto3.client")
     def test_real_validation_unique_keys_metadata_and_remove(self, client):
         stored = []
         def upload(stream, bucket, key, ExtraArgs):
             stored.append((stream.read(), bucket, key, ExtraArgs))
         client.return_value.upload_fileobj.side_effect = upload
+        client.return_value.generate_presigned_url.side_effect = lambda _operation, Params, ExpiresIn: f"https://wishlist-test.s3.amazonaws.com/{Params['Key']}?signed=test"
         for _ in range(2):
             self.assertEqual(self.upload(title="Updated").status_code, 200)
         self.assertNotEqual(stored[0][2], stored[1][2])
         self.assertNotIn("same-filename", stored[0][2])
-        self.assertEqual(stored[0][3], {"ContentType": "image/png"})
+        self.assertEqual(stored[0][3], {"ContentType": "image/png", "CacheControl": "private, no-store"})
         self.assertNotIn(b"metadata-must-disappear", stored[0][0])
         with Image.open(io.BytesIO(stored[0][0])) as image:
             self.assertEqual(image.size, (24, 16))
@@ -91,7 +92,7 @@ class WishlistPhotoTests(WishlistTestCase):
         self.assertEqual(len(gifts), 3)
         self.assertTrue(all(gift["user_id"] == self.owner for gift in gifts))
 
-    @patch("project.services.wishlist_service.boto3.client")
+    @patch("project.wishlist_storage.boto3.client")
     def test_bad_images_never_reach_storage(self, client):
         before = self.gift()
         for data in [io.BytesIO(b"not an image"), io.BytesIO(), photo("GIF"),
@@ -102,7 +103,7 @@ class WishlistPhotoTests(WishlistTestCase):
         client.assert_not_called()
 
     @patch.dict(os.environ, {"WISHLIST_S3_BUCKET": "wishlist-test"})
-    @patch("project.services.wishlist_service.boto3.client")
+    @patch("project.wishlist_storage.boto3.client")
     def test_storage_errors_are_explicit_and_atomic(self, client):
         for error in [NoCredentialsError(), ClientError({"Error": {"Code": "AccessDenied", "Message": "private-storage-detail"}}, "PutObject")]:
             client.return_value.upload_fileobj.side_effect = error

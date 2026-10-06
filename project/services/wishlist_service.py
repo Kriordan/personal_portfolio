@@ -7,14 +7,13 @@ import os
 import warnings
 from uuid import uuid4
 
-import boto3
 from boto3.exceptions import S3UploadFailedError
-from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from project.database import db
 from project.models import Gift, User
+from project import wishlist_storage
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_REQUEST_BYTES = 6 * 1024 * 1024
@@ -67,12 +66,14 @@ def validation_message(error: ValidationError) -> str:
     return VALIDATION_MESSAGES.get(error.code, "Invalid gift data.")
 
 
-def serialize_gift(gift: Gift) -> dict[str, object]:
+def serialize_gift(gift: Gift, *, user_id: int) -> dict[str, object]:
+    if gift.user_id != user_id:
+        raise PermissionError("Gift does not belong to this user")
     return {
         "id": gift.id,
         "title": gift.title,
         "body": gift.body,
-        "image_url": gift.image_url,
+        "image_url": wishlist_storage.photo_url(gift.image_url),
         "timestamp": gift.timestamp.isoformat() if gift.timestamp else None,
         "user_id": gift.user_id,
     }
@@ -146,8 +147,10 @@ def upload_image_to_s3(file_obj) -> str:
     if len(url) > 140:
         raise UploadError("Wishlist image URL exceeds the storage column")
     try:
-        s3 = boto3.client("s3", config=Config(connect_timeout=5, read_timeout=20, retries={"total_max_attempts": 1}))
-        s3.upload_fileobj(image, bucket_name, key, ExtraArgs={"ContentType": content_type})
+        s3 = wishlist_storage.s3_client()
+        s3.upload_fileobj(image, bucket_name, key, ExtraArgs={
+            "ContentType": content_type, "CacheControl": wishlist_storage.PHOTO_CACHE_CONTROL,
+        })
     except (BotoCoreError, ClientError, S3UploadFailedError) as error:
         raise UploadError("Wishlist S3 upload failed") from error
     return url

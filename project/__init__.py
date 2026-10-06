@@ -38,7 +38,7 @@ from .commands import (
     reset_password,
     sync_yt_subs,
 )
-from .csp import csp
+from .csp import build_csp
 from .database import db
 from .extensions import jwt, limiter, login_manager, migrate, scheduler, talisman
 from .filters import register_filters
@@ -103,7 +103,7 @@ def register_extensions(app):
 
     migrate.init_app(app, db)
     scheduler.init_app(app)
-    talisman.init_app(app, content_security_policy=csp)
+    talisman.init_app(app, content_security_policy=build_csp())
     jwt.init_app(app)
     api_cors_origins = app.config.get("API_CORS_ORIGINS", "*")
     CORS(app, resources={r"/api/v1/*": {"origins": api_cors_origins}})

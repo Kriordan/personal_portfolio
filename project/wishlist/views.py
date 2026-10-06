@@ -17,9 +17,20 @@ def limit_request_size():
     request.max_content_length = wishlist_service.MAX_REQUEST_BYTES
 
 
+@wishlist_blueprint.after_request
+def private_response(response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @wishlist_blueprint.errorhandler(RequestEntityTooLarge)
 def request_too_large(_error):
     return "Photo requests must be 6 MiB or less. Go back and choose a smaller photo.", 413
+
+
+@wishlist_blueprint.errorhandler(404)
+def gift_not_found(_error):
+    return render_template("404.html"), 404
 
 
 @wishlist_blueprint.route("/", methods=["GET", "POST"])
@@ -50,7 +61,8 @@ def wishlist_home():
     form_title = "Add a gift"
 
     return render_template(
-        "wishlist.html", gifts=gifts, form=form, form_title=form_title,
+        "wishlist.html", gifts=[wishlist_service.serialize_gift(gift, user_id=current_user.id) for gift in gifts],
+        form=form, form_title=form_title,
         save_error=save_error, show_form=request.method == "POST",
     )
 
@@ -66,4 +78,4 @@ def gift_delete(item_id):
         wishlist_service.delete_gift(gift)
         return redirect(url_for("wishlist.wishlist_home"))
 
-    return render_template("gift_delete_confirm.html", gift=gift)
+    return render_template("gift_delete_confirm.html", gift=wishlist_service.serialize_gift(gift, user_id=current_user.id))

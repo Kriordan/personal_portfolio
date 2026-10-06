@@ -20,6 +20,12 @@ def limit_request_size():
     request.max_content_length = wishlist_service.MAX_REQUEST_BYTES
 
 
+@wishlist_api_blueprint.after_request
+def private_response(response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @wishlist_api_blueprint.errorhandler(RequestEntityTooLarge)
 def request_too_large(_error):
     return jsonify({"error": "Photo requests must be 6 MiB or less."}), 413
@@ -71,7 +77,7 @@ def api_get_gifts():
         return jsonify({"error": "Unauthorized."}), 401
 
     gifts = wishlist_service.list_gifts_for_user(user.id)
-    return jsonify({"gifts": [wishlist_service.serialize_gift(gift) for gift in gifts]}), 200
+    return jsonify({"gifts": [wishlist_service.serialize_gift(gift, user_id=user.id) for gift in gifts]}), 200
 
 
 @wishlist_api_blueprint.post("/gifts")
@@ -98,7 +104,7 @@ def api_create_gift():
     except Exception:
         return _mutation_failed()
 
-    return jsonify({"gift": wishlist_service.serialize_gift(gift)}), 201
+    return jsonify({"gift": wishlist_service.serialize_gift(gift, user_id=user.id)}), 201
 
 
 @wishlist_api_blueprint.get("/gifts/<int:gift_id>")
@@ -111,7 +117,7 @@ def api_get_gift(gift_id: int):
     gift = wishlist_service.get_gift_for_user(user_id=user.id, gift_id=gift_id)
     if gift is None:
         return jsonify({"error": "Gift not found."}), 404
-    return jsonify({"gift": wishlist_service.serialize_gift(gift)}), 200
+    return jsonify({"gift": wishlist_service.serialize_gift(gift, user_id=user.id)}), 200
 
 
 @wishlist_api_blueprint.put("/gifts/<int:gift_id>")
@@ -147,7 +153,7 @@ def api_update_gift(gift_id: int):
     except Exception:
         return _mutation_failed()
 
-    return jsonify({"gift": wishlist_service.serialize_gift(gift)}), 200
+    return jsonify({"gift": wishlist_service.serialize_gift(gift, user_id=user.id)}), 200
 
 
 @wishlist_api_blueprint.delete("/gifts/<int:gift_id>")

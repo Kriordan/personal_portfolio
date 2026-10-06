@@ -6,6 +6,10 @@ export const wishlistRefreshOptions = {
   refetchOnWindowFocus: 'always',
   refetchOnReconnect: 'always',
   refetchOnMount: 'always',
+  // Private photo URLs expire after 15 minutes. Renew while the app is active;
+  // focus/reconnect also recover links after sleep or an offline interval.
+  refetchInterval: 10 * 60 * 1000,
+  refetchIntervalInBackground: false,
 } as const;
 
 export class OfflineWishlistError extends Error {
