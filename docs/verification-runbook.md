@@ -198,7 +198,7 @@ curl -s -X POST $BASE/api/v1/wishlist/gifts -H "Authorization: Bearer $ACCESS" \
   -H "Content-Type: application/json" -d '{"title":"Smoke gift","body":"testing"}'
 ```
 
-Also: `GET/PUT/DELETE /gifts/<gift_id>`. Gifts are owner-scoped — another user's gift ID returns 404. Create accepts multipart with an `image` field when `WISHLIST_S3_BUCKET` is configured.
+Also: `GET/PUT/DELETE /gifts/<gift_id>`. Gifts are owner-scoped — another user's gift ID returns 404. Create and update accept multipart with an `image` field when `WISHLIST_S3_BUCKET` and upload credentials are configured. PUT accepts `remove_image: true` (JSON boolean or multipart `"true"`) to clear the saved photo reference; omission/false preserves it. Upload plus removal is rejected. Both text fields are required on create and limited to 140 trimmed Unicode code points; omitted PUT fields are preserved.
 
 ### Library — `/api/v1/library`
 
@@ -277,7 +277,7 @@ None of these are required for the automated test suite — tests mock all of th
 
 ### S3 (boto3)
 
-- Wishlist images upload to `WISHLIST_S3_BUCKET` via `project/services/wishlist_service.py`. If the bucket or AWS credentials are missing, upload silently returns `None` and the gift is created without an image. Tests patch `project.services.wishlist_service.upload_image_to_s3`.
+- Wishlist images upload to `WISHLIST_S3_BUCKET` via `project/services/wishlist_service.py`, using unique keys under `w/`. Missing configuration/credentials or upload failure produces a safe JSON 503 without saving the requested gift change. JPEG/PNG bytes are validated, resized, and stripped of metadata; input is capped at 5 MiB/25 megapixels and requests at 6 MiB. Tests exercise actual image normalization while mocking the S3 boundary. Removing a photo or deleting a gift clears database references but does not delete S3 objects. Direct image URLs also require working image-read access; successful authenticated upload alone is insufficient.
 - Jobwizard screenshots upload to `JOBWIZARD_S3_BUCKET` via `Job.render_screenshot` in `project/models.py`, using the APILeap API (`APILEAP_ACCESS_KEY`) to render the listing page. With `ENV=development`, boto3 uses the `personalportfolio` AWS profile. Tests patch `Job.render_screenshot`.
 
 ### YouTube sync

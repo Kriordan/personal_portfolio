@@ -2,7 +2,7 @@
 
 Use the Wishlist preview identified in [mobile validation](mobile-ui-validation.md), with the matching deployed backend. Older previews do not contain these controls. Use gifts named **Wishlist smoke test** and a nonpersonal photo; the standalone preview uses live storage. Photo removal/deletion clears the gift's reference, but does not erase the S3 object.
 
-**Current gate:** preview `38115e8e-06bd-4e9e-844e-11cdbaef57c1` has built, but the matching backend deployment awaits approval and production has no `WISHLIST_S3_BUCKET`. Complete those steps before the full live photo checklist. The disposable fixture below can exercise the new contract independently of production.
+**Current gate:** preview `38115e8e-06bd-4e9e-844e-11cdbaef57c1` has built and the matching backend is deployed as Heroku **v127** (`84cff34`). `WISHLIST_S3_BUCKET=portfolio-wishlist-prod` is configured. Switching to the new restricted application credentials, configuring image-read access, and verifying a production upload/read remain pending. Complete those steps before the full live photo checklist. The disposable fixture below can exercise the new contract independently of production.
 
 ## iPhone checklist
 
