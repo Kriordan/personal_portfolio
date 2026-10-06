@@ -2,6 +2,8 @@
 
 Use the Wishlist preview identified in [mobile validation](mobile-ui-validation.md), with the matching deployed backend. Older previews do not contain these controls. Use gifts named **Wishlist smoke test** and a nonpersonal photo; the standalone preview uses live storage. Photo removal/deletion clears the gift's reference, but does not erase the S3 object.
 
+**Current gate:** preview `38115e8e-06bd-4e9e-844e-11cdbaef57c1` has built, but the matching backend deployment awaits approval and production has no `WISHLIST_S3_BUCKET`. Complete those steps before the full live photo checklist. The disposable fixture below can exercise the new contract independently of production.
+
 ## iPhone checklist
 
 - [ ] Install the preview, cold-launch, restore/sign into your account, and open Wishlist through Home and Tools.

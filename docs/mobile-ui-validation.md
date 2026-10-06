@@ -208,12 +208,19 @@ TanStack Query keeps authoritative REST results, cancels obsolete reads, refresh
 - iOS 27 / iPhone 18 Pro development-client build succeeded with zero errors and one existing build-phase warning. Android ARM64 development APK built successfully and installed on the existing emulator. These are native builds, separately from exports.
 - On iPhone, the disposable Flask fixture verified login, browse/detail, native text entry, form scrolling, selected JPEG conversion/upload, expired-token refresh with multipart replay, editing, saved-photo removal, canceling discard while preserving text/photo state, canceling deletion, and server-confirmed deletion. All entered punctuation and final characters persisted. The fixture uses temporary storage, not S3 or production data.
 - Native testing fixed a too-narrow photo preview at the React Native/Expo UI boundary and replaced overlapping option/edit sheet transitions with one editor.
+- [PR #107](https://github.com/Kriordan/personal_portfolio/pull/107) CI passed for implementation commit `84cff34191529c60a72928605bd0bad3b055ca33`: backend, mobile, web, and both CodeQL analyses. The PR-specific CodeQL alert query returned **zero open findings**; this is separate from scan-job success.
+
+### iPhone preview and backend release status
+
+The [Wishlist iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/38115e8e-06bd-4e9e-844e-11cdbaef57c1) finished successfully at **11:59:44 UTC on October 6** from `84cff34191529c60a72928605bd0bad3b055ca33`. EAS reports an internal-distribution physical-device build, and its IPA download returned HTTP 200. It uses the existing registered-iPhone signing profile and `https://keithriordan.herokuapp.com`. No App Store/TestFlight submission or OTA update was made. Installation and the physical-device smoke test remain pending.
+
+The matching backend has **not been deployed**. Heroku still reports **v125** (`1d63b8a1`, October 4) as current/succeeded. The first deployment attempt stalled in the locked macOS credential helper and was stopped before uploading. Automatic approval review rejected a subsequent attempt because explicit authorization for that production destination/live-service change was not established; deployment now awaits the user's answer to the approval prompt. The preview's photo-removal contract requires the new backend, so do not treat the preview as ready for the full live smoke test yet. There is no database migration in this change.
 
 ### Remaining acceptance gates
 
 The Mac locked during testing and computer control could not unlock it. Android interaction testing, final form-heading layout verification, swipe-dismiss recovery, the larger-text/software-keyboard and full VoiceOver/TalkBack passes, smaller-device checks, screenshot capture, web interaction testing, and cold preview links remain pending. The iPhone deletion response succeeded; final post-deletion navigation still needs visual confirmation.
 
-Use the [Wishlist smoke-test checklist](wishlist-smoke-test.md). A fresh EAS iPhone preview and deployed backend/storage results will be recorded here after creation. Physical installation and the user's live smoke test are required before describing this slice as fully validated.
+Use the [Wishlist smoke-test checklist](wishlist-smoke-test.md) after the matching backend is deployed. Physical installation and the user's live smoke test are required before describing this slice as fully validated. The PR remains a draft for these acceptance gates.
 
 Production inspection found that `WISHLIST_S3_BUCKET` is unset. The new API explicitly rejects photo saves in this state; text-only changes and photo removal remain available. Live upload readiness is blocked until the intended bucket is supplied and tested. No bucket, access policy, or signing configuration has been created or changed.
 
