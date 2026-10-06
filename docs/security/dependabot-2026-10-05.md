@@ -46,6 +46,16 @@ The narrow exceptions in `npm-audit-exceptions.json` expire after **November 5, 
 
 ## Validation and reproduction
 
+### October 6 follow-up: Wishlist PR mobile audit
+
+[Wishlist PR #107's mobile check](https://github.com/Kriordan/personal_portfolio/actions/runs/37500414058) failed on `shell-quote` 1.9.0 / [GHSA-pqg4-j6r4-53mv](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv), a command-injection issue when a quoted token containing a line terminator follows a comment token and the resulting command is executed. CI classified the advisory as critical; the maintainer currently labels it high. Finding the dependency does not establish an exploitable Wishlist endpoint, but the available compatible fix should be applied before merging.
+
+The targeted `npm update shell-quote --package-lock-only --ignore-scripts --no-audit --no-fund` updates **only shell-quote 1.9.0 → 1.12.0**. The first fixed release is 1.11.0; 1.12.0 includes that fix and satisfies `react-devtools-core@6.1.5`'s existing `^1.6.1` range. Expo, React Native, other locked packages, overrides, and audit exceptions are unchanged. No broad update or new exception was needed.
+
+The dependency regression now tests the copy resolved by React DevTools: ordinary arguments round-trip correctly, and tokens with LF, CR, U+2028, or U+2029 after a comment are rejected. It never executes quoted output. A fresh `npm ci --ignore-scripts` passes, followed by the exact mobile audit gate (the same three previously reviewed exceptions), SDK/dependency regressions, all 30 mobile tests, all-platform production exports, TypeScript, and ESLint. Native application code and the Flask deployment are unchanged by this security follow-up; the previously tested iPhone preview predates this lockfile change.
+
+### Original review validation
+
 - Python 3.13.11 / Poetry 2.4.3, isolated `/tmp` environment: `poetry check --lock`, dependency consistency, **114 unittest tests**, and pip-audit 2.10.1 pass. Test execution disables dotenv and cloud metadata access and supplies no production credentials. The unchanged source-only Flask-APScheduler dependency is installed by Poetry; this run is not described as a wheels-only supply-chain audit.
 - Node 24.14.0 / npm 11.9.0: both `npm ci --ignore-scripts` installations pass. Web: **4 audit-gate tests**, CDN integrity check, **13 browser checks**, and Sass compilation pass. Stable Chrome timed out locally; Chrome Canary completed the same headless runner. CI uses Ubuntu's Google Chrome. Existing Sass deprecation warnings remain.
 - Mobile: **18 tests**, the SDK/XML/UUID/Metro compatibility script, TypeScript, ESLint, and production JavaScript/Hermes exports for **web, iOS, and Android** pass. The first clean GitHub checkout exposed reliance on ignored `expo-env.d.ts` for CSS declarations; a tracked Expo type reference fixes that dependency, verified in a fresh source copy without generated Expo files. No Xcode/Gradle native build, device test, or deployment was performed.
