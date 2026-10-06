@@ -30,6 +30,6 @@
   "homepage": "https://github.com/Kriordan/personal_portfolio",
   "dependencies": {
     "dompurify": "3.4.16",
-    "marked": "^17.0.1"
+    "marked": "^18.0.14"
   }
 }
