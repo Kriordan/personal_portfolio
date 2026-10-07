@@ -1,171 +1,55 @@
-import { useQuery } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import {
-  ActivityIndicator,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LibraryEmpty, LibraryImage, LibrarySearch, VideoRow, libraryStyles } from '@/components/library-content';
+import { InlineError, NativeAction, PageHeading, Screen, ScreenState, screenStyles } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { usePlaylist } from '@/hooks/use-library';
+import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/lib/auth-context';
-import { libraryApi, libraryKeys, type Video } from '@/lib/library-api';
+import { ApiError } from '@/lib/api-client';
+import { browseLibrary, validPlaylistId, type Video } from '@/lib/library-model';
 
-function videoWatchUrl(video: Video): string {
-  return `https://www.youtube.com/watch?v=${video.video_url_id}`;
-}
-
-function VideoRow({ video }: { video: Video }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={() => Linking.openURL(videoWatchUrl(video))}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
-      ]}
-    >
-      {video.thumbnail_url ? (
-        <Image source={{ uri: video.thumbnail_url }} style={styles.thumbnail} resizeMode="cover" />
-      ) : null}
-      <View style={styles.rowBody}>
-        <ThemedText numberOfLines={2}>{video.title}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {video.published_at ? new Date(video.published_at).toLocaleDateString() : ''}
-          {video.watched ? ' · Watched' : ''}
-        </ThemedText>
-      </View>
-      <ThemedText type="small" themeColor="textSecondary">
-        ›
-      </ThemedText>
-    </Pressable>
-  );
-}
+const keyForVideo = (video: Video) => video.id;
+const renderVideo = ({ item }: { item: Video }) => <VideoRow video={item} />;
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
-
-  const playlistQuery = useQuery({
-    queryKey: libraryKeys.playlist(id),
-    queryFn: () => libraryApi.getPlaylist(id),
-    enabled: Boolean(id) && isAuthenticated === true,
-  });
-
-  if (playlistQuery.isPending) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
-    );
-  }
-
-  if (playlistQuery.isError) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">
-          {playlistQuery.error instanceof Error
-            ? playlistQuery.error.message
-            : 'Couldn’t load playlist.'}
-        </ThemedText>
-        <Pressable style={styles.button} onPress={() => playlistQuery.refetch()}>
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            Retry
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
-    );
-  }
-
-  const { playlist, videos } = playlistQuery.data;
-
-  return (
-    <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: playlist.title }} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={playlistQuery.isRefetching}
-            onRefresh={() => playlistQuery.refetch()}
-          />
-        }
-      >
-        <ThemedText type="subtitle">{playlist.title}</ThemedText>
-        {playlist.description ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {playlist.description}
-          </ThemedText>
-        ) : null}
-
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-          VIDEOS
-        </ThemedText>
-        {videos.length === 0 ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            No videos in this playlist.
-          </ThemedText>
-        ) : (
-          videos.map((video) => <VideoRow key={video.id} video={video} />)
-        )}
-      </ScrollView>
-    </ThemedView>
-  );
+  const query = usePlaylist(id);
+  const router = useRouter();
+  const theme = useTheme();
+  const search = useNativeText();
+  const [expanded, setExpanded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const videos = useMemo(() => browseLibrary(query.data?.videos ?? [], search.text), [query.data?.videos, search.text]);
+  const refresh = () => { setRefreshing(true); void query.refetch().finally(() => setRefreshing(false)); };
+  const unavailable = !validPlaylistId(id) || query.error instanceof ApiError && [403, 404].includes(query.error.status);
+  if (unavailable) return <Screen><PageHeading title="Playlist unavailable" subtitle="This playlist may have been removed or the link may be invalid." /><NativeAction label="Back to Library" onPress={() => router.replace('/library')} /></Screen>;
+  if (!query.data && query.isPending) return <ScreenState loading={!query.isPaused} title={query.isPaused ? 'You’re offline' : 'Loading playlist'} message={query.isPaused ? 'Reconnect to load this playlist.' : undefined} />;
+  if (!query.data) return <ScreenState title="Couldn’t load playlist" message="Check your connection and try again." onRetry={() => void query.refetch()} />;
+  const { playlist, videos: allVideos } = query.data;
+  return <>
+    <Stack.Screen options={{ title: 'Playlist' }} />
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={[libraryStyles.screen, { backgroundColor: theme.background }]}>
+      <FlatList data={videos} keyExtractor={keyForVideo} renderItem={renderVideo} contentContainerStyle={screenStyles.collection} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        ListHeaderComponent={<View style={screenStyles.gap}>
+          <PageHeading title={playlist.title} eyebrow="SHARED LIBRARY" />
+          <LibraryImage uri={playlist.thumbnail_url} hero />
+          {playlist.description ? <View style={screenStyles.gap}>
+            <ThemedText themeColor="textSecondary" numberOfLines={expanded ? undefined : 3}>{playlist.description}</ThemedText>
+            <NativeAction label={expanded ? 'Show less description' : 'Show full description'} secondary onPress={() => setExpanded((value) => !value)} />
+          </View> : null}
+          <LibrarySearch search={search} label="Search videos in this playlist" />
+          <ThemedText type="small" themeColor="textSecondary">Videos open in YouTube or your browser. Opening a video doesn’t change shared watched status.</ThemedText>
+          {query.isPaused ? <ThemedText themeColor="textSecondary">You’re offline. Showing the last loaded videos.</ThemedText> : null}
+          {query.isError ? <InlineError message="Couldn’t refresh. Showing the last loaded videos." onRetry={refresh} /> : null}
+          <ThemedText type="smallBold" themeColor="textSecondary" style={libraryStyles.count}>{search.text.trim() ? `${videos.length} of ${allVideos.length} videos` : `${allVideos.length} ${allVideos.length === 1 ? 'video' : 'videos'}`} · Newest added first</ThemedText>
+        </View>}
+        ListEmptyComponent={<LibraryEmpty title={allVideos.length ? 'No matching videos' : 'No videos saved yet'} message={allVideos.length ? 'Try another title or description, or clear your search.' : 'Return to Library to sync from YouTube. Unavailable videos may not be imported.'} />}
+      />
+    </SafeAreaView>
+  </>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  scrollContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  sectionHeader: {
-    marginTop: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  rowBody: {
-    flex: 1,
-    gap: Spacing.half,
-  },
-  thumbnail: {
-    width: 64,
-    height: 48,
-    borderRadius: Spacing.one,
-  },
-  button: {
-    backgroundColor: '#3c87f7',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-  },
-});

@@ -265,3 +265,39 @@ Post-deploy HTTPS checks returned website **200**, unauthenticated account/Wishl
 `JOBWIZARD_S3_BUCKET` is unset in Heroku, while the generic `S3_BUCKET` is `jobwizard-test`; the current upload code does not read that generic setting. Additional Jobwizard permissions have not been added speculatively. The previous administrator key must only be retired after replacement checks and an inventory of any other consumers.
 
 The local EAS archive inspection included the Wishlist sources and excluded local environment files, credentials, databases, dependencies, and generated native projects. The tracked `.env.example` contains only development URL examples and is included intentionally. The existing headless browser security runner is separate from interactive Wishlist web testing.
+
+## Library modernization — October 7, 2026
+
+### Baseline and behavior
+
+Started `feature/library-modernization` from merged main **`c59c488`** (PR #107), including Grocery/shell PR #94, dependency-security PR #98, and the Wishlist shell-quote **1.12.0** follow-up. Expo 57.0.25, Expo Router, `@expo/ui`, TanStack Query, Flask, lockfiles, compatibility overrides, and audit exceptions are unchanged.
+
+Library now uses virtualized playlist/video rows, native local search, counts, expandable descriptions, stable artwork fallbacks, shared watched labels, and explicit loading/empty/no-results/unavailable/error states. Existing routes and successful API payloads remain unchanged. Search retains API ordering; video order is newest added first rather than YouTube playlist position. YouTube watch links open externally and never mutate watched status.
+
+Refresh reads the saved shared catalog. Manual sync keeps its existing access for all signed-in users and confirms its effect on everyone. The app locks a pending import synchronously across navigation, rejects known-offline attempts without queueing, and never retries failed/uncertain imports automatically. A 30-second client deadline bounds auth refresh, transport, and body reading; a late auth refresh cannot launch another POST after expiry. Timeout means completion unknown, since server work may continue. Sync success invalidates Library queries, cancels older reads, and remains distinguishable from a later refresh failure. Logout cache clearing prevents late results from restoring sync state.
+
+Flask rolls back failed imports and returns sanitized JSON: unavailable credentials/configuration 503, upstream failure 502, unexpected failure 500. Website sync gets a safe flash message. No database migration or new worker/status service is introduced. Importer upsert semantics remain: unavailable/removed upstream items are not purged, and watched data remains shared. Playlist timestamps are not presented as last-sync times. Personal OAuth, personal watch history, embedding, background imports, and cross-device import coordination remain deferred.
+
+### Automated verification
+
+- **42 mobile tests** pass, including QueryObserver recovery inside the 30-second freshness window; stale-read cancellation; offline/no-replay behavior; repeated-tap locking; logout during sync; and request expiry during token refresh.
+- **137 backend tests** pass, including two-account/website catalog reads, unchanged success responses, sanitized failure status mapping, rollback of partially written imports, repeated upserts, shared watched preservation, and retained unavailable records.
+- TypeScript, ESLint, Expo compatibility/XML/UUID/Metro/shell-quote regressions, root audit-gate/CDN tests, **13 browser security checks**, Sass, Poetry lock consistency, and Python dependency consistency pass.
+- Root/mobile audit gates pass with the same reviewed exceptions; Python audit reports no known vulnerabilities. The November 5 exception expiry and the three documented upstream advisories remain tracked; nothing was suppressed.
+- Production iOS/Android/web exports pass. Xcode simulator and Android debug builds pass. The Android APK installed on the API 36.1 ARM64 emulator, with page size **16384**.
+
+### Native checks and limits
+
+The iPhone 18 Pro / iOS 27 simulator used `scripts/library-preview-fixture.py`, never production data or live import credentials. Verified login, expired-token recovery, Tools navigation, overview/title-description search, video no-results/clear search, expanded descriptions, the 150-video catalog, missing-link disabled state, shared watched labels, cancel/confirm sync, import success, retained content on refresh failure, and warm Library navigation. YouTube opened in Safari after fixing a method-binding issue found during testing; returning preserved the playlist position. The launch-error UI was exercised before that correction.
+
+Light/dark rendering and scrolling at maximum Dynamic Type were inspected. This is not a complete software-keyboard or screen-reader audit. Screenshots: [overview](screenshots/library-modernization/ios-library.png), [playlist](screenshots/library-modernization/ios-playlist.png), [dark playlist](screenshots/library-modernization/ios-playlist-dark.png), and [maximum text](screenshots/library-modernization/ios-large-text-dark.png). The floating gear is development-client UI. Original light appearance and standard text size were restored.
+
+The first Xcode build found an ignored `.xcode.env.local` pointing to a removed Homebrew Node binary; it now points to installed Node 24.14.0. An unsigned simulator build lacked SecureStore's keychain entitlement. Rebuilding with normal simulator signing and reinstalling restored authentication successfully. No tracked native project or signing configuration changed.
+
+Android build/install/startup and sign-out passed. Interactive entry through the embedded emulator caused unexpected development-bundle reloads; Library interactions, software-keyboard behavior, and TalkBack are not accepted on that evidence. Full Android feature validation remains required. UI automation also stalled twice for extended periods; elapsed time is not device-test evidence.
+
+### Preview and release
+
+The EAS preview archive includes Library sources and excludes local environment/credential files, databases, dependencies, and generated native projects. The inspection creates its own Git metadata. Preview/release results will be recorded here once completed; build success alone does not establish installation or authenticated live behavior.
+
+Use the [Library smoke-test checklist](library-smoke-test.md) for remaining acceptance. Preserve all earlier Grocery/Wishlist follow-ups: physical editing/realtime recovery, Android sheets/CRUD/photos and refresh, actual discard gestures, private-photo renewal beyond 15 minutes, full VoiceOver/TalkBack, large text with software keyboard, smaller devices, cold preview links, and interactive web behavior. Android preview, production EAS environment configuration, security exception review, and the separate credential-consumer inventory before administrator-key retirement remain open. Wishlist v131's successful storage probe and Keith's preview acceptance are retained without implying unitemized device checks passed.

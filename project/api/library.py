@@ -85,5 +85,8 @@ def api_sync_library():
     if user is None:
         return jsonify({"error": "Unauthorized."}), 401
 
-    library_service.sync_library()
+    try:
+        library_service.sync_library()
+    except library_service.SyncError as error:
+        return jsonify({"error": str(error)}), error.status
     return jsonify({"message": "Library sync completed."}), 200

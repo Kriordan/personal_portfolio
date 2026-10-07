@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from project.library.jobs import sync_playlists_and_videos
+from flask import current_app
+from google.auth.exceptions import RefreshError, TransportError
+from googleapiclient.errors import HttpError
+from httplib2 import HttpLib2Error
+
+from project.database import db
+from project.library.jobs import YouTubeConfigurationError, sync_playlists_and_videos
 from project.models import Playlist, Video
 
 
@@ -14,6 +20,14 @@ class LibraryServiceError(Exception):
 
 class NotFoundError(LibraryServiceError):
     """Raised when requested library content does not exist."""
+
+
+class SyncError(LibraryServiceError):
+    """Safe response details for web and API callers; never includes provider text."""
+
+    def __init__(self, message: str, status: int):
+        super().__init__(message)
+        self.status = status
 
 
 def serialize_playlist(playlist: Playlist) -> dict[str, Any]:
@@ -69,4 +83,16 @@ def get_video(*, video_id: str) -> Video:
 
 def sync_library() -> None:
     """Synchronize playlists and videos from YouTube."""
-    sync_playlists_and_videos()
+    try:
+        sync_playlists_and_videos()
+    except Exception as error:
+        db.session.rollback()
+        # Provider exceptions may contain credential-bearing URLs or response data.
+        current_app.logger.warning("Library sync failed (%s)", type(error).__name__)
+        if isinstance(error, (YouTubeConfigurationError, RefreshError)) or (
+            isinstance(error, HttpError) and error.resp.status == 401
+        ):
+            raise SyncError("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503) from error
+        if isinstance(error, (HttpError, TransportError, HttpLib2Error, OSError)):
+            raise SyncError("YouTube could not complete the import. Try again later.", 502) from error
+        raise SyncError("Library sync failed. Try again later.", 500) from error

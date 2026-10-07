@@ -248,3 +248,81 @@ class ApiLibraryTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
         mock_sync.assert_not_called()
+
+    def test_two_users_and_website_read_the_same_catalog(self):
+        first = self._create_user(email="one@example.com", username="one")
+        second = self._create_user(email="two@example.com", username="two")
+        self._create_playlist(playlist_id="shared", title="Shared catalog", published_at=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        first_data = self._get("/api/v1/library/playlists", headers=self._auth_headers(first)).get_json()
+        second_data = self._get("/api/v1/library/playlists", headers=self._auth_headers(second)).get_json()
+        self.assertEqual(first_data, second_data)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["_user_id"] = str(second)
+            session["_fresh"] = True
+        website = self._get("/lib/")
+        self.assertEqual(website.status_code, 200)
+        self.assertIn(b"Shared catalog", website.data)
+
+    def test_sync_failures_are_sanitized_and_roll_back_partial_imports(self):
+        from google.auth.exceptions import RefreshError, TransportError
+        from googleapiclient.errors import HttpError
+        from httplib2 import Response
+        from project.library.jobs import YouTubeConfigurationError
+
+        user_id = self._create_user(email="viewer@example.com", username="viewer")
+        secret = "provider-secret-must-not-leak"
+        failures = [
+            (YouTubeConfigurationError(secret), 503),
+            (RefreshError(secret), 503),
+            (HttpError(Response({"status": "401"}), secret.encode()), 503),
+            (HttpError(Response({"status": "403"}), secret.encode()), 502),
+            (TransportError(secret), 502),
+            (RuntimeError(secret), 500),
+        ]
+        for error, status in failures:
+            with self.subTest(error=type(error).__name__, status=status):
+                def fail_after_write():
+                    db.session.add(Playlist(id="partial", title="Partial import", published_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)))
+                    db.session.flush()
+                    raise error
+                with patch("project.services.library_service.sync_playlists_and_videos", side_effect=fail_after_write):
+                    response = self._post("/api/v1/library/sync", headers=self._auth_headers(user_id))
+                self.assertEqual(response.status_code, status)
+                self.assertIsInstance(response.get_json()["error"], str)
+                self.assertNotIn(secret, response.get_data(as_text=True))
+                with self.app.app_context():
+                    self.assertIsNone(db.session.get(Playlist, "partial"))
+
+    def test_sync_import_upserts_preserves_watched_and_retains_unavailable_records(self):
+        from project.library.jobs import sync_playlists_and_videos
+        user_id = self._create_user(email="viewer@example.com", username="viewer")
+        self._create_playlist(playlist_id="pl-1", title="Old title", published_at=datetime(2024, 1, 1, tzinfo=timezone.utc))
+        self._create_video(video_id="kept", playlist_id="pl-1", title="Old video", published_at=datetime(2024, 1, 2, tzinfo=timezone.utc))
+        self._create_video(video_id="removed-upstream", playlist_id="pl-1", title="Previously imported", published_at=datetime(2024, 1, 2, tzinfo=timezone.utc))
+        with self.app.app_context():
+            db.session.get(Video, "kept").watched = True
+            db.session.commit()
+        playlist = {"id": "pl-1", "snippet": {"title": "Updated playlist", "publishedAt": "2024-01-01T00:00:00Z"}}
+        def item(id, title):
+            return {"id": id, "snippet": {"title": title, "description": "Description", "publishedAt": "2024-01-02T00:00:00Z"}, "contentDetails": {"videoId": "abc123"}, "status": {"privacyStatus": "public"}}
+        videos = [item("kept", "Updated video"), item("added", "New video"), item("removed-upstream", "Deleted video")]
+        with self.app.app_context(), patch("project.library.jobs.get_youtube_service"), patch("project.library.jobs.fetch_playlists", return_value=[playlist]), patch("project.library.jobs.fetch_videos", return_value=videos):
+            sync_playlists_and_videos()
+            sync_playlists_and_videos()
+            self.assertEqual(Video.query.count(), 3)
+            self.assertTrue(db.session.get(Video, "kept").watched)
+            self.assertEqual(db.session.get(Video, "kept").title, "Updated video")
+            self.assertEqual(db.session.get(Video, "removed-upstream").title, "Previously imported")
+        response = self._get("/api/v1/library/playlists/pl-1", headers=self._auth_headers(user_id))
+        self.assertEqual(response.get_json()["playlist"]["title"], "Updated playlist")
+
+    def test_website_sync_failure_uses_safe_flash(self):
+        user_id = self._create_user(email="viewer@example.com", username="viewer")
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["_user_id"] = str(user_id)
+            session["_fresh"] = True
+        with patch("project.services.library_service.sync_playlists_and_videos", side_effect=RuntimeError("private provider error")):
+            response = self._post("/lib/sync_playlists")
+        self.assertEqual(response.status_code, 302)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            self.assertEqual(session["_flashes"], [("error", "Library sync failed. Try again later.")])
