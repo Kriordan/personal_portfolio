@@ -1,4 +1,6 @@
-import os
+from copy import deepcopy
+
+from project.wishlist_storage import image_origins
 
 csp = {
     "default-src": ["'self'"],
@@ -14,7 +16,6 @@ csp = {
     ],
     "img-src": [
         "'self'",
-        f"https://{os.getenv('WISHLIST_S3_BUCKET')}.s3.amazonaws.com",
         "https://i.ytimg.com",
     ],
     "font-src": ["'self'", "https://fonts.gstatic.com"],
@@ -40,3 +41,10 @@ csp = {
         "https://www.youtube-nocookie.com",
     ],
 }
+
+
+def build_csp():
+    # Resolve storage configuration after dotenv loads, once per application.
+    policy = deepcopy(csp)
+    policy["img-src"].extend(image_origins())
+    return policy

@@ -22,8 +22,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
@@ -43,10 +42,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos so you can attach images to wishlist gifts."
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos so you can attach images to wishlist gifts.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "expo-status-bar",
+      "expo-image",
       ["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
     ],
     "experiments": {

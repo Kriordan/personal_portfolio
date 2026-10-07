@@ -47,7 +47,7 @@ class User(UserMixin, db.Model):
         db.DateTime(timezone=True), nullable=True
     )
 
-    gifts: Mapped["Gift"] = relationship("Gift", back_populates="author")
+    gifts: Mapped[list["Gift"]] = relationship("Gift", back_populates="author")
     custom_lists: Mapped[list["CustomList"]] = relationship(
         "CustomList", back_populates="owner", lazy="dynamic"
     )

@@ -10,7 +10,7 @@ from project.models import Gift, User
 from project.services import wishlist_service
 
 
-class ApiWishlistTests(unittest.TestCase):
+class WishlistTestCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app(
             {
@@ -64,6 +64,8 @@ class ApiWishlistTests(unittest.TestCase):
     def _delete(self, path: str, **kwargs):
         return self.client.delete(path, base_url="https://localhost", **kwargs)
 
+
+class ApiWishlistTests(WishlistTestCase):
     def test_wishlist_endpoints_require_jwt(self):
         unauthenticated_requests = [
             self._get("/api/v1/wishlist/gifts"),
@@ -137,7 +139,7 @@ class ApiWishlistTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.get_json()["error"], "title and body are required")
+        self.assertEqual(response.get_json()["error"], "Invalid gift data.")
         self.assertNotIn("should-not-leak", response.get_data(as_text=True))
 
     @patch("project.services.wishlist_service.upload_image_to_s3")

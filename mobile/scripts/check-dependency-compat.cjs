@@ -19,6 +19,16 @@ for (const name of Object.keys(manifest.dependencies)) {
 }
 console.log(`PASS: installed dependencies match Expo ${expo.version}'s bundled compatibility ranges`);
 
+// Exercise the copy used by React DevTools. Never execute the quoted output.
+const devtoolsRoot = path.dirname(require.resolve('react-devtools-core/package.json'));
+const shellQuote = require(require.resolve('shell-quote', { paths: [devtoolsRoot] }));
+const argumentsWithMetacharacters = ['devtools', 'file with spaces', "a'b", 'semi;colon', 'dollar$sign'];
+assert.deepEqual(shellQuote.parse(shellQuote.quote(argumentsWithMetacharacters)), argumentsWithMetacharacters);
+for (const terminator of ['\n', '\r', '\u2028', '\u2029']) {
+  assert.throws(() => shellQuote.quote(['echo', 'ok', { comment: 'comment' }, `a${terminator}unexpected-command`]), TypeError);
+}
+console.log('PASS: shell quoting preserves arguments and rejects line terminators after comments');
+
 for (const plist of [require('@expo/plist').default, require('plist')]) {
   const value = { name: 'Portfolio & safety', enabled: true, count: 2, items: ['a', 'b'] };
   // Parsers may return a null-prototype dictionary as a security measure.
