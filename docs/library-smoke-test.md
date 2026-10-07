@@ -2,6 +2,8 @@
 
 Use the Library preview and backend release recorded in [mobile validation](mobile-ui-validation.md#library-modernization--october-7-2026). A successful native build is not a passed physical-device test. Record device/OS, source commit, build ID, backend release, and actual results for each checked step.
 
+The [October 7 iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/fe2b446b-5742-4202-a0cc-0d91fb9d8228) contains source `44cbd1c` and is ready to install on the registered iPhone. Check mobile validation for the backend deployment status before evaluating the new sync-error responses.
+
 Library is one shared catalog for all signed-in accounts. Pull-to-refresh reads saved data. **Sync from YouTube imports into that shared catalog using the server's connection**, and affects everyone. Do not use live sync for failure injection; use the fixture below. Opening YouTube never changes the shared watched flag.
 
 ## iPhone checklist
