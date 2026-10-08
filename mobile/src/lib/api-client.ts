@@ -1,5 +1,6 @@
 import { API_BASE_URL, API_PREFIX } from '@/lib/config';
 import { tokenStorage } from '@/lib/token-storage';
+import { withRequestTimeout } from '@/lib/request-timeout';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -37,6 +38,8 @@ interface RequestOptions {
   body?: unknown;
   /** Skip attaching the access token (e.g. for login). */
   anonymous?: boolean;
+  /** Stops waiting, not server execution. Omitted for existing callers. */
+  timeoutMs?: number;
 }
 
 async function parseBody(response: Response): Promise<unknown> {
@@ -49,7 +52,8 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
-async function rawRequest(path: string, options: RequestOptions, accessToken: string | null): Promise<Response> {
+async function rawRequest(path: string, options: RequestOptions, accessToken: string | null, signal?: AbortSignal): Promise<Response> {
+  if (signal?.aborted) throw new Error('Request aborted');
   const headers: Record<string, string> = {};
   const isFormData = options.body instanceof FormData;
   if (options.body !== undefined && !isFormData) {
@@ -60,6 +64,7 @@ async function rawRequest(path: string, options: RequestOptions, accessToken: st
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
   return fetch(`${API_BASE_URL}${API_PREFIX}${path}`, {
+    signal,
     method: options.method ?? 'GET',
     headers,
     body:
@@ -108,13 +113,17 @@ export function setUnauthorizedListener(listener: UnauthorizedListener | null): 
  * On 401, attempts a single token refresh and retries once.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return withRequestTimeout((signal) => performRequest<T>(path, options, signal), options.timeoutMs);
+}
+
+async function performRequest<T>(path: string, options: RequestOptions, signal?: AbortSignal): Promise<T> {
   const accessToken = options.anonymous ? null : await tokenStorage.getAccessToken();
-  let response = await rawRequest(path, options, accessToken);
+  let response = await rawRequest(path, options, accessToken, signal);
 
   if (response.status === 401 && !options.anonymous) {
     const newToken = await refreshAccessToken();
     if (newToken) {
-      response = await rawRequest(path, options, newToken);
+      response = await rawRequest(path, options, newToken, signal);
     }
     if (response.status === 401) {
       onUnauthorized?.();

@@ -54,7 +54,13 @@ The targeted `npm update shell-quote --package-lock-only --ignore-scripts --no-a
 
 The dependency regression now tests the copy resolved by React DevTools: ordinary arguments round-trip correctly, and tokens with LF, CR, U+2028, or U+2029 after a comment are rejected. It never executes quoted output. A fresh `npm ci --ignore-scripts` passes, followed by the exact mobile audit gate (the same three previously reviewed exceptions), SDK/dependency regressions, all 30 mobile tests, all-platform production exports, TypeScript, and ESLint. Native application code and the Flask deployment are unchanged by this security follow-up; the previously tested iPhone preview predates this lockfile change.
 
-### Original review validation
+### October 7 follow-up: new Mako alert
+
+While publishing Library PR #108, GitHub reported a fourth open alert: [#248](https://github.com/Kriordan/personal_portfolio/security/dependabot/248), [GHSA-5639-2j2p-m4mx](https://github.com/advisories/GHSA-5639-2j2p-m4mx), for **Mako 1.3.12** in `poetry.lock`. The advisory describes Windows drive-letter path traversal through `TemplateLookup`; its first patched version is **1.4.2**. Alembic depends on Mako for migration templates. No application `TemplateLookup` or Mako use was found in `project/` or `tests/`, and the Heroku deployment runs Linux, so the documented Windows prerequisite does not match the deployed platform. This is an exposure assessment, not a resolved alert.
+
+The Library dependency locks remain unchanged. Its Python audit and backend CI passed, but that audit result does not negate GitHub's newer finding. Review a targeted Mako update separately, rerun dependency consistency, migrations, application tests, and the audit, then verify GitHub's alert state. No alert was dismissed and no exception was added. The three earlier npm advisories and November 5 exception deadline remain open.
+
+### Original review validation results
 
 - Python 3.13.11 / Poetry 2.4.3, isolated `/tmp` environment: `poetry check --lock`, dependency consistency, **114 unittest tests**, and pip-audit 2.10.1 pass. Test execution disables dotenv and cloud metadata access and supplies no production credentials. The unchanged source-only Flask-APScheduler dependency is installed by Poetry; this run is not described as a wheels-only supply-chain audit.
 - Node 24.14.0 / npm 11.9.0: both `npm ci --ignore-scripts` installations pass. Web: **4 audit-gate tests**, CDN integrity check, **13 browser checks**, and Sass compilation pass. Stable Chrome timed out locally; Chrome Canary completed the same headless runner. CI uses Ubuntu's Google Chrome. Existing Sass deprecation warnings remain.

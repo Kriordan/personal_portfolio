@@ -1,29 +1,8 @@
 import { apiRequest } from '@/lib/api-client';
+import type { Playlist, Video } from '@/lib/library-model';
+export { libraryKeys, type Playlist, type Video } from '@/lib/library-model';
 
 // Shapes mirror project/api/library.py and library_service.serialize_*().
-
-export interface Playlist {
-  id: string;
-  title: string;
-  description: string | null;
-  published_at: string | null;
-  updated_at: string | null;
-  thumbnail_url: string | null;
-}
-
-export interface Video {
-  id: string;
-  playlist_id: string;
-  video_url_id: string;
-  title: string;
-  description: string | null;
-  published_at: string | null;
-  thumbnail_url: string | null;
-  embed_url: string;
-  watched: boolean;
-  created_at: string | null;
-  updated_at: string | null;
-}
 
 export const libraryApi = {
   getPlaylists(): Promise<{ playlists: Playlist[] }> {
@@ -41,12 +20,6 @@ export const libraryApi = {
   },
 
   sync(): Promise<{ message: string }> {
-    return apiRequest<{ message: string }>('/library/sync', { method: 'POST' });
+    return apiRequest<{ message: string }>('/library/sync', { method: 'POST', timeoutMs: 30_000 });
   },
-};
-
-export const libraryKeys = {
-  all: ['library'] as const,
-  playlists: () => ['library', 'playlists'] as const,
-  playlist: (playlistId: string) => ['library', 'playlist', playlistId] as const,
 };

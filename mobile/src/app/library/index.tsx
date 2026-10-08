@@ -1,204 +1,70 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LibraryEmpty, LibraryImage, LibrarySearch, libraryStyles } from '@/components/library-content';
+import { InlineError, NativeAction, PageHeading, ScreenState, screenStyles } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useLibrary, useLibrarySync } from '@/hooks/use-library';
+import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/lib/auth-context';
-import { libraryApi, libraryKeys, type Playlist } from '@/lib/library-api';
+import { confirmAction } from '@/lib/confirm-action';
+import { browseLibrary, type Playlist } from '@/lib/library-model';
 
-function PlaylistRow({ playlist, onPress }: { playlist: Playlist; onPress: () => void }) {
+function PlaylistRow({ playlist }: { playlist: Playlist }) {
   const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
-      ]}
-    >
-      {playlist.thumbnail_url ? (
-        <Image
-          source={{ uri: playlist.thumbnail_url }}
-          style={styles.thumbnail}
-          resizeMode="cover"
-        />
-      ) : null}
-      <View style={styles.rowBody}>
-        <ThemedText>{playlist.title}</ThemedText>
-        {playlist.description ? (
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-            {playlist.description}
-          </ThemedText>
-        ) : null}
-      </View>
-      <ThemedText type="small" themeColor="textSecondary">
-        ›
-      </ThemedText>
-    </Pressable>
-  );
+  const router = useRouter();
+  return <Pressable accessibilityRole="link" accessibilityLabel={playlist.title} accessibilityHint="Opens playlist videos" onPress={() => router.push({ pathname: '/library/[id]', params: { id: playlist.id } })}
+    style={({ pressed }) => [libraryStyles.row, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+    <LibraryImage uri={playlist.thumbnail_url} />
+    <View style={libraryStyles.rowBody}>
+      <ThemedText style={libraryStyles.rowTitle}>{playlist.title}</ThemedText>
+      {playlist.description ? <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{playlist.description}</ThemedText> : null}
+    </View>
+    <ThemedText accessible={false} themeColor="textSecondary">›</ThemedText>
+  </Pressable>;
 }
+const keyForPlaylist = (playlist: Playlist) => playlist.id;
+const renderPlaylist = ({ item }: { item: Playlist }) => <PlaylistRow playlist={item} />;
 
 export default function LibraryScreen() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
-
-  const playlistsQuery = useQuery({
-    queryKey: libraryKeys.playlists(),
-    queryFn: libraryApi.getPlaylists,
-    enabled: isAuthenticated === true,
-  });
-
-  const syncMutation = useMutation({
-    mutationFn: libraryApi.sync,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
-    },
-  });
-
-  if (playlistsQuery.isPending) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
-    );
-  }
-
-  if (playlistsQuery.isError) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">Couldn’t load your library.</ThemedText>
-        <Pressable style={styles.button} onPress={() => playlistsQuery.refetch()}>
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            Retry
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
-    );
-  }
-
-  const { playlists } = playlistsQuery.data;
-
-  return (
-    <ThemedView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={playlistsQuery.isRefetching}
-            onRefresh={() => playlistsQuery.refetch()}
-          />
-        }
-      >
-        <Pressable
-          style={[styles.button, syncMutation.isPending && styles.buttonDisabled]}
-          disabled={syncMutation.isPending}
-          onPress={() => syncMutation.mutate()}
-        >
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            {syncMutation.isPending ? 'Syncing…' : 'Sync Library'}
-          </ThemedText>
-        </Pressable>
-        {syncMutation.isError ? (
-          <ThemedText type="small" style={styles.error}>
-            {syncMutation.error instanceof Error
-              ? syncMutation.error.message
-              : 'Library sync failed.'}
-          </ThemedText>
-        ) : null}
-        {syncMutation.isSuccess ? (
-          <ThemedText type="small" style={styles.success}>
-            {syncMutation.data.message}
-          </ThemedText>
-        ) : null}
-
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-          PLAYLISTS
-        </ThemedText>
-        {playlists.length === 0 ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            No playlists yet. Try syncing your library.
-          </ThemedText>
-        ) : (
-          playlists.map((playlist) => (
-            <PlaylistRow
-              key={playlist.id}
-              playlist={playlist}
-              onPress={() => router.push(`/library/${playlist.id}`)}
-            />
-          ))
-        )}
-      </ScrollView>
-    </ThemedView>
-  );
+  const query = useLibrary();
+  const sync = useLibrarySync();
+  const theme = useTheme();
+  const search = useNativeText();
+  const confirming = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const playlists = useMemo(() => browseLibrary(query.data?.playlists ?? [], search.text), [query.data?.playlists, search.text]);
+  const refresh = () => { setRefreshing(true); void query.refetch().finally(() => setRefreshing(false)); };
+  const confirmSync = () => {
+    if (confirming.current || sync.status === 'pending') return;
+    confirming.current = true;
+    confirmAction('Sync shared Library?', 'Update the shared Library from the server’s connected YouTube account? Changes are visible to everyone.', 'Sync', () => {
+      confirming.current = false;
+      sync.start();
+    }, () => { confirming.current = false; }, false);
+  };
+  if (!query.data && query.isPending) return <ScreenState loading={!query.isPaused} title={query.isPaused ? 'You’re offline' : 'Loading Library'} message={query.isPaused ? 'Reconnect to load the shared catalog.' : undefined} />;
+  if (!query.data) return <ScreenState title="Couldn’t load Library" message="Check your connection and try again." onRetry={() => void query.refetch()} />;
+  const total = query.data.playlists.length;
+  return <SafeAreaView edges={['left', 'right', 'bottom']} style={[libraryStyles.screen, { backgroundColor: theme.background }]}>
+    <FlatList data={playlists} keyExtractor={keyForPlaylist} renderItem={renderPlaylist} contentContainerStyle={screenStyles.collection} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      ListHeaderComponent={<View style={screenStyles.gap}>
+        <PageHeading title="Library" subtitle="A shared collection of playlists, ready to explore." />
+        <LibrarySearch search={search} label="Search playlists" />
+        <NativeAction label={sync.status === 'pending' ? 'Syncing from YouTube…' : 'Sync from YouTube'} secondary disabled={sync.status === 'pending'} onPress={confirmSync} />
+        {sync.status === 'pending' ? <View style={screenStyles.gap}><ActivityIndicator color={theme.accent} accessibilityLabel="Import in progress" /><ThemedText type="small" themeColor="textSecondary">Updating the shared catalog. You can keep browsing.</ThemedText></View> : null}
+        {sync.status === 'error' ? <InlineError message={sync.message!} /> : null}
+        {sync.status === 'success' ? <ThemedText accessibilityLiveRegion="polite">{sync.message}</ThemedText> : null}
+        {sync.uncertain ? <NativeAction label="Refresh saved catalog" secondary onPress={refresh} disabled={refreshing} /> : null}
+        <ThemedText type="small" themeColor="textSecondary">Pull to refresh saved playlists. Sync imports updates from YouTube for everyone.</ThemedText>
+        {query.isPaused ? <ThemedText themeColor="textSecondary">You’re offline. Showing the last loaded playlists.</ThemedText> : null}
+        {query.isError ? <InlineError message={sync.status === 'success' ? 'The import completed, but these playlists couldn’t refresh. Showing the last loaded catalog.' : 'Couldn’t refresh. Showing the last loaded playlists.'} onRetry={refresh} /> : null}
+        <ThemedText type="smallBold" themeColor="textSecondary" style={libraryStyles.count}>{search.text.trim() ? `${playlists.length} of ${total} playlists` : `${total} ${total === 1 ? 'playlist' : 'playlists'}`} · Newest first</ThemedText>
+      </View>}
+      ListEmptyComponent={<LibraryEmpty title={total ? 'No matching playlists' : 'Your shared Library starts here.'} message={total ? 'Try another title or description, or clear your search.' : 'Sync from YouTube to import the connected account’s playlists. Everyone signed in sees the same catalog.'} />}
+    />
+  </SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  scrollContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  sectionHeader: {
-    marginTop: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  rowBody: {
-    flex: 1,
-    gap: Spacing.half,
-  },
-  thumbnail: {
-    width: 64,
-    height: 48,
-    borderRadius: Spacing.one,
-  },
-  button: {
-    backgroundColor: '#3c87f7',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#ffffff',
-  },
-  error: {
-    color: '#d64545',
-  },
-  success: {
-    color: '#2e9e5b',
-  },
-});

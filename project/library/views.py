@@ -45,7 +45,10 @@ def view_video(video_id):
 @login_required
 def sync_playlists():
     """Synchronizes playlists and videos."""
-    library_service.sync_library()
+    try:
+        library_service.sync_library()
+    except library_service.SyncError as error:
+        flash(str(error), "error")
 
     return redirect(url_for("foyer.utilities"))
 

@@ -21,6 +21,10 @@ GOOGLE_CLIENT_API_SERVICE_NAME = "youtube"
 GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
 
 
+class YouTubeConfigurationError(ValueError):
+    """The server's YouTube credentials or playlist configuration are unavailable."""
+
+
 def save_credentials_to_file(credentials):
     """
     Save OAuth credentials to a JSON file for use by CLI commands.
@@ -94,13 +98,13 @@ def get_youtube_service():
     credentials = None
 
     # Try to get credentials from session if in request context
-    if has_request_context() and "credentials" in flask.session:
-        print("Loading credentials from session")
-        credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
-    else:
-        # Try to load from token file (for CLI commands)
-        print("Loading credentials from token file")
-        credentials = load_credentials_from_file()
+    try:
+        if has_request_context() and "credentials" in flask.session:
+            credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
+        else:
+            credentials = load_credentials_from_file()
+    except (OSError, ValueError, TypeError) as error:
+        raise YouTubeConfigurationError("YouTube credentials unavailable.") from error
 
     if credentials is None:
         error_msg = (
@@ -108,7 +112,7 @@ def get_youtube_service():
             "Please authorize the app first by visiting /oauth/authorize in your browser."
         )
         print(f"ERROR: {error_msg}")
-        raise ValueError(error_msg)
+        raise YouTubeConfigurationError(error_msg)
 
     return build(
         GOOGLE_CLIENT_API_SERVICE_NAME,
@@ -126,8 +130,13 @@ def fetch_playlists(youtube_service):
     """
     playlists = []
 
-    with open("project/data/jsonfiles/youtube-ids.json", "r", encoding="utf-8") as f:
-        playlist_ids = json.load(f)
+    try:
+        with open("project/data/jsonfiles/youtube-ids.json", "r", encoding="utf-8") as f:
+            playlist_ids = json.load(f)
+        if not isinstance(playlist_ids, list) or not all(isinstance(value, str) for value in playlist_ids):
+            raise ValueError("Expected playlist IDs")
+    except (OSError, ValueError) as error:
+        raise YouTubeConfigurationError("YouTube playlist configuration unavailable.") from error
 
     print("""
     ##########################
