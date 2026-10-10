@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>YouTube connection · Library</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/youtube-connection.css') }}">
+  </head>
+  <body>
+    <main class="youtube-connection">
+      <p><a href="{{ url_for('library.library_home') }}">Back to Library</a></p>
+      <h1>YouTube connection</h1>
+      <p>This connection supplies the Library shared by all signed-in accounts. Only a site administrator can connect or revoke it.</p>
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p role="status">{{ message }}</p>
+      {% endfor %}
+      {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+      {% if configuration_error %}<p role="alert">{{ configuration_error }}</p>{% endif %}
+      {% if connection %}
+        <h2>Connection saved</h2>
+        <p>Saved {{ connection.connected_at.strftime('%Y-%m-%d at %H:%M UTC') }}. Google can still expire or revoke access; use Check connection to verify it.</p>
+      {% else %}
+        <h2>YouTube is not connected</h2>
+        <p>Saved playlists remain available. Connect YouTube to enable new imports.</p>
+      {% endif %}
+      {% if connection_url %}
+        <p><a href="{{ connection_url }}">Open the connection page on the configured website</a> and sign in there before continuing.</p>
+      {% elif not configuration_error %}
+        <h2>{{ 'Reconnect YouTube' if connection else 'Connect YouTube' }}</h2>
+        <p>Choose the Google account that owns the Library's playlists and allow read access. Its playlists, including private ones, can be imported into this shared catalog. A successful reconnect replaces the current shared connection.</p>
+        <form method="post" action="{{ url_for('oauth.authorize') }}">
+          {{ form.hidden_tag() }}
+          <button type="submit">Continue to Google</button>
+        </form>
+        {% if connection %}
+          <h2>Check connection</h2>
+          <p>Verify access without importing or changing the Library.</p>
+          <form method="post" action="{{ url_for('oauth.test_api_request') }}">
+            {{ form.hidden_tag() }}
+            <button type="submit">Check connection</button>
+          </form>
+          <details>
+            <summary>Disconnect YouTube</summary>
+            <p>This revokes Google's access grant and stops imports for everyone. Saved playlists and videos remain.</p>
+            <form method="post" action="{{ url_for('oauth.revoke') }}">
+              {{ form.hidden_tag() }}
+              <button type="submit">Revoke access and disconnect</button>
+            </form>
+          </details>
+        {% endif %}
+      {% endif %}
+    </main>
+  </body>
+</html>

@@ -68,6 +68,19 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+class YouTubeConnection(db.Model):
+    """One maintainer-managed connection for the catalog shared by all users."""
+
+    __tablename__ = "youtube_connection"
+    __table_args__ = (db.CheckConstraint("id = 1", name="ck_youtube_connection_singleton"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    encrypted_refresh_token: Mapped[str] = mapped_column(Text, nullable=False)
+    oauth_client_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    connected_by_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    connected_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+
+
 class PasswordResetAttempt(db.Model):
     """Track password reset attempts for rate limiting."""
 

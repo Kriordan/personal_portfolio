@@ -1,124 +1,18 @@
 import json
 import logging
-import os
 from datetime import datetime, timezone
 
-import flask
-import google.oauth2.credentials
-from flask import has_request_context
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 from project.database import db
+from project.library.credentials import YouTubeConfigurationError, load_shared_credentials
 from project.models import Playlist, Video
 
 logger = logging.getLogger(__name__)
 
-CLIENT_SECRETS_FILE = "client_secret.json"
-TOKEN_FILE = "project/data/youtube_token.json"
-SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
-GOOGLE_CLIENT_API_SERVICE_NAME = "youtube"
-GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
-
-
-class YouTubeConfigurationError(ValueError):
-    """The server's YouTube credentials or playlist configuration are unavailable."""
-
-
-def save_credentials_to_file(credentials):
-    """
-    Save OAuth credentials to a JSON file for use by CLI commands.
-
-    Args:
-        credentials: Google OAuth2 credentials object or dict.
-    """
-    if isinstance(credentials, dict):
-        creds_dict = credentials
-    else:
-        creds_dict = {
-            "token": credentials.token,
-            "refresh_token": credentials.refresh_token,
-            "token_uri": credentials.token_uri,
-            "client_id": credentials.client_id,
-            "client_secret": credentials.client_secret,
-            "scopes": credentials.scopes,
-        }
-
-    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
-    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(creds_dict, f, indent=2)
-    print(f"Credentials saved to {TOKEN_FILE}")
-
-
-def load_credentials_from_file():
-    """
-    Load OAuth credentials from a JSON file.
-
-    Returns:
-        Google OAuth2 credentials object, or None if file doesn't exist.
-    """
-    if not os.path.exists(TOKEN_FILE):
-        return None
-
-    with open(TOKEN_FILE, "r", encoding="utf-8") as f:
-        creds_dict = json.load(f)
-
-    credentials = google.oauth2.credentials.Credentials(**creds_dict)
-
-    # Refresh the token if it's expired
-    if credentials.expired and credentials.refresh_token:
-        print("Token expired, refreshing...")
-        credentials.refresh(Request())
-        save_credentials_to_file(credentials)
-
-    return credentials
-
-
 def get_youtube_service():
-    """
-    Returns a YouTube service object authenticated with the user's credentials.
-
-    This function uses the Google OAuth2 library to authenticate the user and obtain
-    the necessary credentials to access the YouTube API. It then creates and returns
-    a YouTube service object that can be used to interact with the YouTube API.
-
-    When called from a web request context, credentials are loaded from the session.
-    When called from a CLI command (outside request context), credentials are loaded
-    from a token file.
-
-    Returns:
-        A YouTube service object.
-
-    Raises:
-        ValueError: If credentials are not found in session or token file.
-        Any exceptions that may occur during the authentication process.
-    """
-    print('Building YouTube service object')
-
-    credentials = None
-
-    # Try to get credentials from session if in request context
-    try:
-        if has_request_context() and "credentials" in flask.session:
-            credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
-        else:
-            credentials = load_credentials_from_file()
-    except (OSError, ValueError, TypeError) as error:
-        raise YouTubeConfigurationError("YouTube credentials unavailable.") from error
-
-    if credentials is None:
-        error_msg = (
-            "YouTube credentials not found. "
-            "Please authorize the app first by visiting /oauth/authorize in your browser."
-        )
-        print(f"ERROR: {error_msg}")
-        raise YouTubeConfigurationError(error_msg)
-
-    return build(
-        GOOGLE_CLIENT_API_SERVICE_NAME,
-        GOOGLE_CLIENT_API_SERVICE_VERSION,
-        credentials=credentials,
-    )
+    """Use the maintainer's shared, durable connection for API, website, and CLI."""
+    return build("youtube", "v3", credentials=load_shared_credentials())
 
 
 def fetch_playlists(youtube_service):

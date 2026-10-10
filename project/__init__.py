@@ -27,7 +27,7 @@ from project.jobwizard.views import jobwizard_blueprint
 from project.learning import learning_blueprint
 from project.library.views import library_blueprint
 from project.lists.views import lists_blueprint
-from project.oauth.views import oauth_blueprint
+from project.oauth.views import oauth_blueprint, private_connection_response
 from project.wishlist.views import wishlist_blueprint
 
 from .commands import (
@@ -68,6 +68,9 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
+    # Flask runs app response hooks in reverse order. Apply OAuth privacy headers
+    # after extensions (including Talisman's global referrer-policy header).
+    app.after_request(private_connection_response)
     register_extensions(app)
     register_blueprints(app)
     register_commands(app)

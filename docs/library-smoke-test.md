@@ -6,6 +6,8 @@ The [October 7 iPhone preview](https://expo.dev/accounts/kriordan/projects/perso
 
 Library is one shared catalog for all signed-in accounts. Pull-to-refresh reads saved data. **Sync from YouTube imports into that shared catalog using the server's connection**, and affects everyone. Do not use live sync for failure injection; use the fixture below. Opening YouTube never changes the shared watched flag.
 
+The October 10 physical test found missing server credentials. Follow the [YouTube connection runbook](library-youtube-connection.md) after the backend repair is deployed. Verify the saved connection from a fresh server process, then rerun mobile sync; a working cached catalog alone does not establish import readiness.
+
 ## iPhone checklist
 
 - [ ] Install the new preview, cold-launch, restore/sign in, and open Library from Tools. Verify Home, Tools filtering, Me, sign-out, and protected-route privacy.
