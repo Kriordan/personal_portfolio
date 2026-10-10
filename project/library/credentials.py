@@ -11,6 +11,8 @@ from project.database import db
 from project.models import YouTubeConnection
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
+WRITE_SCOPE = "https://www.googleapis.com/auth/youtube.force-ssl"
+MOVE_SCOPES = [*SCOPES, WRITE_SCOPE]
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
@@ -54,24 +56,37 @@ def oauth_redirect_uri() -> str:
     return uri
 
 
-def save_shared_credentials(credentials, *, connected_by_id: int) -> None:
+def save_shared_credentials(credentials, *, connected_by_id: int, channel_id=None, requested_scopes=None) -> None:
     """Replace the shared connection only after a complete offline-access grant."""
     config = oauth_client_config()["web"]
     if credentials.client_id != config["client_id"] or not credentials.refresh_token:
         raise YouTubeConfigurationError("Google did not provide the required offline access. Reconnect YouTube.")
-    granted = credentials.granted_scopes
-    if granted is not None and not set(SCOPES).issubset(granted):
-        raise YouTubeConfigurationError("YouTube read access was not granted. Reconnect YouTube.")
+    # OAuth permits an omitted scope response only when the granted scope is
+    # identical to the request. Explicit partial grants must never enable writes.
+    granted = list(credentials.granted_scopes if credentials.granted_scopes is not None else credentials.scopes or SCOPES)
+    if not set(requested_scopes or SCOPES).issubset(granted):
+        raise YouTubeConfigurationError("The requested YouTube access was not granted. Reconnect YouTube.")
     encrypted = credential_cipher().encrypt(credentials.refresh_token.encode()).decode()
-    connection = db.session.get(YouTubeConnection, 1)
-    if connection is None:
-        connection = YouTubeConnection(id=1)
-        db.session.add(connection)
-    connection.encrypted_refresh_token = encrypted
-    connection.oauth_client_id = config["client_id"]
-    connection.connected_by_id = connected_by_id
-    connection.connected_at = datetime.now(timezone.utc)
-    db.session.commit()
+    from project.library.sync_tracking import assert_import_lock, import_lock
+    with import_lock() as acquired:
+        if not acquired:
+            raise YouTubeConfigurationError("Library is busy. Reconnect when its current operation finishes.")
+        # The owner may have changed since the request's pre-lock permission check.
+        db.session.expire_all()
+        connection = db.session.get(YouTubeConnection, 1)
+        if requested_scopes == MOVE_SCOPES and (connection is None or connection.connected_by_id != connected_by_id):
+            raise YouTubeConfigurationError("The connected owner changed. Start the permission upgrade again.")
+        if connection is None:
+            connection = YouTubeConnection(id=1)
+            db.session.add(connection)
+        connection.encrypted_refresh_token = encrypted
+        connection.oauth_client_id = config["client_id"]
+        connection.connected_by_id = connected_by_id
+        connection.connected_at = datetime.now(timezone.utc)
+        connection.granted_scopes = granted
+        connection.channel_id = channel_id
+        assert_import_lock()
+        db.session.commit()
 
 
 def load_shared_credentials() -> Credentials:
@@ -89,5 +104,5 @@ def load_shared_credentials() -> Credentials:
     # durable refresh token; no expired access token or browser cookie is reused.
     return Credentials(
         token=None, refresh_token=refresh_token, token_uri=TOKEN_URI,
-        client_id=config["client_id"], client_secret=config["client_secret"], scopes=SCOPES,
+        client_id=config["client_id"], client_secret=config["client_secret"], scopes=connection.granted_scopes or SCOPES,
     )

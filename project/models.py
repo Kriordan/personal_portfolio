@@ -79,6 +79,8 @@ class YouTubeConnection(db.Model):
     oauth_client_id: Mapped[str] = mapped_column(String(512), nullable=False)
     connected_by_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     connected_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+    granted_scopes: Mapped[Optional[list]] = mapped_column(db.JSON)
+    channel_id: Mapped[Optional[str]] = mapped_column(String(255))
 
 
 class PasswordResetAttempt(db.Model):
@@ -374,6 +376,45 @@ class LibraryPin(db.Model):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
     playlist_id: Mapped[str] = mapped_column(ForeignKey("playlist.id", ondelete="CASCADE"), primary_key=True)
     pinned_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+
+
+class LibraryWorkflow(db.Model):
+    __table_args__ = (db.CheckConstraint("id = 1", name="ck_library_workflow_singleton"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[str] = mapped_column(String(36), nullable=False)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    channel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_playlist_id: Mapped[str] = mapped_column(ForeignKey("playlist.id"), nullable=False)
+    destination_playlist_id: Mapped[str] = mapped_column(ForeignKey("playlist.id"), nullable=False)
+    membership_checked_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+
+
+class LibraryWatchedMembership(db.Model):
+    """Confirmed upstream membership, never inferred from retained catalog rows."""
+    video_url_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    confirmed_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+
+
+class LibraryMove(db.Model):
+    """An intent and checkpoints committed before each non-atomic YouTube write."""
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)
+    channel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_playlist_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    destination_playlist_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_entry_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    destination_entry_id: Mapped[Optional[str]] = mapped_column(String(255))
+    video_url_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    video_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    destination_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    stage: Mapped[str] = mapped_column(String(16), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+    last_checked_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    removal_request_id: Mapped[Optional[str]] = mapped_column(String(36))
+    error: Mapped[Optional[str]] = mapped_column(String(255))
 
 
 class Video(db.Model):

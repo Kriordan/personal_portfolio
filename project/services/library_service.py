@@ -45,8 +45,11 @@ def serialize_playlist(playlist: Playlist) -> dict[str, Any]:
     }
 
 
-def serialize_video(video: Video) -> dict[str, Any]:
+def serialize_video(video: Video, *, membership=None) -> dict[str, Any]:
     """Return a JSON-safe video payload."""
+    if membership is None:
+        from project.library.workflow import watched_ids
+        membership = watched_ids()
     return {
         "id": video.id,
         "playlist_id": video.playlist_id,
@@ -57,6 +60,7 @@ def serialize_video(video: Video) -> dict[str, Any]:
         "thumbnail_url": video.thumbnail_url,
         "embed_url": video.embed_url,
         "watched": video.watched,
+        "in_watched_playlist": video.video_url_id in membership,
         "position": video.position,
         "created_at": video.created_at.isoformat() if video.created_at else None,
         "updated_at": video.updated_at.isoformat() if video.updated_at else None,

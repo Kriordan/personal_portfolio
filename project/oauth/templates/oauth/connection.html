@@ -36,6 +36,36 @@
           <button type="submit">Continue to Google</button>
         </form>
         {% if connection %}
+          {% if workflow.is_owner %}
+          <h2>Move to watched</h2>
+          <p>After watching a video, move it from your custom added playlist to your custom watched playlist. Only you, as the connected administrator, can do this. Every move asks for confirmation in the app.</p>
+          <p>Google’s playlist-change permission also allows broader YouTube changes. This app uses it only to add the selected video to watched and remove that exact entry from added. Read-only Library sync remains available without this permission.</p>
+          <form method="post" action="{{ url_for('oauth.authorize') }}">
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="playlist_changes" value="yes">
+            <button type="submit">Enable playlist changes with Google</button>
+          </form>
+          {% if workflow.reason %}<p>{{ workflow.reason }}</p>{% endif %}
+          <form method="post" action="{{ url_for('oauth.save_workflow') }}">
+            {{ form.hidden_tag() }}
+            <label for="source-playlist">Added playlist (move from)</label>
+            <select id="source-playlist" name="source_playlist_id" required>
+              <option value="">Choose your added playlist</option>
+              {% for playlist in playlists %}
+              <option value="{{ playlist.id }}" {% if workflow.source and workflow.source.id == playlist.id %}selected{% endif %}>{{ playlist.title }}</option>
+              {% endfor %}
+            </select>
+            <label for="destination-playlist">Watched playlist (save to)</label>
+            <select id="destination-playlist" name="destination_playlist_id" required>
+              <option value="">Choose your watched playlist</option>
+              {% for playlist in playlists %}
+              <option value="{{ playlist.id }}" {% if workflow.destination and workflow.destination.id == playlist.id %}selected{% endif %}>{{ playlist.title }}</option>
+              {% endfor %}
+            </select>
+            <p>Both must be distinct custom playlists owned by the connected YouTube channel. Their stable IDs are saved, so renaming a playlist does not change the destination.</p>
+            <button type="submit">Verify and save playlists</button>
+          </form>
+          {% endif %}
           <h2>Check connection</h2>
           <p>Verify access without importing or changing the Library.</p>
           <form method="post" action="{{ url_for('oauth.test_api_request') }}">

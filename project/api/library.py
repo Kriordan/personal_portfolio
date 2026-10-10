@@ -12,6 +12,8 @@ from project.models import User
 from project.services import library_service
 from project.library.sync_tracking import sync_status
 from project.services import library_pins
+from project.library.workflow import WorkflowError, watched_ids, workflow_status
+from project.library.moves import move_status, move_video, retry_removal
 
 library_api_blueprint = Blueprint("api_library", __name__, url_prefix="/library")
 
@@ -55,6 +57,66 @@ def _current_user_from_jwt() -> User | None:
     except (TypeError, ValueError):
         return None
 
+
+def _uuid(value):
+    try:
+        return isinstance(value, str) and str(UUID(value)) == value
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
+@library_api_blueprint.errorhandler(WorkflowError)
+def workflow_error(error):
+    return jsonify({"error": str(error)}), error.status
+
+
+@library_api_blueprint.get("/workflow")
+@jwt_required()
+def api_workflow():
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    return jsonify(workflow_status(user))
+
+
+@library_api_blueprint.route("/moves", methods=["GET", "POST"])
+@jwt_required()
+def api_moves():
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    if request.method == "GET":
+        return jsonify(move_status(user))
+    body = request.get_json(silent=True)
+    if (not isinstance(body, dict) or not _uuid(body.get("request_id"))
+            or not _uuid(body.get("workflow_version"))
+            or not isinstance(body.get("source_entry_id"), str) or not 0 < len(body["source_entry_id"]) <= 255):
+        return jsonify({"error": "A request ID, workflow version and source entry are required."}), 400
+    return jsonify({"move": move_video(user, body["request_id"], body["source_entry_id"], body["workflow_version"])})
+
+
+@library_api_blueprint.get("/moves/<string:move_id>")
+@jwt_required()
+def api_move_status(move_id):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    if not _uuid(move_id):
+        return jsonify({"error": "Invalid move ID."}), 400
+    return jsonify(move_status(user, move_id))
+
+
+@library_api_blueprint.post("/moves/<string:move_id>/retry-removal")
+@jwt_required()
+def api_retry_removal(move_id):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    body = request.get_json(silent=True)
+    if not _uuid(move_id) or not isinstance(body, dict) or not _uuid(body.get("request_id")):
+        return jsonify({"error": "Valid move and removal request IDs are required."}), 400
+    return jsonify({"move": retry_removal(user, move_id, body["request_id"])})
+
 @library_api_blueprint.get("/playlists")
 @jwt_required()
 def api_get_playlists():
@@ -87,11 +149,12 @@ def api_get_playlist(playlist_id: str):
     except library_service.NotFoundError:
         return jsonify({"error": "Playlist not found."}), 404
 
+    membership = watched_ids()
     return (
         jsonify(
             {
                 "playlist": library_service.serialize_playlist(playlist),
-                "videos": [library_service.serialize_video(video) for video in videos],
+                "videos": [library_service.serialize_video(video, membership=membership) for video in videos],
             }
         ),
         200,

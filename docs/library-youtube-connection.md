@@ -1,6 +1,6 @@
 # Library YouTube connection
 
-Library is a single shared catalog. Every authenticated account can request an import, but only a site administrator can replace or revoke the shared YouTube connection. The connection requests only `youtube.readonly`. Imported playlists, including private playlist contents, are visible to the app's other signed-in accounts; choose the intended maintainer account.
+Library is a single shared catalog. Every authenticated account can request an import, but only a site administrator can replace or revoke the shared YouTube connection. Normal connection setup requests `youtube.readonly`. The optional Move to watched workflow separately requests `youtube.force-ssl` through explicit Google consent. Imported playlists, including private playlist contents, are visible to the app's other signed-in accounts; choose the intended maintainer account.
 
 ## Reconnect
 
@@ -41,3 +41,26 @@ PostgreSQL session advisory locks exclude API/website/CLI overlap and release if
 For rollback, leave the additive schema in place and roll back application code. Downgrading this migration removes receipt history and saved positions, though playlist/video records remain. Do not deploy/restart during a deliberate live import unless interrupting it is acceptable. A first sync on the new release is needed to create its first receipt and populate video positions; historical success counts are not backfilled.
 
 References: [Heroku ephemeral filesystems](https://devcenter.heroku.com/articles/dyno-isolation), [Google token-storage guidance](https://developers.google.com/identity/protocols/oauth2/resources/best-practices), [Google offline authorization](https://developers.google.com/identity/protocols/oauth2/web-server), and [Fernet](https://cryptography.io/en/stable/fernet/).
+
+## Personal pins and Move to watched
+
+Migration `b8c9d0e1f2a3` adds unique account/playlist pins. `GET /api/v1/library/pins` and idempotent `PUT /api/v1/library/pins/PLAYLIST_ID` with `{"pinned":true}` require a valid account; the account comes only from its JWT. Pins are private across devices, ordered by time pinned, and independent of shared imports and device sorting. There is no limit of three pins.
+
+Migration `c9d0e1f2a3b4` adds nullable granted scopes/channel metadata, a channel-bound workflow configuration, confirmed watched membership, and durable move receipts. Existing encrypted credentials remain intact and continue read-only sync. Moves start disabled until the connected administrator completes these steps:
+
+1. Open the canonical [YouTube connection page](https://www.keithriordan.com/oauth/), signed in as the administrator who owns the current connection.
+2. Choose **Enable playlist changes with Google**. Review Google's broader permission and consent for the intended YouTube channel. Declining or a failed exchange preserves the existing connection. This does not require rotating the client secret or encryption key.
+3. Choose the custom **watch later - added** and **watch later - watched** playlists, then **Verify and save playlists**. Sync first if they are absent from the saved catalog. Verification checks distinct custom playlist IDs, ownership by the selected channel, and a complete fetch of the watched playlist before committing configuration. Special YouTube Watch Later/history/uploads playlists are not supported.
+4. Refresh the app. Only that connected administrator sees **Move to watched** in the configured source playlist. Every move names the video and both playlists before confirmation. Other accounts can browse the shared changes and use their own pins.
+
+Stable playlist IDs are saved; renaming does not redirect moves. A changed/unknown channel or connection owner disables the workflow until configured for the intended channel. A normal read-only reconnect leaves moves disabled until the explicit permission/channel setup is completed again. Google Testing-mode token expiry still needs its separate publishing/Branding follow-up.
+
+`GET /api/v1/library/workflow` returns account-specific capability/setup information. `POST /api/v1/library/moves` requires a client UUID, exact source playlist-item ID, and the current configuration version; a stale confirmation is rejected. Owner-only `GET /moves` and `GET /moves/UUID` recover receipts after navigation, lost responses or app restarts. All Library responses use private/no-store caching. Foreground polling backs off after two minutes and never resends a move.
+
+The server holds the same PostgreSQL session advisory lock as sync and connection changes. It verifies the exact source entry, checks whether the video already exists in the destination, inserts only if absent, confirms the destination with a read, and then deletes only that source playlist-item ID. Progress is committed before each external write. Success commits the exact local source removal, destination upsert and receipt together; other saved occurrences are preserved. The existing importer still retains unavailable/missing metadata.
+
+YouTube's [insert](https://developers.google.com/youtube/v3/docs/playlistItems/insert) and [delete](https://developers.google.com/youtube/v3/docs/playlistItems/delete) are separate operations without a shared transaction. An ambiguous insertion is never blindly retried, even with a new request ID. Status recovery makes provider reads only. If the destination is found and the source remains, the result is **Saved to watched; still in added**. **Finish removal from added** asks for a new confirmation and uses `POST /moves/UUID/retry-removal` with a new removal UUID. That action rechecks both entries and never inserts. Repeated removal UUIDs return their prior receipt. If neither side can be confirmed, leave the receipt unresolved and inspect both playlists in YouTube; do not delete/reset receipts to force a new insert. A later quota/auth failure during reconciliation does not make an ambiguous insert retryable.
+
+The new **In watched playlist** badge is derived from confirmed destination membership by YouTube video ID, across all catalog occurrences. Full membership snapshots replace the previous set only after a successful complete fetch; failed imports preserve it. Moves add confirmed membership immediately. It is a last-confirmed playlist fact, not YouTube viewing history or a personal watched flag. The legacy `watched` database/API field remains compatible but is no longer used for the new mobile badge.
+
+Roll back application code while retaining the additive schema and receipts. Downgrading removes pins/workflow/receipt metadata; it does not undo any YouTube changes. Do not deploy during a deliberate move/import. An old worker whose lock session dies must stop before further writes; read-only recovery resolves any in-flight provider outcome. SQLite is supported only for single-process development.

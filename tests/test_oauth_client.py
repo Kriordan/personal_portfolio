@@ -21,7 +21,7 @@ from sqlalchemy import inspect
 from project import create_app
 from project.database import db
 from project.library.credentials import (
-    SCOPES, YouTubeConfigurationError, load_shared_credentials, save_shared_credentials,
+    SCOPES, MOVE_SCOPES, YouTubeConfigurationError, load_shared_credentials, save_shared_credentials,
 )
 from project.library.jobs import get_youtube_service
 from project.models import Playlist, User, YouTubeConnection
@@ -139,6 +139,36 @@ class OAuthClientTests(unittest.TestCase):
             session.clear()
         self.assertEqual(self.get("/oauth/").status_code, 302)
 
+    def test_playlist_scope_upgrade_is_explicit_owner_only_and_decline_preserves_read_sync(self):
+        self.save()
+        response = self.post("/oauth/authorize", data={"playlist_changes": "yes"})
+        params = parse_qs(urlparse(response.location).query)
+        self.assertEqual(params["scope"][0].split(), MOVE_SCOPES)
+        state = params["state"][0]
+        self.assertEqual(self.get(f"/oauth/oauth2callback?state={state}&error=access_denied").status_code, 400)
+        with self.app.app_context():
+            self.assertEqual(load_shared_credentials().scopes, SCOPES)
+            another = User(email="another-admin@example.test", username="another-admin", is_admin=True)
+            db.session.add(another)
+            db.session.commit()
+            other_id = another.id
+        self.sign_in(other_id)
+        self.assertEqual(self.post("/oauth/authorize", data={"playlist_changes": "yes"}).status_code, 403)
+        self.assertEqual(self.post("/oauth/workflow", data={"source_playlist_id": "PLone", "destination_playlist_id": "PLtwo"}).status_code, 403)
+
+    def test_actual_scope_grant_is_persisted_and_partial_upgrade_is_rejected(self):
+        self.save("original")
+        with self.app.app_context():
+            read_only = self.credentials()
+            with self.assertRaises(YouTubeConfigurationError):
+                save_shared_credentials(read_only, connected_by_id=self.admin_id, channel_id="channel", requested_scopes=MOVE_SCOPES)
+            self.assertEqual(load_shared_credentials().refresh_token, "original")
+            granted = Credentials(token="fixture", refresh_token="new", token_uri="https://oauth2.googleapis.com/token",
+                client_id="test-client", scopes=MOVE_SCOPES, granted_scopes=MOVE_SCOPES)
+            save_shared_credentials(granted, connected_by_id=self.admin_id, channel_id="channel", requested_scopes=MOVE_SCOPES)
+            self.assertEqual(load_shared_credentials().scopes, MOVE_SCOPES)
+            self.assertEqual(db.session.get(YouTubeConnection, 1).channel_id, "channel")
+
     @patch("requests.sessions.Session.request")
     def test_expired_or_cross_account_callback_never_exchanges_code(self, request):
         for change in ({"created_at": time.time() - 601}, {"user_id": self.member_id}):
@@ -249,6 +279,7 @@ class OAuthClientTests(unittest.TestCase):
         for path in ("/oauth/authorize", "/oauth/test", "/oauth/revoke"):
             self.assertEqual(self.post(path).status_code, 400)
             self.assertEqual(self.get(path).status_code, 302)
+        self.assertEqual(self.post("/oauth/workflow").status_code, 400)
         with self.app.app_context():
             self.assertEqual(load_shared_credentials().refresh_token, "test-refresh")
         page = self.get("/oauth/")

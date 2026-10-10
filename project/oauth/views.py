@@ -13,10 +13,12 @@ from flask_wtf import FlaskForm
 from project.database import db
 from project.extensions import login_manager
 from project.library.credentials import (
-    SCOPES, YouTubeConfigurationError, credential_cipher, load_shared_credentials,
+    SCOPES, MOVE_SCOPES, YouTubeConfigurationError, credential_cipher, load_shared_credentials,
     oauth_client_config, oauth_redirect_uri, save_shared_credentials,
 )
-from project.models import YouTubeConnection
+from project.models import Playlist, YouTubeConnection
+from project.library.workflow import WorkflowError, channel_id, configure_workflow, connected_owner, workflow_status
+from project.library.sync_tracking import assert_import_lock, import_lock
 
 oauth_blueprint = Blueprint("oauth", __name__, template_folder="templates", url_prefix="/oauth")
 
@@ -56,6 +58,7 @@ def _connection_page(*, error=None, status=200):
     return render_template(
         "oauth/connection.html", form=FlaskForm(), connection=connection,
         error=error, configuration_error=configuration_error, connection_url=connection_url,
+        workflow=workflow_status(current_user), playlists=Playlist.query.order_by(Playlist.title).all(),
     ), status
 
 
@@ -81,6 +84,10 @@ def authorize():
     if request.method == "GET":
         return redirect(url_for("oauth.index"))
     _require_form()
+    upgrade = request.form.get("playlist_changes") == "yes"
+    if upgrade and not connected_owner(current_user):
+        abort(403)
+    scopes = MOVE_SCOPES if upgrade else SCOPES
     try:
         config = oauth_client_config()
         credential_cipher()
@@ -88,7 +95,7 @@ def authorize():
         if request.host != urlsplit(callback).netloc:
             return _connection_page(error="Open the connection page on the website linked below.", status=400)
         flow = google_auth_oauthlib.flow.Flow.from_client_config(
-            config, scopes=SCOPES, autogenerate_code_verifier=True,
+            config, scopes=scopes, autogenerate_code_verifier=True,
         )
         flow.redirect_uri = callback
         authorization_url, state = flow.authorization_url(access_type="offline", prompt="consent")
@@ -96,6 +103,7 @@ def authorize():
             "state": state, "created_at": time.time(), "user_id": current_user.id,
             "code_verifier": flow.code_verifier, "client_id": config["web"]["client_id"],
             "redirect_uri": callback,
+            "scopes": scopes,
         }
         return redirect(authorization_url)
     except Exception as error:
@@ -127,14 +135,26 @@ def oauth2callback():
                 or pending.get("client_id") != config["web"]["client_id"]
                 or not pending.get("code_verifier")):
             return _connection_page(error="Connection settings changed. Start again.", status=400)
+        scopes = pending.get("scopes", SCOPES)
+        if scopes not in (SCOPES, MOVE_SCOPES):
+            return _connection_page(error="Connection settings changed. Start again.", status=400)
+        if scopes == MOVE_SCOPES and not connected_owner(current_user):
+            abort(403)
         flow = google_auth_oauthlib.flow.Flow.from_client_config(
-            config, scopes=SCOPES, state=pending["state"], code_verifier=pending["code_verifier"],
+            config, scopes=scopes, state=pending["state"], code_verifier=pending["code_verifier"],
         )
         flow.redirect_uri = callback
         flow.fetch_token(code=codes[0], timeout=15)
-        save_shared_credentials(flow.credentials, connected_by_id=current_user.id)
+        channel = None
+        if scopes == MOVE_SCOPES:
+            from googleapiclient.discovery import build
+            from google_auth_httplib2 import AuthorizedHttp
+            from httplib2 import Http
+            with build("youtube", "v3", http=AuthorizedHttp(flow.credentials, http=Http(timeout=15))) as service:
+                channel = channel_id(service)
+        save_shared_credentials(flow.credentials, connected_by_id=current_user.id, channel_id=channel, requested_scopes=scopes)
     except Exception as error:
-        return _connection_failure(error, "YouTube could not be connected. Retry and allow read access when Google asks. The existing connection is unchanged.")
+        return _connection_failure(error, "YouTube could not be connected. Retry and allow the requested access when Google asks. The existing connection is unchanged.")
     flash("YouTube is connected for the shared Library. Return to the app and tap Sync from YouTube.", "success")
     return redirect(url_for("oauth.index"))
 
@@ -160,20 +180,41 @@ def revoke():
         return redirect(url_for("oauth.index"))
     _require_form()
     try:
-        connection = db.session.get(YouTubeConnection, 1)
-        if connection is not None:
-            credentials = load_shared_credentials()
-            result = requests.post(
-                "https://oauth2.googleapis.com/revoke",
-                data={"token": credentials.refresh_token}, timeout=15,
-            )
-            result.raise_for_status()
-            db.session.delete(connection)
-            db.session.commit()
+        with import_lock() as acquired:
+            if not acquired:
+                raise WorkflowError("Library is busy.")
+            connection = db.session.get(YouTubeConnection, 1)
+            if connection is not None:
+                credentials = load_shared_credentials()
+                assert_import_lock()
+                result = requests.post(
+                    "https://oauth2.googleapis.com/revoke",
+                    data={"token": credentials.refresh_token}, timeout=15,
+                )
+                result.raise_for_status()
+                db.session.delete(connection)
+                assert_import_lock()
+                db.session.commit()
     except Exception as error:
         return _connection_failure(error, "YouTube access could not be revoked. The saved connection is unchanged.")
     session.pop("youtube_oauth", None)
     flash("YouTube access was revoked and the saved connection removed. The saved Library catalog remains available.", "success")
+    return redirect(url_for("oauth.index"))
+
+
+@oauth_blueprint.post("/workflow")
+def save_workflow():
+    _require_form()
+    if not connected_owner(current_user):
+        abort(403)
+    try:
+        configure_workflow(current_user, request.form.get("source_playlist_id", ""), request.form.get("destination_playlist_id", ""))
+    except WorkflowError as error:
+        db.session.rollback()
+        return _connection_page(error=str(error), status=error.status)
+    except Exception as error:
+        return _connection_failure(error, "Couldn’t verify and save the playlists. The previous setup is unchanged. Check YouTube access and try again.")
+    flash("Move to watched is configured. Return to the app and refresh the added playlist.", "success")
     return redirect(url_for("oauth.index"))
 
 

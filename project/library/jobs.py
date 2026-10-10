@@ -10,9 +10,14 @@ from project.models import Playlist, Video
 
 logger = logging.getLogger(__name__)
 
-def get_youtube_service():
+def get_youtube_service(*, timeout=None):
     """Use the maintainer's shared, durable connection for API, website, and CLI."""
-    return build("youtube", "v3", credentials=load_shared_credentials())
+    credentials = load_shared_credentials()
+    if timeout is not None:
+        from google_auth_httplib2 import AuthorizedHttp
+        from httplib2 import Http
+        return build("youtube", "v3", http=AuthorizedHttp(credentials, http=Http(timeout=timeout)))
+    return build("youtube", "v3", credentials=credentials)
 
 
 def fetch_playlists(youtube_service):
@@ -222,6 +227,11 @@ def sync_playlists_and_videos(*, commit=True):
     twice. Missing/unavailable upstream records are retained, never deleted.
     """
     service = get_youtube_service()
+    from project.library.workflow import active_workflow, channel_id, replace_membership
+    workflow = active_workflow()
+    if workflow and channel_id(service) != workflow.channel_id:
+        raise YouTubeConfigurationError("The YouTube channel changed. Reconnect before syncing.")
+    watched_items = None
     playlists = {item["id"]: item for item in fetch_playlists(service)}
     summary = {kind: {key: 0 for key in ("checked", "added", "updated", "unchanged", "skipped")}
                for kind in ("playlists", "videos")}
@@ -257,6 +267,8 @@ def sync_playlists_and_videos(*, commit=True):
                 setattr(playlist, key, value)
         changed = created or metadata_changed
         videos = {video["id"]: video for video in fetch_videos(playlist_id, service)}
+        if workflow and playlist_id == workflow.destination_playlist_id:
+            watched_items = list(videos.values())
         existing_videos = {record.id: record for record in Video.query.filter_by(playlist_id=playlist_id).all()}
         available_ids = set()
         for video_id, video in videos.items():
@@ -295,6 +307,10 @@ def sync_playlists_and_videos(*, commit=True):
         if changed:
             playlist.updated_at = now
         summary["playlists"]["added" if created else "updated" if changed else "unchanged"] += 1
+    if workflow:
+        if watched_items is None:
+            watched_items = fetch_videos(workflow.destination_playlist_id, service)
+        replace_membership(watched_items, workflow)
     if commit:
         db.session.commit()
     return summary

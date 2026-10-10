@@ -11,6 +11,8 @@ import { useLibrarySort } from '@/hooks/use-library-sort';
 import { ThemedText } from '@/components/themed-text';
 import { useLibrary, useLibraryPins, useLibrarySync } from '@/hooks/use-library';
 import { LibraryPinButton } from '@/components/library-pin-button';
+import { LibraryMoveStatus } from '@/components/library-move-status';
+import { useLibraryMoves } from '@/hooks/use-library-moves';
 import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmAction } from '@/lib/confirm-action';
@@ -34,6 +36,7 @@ const keyForPlaylist = (playlist: Playlist) => playlist.id;
 export default function LibraryScreen() {
   const query = useLibrary();
   const pins = useLibraryPins();
+  const activity = useLibraryMoves();
   const sync = useLibrarySync();
   const theme = useTheme();
   const sort = useLibrarySort('playlists');
@@ -66,6 +69,7 @@ export default function LibraryScreen() {
         <LibrarySearch search={search} label="Search playlists" />
         <NativeAction label={sync.pending ? 'Syncing from YouTube…' : 'Sync from YouTube'} secondary disabled={sync.pending} onPress={confirmSync} />
         <LibrarySyncStatus sync={sync} />
+        <LibraryMoveStatus activity={activity} />
         <ThemedText type="small" themeColor="textSecondary">Pull to refresh saved playlists. Sync imports updates from YouTube for everyone.</ThemedText>
         {query.isPaused ? <ThemedText themeColor="textSecondary">You’re offline. Showing the last loaded playlists.</ThemedText> : null}
         {query.isError ? <InlineError message={sync.run?.status === 'succeeded' ? 'The import completed, but these playlists couldn’t refresh. Showing the last loaded catalog.' : 'Couldn’t refresh. Showing the last loaded playlists.'} onRetry={refresh} /> : null}

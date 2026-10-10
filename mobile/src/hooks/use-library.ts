@@ -5,9 +5,8 @@ import { useCallback, useEffect } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
 import { libraryApi } from '@/lib/library-api';
-import { currentSyncRun, idleSync, libraryRefreshOptions, observeSyncCompletion, startLibrarySync, syncPollInterval, type LibrarySyncState } from '@/lib/library-cache';
+import { changeLibraryPin, idlePin, currentSyncRun, idleSync, libraryRefreshOptions, observeSyncCompletion, startLibrarySync, syncPollInterval, type LibrarySyncState, type PinAttempt } from '@/lib/library-cache';
 import { libraryKeys, validPlaylistId } from '@/lib/library-model';
-import { changeLibraryPin, idlePin, type PinAttempt } from '@/lib/library-cache';
 
 export function useLibraryPins() {
   const { user } = useAuth();
@@ -16,6 +15,10 @@ export function useLibraryPins() {
   const query = useQuery({ ...libraryRefreshOptions, queryKey: libraryKeys.pins(userId), queryFn: libraryApi.getPins, enabled: !!user });
   const { data: attempt = idlePin } = useQuery<PinAttempt>({ queryKey: libraryKeys.pinAttempt(userId), queryFn: () => idlePin, enabled: false, gcTime: Infinity });
   const { refetch } = query;
+  useEffect(() => {
+    const key = libraryKeys.pinAttempt(userId);
+    if (query.dataUpdatedAt && client.getQueryData<PinAttempt>(key)?.error) client.setQueryData(key, idlePin);
+  }, [client, userId, query.dataUpdatedAt]);
   useFocusEffect(useCallback(() => { if (userId) void refetch(); }, [userId, refetch]));
   return { query, pins: query.data?.pins ?? [], pending: attempt.pending, error: attempt.error,
     ready: !!user && !!query.data,

@@ -1,5 +1,6 @@
 """Shared import exclusion and receipts, independent of the HTTP response lifetime."""
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from threading import Lock
 
@@ -11,6 +12,7 @@ from project.models import LibrarySyncRun
 
 LOCK_ID = 741938204
 _development_lock = Lock()
+_held_lock = ContextVar("library_lock", default=None)
 INTERRUPTED = "The server stopped before this import completed. Your saved catalog is unchanged. Start a new sync when ready."
 
 
@@ -24,21 +26,26 @@ def import_lock():
     """
     if db.engine.dialect.name == "sqlite":
         acquired = _development_lock.acquire(blocking=False)
+        token = _held_lock.set((None, None)) if acquired else None
         try:
             yield acquired
         finally:
             if acquired:
+                _held_lock.reset(token)
                 _development_lock.release()
         return
     if db.engine.dialect.name != "postgresql":
         raise RuntimeError("Library sync requires PostgreSQL or development SQLite")
     with db.engine.connect() as connection:
         acquired = connection.execute(text("SELECT pg_try_advisory_lock(:key)"), {"key": LOCK_ID}).scalar()
+        pid = connection.execute(text("SELECT pg_backend_pid()")).scalar() if acquired else None
+        token = _held_lock.set((connection, pid)) if acquired else None
         try:
             connection.commit()
             yield acquired
         finally:
             if acquired:
+                _held_lock.reset(token)
                 try:
                     connection.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": LOCK_ID})
                     connection.commit()
@@ -46,6 +53,26 @@ def import_lock():
                     # A broken connection must not re-enter the pool with a lock.
                     connection.invalidate()
                     current_app.logger.warning("Library import lock connection closed")
+
+
+def assert_import_lock():
+    """Fail closed before a write/commit if the owning database session died.
+
+    Never reacquire a lost lock: another process may already be reconciling the
+    durable intent. In-flight provider calls are recovered with reads only.
+    """
+    held = _held_lock.get()
+    if held is None:
+        raise RuntimeError("Library lock is not held")
+    connection, pid = held
+    if connection is not None:
+        if connection.closed or connection.invalidated:
+            raise RuntimeError("Library lock connection was lost")
+        current_pid = connection.execute(text("SELECT pg_backend_pid()")).scalar()
+        locked = connection.execute(text("SELECT EXISTS (SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND classid=0 AND objid=:key AND granted)"), {"key": LOCK_ID}).scalar()
+        connection.commit()
+        if current_pid != pid or not locked:
+            raise RuntimeError("Library lock connection was lost")
 
 
 def recover_interrupted_runs():

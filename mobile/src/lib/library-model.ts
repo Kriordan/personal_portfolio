@@ -17,6 +17,7 @@ export interface Video {
   thumbnail_url: string | null;
   embed_url: string;
   watched: boolean;
+  in_watched_playlist?: boolean;
   position?: number | null;
   created_at: string | null;
   updated_at: string | null;
@@ -31,7 +32,40 @@ export const libraryKeys = {
   observedSync: ['library', 'observed-sync'] as const,
   pins: (userId: number) => ['library', 'pins', userId] as const,
   pinAttempt: (userId: number) => ['library', 'pin-attempt', userId] as const,
+  workflow: (userId: number) => ['library', 'workflow', userId] as const,
+  moves: (userId: number) => ['library', 'moves', userId] as const,
+  moveAttempt: (userId: number) => ['library', 'move-attempt', userId] as const,
+  observedMoves: (userId: number) => ['library', 'observed-moves', userId] as const,
 };
+
+export type LibraryWorkflow = {
+  is_owner: boolean; can_move: boolean; reason: string | null; version: string | null;
+  source: { id: string; title: string } | null; destination: { id: string; title: string } | null;
+  membership_checked_at: string | null;
+};
+export type LibraryMove = {
+  id: string; source_entry_id: string; source_playlist_id: string; destination_playlist_id: string;
+  video_url_id: string; video_title: string; source_title: string; destination_title: string;
+  status: 'running' | 'succeeded' | 'partial' | 'unknown' | 'failed'; stage: string;
+  error: string | null; started_at: string; updated_at: string; can_retry_removal: boolean;
+};
+export type LibraryMoves = { moves: LibraryMove[]; busy: boolean };
+
+export function moveMessage(move: LibraryMove): string {
+  if (move.status === 'succeeded') return `Saved to “${move.destination_title}” and removed from “${move.source_title}”.`;
+  if (move.status === 'running') return 'Moving on the server. You can keep browsing; we’ll check for confirmation.';
+  return move.error ?? 'The move has not been confirmed. Check its status before taking further action.';
+}
+
+export function mergeMoveReceipts(report?: LibraryMoves, receipt?: LibraryMove): LibraryMove[] {
+  const rows = new Map((report?.moves ?? []).map((move) => [move.id, move]));
+  if (receipt && (!rows.has(receipt.id) || rows.get(receipt.id)!.updated_at <= receipt.updated_at)) rows.set(receipt.id, receipt);
+  return [...rows.values()].sort((a, b) => b.started_at.localeCompare(a.started_at));
+}
+
+export function movePollInterval(moves: LibraryMove[], pending: boolean, now = Date.now()): number {
+  return pending || moves.some((move) => ['running', 'unknown'].includes(move.status) && now - Date.parse(move.started_at) < 120_000) ? 3_000 : 30_000;
+}
 
 export type LibraryPin = { playlist_id: string; pinned_at: string };
 

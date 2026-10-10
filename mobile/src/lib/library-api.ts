@@ -1,10 +1,18 @@
 import { apiRequest } from '@/lib/api-client';
-import type { Playlist, Video, LibrarySyncRun, LibrarySyncReport, LibraryPin } from '@/lib/library-model';
+import type { Playlist, Video, LibrarySyncRun, LibrarySyncReport, LibraryPin, LibraryWorkflow, LibraryMove, LibraryMoves } from '@/lib/library-model';
 export { libraryKeys, type Playlist, type Video } from '@/lib/library-model';
 
 // Shapes mirror project/api/library.py and library_service.serialize_*().
 
 export const libraryApi = {
+  workflow(): Promise<LibraryWorkflow> { return apiRequest('/library/workflow'); },
+  moves(): Promise<LibraryMoves> { return apiRequest('/library/moves', { timeoutMs: 30_000 }); },
+  move(requestId: string, entryId: string, version: string): Promise<{ move: LibraryMove }> {
+    return apiRequest('/library/moves', { method: 'POST', body: { request_id: requestId, source_entry_id: entryId, workflow_version: version }, timeoutMs: 30_000 });
+  },
+  retryRemoval(moveId: string, requestId: string): Promise<{ move: LibraryMove }> {
+    return apiRequest(`/library/moves/${encodeURIComponent(moveId)}/retry-removal`, { method: 'POST', body: { request_id: requestId }, timeoutMs: 30_000 });
+  },
   getPins(): Promise<{ pins: LibraryPin[] }> {
     return apiRequest('/library/pins');
   },
