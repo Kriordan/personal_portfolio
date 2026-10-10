@@ -2,7 +2,7 @@
 
 Use the Library preview and backend release recorded in [mobile validation](mobile-ui-validation.md#library-modernization--october-7-2026). A successful native build is not a passed physical-device test. Record device/OS, source commit, build ID, backend release, and actual results for each checked step.
 
-Use the [October 10 replacement iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/b73edbc5-9180-4a4f-ace6-a57ccee71920), source **`c0e5ddf`**, with **Heroku v136**. The build succeeded and the IPA HEAD check returned 200; installation/physical acceptance remain pending. The October 7 preview contains source `44cbd1c` and does **not** contain the new sync receipts or sorting controls.
+Use the [October 10 sort-repair iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/e9120677-79a9-4b11-b671-4f089a79c088), source **`c28b0b1`**, with **Heroku v136**. It finished at **3:34:13 p.m. EDT** and the IPA HEAD check returned 200. The repair passed simulator checks; installation/physical acceptance remain pending. It replaces preview `b73edbc5`, whose sort controls clipped on iPhone. The October 7 preview contains source `44cbd1c` and does **not** contain the new sync receipts or sorting controls.
 
 Library is one shared catalog for all signed-in accounts. Pull-to-refresh reads saved data. **Sync from YouTube imports into that shared catalog using the server's connection**, and affects everyone. Do not use live sync for failure injection; use the fixture below. Opening YouTube never changes the shared watched flag.
 
