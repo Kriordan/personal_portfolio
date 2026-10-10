@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LibraryEmpty, LibraryImage, LibrarySearch, LibrarySortControl, VideoRow, libraryStyles } from '@/components/library-content';
+import { LibraryEmpty, LibraryImage, LibrarySearch, VideoRow, libraryStyles } from '@/components/library-content';
+import { LibrarySortControl } from '@/components/library-sort-control';
 import { InlineError, NativeAction, PageHeading, Screen, ScreenState, screenStyles } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { usePlaylist } from '@/hooks/use-library';

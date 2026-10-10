@@ -3,7 +3,8 @@ import { useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LibraryEmpty, LibraryImage, LibrarySearch, LibrarySortControl, libraryStyles } from '@/components/library-content';
+import { LibraryEmpty, LibraryImage, LibrarySearch, libraryStyles } from '@/components/library-content';
+import { LibrarySortControl } from '@/components/library-sort-control';
 import { InlineError, NativeAction, PageHeading, ScreenState, screenStyles } from '@/components/screen';
 import { LibrarySyncStatus } from '@/components/library-sync-status';
 import { useLibrarySort } from '@/hooks/use-library-sort';
