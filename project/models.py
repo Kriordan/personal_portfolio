@@ -368,6 +368,14 @@ class Playlist(db.Model):
     videos: Mapped[list["Video"]] = relationship("Video", back_populates="playlist")
 
 
+class LibraryPin(db.Model):
+    """Personal shortcuts; the catalog itself remains shared."""
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    playlist_id: Mapped[str] = mapped_column(ForeignKey("playlist.id", ondelete="CASCADE"), primary_key=True)
+    pinned_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+
+
 class Video(db.Model):
     id: Mapped[str] = mapped_column(primary_key=True)
     playlist_id: Mapped[str] = mapped_column(

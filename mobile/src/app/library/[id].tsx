@@ -7,7 +7,8 @@ import { LibraryEmpty, LibraryImage, LibrarySearch, VideoRow, libraryStyles } fr
 import { LibrarySortControl } from '@/components/library-sort-control';
 import { InlineError, NativeAction, PageHeading, Screen, ScreenState, screenStyles } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { usePlaylist } from '@/hooks/use-library';
+import { useLibraryPins, usePlaylist } from '@/hooks/use-library';
+import { LibraryPinButton } from '@/components/library-pin-button';
 import { useLibrarySort } from '@/hooks/use-library-sort';
 import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,6 +21,7 @@ const renderVideo = ({ item }: { item: Video }) => <VideoRow video={item} />;
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = usePlaylist(id);
+  const pins = useLibraryPins();
   const router = useRouter();
   const theme = useTheme();
   const search = useNativeText();
@@ -40,6 +42,8 @@ export default function PlaylistDetailScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={<View style={screenStyles.gap}>
           <PageHeading title={playlist.title} eyebrow="SHARED LIBRARY" />
+          <LibraryPinButton title={playlist.title} pinned={pins.pins.some((pin) => pin.playlist_id === id)} disabled={!pins.ready || pins.pending} onPress={() => pins.set(id, !pins.pins.some((pin) => pin.playlist_id === id))} />
+          {pins.error || pins.query.isError ? <InlineError message={pins.error ?? 'Couldn’t load your pins.'} onRetry={() => void pins.query.refetch()} /> : null}
           <LibraryImage uri={playlist.thumbnail_url} hero />
           {playlist.description ? <View style={screenStyles.gap}>
             <ThemedText themeColor="textSecondary" numberOfLines={expanded ? undefined : 3}>{playlist.description}</ThemedText>

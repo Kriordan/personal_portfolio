@@ -7,6 +7,21 @@ import { useAuth } from '@/lib/auth-context';
 import { libraryApi } from '@/lib/library-api';
 import { currentSyncRun, idleSync, libraryRefreshOptions, observeSyncCompletion, startLibrarySync, syncPollInterval, type LibrarySyncState } from '@/lib/library-cache';
 import { libraryKeys, validPlaylistId } from '@/lib/library-model';
+import { changeLibraryPin, idlePin, type PinAttempt } from '@/lib/library-cache';
+
+export function useLibraryPins() {
+  const { user } = useAuth();
+  const client = useQueryClient();
+  const userId = user?.id ?? 0;
+  const query = useQuery({ ...libraryRefreshOptions, queryKey: libraryKeys.pins(userId), queryFn: libraryApi.getPins, enabled: !!user });
+  const { data: attempt = idlePin } = useQuery<PinAttempt>({ queryKey: libraryKeys.pinAttempt(userId), queryFn: () => idlePin, enabled: false, gcTime: Infinity });
+  const { refetch } = query;
+  useFocusEffect(useCallback(() => { if (userId) void refetch(); }, [userId, refetch]));
+  return { query, pins: query.data?.pins ?? [], pending: attempt.pending, error: attempt.error,
+    ready: !!user && !!query.data,
+    set: useCallback((id: string, pinned: boolean) => { if (userId) void changeLibraryPin(client, userId, () => libraryApi.setPin(id, pinned)); }, [client, userId]),
+  };
+}
 
 export function useLibrary() {
   const { isAuthenticated } = useAuth();

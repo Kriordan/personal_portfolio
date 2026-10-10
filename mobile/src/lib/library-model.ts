@@ -29,7 +29,22 @@ export const libraryKeys = {
   sync: ['library', 'sync'] as const,
   syncStatus: (requestId?: string) => ['library', 'sync-status', requestId ?? 'latest'] as const,
   observedSync: ['library', 'observed-sync'] as const,
+  pins: (userId: number) => ['library', 'pins', userId] as const,
+  pinAttempt: (userId: number) => ['library', 'pin-attempt', userId] as const,
 };
+
+export type LibraryPin = { playlist_id: string; pinned_at: string };
+
+export function playlistSections(playlists: Playlist[], pins: LibraryPin[], search: string, sort: LibrarySort) {
+  const matches = browseLibrary(playlists, search);
+  const byId = new Map(matches.map((playlist) => [playlist.id, playlist]));
+  const pinned = [...pins].sort((a, b) => a.pinned_at.localeCompare(b.pinned_at) || a.playlist_id.localeCompare(b.playlist_id));
+  const pinIds = new Set(pinned.map((pin) => pin.playlist_id));
+  return [
+    { title: 'Pinned for you', data: pinned.flatMap((pin) => byId.has(pin.playlist_id) ? [byId.get(pin.playlist_id)!] : []) },
+    { title: 'All other playlists', data: sortLibrary(matches.filter((playlist) => !pinIds.has(playlist.id)), sort) },
+  ].filter((section) => section.data.length > 0);
+}
 
 export const playlistSorts = [
   { value: 'updated', label: 'Recently updated' },

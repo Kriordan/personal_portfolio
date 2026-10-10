@@ -11,8 +11,39 @@ from project.database import db
 from project.models import User
 from project.services import library_service
 from project.library.sync_tracking import sync_status
+from project.services import library_pins
 
 library_api_blueprint = Blueprint("api_library", __name__, url_prefix="/library")
+
+
+@library_api_blueprint.after_request
+def private_library_response(response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@library_api_blueprint.get("/pins")
+@jwt_required()
+def api_get_pins():
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    return jsonify({"pins": library_pins.list_pins(user.id)})
+
+
+@library_api_blueprint.put("/pins/<string:playlist_id>")
+@jwt_required()
+def api_set_pin(playlist_id):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or type(body.get("pinned")) is not bool:
+        return jsonify({"error": "A pinned boolean is required."}), 400
+    try:
+        return jsonify({"pins": library_pins.set_pin(user.id, playlist_id, body["pinned"])})
+    except library_service.NotFoundError:
+        return jsonify({"error": "Playlist not found."}), 404
 
 
 def _current_user_from_jwt() -> User | None:

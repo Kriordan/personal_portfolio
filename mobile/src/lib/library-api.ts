@@ -1,10 +1,16 @@
 import { apiRequest } from '@/lib/api-client';
-import type { Playlist, Video, LibrarySyncRun, LibrarySyncReport } from '@/lib/library-model';
+import type { Playlist, Video, LibrarySyncRun, LibrarySyncReport, LibraryPin } from '@/lib/library-model';
 export { libraryKeys, type Playlist, type Video } from '@/lib/library-model';
 
 // Shapes mirror project/api/library.py and library_service.serialize_*().
 
 export const libraryApi = {
+  getPins(): Promise<{ pins: LibraryPin[] }> {
+    return apiRequest('/library/pins');
+  },
+  setPin(id: string, pinned: boolean): Promise<{ pins: LibraryPin[] }> {
+    return apiRequest(`/library/pins/${encodeURIComponent(id)}`, { method: 'PUT', body: { pinned } });
+  },
   getPlaylists(): Promise<{ playlists: Playlist[] }> {
     return apiRequest<{ playlists: Playlist[] }>('/library/playlists');
   },

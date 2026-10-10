@@ -1,6 +1,6 @@
 import { onlineManager, type QueryClient } from '@tanstack/react-query';
 
-import { libraryKeys, type LibrarySyncRun, type LibrarySyncReport } from './library-model.ts';
+import { libraryKeys, type LibraryPin, type LibrarySyncRun, type LibrarySyncReport } from './library-model.ts';
 
 export const libraryRefreshOptions = {
   refetchOnMount: 'always',
@@ -17,6 +17,37 @@ export type LibrarySyncState = {
   startedAt?: number;
 };
 export const idleSync: LibrarySyncState = { status: 'idle' };
+
+export type PinAttempt = { pending: boolean; error?: string };
+export const idlePin: PinAttempt = { pending: false };
+
+/** Confirmed server state only. No offline queue, optimistic flicker, or replay. */
+export async function changeLibraryPin(client: QueryClient, userId: number, save: () => Promise<{ pins: LibraryPin[] }>) {
+  const key = libraryKeys.pinAttempt(userId);
+  if (client.getQueryData<PinAttempt>(key)?.pending) return;
+  if (!onlineManager.isOnline()) {
+    client.setQueryData(key, { pending: false, error: 'Reconnect to change your pins. Nothing has been queued.' });
+    return;
+  }
+  client.setQueryData(key, { pending: true });
+  const attempt = client.getQueryData(key);
+  const active = () => client.getQueryData(key) === attempt;
+  await client.cancelQueries({ queryKey: libraryKeys.pins(userId) });
+  if (!active()) return;
+  try {
+    const result = await save();
+    if (!active()) return;
+    await client.cancelQueries({ queryKey: libraryKeys.pins(userId) });
+    if (!active()) return;
+    client.setQueryData(libraryKeys.pins(userId), result);
+    client.setQueryData(key, idlePin);
+  } catch {
+    if (active()) {
+      client.setQueryData(key, { pending: false, error: 'Couldn’t confirm your pin change. Refresh to check its saved state.' });
+      void client.invalidateQueries({ queryKey: libraryKeys.pins(userId) });
+    }
+  }
+}
 
 function syncFailure(error: unknown): LibrarySyncState {
   const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;

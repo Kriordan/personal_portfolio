@@ -4,6 +4,42 @@ import { QueryClient, QueryObserver, focusManager, onlineManager } from '@tansta
 import { browseLibrary, libraryKeys, openLibraryVideo, validPlaylistId, videoWatchUrl } from '../src/lib/library-model.ts';
 import { libraryRefreshOptions, startLibrarySync } from '../src/lib/library-cache.ts';
 import { RequestTimeoutError, withRequestTimeout } from '../src/lib/request-timeout.ts';
+import { playlistSections } from '../src/lib/library-model.ts';
+import { changeLibraryPin } from '../src/lib/library-cache.ts';
+
+test('pins keep their own order, search across sections without duplicates, and sort only the rest', () => {
+  const items = ['Zebra', 'Apple', 'Music', 'Piano'].map((title, i) => ({ id: String(i), title, description: i === 0 ? 'piano favorites' : null }));
+  const pins = [{ playlist_id: '2', pinned_at: '2026-10-02' }, { playlist_id: '0', pinned_at: '2026-10-01' }];
+  assert.deepEqual(playlistSections(items, pins, '', 'title').map((section) => section.data.map((item) => item.title)), [['Zebra', 'Music'], ['Apple', 'Piano']]);
+  assert.deepEqual(playlistSections(items, pins, 'piano', 'title-desc').map((section) => section.data.map((item) => item.title)), [['Zebra'], ['Piano']]);
+  assert.deepEqual(playlistSections(items, pins, 'absent', 'title'), []);
+  assert.deepEqual(items.map((item) => item.title), ['Zebra', 'Apple', 'Music', 'Piano']);
+});
+
+test('pin mutations retain confirmed state, never queue offline, and discard late logout results', async () => {
+  const client = new QueryClient();
+  const saved = { pins: [{ playlist_id: '1', pinned_at: '2026-10-01' }] };
+  client.setQueryData(libraryKeys.pins(1), saved);
+  onlineManager.setOnline(false);
+  let writes = 0;
+  await changeLibraryPin(client, 1, async () => { writes++; return { pins: [] }; });
+  assert.equal(writes, 0);
+  assert.deepEqual(client.getQueryData(libraryKeys.pins(1)), saved);
+  onlineManager.setOnline(true);
+  await changeLibraryPin(client, 1, async () => { throw Error('lost response'); });
+  assert.deepEqual(client.getQueryData(libraryKeys.pins(1)), saved);
+  const pending = deferred();
+  const task = changeLibraryPin(client, 1, () => pending.promise);
+  await tick();
+  await changeLibraryPin(client, 1, async () => { writes++; return saved; });
+  assert.equal(writes, 0);
+  client.clear();
+  pending.resolve(saved);
+  await task;
+  assert.equal(client.getQueryData(libraryKeys.pins(1)), undefined);
+  assert.equal(client.getQueryData(libraryKeys.pins(2)), undefined);
+  client.clear();
+});
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const data = { playlists: [{ id: 'pl-1', title: 'Music', description: 'Quiet piano' }] };
