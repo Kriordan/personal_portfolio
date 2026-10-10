@@ -166,3 +166,58 @@ test('API timeout during token refresh prevents a late sync POST; normal 401 ref
   assert.deepEqual(await apiRequest('/library/sync', { method: 'POST', timeoutMs: 30_000 }), { message: 'complete' });
   assert.equal(requests, 3);
 });
+
+test('sorting is numeric, deterministic, null-safe and never mutates shared query data', async () => {
+  const { sortLibrary } = await import('../src/lib/library-model.ts');
+  const rows = [
+    { id: 'b', title: 'Lesson 10', published_at: '2026-01-02', updated_at: '2026-02-01', position: 0 },
+    { id: 'a', title: 'lesson 2', published_at: '2026-01-01', updated_at: '2026-03-01', position: 1 },
+    { id: 'c', title: 'lesson 2', published_at: null, updated_at: 'invalid', position: null },
+  ];
+  const ids = (sort) => sortLibrary(rows, sort).map((row) => row.id);
+  assert.deepEqual(ids('title'), ['a', 'c', 'b']);
+  assert.deepEqual(ids('title-desc'), ['b', 'a', 'c']);
+  assert.deepEqual(ids('updated'), ['a', 'b', 'c']);
+  assert.deepEqual(ids('newest'), ['b', 'a', 'c']);
+  assert.deepEqual(ids('oldest'), ['a', 'b', 'c']);
+  assert.deepEqual(ids('position'), ['b', 'a', 'c']);
+  assert.deepEqual(rows.map((row) => row.id), ['b', 'a', 'c']);
+  assert.deepEqual(sortLibrary(browseLibrary(rows, 'lesson 2'), 'oldest').map((row) => row.id), ['a', 'c']);
+});
+
+test('a timed-out POST is resolved by its server receipt and automatically invalidates stale catalog reads', async () => {
+  const { currentSyncRun, observeSyncCompletion, syncPollInterval } = await import('../src/lib/library-cache.ts');
+  const client = new QueryClient();
+  client.setQueryData(libraryKeys.playlists(), data);
+  const id = 'sync-request';
+  await startLibrarySync(client, async () => { throw new RequestTimeoutError(); }, id);
+  const attempt = client.getQueryData(libraryKeys.sync);
+  assert.equal(attempt.requestId, id);
+  const old = { id: 'older', status: 'succeeded' };
+  const absent = { latest: old, last_success: old, requested: null, busy: false };
+  assert.equal(currentSyncRun(attempt, absent), null, 'an older success must not confirm a new request');
+  const run = { id, status: 'succeeded' };
+  const report = { ...absent, latest: run, requested: run };
+  assert.equal(currentSyncRun(attempt, report), run);
+  assert.equal(syncPollInterval(attempt, report), 30_000);
+  const stale = deferred();
+  const pending = client.fetchQuery({ queryKey: libraryKeys.playlists(), queryFn: () => stale.promise }).catch(() => {});
+  await observeSyncCompletion(client, run);
+  stale.resolve({ playlists: ['stale'] }); await pending;
+  assert.deepEqual(client.getQueryData(libraryKeys.playlists()), data);
+  assert.equal(client.getQueryState(libraryKeys.playlists()).isInvalidated, true);
+  client.clear();
+});
+
+test('late running reports cannot overwrite a completed POST and active imports on other devices remain visible', async () => {
+  const { currentSyncRun, syncPollInterval } = await import('../src/lib/library-cache.ts');
+  const done = { id: 'mine', status: 'succeeded', started_at: '2026-10-10T12:00:00+00:00' };
+  const attempt = { status: 'success', requestId: 'mine', run: done };
+  const running = { id: 'mine', status: 'running' };
+  assert.equal(currentSyncRun(attempt, { latest: running, requested: running, last_success: null, busy: true }), done);
+  const other = { id: 'other', status: 'running', started_at: '2026-10-10T13:00:00+00:00' };
+  assert.equal(currentSyncRun(attempt, { latest: other, requested: done, last_success: done, busy: true }), other);
+  const later = { ...other, status: 'succeeded' };
+  assert.equal(currentSyncRun(attempt, { latest: later, requested: done, last_success: later, busy: false }), later, 'a later shared completion supersedes the earlier local receipt');
+  assert.equal(syncPollInterval({ status: 'error', uncertain: true, startedAt: 0 }, undefined, 121_000), 30_000);
+});

@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api-client';
-import type { Playlist, Video } from '@/lib/library-model';
+import type { Playlist, Video, LibrarySyncRun, LibrarySyncReport } from '@/lib/library-model';
 export { libraryKeys, type Playlist, type Video } from '@/lib/library-model';
 
 // Shapes mirror project/api/library.py and library_service.serialize_*().
@@ -19,7 +19,11 @@ export const libraryApi = {
     return apiRequest<{ video: Video }>(`/library/videos/${encodeURIComponent(videoId)}`);
   },
 
-  sync(): Promise<{ message: string }> {
-    return apiRequest<{ message: string }>('/library/sync', { method: 'POST', timeoutMs: 30_000 });
+  sync(requestId: string): Promise<{ run: LibrarySyncRun }> {
+    return apiRequest<{ run: LibrarySyncRun }>('/library/sync', { method: 'POST', body: { request_id: requestId }, timeoutMs: 30_000 });
+  },
+
+  syncStatus(requestId?: string): Promise<LibrarySyncReport> {
+    return apiRequest<LibrarySyncReport>(`/library/sync-status${requestId ? `?request_id=${encodeURIComponent(requestId)}` : ''}`, { timeoutMs: 15_000 });
   },
 };

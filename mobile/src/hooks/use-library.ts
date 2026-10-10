@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { randomUUID } from 'expo-crypto';
+import { useCallback, useEffect } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
 import { libraryApi } from '@/lib/library-api';
-import { idleSync, libraryRefreshOptions, startLibrarySync, type LibrarySyncState } from '@/lib/library-cache';
+import { currentSyncRun, idleSync, libraryRefreshOptions, observeSyncCompletion, startLibrarySync, syncPollInterval, type LibrarySyncState } from '@/lib/library-cache';
 import { libraryKeys, validPlaylistId } from '@/lib/library-model';
 
 export function useLibrary() {
@@ -28,6 +29,21 @@ export function useLibrarySync() {
   const client = useQueryClient();
   const { isAuthenticated } = useAuth();
   const { data = idleSync } = useQuery<LibrarySyncState>({ queryKey: libraryKeys.sync, queryFn: () => idleSync, enabled: false, gcTime: Infinity, staleTime: Infinity });
-  const start = () => { if (isAuthenticated) void startLibrarySync(client, libraryApi.sync); };
-  return { ...data, start };
+  const statusQuery = useQuery({
+    ...libraryRefreshOptions, queryKey: libraryKeys.syncStatus(data.requestId),
+    queryFn: () => libraryApi.syncStatus(data.requestId), enabled: isAuthenticated === true,
+    refetchInterval: (query) => syncPollInterval(data, query.state.data),
+    refetchIntervalInBackground: false, retry: false,
+  });
+  const run = currentSyncRun(data, statusQuery.data);
+  const { refetch } = statusQuery;
+  useFocusEffect(useCallback(() => { if (isAuthenticated) void refetch(); }, [isAuthenticated, refetch]));
+  useEffect(() => { if (isAuthenticated && run) void observeSyncCompletion(client, run); }, [client, isAuthenticated, run]);
+  const pending = run?.status === 'running' || !!statusQuery.data?.busy || (data.status === 'pending' && !run);
+  const start = () => {
+    if (!isAuthenticated || pending) return;
+    const id = randomUUID();
+    void startLibrarySync(client, () => libraryApi.sync(id), id);
+  };
+  return { ...data, run, pending, start, statusQuery, lastSuccess: statusQuery.data?.last_success ?? (run?.status === 'succeeded' ? run : null) };
 }

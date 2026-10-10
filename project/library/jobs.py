@@ -76,7 +76,6 @@ def fetch_videos(playlist_id, youtube_service):
     """
     videos = []
 
-    print(f'Fetching videos for Playlist {playlist_id}')
     request = youtube_service.playlistItems().list(  # pylint: disable=no-member
         part="snippet,contentDetails,status", playlistId=playlist_id, maxResults=50
     )
@@ -91,22 +90,17 @@ def fetch_videos(playlist_id, youtube_service):
 
 def check_video_availability(video):
     if video['snippet']['title'] == 'Deleted video' or video['snippet']['description'] == 'This video is unavailable':
-        print(f'Video {video['id']} is unavailable or has been deleted.')
         return False
 
     video_status = video['status']
 
     if video_status.get('uploadStatus') == 'rejected':
-        print(f"Video {video['id']} was rejected.")
         return False
     if video_status.get('privacyStatus') == 'private':
-        print(f"Video {video['id']} is private.")
         return False
     if video_status.get('license') == 'youtube' and video_status.get('uploadStatus') == 'deleted':
-        print(f"Video {video['id']} has been deleted.")
         return False
 
-    print(f"Video {video['id']} is available.")
     return True
 
 
@@ -221,133 +215,86 @@ def export_subscriptions_to_json():
         raise
 
 
-def sync_playlists_and_videos():
-    """
-    Synchronizes playlists and videos from YouTube.
+def sync_playlists_and_videos(*, commit=True):
+    """Import accessible items; callers can commit the catalog and receipt together.
 
-    This function fetches playlists from YouTube and updates the corresponding
-    records in the database. For each playlist, it checks if the playlist
-    already exists in the database. If it does, it compares the playlist
-    details (title, description, published date, thumbnail URL) with the
-    fetched data and updates the database record if there are any changes. If
-    the playlist doesn't exist in the database, a new record is created.
-
-    After updating or creating the playlist record, the function fetches the
-    videos for that playlist and performs a similar check and update process
-    for each video. If a video already exists in the database, it compares the
-    video details (title, description, published date, thumbnail URL, embed
-    URL) with the fetched data and updates the database record if there are any
-    changes. If the video doesn't exist in the database, a new record is
-    created.
-
-    Finally, if any changes were made to the playlist or its videos, the
-    `updated_at` field of the playlist record is updated and the changes are
-    committed to the database.
-
-    Returns:
-        None
-
-    Raises:
-        None
+    Counts refer to playlist entries, so one YouTube video in two playlists counts
+    twice. Missing/unavailable upstream records are retained, never deleted.
     """
     service = get_youtube_service()
-    playlists = fetch_playlists(service)
+    playlists = {item["id"]: item for item in fetch_playlists(service)}
+    summary = {kind: {key: 0 for key in ("checked", "added", "updated", "unchanged", "skipped")}
+               for kind in ("playlists", "videos")}
+    now = datetime.now(timezone.utc)
 
-    for playlist in playlists:
-        print(f"Processing playlist {playlist["id"]}")
-        playlist_id = playlist["id"]
-        title = playlist["snippet"]["title"]
-        description = playlist["snippet"].get("description")
-        published_at = datetime.fromisoformat(
-            playlist["snippet"]["publishedAt"].replace("Z", "+00:00")
-        ).replace(tzinfo=None)
-        thumbnail_url = playlist["snippet"].get("thumbnails", {}).get("default", {}).get("url")
+    def published(snippet):
+        return datetime.fromisoformat(snippet["publishedAt"].replace("Z", "+00:00")).astimezone(timezone.utc).replace(tzinfo=None)
 
-        existing_playlist = Playlist.query.get(playlist_id)
-        playlist_updated = False
-        if existing_playlist:
-            if (
-                existing_playlist.title != title
-                or existing_playlist.description != description
-                or existing_playlist.published_at != published_at
-                or existing_playlist.thumbnail_url != thumbnail_url
-            ):
-                existing_playlist.title = title
-                existing_playlist.description = description
-                existing_playlist.published_at = published_at
-                existing_playlist.thumbnail_url = thumbnail_url
-                playlist_updated = True
-                print(f"Playlist {playlist["id"]} updated")
-        else:
-            new_playlist = Playlist(
-                id=playlist_id,
-                title=title,
-                description=description,
-                published_at=published_at,
-                updated_at=datetime.now(timezone.utc),
-                thumbnail_url=thumbnail_url,
-            )
-            db.session.add(new_playlist)
-            playlist_updated = True
-            print(f"Playlist {playlist["id"]} created")
+    def differs(record, values):
+        for key, value in values.items():
+            old = getattr(record, key)
+            # PostgreSQL returns aware timestamps; SQLite returns naive ones.
+            if isinstance(old, datetime):
+                old = old.astimezone(timezone.utc).replace(tzinfo=None) if old.tzinfo else old
+            if old != value:
+                return True
+        return False
 
-        videos = fetch_videos(playlist_id, service)
-        for video in videos:
-            print(f"Processing video {video["id"]}")
-
+    for playlist_id, item in playlists.items():
+        summary["playlists"]["checked"] += 1
+        snippet = item["snippet"]
+        values = {"title": snippet["title"], "description": snippet.get("description"),
+                  "published_at": published(snippet),
+                  "thumbnail_url": snippet.get("thumbnails", {}).get("default", {}).get("url")}
+        playlist = db.session.get(Playlist, playlist_id)
+        created = playlist is None
+        metadata_changed = not created and differs(playlist, values)
+        if created:
+            playlist = Playlist(id=playlist_id, **values, updated_at=now)
+            db.session.add(playlist)
+        elif metadata_changed:
+            for key, value in values.items():
+                setattr(playlist, key, value)
+        changed = created or metadata_changed
+        videos = {video["id"]: video for video in fetch_videos(playlist_id, service)}
+        existing_videos = {record.id: record for record in Video.query.filter_by(playlist_id=playlist_id).all()}
+        available_ids = set()
+        for video_id, video in videos.items():
+            summary["videos"]["checked"] += 1
             if not check_video_availability(video):
+                summary["videos"]["skipped"] += 1
                 continue
-
-            video_id = video["id"]
-            video_url_id = video["contentDetails"]["videoId"]
-            video_title = video["snippet"]["title"]
-            video_description = video["snippet"].get("description")
-            video_published_at = datetime.fromisoformat(
-                video["snippet"]["publishedAt"].replace("Z", "+00:00")
-            ).replace(tzinfo=None)
-            video_thumbnail_url = (
-                video["snippet"].get("thumbnails", {}).get("default", {}).get("url")
-            )
-            embed_url = f"https://www.youtube.com/embed/{video_url_id}"
-
-            existing_video = Video.query.get(video_id)
-            if existing_video:
-                if (
-                    existing_video.title != video_title
-                    or existing_video.description != video_description
-                    or existing_video.published_at != video_published_at
-                    or existing_video.thumbnail_url != video_thumbnail_url
-                    or existing_video.video_url_id != video_url_id
-                    or existing_video.embed_url != embed_url
-                ):
-                    existing_video.title = video_title
-                    existing_video.description = video_description
-                    existing_video.published_at = video_published_at
-                    existing_video.thumbnail_url = video_thumbnail_url
-                    existing_video.video_url_id = video_url_id
-                    existing_video.embed_url = embed_url
-                    existing_video.updated_at = datetime.now(timezone.utc)
-                    playlist_updated = True
-                    print(f"Video {video["id"]} updated")
+            available_ids.add(video_id)
+            snippet = video["snippet"]
+            position = snippet.get("position")
+            values = {"title": snippet["title"], "description": snippet.get("description"),
+                      "published_at": published(snippet),
+                      "thumbnail_url": snippet.get("thumbnails", {}).get("default", {}).get("url"),
+                      "video_url_id": video["contentDetails"]["videoId"],
+                      "embed_url": f'https://www.youtube.com/embed/{video["contentDetails"]["videoId"]}',
+                      "position": position if isinstance(position, int) and position >= 0 else None}
+            record = existing_videos.get(video_id)
+            if record is None:
+                db.session.add(Video(id=video_id, playlist_id=playlist_id, **values, created_at=now, updated_at=now))
+                summary["videos"]["added"] += 1
+                changed = True
+            elif differs(record, values):
+                for key, value in values.items():
+                    setattr(record, key, value)
+                record.updated_at = now
+                summary["videos"]["updated"] += 1
+                changed = True
             else:
-                new_video = Video(
-                    id=video_id,
-                    playlist_id=playlist_id,
-                    video_url_id=video_url_id,
-                    title=video_title,
-                    description=video_description,
-                    published_at=video_published_at,
-                    thumbnail_url=video_thumbnail_url,
-                    embed_url=embed_url,
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
-                )
-                db.session.add(new_video)
-                playlist_updated = True
-                print(f"Video {video["id"]} created")
-
-        if playlist_updated and existing_playlist:
-            existing_playlist.updated_at = datetime.now(timezone.utc)
-
-    db.session.commit()
-    logger.info("YouTube playlists and videos synchronized successfully.")
+                summary["videos"]["unchanged"] += 1
+        for video_id, record in existing_videos.items():
+            if video_id not in available_ids and record.position is not None:
+                # Retain saved metadata/watch history, but don't mix obsolete
+                # positions into the current upstream playlist order.
+                record.position = None
+                changed = True
+        if changed:
+            playlist.updated_at = now
+        summary["playlists"]["added" if created else "updated" if changed else "unchanged"] += 1
+    if commit:
+        db.session.commit()
+    return summary

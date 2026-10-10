@@ -1,4 +1,4 @@
-import { Host } from '@expo/ui';
+import { Host, Picker, Row, Text } from '@expo/ui';
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -8,6 +8,7 @@ import { InlineError, NativeAction } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useNativeText } from '@/hooks/use-native-text';
 import { useTheme } from '@/hooks/use-theme';
+import type { useLibrarySort } from '@/hooks/use-library-sort';
 import { openLibraryVideo, videoWatchUrl, type Video } from '@/lib/library-model';
 
 export function LibraryImage({ uri, hero = false }: { uri: string | null; hero?: boolean }) {
@@ -27,6 +28,18 @@ export function LibrarySearch({ search, label }: { search: ReturnType<typeof use
     <Host matchContents={{ vertical: true }}><NativeField label={label} {...search.input} placeholder="Title or description" autoCorrect={false} /></Host>
     {search.text ? <NativeAction label="Clear search" secondary onPress={search.clear} /> : null}
   </>;
+}
+
+export function LibrarySortControl({ sort }: { sort: ReturnType<typeof useLibrarySort> }) {
+  const theme = useTheme();
+  return <Host matchContents={{ vertical: true }} style={{ width: '100%' }}>
+    <Row alignment="center" spacing={12}>
+      <Text textStyle={{ color: theme.text }}>Sort</Text>
+      <Picker selectedValue={sort.value} onValueChange={sort.select} enabled={sort.ready}>
+        {sort.options.map((option) => <Picker.Item key={option.value} label={option.label} value={option.value} />)}
+      </Picker>
+    </Row>
+  </Host>;
 }
 
 export function LibraryEmpty({ title, message }: { title: string; message: string }) {

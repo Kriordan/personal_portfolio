@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, jsonify
+from uuid import UUID
+
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from project.database import db
 from project.models import User
 from project.services import library_service
+from project.library.sync_tracking import sync_status
 
 library_api_blueprint = Blueprint("api_library", __name__, url_prefix="/library")
 
@@ -85,8 +88,31 @@ def api_sync_library():
     if user is None:
         return jsonify({"error": "Unauthorized."}), 401
 
+    body = request.get_json(silent=True)
+    request_id = body.get("request_id") if isinstance(body, dict) else None
+    if request_id is not None:
+        try:
+            if str(UUID(request_id)) != request_id:
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            return jsonify({"error": "A valid sync request ID is required."}), 400
     try:
-        library_service.sync_library()
+        run = library_service.sync_library(request_id=request_id)
     except library_service.SyncError as error:
         return jsonify({"error": str(error)}), error.status
+    if request_id:
+        return jsonify({"run": run}), 200
     return jsonify({"message": "Library sync completed."}), 200
+
+
+@library_api_blueprint.get("/sync-status")
+@jwt_required()
+def api_sync_status():
+    if _current_user_from_jwt() is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    request_id = request.args.get("request_id")
+    if request_id and len(request_id) > 36:
+        return jsonify({"error": "Invalid sync request ID."}), 400
+    response = jsonify(sync_status(request_id))
+    response.headers["Cache-Control"] = "private, no-store"
+    return response

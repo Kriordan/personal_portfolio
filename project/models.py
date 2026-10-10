@@ -339,6 +339,17 @@ class Job(db.Model):
         return True
 
 
+class LibrarySyncRun(db.Model):
+    """Durable receipt; success and imported catalog changes commit together."""
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    summary: Mapped[Optional[dict]] = mapped_column(db.JSON)
+    error: Mapped[Optional[str]] = mapped_column(String(255))
+
+
 class Playlist(db.Model):
     id: Mapped[str] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -371,6 +382,7 @@ class Video(db.Model):
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     embed_url: Mapped[str] = mapped_column(String(255), nullable=False)
     watched: Mapped[bool] = mapped_column(default=False)
+    position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

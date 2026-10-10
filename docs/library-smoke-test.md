@@ -1,23 +1,28 @@
-# Library smoke test — October 7, 2026
+# Library smoke test — October 10, 2026
 
 Use the Library preview and backend release recorded in [mobile validation](mobile-ui-validation.md#library-modernization--october-7-2026). A successful native build is not a passed physical-device test. Record device/OS, source commit, build ID, backend release, and actual results for each checked step.
 
-The [October 7 iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/fe2b446b-5742-4202-a0cc-0d91fb9d8228) contains source `44cbd1c` and is ready to install on the registered iPhone. The matching backend is deployed as **Heroku v132** (`40c3732`, documentation-only differences from the preview). Startup and read-only route checks passed; authenticated production behavior and physical-device acceptance remain to be checked.
+The [October 7 iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/fe2b446b-5742-4202-a0cc-0d91fb9d8228) contains source `44cbd1c`. It does **not** contain the October 10 sync receipts or sorting controls. Use the replacement preview and backend release recorded in mobile validation for this checklist.
 
 Library is one shared catalog for all signed-in accounts. Pull-to-refresh reads saved data. **Sync from YouTube imports into that shared catalog using the server's connection**, and affects everyone. Do not use live sync for failure injection; use the fixture below. Opening YouTube never changes the shared watched flag.
 
-The October 10 physical test found missing server credentials. Follow the [YouTube connection runbook](library-youtube-connection.md) after the backend repair is deployed. Verify the saved connection from a fresh server process, then rerun mobile sync; a working cached catalog alone does not establish import readiness.
+The October 10 connection repair and Google consent succeeded. A fresh server process used the saved connection successfully; the production import committed at **2:37:16 p.m. EDT**, leaving **186 playlists / 10,918 video entries**. The old phone preview timed out before receiving success and still displayed 178 playlists. This establishes that import's completion, not acceptance of the new receipt UI. See the [YouTube connection runbook](library-youtube-connection.md), including the remaining Google Testing-mode expiry follow-up.
 
 ## iPhone checklist
 
 - [ ] Install the new preview, cold-launch, restore/sign in, and open Library from Tools. Verify Home, Tools filtering, Me, sign-out, and protected-route privacy.
-- [ ] Browse playlists, including long titles and absent/broken artwork. Search title and description, mix case/whitespace, try no matches, and clear. Counts and newest-first ordering remain correct.
+- [ ] Browse playlists, including long titles and absent/broken artwork. Search title and description, mix case/whitespace, try no matches, and clear. Verify Recently updated (default), Title A–Z/Z–A, and Newest/Oldest created. A numbered title sorts naturally. Search preserves the chosen sort; reopening the app preserves the device preference.
 - [ ] Open a playlist, expand/collapse its description, search its videos, and scroll a long collection. Check the empty-playlist state. Missing watch links are disabled; shared watched badges are labelled as shared.
+- [ ] Verify Newest added (default), Oldest added, YouTube playlist order, and Title A–Z/Z–A with hundreds of videos. Newest/oldest refers to addition to the YouTube playlist, not the video's original publication. After the first new sync, upstream positions are available; missing positions sort last. Confirm changing order does not alter YouTube or another device's preference.
 - [ ] Tap a video with YouTube installed and without it. The HTTPS watch link opens the app/browser. Return and verify search/scroll position. Exercise launch failure locally and retry. No watched status changes.
-- [ ] Cancel the sync confirmation and verify no import runs. Confirm a deliberate import, tap repeatedly, and navigate away/back while pending. Only one request runs in this app session; browsing remains usable.
-- [ ] In the fixture, test missing authorization (503), upstream failure (502), unexpected failure (500), and a delay over 30 seconds. Errors contain no provider details. Timeout reports completion unknown and offers saved-catalog refresh; it does not claim server cancellation or automatically repeat the import.
+- [ ] Cancel the sync confirmation and verify no import runs. Confirm a deliberate import, tap repeatedly, and navigate away/back while pending. Only one shared import runs across accounts/processes; browsing remains usable.
+- [ ] In the fixture, test missing authorization (503), upstream failure (502), unexpected failure (500), and a delay over 30 seconds. Errors contain no provider details. A timeout continues status checks without repeating the POST. Completion shows the server finish time and checked/added/changed/unchanged/skipped counts, then refreshes the catalog automatically.
+- [ ] Complete an unchanged import: zero added/changed still shows a successful completion time. Compare counts with the fixture; video counts are playlist entries, not distinct YouTube videos. Removed/unavailable saved records remain retained and are not proof of exact upstream mirroring.
+- [ ] Start an import from another account while Library is open, then while this app is backgrounded. Verify running state, completion, and catalog refresh on return. Relaunch the app and confirm the saved result survives. A newer shared result must replace this device's earlier successful receipt.
+- [ ] Locally interrupt the importer process after it creates a running receipt. Verify the next status check reports Interrupted with no partial catalog writes. Retrying requires a deliberate new sync; no automatic job replay occurs. PostgreSQL integration tests cover real cross-process exclusion and restart recovery.
 - [ ] Start offline and try syncing: immediate failure, no queue. Reconnect and verify no import starts until deliberately confirmed. Keep loaded content after a failed refresh; restore connectivity and retry.
 - [ ] Verify a successful import followed by a failed read is described as a refresh failure, not a failed import.
+- [ ] Fail only the status check: retain the last confirmed result, identify that status could not refresh, and offer Check sync status. No receipt yet must not be presented as completed. Lock the phone during a slow import, then return: foreground status recovery is supported; this slice does not send OS push notifications while the app is closed.
 - [ ] Use the website and another account to confirm the same catalog. Background the app, change fixture data, return within 30 seconds, and verify recovery. Repeat after reconnect and with manual pull-to-refresh.
 - [ ] Open an invalid/deleted playlist link. Verify unavailable feedback and Back to Library. Test warm and terminated-preview links to `personal-portfolio:///library/PLAYLIST_ID`, signed in and signed out.
 - [ ] Check light/dark mode, largest Dynamic Type with the software keyboard, and a smaller phone. Search, rows, errors, and actions remain reachable. Use VoiceOver to check focus order, labels, shared watched status, confirmation buttons, and announcements.
@@ -41,7 +46,7 @@ Control local failure scenarios with a POST to `http://127.0.0.1:5057/fixture/st
 {"sync":"unavailable","reads":"failure","delay":0}
 ```
 
-`sync` accepts `success`, `unavailable`, `upstream`, or `unexpected`; `reads` accepts `success`, `failure`, or `empty`; `delay` is seconds before the import completes. Use 35 seconds for the uncertain-completion case. Restore `{"sync":"success","reads":"success","delay":0}` afterward. These controls exist only in this script, not in the application routes.
+`sync` accepts `success`, `unavailable`, `upstream`, or `unexpected`; `reads` accepts `success`, `failure`, or `empty`; `delay` is seconds before the import completes. Use 35 seconds for timeout/status recovery. Restore `{"sync":"success","reads":"success","delay":0}` afterward. These controls exist only in this script, not in the application routes.
 
 ## Recorded results
 

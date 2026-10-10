@@ -69,7 +69,7 @@ def main():
                     description=f"Music practice and composition, session {index + 1}",
                     published_at=now - timedelta(days=index),
                     thumbnail_url="http://127.0.0.1:5057/fixture/art/music" if index % 3 == 0 else None,
-                    embed_url="https://www.youtube.com/embed/aqz-KE-bpKQ", watched=index == 1,
+                    embed_url="https://www.youtube.com/embed/aqz-KE-bpKQ", watched=index == 1, position=149-index,
                 ))
             db.session.commit()
 
@@ -99,7 +99,7 @@ def main():
             data.seek(0)
             return send_file(data, mimetype="image/png")
 
-        def sync():
+        def sync(*, commit=True):
             time.sleep(float(mode["delay"]))
             if mode["sync"] == "unavailable":
                 raise YouTubeConfigurationError("Fixture credentials unavailable")
@@ -110,7 +110,9 @@ def main():
             playlist = db.session.get(Playlist, "pl-making")
             playlist.description = "Updated by the disposable YouTube import."
             playlist.updated_at = datetime.now(timezone.utc)
-            db.session.commit()
+            if commit:
+                db.session.commit()
+            return {"playlists": {"checked": 4, "added": 0, "updated": 1, "unchanged": 3, "skipped": 0}, "videos": {"checked": 150, "added": 0, "updated": 0, "unchanged": 150, "skipped": 0}}
 
         print("Disposable logins: library1@example.test or library2@example.test / LibraryPreview123!", flush=True)
         with patch("project.services.library_service.sync_playlists_and_videos", sync):
