@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from flask import current_app
 from google.auth.exceptions import RefreshError, TransportError
@@ -11,7 +13,8 @@ from httplib2 import HttpLib2Error
 
 from project.database import db
 from project.library.jobs import YouTubeConfigurationError, sync_playlists_and_videos
-from project.models import Playlist, Video
+from project.models import LibrarySyncRun, Playlist, Video
+from project.library.sync_tracking import import_lock, recover_interrupted_runs, serialize_run
 
 
 class LibraryServiceError(Exception):
@@ -42,8 +45,11 @@ def serialize_playlist(playlist: Playlist) -> dict[str, Any]:
     }
 
 
-def serialize_video(video: Video) -> dict[str, Any]:
+def serialize_video(video: Video, *, membership=None) -> dict[str, Any]:
     """Return a JSON-safe video payload."""
+    if membership is None:
+        from project.library.workflow import watched_ids
+        membership = watched_ids()
     return {
         "id": video.id,
         "playlist_id": video.playlist_id,
@@ -54,6 +60,8 @@ def serialize_video(video: Video) -> dict[str, Any]:
         "thumbnail_url": video.thumbnail_url,
         "embed_url": video.embed_url,
         "watched": video.watched,
+        "in_watched_playlist": video.video_url_id in membership,
+        "position": video.position,
         "created_at": video.created_at.isoformat() if video.created_at else None,
         "updated_at": video.updated_at.isoformat() if video.updated_at else None,
     }
@@ -81,18 +89,49 @@ def get_video(*, video_id: str) -> Video:
     return video
 
 
-def sync_library() -> None:
-    """Synchronize playlists and videos from YouTube."""
-    try:
-        sync_playlists_and_videos()
-    except Exception as error:
-        db.session.rollback()
-        # Provider exceptions may contain credential-bearing URLs or response data.
-        current_app.logger.warning("Library sync failed (%s)", type(error).__name__)
-        if isinstance(error, (YouTubeConfigurationError, RefreshError)) or (
-            isinstance(error, HttpError) and error.resp.status == 401
-        ):
-            raise SyncError("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503) from error
-        if isinstance(error, (HttpError, TransportError, HttpLib2Error, OSError)):
-            raise SyncError("YouTube could not complete the import. Try again later.", 502) from error
-        raise SyncError("Library sync failed. Try again later.", 500) from error
+def sync_library(request_id=None):
+    """A durable receipt survives a lost HTTP response; imports never auto-replay."""
+    request_id = request_id or str(uuid4())
+    with import_lock() as acquired:
+        if not acquired:
+            raise SyncError("A shared Library sync is already running. Check its status before trying again.", 409)
+        recover_interrupted_runs()
+        existing = db.session.get(LibrarySyncRun, request_id)
+        if existing:
+            return serialize_run(existing)
+        run = LibrarySyncRun(id=request_id, status="running", started_at=datetime.now(timezone.utc))
+        db.session.add(run)
+        db.session.commit()
+        current_app.logger.info("Library sync started: %s", request_id)
+        try:
+            summary = sync_playlists_and_videos(commit=False)
+            # Explicitly fence final commit if the lock connection was lost and a
+            # status check/new importer has already marked this run interrupted.
+            changed = LibrarySyncRun.query.filter_by(id=request_id, status="running").update({
+                "status": "succeeded", "finished_at": datetime.now(timezone.utc),
+                "summary": summary if isinstance(summary, dict) else None,
+            }, synchronize_session=False)
+            if changed != 1:
+                raise SyncError("The import was interrupted. Check its status before trying again.", 409)
+            db.session.commit()
+            db.session.expire_all()
+            current_app.logger.info("Library sync completed: %s", request_id)
+            return serialize_run(db.session.get(LibrarySyncRun, request_id))
+        except Exception as error:
+            db.session.rollback()
+            current_app.logger.warning("Library sync failed: %s (%s)", request_id, type(error).__name__)
+            if isinstance(error, SyncError):
+                safe = error
+            elif isinstance(error, (YouTubeConfigurationError, RefreshError)) or (
+                isinstance(error, HttpError) and error.resp.status == 401
+            ):
+                safe = SyncError("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503)
+            elif isinstance(error, (HttpError, TransportError, HttpLib2Error, OSError)):
+                safe = SyncError("YouTube could not complete the import. Try again later.", 502)
+            else:
+                safe = SyncError("Library sync failed. Try again later.", 500)
+            LibrarySyncRun.query.filter_by(id=request_id, status="running").update({
+                "status": "failed", "finished_at": datetime.now(timezone.utc), "error": str(safe),
+            }, synchronize_session=False)
+            db.session.commit()
+            raise safe from error

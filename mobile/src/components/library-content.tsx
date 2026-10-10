@@ -1,6 +1,6 @@
 import { Host } from '@expo/ui';
 import { Image } from 'expo-image';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { NativeField } from '@/components/native-form';
@@ -33,7 +33,7 @@ export function LibraryEmpty({ title, message }: { title: string; message: strin
   return <View style={styles.empty}><ThemedText type="subtitle">{title}</ThemedText><ThemedText themeColor="textSecondary">{message}</ThemedText></View>;
 }
 
-export function VideoRow({ video }: { video: Video }) {
+export function VideoRow({ video, action }: { video: Video; action?: ReactNode }) {
   const theme = useTheme();
   const lock = useRef(false);
   const [opening, setOpening] = useState(false);
@@ -50,16 +50,17 @@ export function VideoRow({ video }: { video: Video }) {
     lock.current = false;
   };
   return <View style={styles.video}>
-    <Pressable accessibilityRole="link" accessibilityLabel={`${video.title}${video.watched ? '. Watched, shared' : ''}`} accessibilityHint={available ? 'Opens YouTube or your browser' : 'Video link unavailable'} accessibilityState={{ disabled: !available || opening, busy: opening }} disabled={!available || opening} onPress={() => void open()}
+    <Pressable accessibilityRole="link" accessibilityLabel={`${video.title}${video.in_watched_playlist ? '. In watched playlist' : ''}`} accessibilityHint={available ? 'Opens YouTube or your browser' : 'Video link unavailable'} accessibilityState={{ disabled: !available || opening, busy: opening }} disabled={!available || opening} onPress={() => void open()}
       style={({ pressed }) => [libraryStyles.row, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
       <LibraryImage uri={video.thumbnail_url} />
       <View style={libraryStyles.rowBody}>
         <ThemedText style={libraryStyles.rowTitle}>{video.title}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{!available ? 'Video link unavailable' : opening ? 'Opening YouTube…' : 'Watch on YouTube ↗'}</ThemedText>
-        {video.watched ? <ThemedText type="small" themeColor="textSecondary">Watched · shared</ThemedText> : null}
+        {video.in_watched_playlist ? <ThemedText type="small" themeColor="textSecondary">In watched playlist</ThemedText> : null}
       </View>
     </Pressable>
     {failed ? <InlineError message="Couldn’t open YouTube. Try again when a browser or the YouTube app is available." onRetry={() => void open()} retryLabel="Try opening YouTube again" /> : null}
+    {action}
   </View>;
 }
 

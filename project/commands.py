@@ -4,7 +4,7 @@ import click
 from flask.cli import with_appcontext
 from flask_migrate import upgrade
 
-from project.library.jobs import sync_playlists_and_videos
+from project.services.library_service import sync_library
 
 from .database import db
 from .learning.evaluation import evaluate_scheduler
@@ -72,7 +72,7 @@ def reset_db():
 @with_appcontext
 def sync_yt_subs():
     """Sync YouTube subscriptions and playlists"""
-    sync_playlists_and_videos()
+    sync_library()
     click.echo("YouTube playlists and subs synced successfully.")
 
 
