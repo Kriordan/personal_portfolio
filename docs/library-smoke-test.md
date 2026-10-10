@@ -2,7 +2,7 @@
 
 Use the Library preview and backend release recorded in [mobile validation](mobile-ui-validation.md#library-modernization--october-7-2026). A successful native build is not a passed physical-device test. Record device/OS, source commit, build ID, backend release, and actual results for each checked step.
 
-The [October 7 iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/fe2b446b-5742-4202-a0cc-0d91fb9d8228) contains source `44cbd1c`. It does **not** contain the October 10 sync receipts or sorting controls. Use the replacement preview and backend release recorded in mobile validation for this checklist.
+Use the [October 10 replacement iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/b73edbc5-9180-4a4f-ace6-a57ccee71920), source **`c0e5ddf`**, with **Heroku v136**. The build succeeded and the IPA HEAD check returned 200; installation/physical acceptance remain pending. The October 7 preview contains source `44cbd1c` and does **not** contain the new sync receipts or sorting controls.
 
 Library is one shared catalog for all signed-in accounts. Pull-to-refresh reads saved data. **Sync from YouTube imports into that shared catalog using the server's connection**, and affects everyone. Do not use live sync for failure injection; use the fixture below. Opening YouTube never changes the shared watched flag.
 
@@ -51,3 +51,5 @@ Control local failure scenarios with a POST to `http://127.0.0.1:5057/fixture/st
 ## Recorded results
 
 Automated checks and native findings are recorded in mobile validation. The checklist above is for the complete acceptance pass; simulator inspection does not mark physical-device items complete. Existing Grocery/Wishlist accessibility, Android interaction, cold-link, photo-renewal, production EAS configuration, and credential-retirement follow-ups remain open unless separately verified.
+
+The v136 controlled import completed at **3:10:22 p.m. EDT on October 10** and its successful receipt was read from a fresh server process afterward. It checked 181 playlists / 10,755 entries, added no videos, populated 10,557 positions, and skipped 198 unavailable entries. The larger retained catalog stays at 186 playlists / 10,918 videos. The first import's changed count includes adding position metadata. On the new phone preview, verify this saved result appears before starting another deliberate import.
