@@ -46,6 +46,26 @@ The narrow exceptions in `npm-audit-exceptions.json` expire after **November 5, 
 
 ## Validation and reproduction
 
+### October 14 follow-up: targeted Mako cleanup
+
+Started from merged main **`dbe36de733cec9d5814587e346a32ad70deca1fe`** (PR #109), including the completed Grocery, Wishlist and Library slices. GitHub still reported four open alerts: Mako #248 and the three npm advisories below.
+
+The lockfile now selects **Mako 1.4.3**, with an explicit **`>=1.4.2,<2.0.0`** security floor. Mako is the only changed locked package; MarkupSafe remains 3.0.3. The [upstream changelog](https://docs.makotemplates.org/en/latest/changelog.html#change-1.4.2) identifies 1.4.2 as the drive-letter traversal fix; 1.4.3 corrects its upstream Windows tests. Python 3.13 satisfies the new Python 3.10 minimum, and the existing MarkupSafe satisfies its new 2.0 minimum. No runtime Mako lookup was found in the application: Alembic's migration template remains the relevant integration. The production platform does not meet the advisory's Windows prerequisite; updating still removes the affected dependency.
+
+The new regression uses real template lookup against a disposable template directory and a sentinel file immediately outside it, with Windows path normalization enabled. It rejects drive-letter, backslash, and existing traversal forms while allowing normal rendering. A control run against the old 1.3.12 environment fails on all three drive-letter variants; the patched environment passes. A second test generates and loads a revision through Alembic using this repository's actual `script.py.mako`, without modifying repository migrations or a production database.
+
+Validation: Poetry lock consistency, a clean isolated `poetry sync`, `pip check`, **185 backend tests including six real PostgreSQL integration tests**, migration upgrade/downgrade/upgrade coverage, the npm audit-gate/CDN regressions, and the Expo 57 dependency compatibility script pass. The exact installed Python environment passes `pip-audit` with **zero known vulnerabilities**. Fresh root/mobile audit gates accept only the same existing exceptions. No JavaScript dependency, application UI, native configuration, migration revision, or exception deadline changes are included, so this cleanup requires no new iPhone build. Existing device, Google consent/Testing-expiry, and credential follow-ups remain open.
+
+Rechecked published npm releases and compatibility on October 14:
+
+| Remaining alert | Current finding and next action |
+| --- | --- |
+| #246 / `braces` | Latest published version remains **3.0.3**, with no patched version in the advisory. Root Gulp/BrowserSync and mobile Metro exposures remain as documented. Keep the alert and bounded exception open. |
+| #245 / `node-forge` | Latest published version remains **1.4.0**, with no patched version in the advisory. The Expo certificate/signature-verification trust boundary remains relevant. Keep the alert and bounded exception open. |
+| #186 / `decode-uri-component` | Fixed **0.5.0** remains ESM-only; the latest Router 57 patch (**57.0.26**) still requires `query-string ^7.1.3`, which uses the older CommonJS decoder interface. Dependabot PR #106 proposes **Router 58.0.15**, outside the retained Expo 57 stack. Defer that PR to a coordinated SDK upgrade or a separately scoped compatible fix; do not force an incompatible override. |
+
+The exceptions still expire on **November 5, 2026**. No alert is dismissed, no exception is broadened or extended, and Dependabot remains enabled. This change supersedes the Mako version proposed by PR #105 once merged; its alert closure must be checked on GitHub after the default branch updates. Routine dependency PRs remain separate. Deployment and PR evidence are appended after verification.
+
 ### October 6 follow-up: Wishlist PR mobile audit
 
 [Wishlist PR #107's mobile check](https://github.com/Kriordan/personal_portfolio/actions/runs/37500414058) failed on `shell-quote` 1.9.0 / [GHSA-pqg4-j6r4-53mv](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv), a command-injection issue when a quoted token containing a line terminator follows a comment token and the resulting command is executed. CI classified the advisory as critical; the maintainer currently labels it high. Finding the dependency does not establish an exploitable Wishlist endpoint, but the available compatible fix should be applied before merging.
