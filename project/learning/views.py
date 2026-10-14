@@ -6,6 +6,15 @@ from project.services import learning_service
 from . import learning_blueprint
 
 
+@learning_blueprint.after_request
+def private_study_response(response):
+    if current_user.is_authenticated or request.endpoint in {
+        "learning.rate_card", "learning.rating_receipt", "learning.review", "learning.note"
+    }:
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @learning_blueprint.route("/", strict_slashes=False)
 def index():
     notes = []
@@ -52,7 +61,7 @@ def review():
 def note(note_id):
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
     try:
-        note_data = learning_service.note_with_cards(notes_dir, note_id)
+        note_data = learning_service.note_with_cards(notes_dir, note_id, user_id=current_user.id)
     except learning_service.NotFoundError:
         abort(404)
     return render_template("learning/note.html", note=note_data)
@@ -61,18 +70,12 @@ def note(note_id):
 @learning_blueprint.route("/rate", methods=["POST"])
 @login_required
 def rate_card():
-    payload = request.get_json(silent=True) or {}
-    card_id = payload.get("card_id")
-    rating = payload.get("rating")
-    response_ms = payload.get("response_ms")
-    session_id = payload.get("session_id")
-
-    if not card_id or rating is None:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid review request."}), 400
+    if not payload.get("card_id") or payload.get("rating") is None:
         return jsonify({"error": "card_id and rating are required"}), 400
-
-    try:
-        rating = int(rating)
-    except (TypeError, ValueError):
+    if type(payload["rating"]) is not int:
         return jsonify({"error": "rating must be an integer"}), 400
 
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
@@ -80,10 +83,7 @@ def rate_card():
         response_data = learning_service.rate_card_for_user(
             user=current_user,
             notes_dir=notes_dir,
-            card_id=card_id,
-            rating=rating,
-            response_ms=response_ms,
-            session_id=session_id,
+            **learning_service.rating_payload(payload),
         )
     except learning_service.InvalidRatingError:
         return jsonify({"error": "rating must be between 0 and 5"}), 400
@@ -93,7 +93,19 @@ def rate_card():
         return jsonify({"error": "Invalid review request."}), 400
     except learning_service.NotFoundError:
         return jsonify({"error": "card not found"}), 404
+    except learning_service.ConflictError as error:
+        return jsonify({"error": str(error)}), 409
     return jsonify(response_data)
+
+
+@learning_blueprint.route("/ratings/<request_id>")
+@login_required
+def rating_receipt(request_id):
+    try:
+        receipt = learning_service.rating_receipt(current_user, request_id)
+    except learning_service.ValidationError:
+        return jsonify({"error": "Invalid request ID."}), 400
+    return jsonify({"receipt": receipt})
 
 
 @learning_blueprint.route("/api/incident", methods=["POST"])

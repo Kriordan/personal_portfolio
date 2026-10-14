@@ -113,3 +113,8 @@ EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://api.example.com EAS_BUILD_PROFILE=p
 npm run typecheck
 EXPO_NO_DOTENV=1 npm run lint
 ```
+
+
+### October 14: merged Mako alert closure
+
+GitHub's read-only alert API now confirms [Mako alert #248](https://github.com/Kriordan/personal_portfolio/security/dependabot/248) is **fixed**, with `fixed_at` **2026-10-14T19:35:02Z**. This closes the post-merge confirmation follow-up for PR #111. The three npm advisories and November 5 exception deadline remain unchanged; the Learning slice adds no dependency or security exception.

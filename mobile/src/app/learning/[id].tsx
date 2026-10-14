@@ -1,170 +1,135 @@
-import { useQuery } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-
+  LearningText,
+  LearningUnavailable,
+  StudyCard,
+  learningStyles,
+} from '@/components/learning-content';
+import {
+  InlineError,
+  NativeAction,
+  PageHeading,
+  ScreenState,
+  screenStyles,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useLearningNote } from '@/hooks/use-learning';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/lib/auth-context';
-import { learningApi, learningKeys, type ReviewCard } from '@/lib/learning-api';
 import { ApiError } from '@/lib/api-client';
+import { validNoteId, type ReviewCard } from '@/lib/learning-model';
 
-function CardRow({ card }: { card: ReviewCard }) {
-  const theme = useTheme();
-  const [revealed, setRevealed] = useState(false);
-
-  return (
-    <Pressable
-      onPress={() => setRevealed((current) => !current)}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
-      ]}
-    >
-      <View style={styles.cardHeader}>
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          {card.type.toUpperCase()}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {revealed ? 'Hide answer' : 'Show answer'}
-        </ThemedText>
-      </View>
-      <ThemedText>{card.prompt}</ThemedText>
-      {revealed && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {card.response}
-        </ThemedText>
-      )}
-    </Pressable>
-  );
-}
-
+const keyForCard = (card: ReviewCard) => card.card_id;
+const renderCard = ({ item }: { item: ReviewCard }) => (
+  <StudyCard card={item} />
+);
 export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const noteId = id ?? '';
-  const { isAuthenticated } = useAuth();
-
-  const noteQuery = useQuery({
-    queryKey: learningKeys.note(noteId),
-    queryFn: () => learningApi.getNote(noteId),
-    enabled: noteId.length > 0 && isAuthenticated === true,
-  });
-
-  if (noteQuery.isPending) {
+  const noteId = typeof id === 'string' ? id : '';
+  const query = useLearningNote(noteId);
+  const theme = useTheme();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = () => {
+    setRefreshing(true);
+    void query.refetch().finally(() => setRefreshing(false));
+  };
+  if (
+    !validNoteId(noteId) ||
+    (query.error instanceof ApiError && query.error.status === 404)
+  )
+    return <LearningUnavailable />;
+  if (!query.data && query.isPending)
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
+      <ScreenState
+        loading={!query.isPaused}
+        title={query.isPaused ? 'You’re offline' : 'Loading note'}
+        message={query.isPaused ? 'Reconnect to load this note.' : undefined}
+      />
     );
-  }
-
-  if (noteQuery.isError) {
-    const notFound = noteQuery.error instanceof ApiError && noteQuery.error.status === 404;
+  if (!query.data)
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">
-          {notFound
-            ? 'Note not found.'
-            : noteQuery.error instanceof Error
-              ? noteQuery.error.message
-              : 'Couldn’t load note.'}
-        </ThemedText>
-        {!notFound && (
-          <Pressable style={styles.button} onPress={() => noteQuery.refetch()}>
-            <ThemedText type="smallBold" style={styles.buttonText}>
-              Retry
-            </ThemedText>
-          </Pressable>
-        )}
-      </ThemedView>
+      <ScreenState
+        title="Couldn’t load this note"
+        message="Check your connection and try again."
+        onRetry={refresh}
+      />
     );
-  }
-
-  const note = noteQuery.data.note;
-
+  const note = query.data.note;
   return (
-    <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: note.title }} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[learningStyles.fill, { backgroundColor: theme.background }]}
+    >
+      <Stack.Screen options={{ title: 'Learning note' }} />
+      <FlatList
+        data={note.flashcards}
+        renderItem={renderCard}
+        keyExtractor={keyForCard}
+        contentContainerStyle={screenStyles.collection}
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={
-          <RefreshControl
-            refreshing={noteQuery.isRefetching}
-            onRefresh={() => noteQuery.refetch()}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
         }
-      >
-        {note.tags && note.tags.length > 0 && (
-          <ThemedText type="small" themeColor="textSecondary">
-            {note.tags.join(' · ')}
-          </ThemedText>
-        )}
-        {note.summary ? <ThemedText>{note.summary}</ThemedText> : null}
-
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-          CARDS ({note.flashcards.length})
-        </ThemedText>
-        {note.flashcards.length === 0 ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            This note has no cards.
-          </ThemedText>
-        ) : (
-          note.flashcards.map((card) => <CardRow key={card.card_id} card={card} />)
-        )}
-      </ScrollView>
-    </ThemedView>
+        ListHeaderComponent={
+          <View style={screenStyles.gap}>
+            <PageHeading
+              title={note.title}
+              subtitle={`${note.flashcard_count} cards · ${note.due_count} due for you`}
+            />
+            {note.tags?.length ? (
+              <ThemedText themeColor="textSecondary">
+                {note.tags.join(' · ')}
+              </ThemedText>
+            ) : null}
+            {note.summary ? <LearningText text={note.summary} /> : null}
+            {note.due_count ? (
+              <NativeAction
+                label={`Review ${Math.min(20, note.due_count)} due cards in this note`}
+                onPress={() =>
+                  router.push({
+                    pathname: '/learning/review',
+                    params: { note_id: noteId },
+                  })
+                }
+              />
+            ) : (
+              <ThemedText themeColor="textSecondary">
+                No cards due in this note.
+              </ThemedText>
+            )}
+            <ThemedText type="small" themeColor="textSecondary">
+              Show answers to study freely. Only rating during a review changes
+              your progress.
+            </ThemedText>
+            {query.isError ? (
+              <InlineError
+                message="Couldn’t refresh. Showing the last loaded note and counts."
+                onRetry={refresh}
+              />
+            ) : null}
+            {query.isPaused ? (
+              <ThemedText themeColor="textSecondary">
+                You’re offline. Showing the last loaded note.
+              </ThemedText>
+            ) : null}
+            <ThemedText
+              type="subtitle"
+              accessibilityRole="header"
+              style={learningStyles.count}
+            >
+              Cards
+            </ThemedText>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={learningStyles.empty}>
+            <ThemedText type="subtitle">This note has no cards</ThemedText>
+          </View>
+        }
+      />
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  scrollContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  sectionHeader: {
-    marginTop: Spacing.three,
-  },
-  card: {
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    gap: Spacing.two,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  button: {
-    backgroundColor: '#3c87f7',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-  },
-});
