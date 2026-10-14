@@ -453,10 +453,12 @@ class ReviewProgress(db.Model):
     """
 
     __tablename__ = "review_progress"
+    __table_args__ = (db.UniqueConstraint("user_id", "card_id", name="uq_review_progress_user_card"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     card_id: Mapped[str] = mapped_column(String(128), index=True)
+    revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     scheduler_version: Mapped[str] = mapped_column(String(32), default="sm2_v2_steps")
     learning_state: Mapped[str] = mapped_column(String(16), default="new")
     step_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -480,6 +482,17 @@ class ReviewProgress(db.Model):
     )
 
     user: Mapped["User"] = relationship("User")
+
+
+class ReviewReceipt(db.Model):
+    """A rating and its response commit together, scoped to the signed-in user."""
+
+    __tablename__ = "review_receipt"
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    payload: Mapped[dict] = mapped_column(db.JSON)
+    response: Mapped[dict] = mapped_column(db.JSON)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
 
 
 class ReviewLog(db.Model):

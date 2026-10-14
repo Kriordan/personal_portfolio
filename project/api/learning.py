@@ -12,6 +12,12 @@ from project.services import learning_service
 learning_api_blueprint = Blueprint("api_learning", __name__, url_prefix="/learning")
 
 
+@learning_api_blueprint.after_request
+def private_learning_response(response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 def _current_user_from_jwt() -> User | None:
     identity = get_jwt_identity()
     if identity is None:
@@ -44,7 +50,7 @@ def api_get_note(note_id: str):
 
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
     try:
-        note_data = learning_service.note_with_cards(notes_dir, note_id)
+        note_data = learning_service.note_with_cards(notes_dir, note_id, user_id=user.id)
     except learning_service.NotFoundError:
         return jsonify({"error": "Note not found."}), 404
     return jsonify({"note": note_data}), 200
@@ -58,9 +64,17 @@ def api_get_review():
         return jsonify({"error": "Unauthorized."}), 401
 
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
-    notes = learning_service.load_notes(notes_dir)
-    due_cards = learning_service.review_cards_for_user(notes, user_id=user.id)
-    return jsonify({"cards": due_cards}), 200
+    try:
+        raw_limit = request.args.get("limit")
+        if raw_limit is not None and not raw_limit.isdecimal():
+            raise learning_service.ValidationError("invalid limit")
+        page = learning_service.review_page(notes_dir, user_id=user.id,
+            note_id=request.args.get("note_id"), limit=int(raw_limit) if raw_limit is not None else None)
+    except learning_service.ValidationError:
+        return jsonify({"error": "Invalid review options."}), 400
+    except learning_service.NotFoundError:
+        return jsonify({"error": "Note not found."}), 404
+    return jsonify(page), 200
 
 
 @learning_api_blueprint.post("/rate")
@@ -70,27 +84,19 @@ def api_rate_card():
     if user is None:
         return jsonify({"error": "Unauthorized."}), 401
 
-    payload = request.get_json(silent=True) or {}
-    card_id = payload.get("card_id")
-    rating = payload.get("rating")
-    response_ms = payload.get("response_ms")
-    session_id = payload.get("session_id")
-
-    if not card_id or rating is None:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid review request."}), 400
+    if not payload.get("card_id") or payload.get("rating") is None:
         return jsonify({"error": "card_id and rating are required"}), 400
-    try:
-        rating = int(rating)
-    except (TypeError, ValueError):
+    if type(payload["rating"]) is not int:
         return jsonify({"error": "rating must be an integer"}), 400
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
     try:
         response_data = learning_service.rate_card_for_user(
             user=user,
             notes_dir=notes_dir,
-            card_id=card_id,
-            rating=rating,
-            response_ms=response_ms,
-            session_id=session_id,
+            **learning_service.rating_payload(payload),
         )
     except learning_service.InvalidRatingError:
         return jsonify({"error": "rating must be between 0 and 5"}), 400
@@ -100,4 +106,21 @@ def api_rate_card():
         return jsonify({"error": "Invalid review request."}), 400
     except learning_service.NotFoundError:
         return jsonify({"error": "card not found"}), 404
+    except learning_service.ConflictError as error:
+        code = "stale_progress" if isinstance(error, learning_service.StaleReviewError) else "request_conflict"
+        return jsonify({"error": str(error), "code": code}), 409
     return jsonify(response_data), 200
+
+
+@learning_api_blueprint.get("/ratings/<string:request_id>")
+@jwt_required()
+def api_get_rating(request_id: str):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify({"error": "Unauthorized."}), 401
+    try:
+        receipt = learning_service.rating_receipt(user, request_id)
+    except learning_service.ValidationError:
+        return jsonify({"error": "Invalid request ID."}), 400
+    # No receipt is not proof that an in-flight transaction cannot commit.
+    return jsonify({"receipt": receipt}), 200

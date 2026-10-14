@@ -28,6 +28,9 @@
         <button class="button" data-rating="4" type="button">Good</button>
         <button class="button button--secondary" data-rating="5" type="button">Easy</button>
       </div>
+      <p id="review-save-error" role="status" aria-live="polite" hidden></p>
+      <button class="button" id="review-save-retry" type="button" hidden>Retry the same rating</button>
+      <a class="button button--secondary" id="review-reload" href="{{ url_for('learning.review') }}" hidden>Load a fresh queue</a>
       <div class="review-summary" id="review-summary" hidden>
         <h2>Session complete</h2>
         <p id="review-summary-text"></p>
@@ -44,7 +47,7 @@
 {% block scripts %}
   <script type="application/json" id="review-cards-data">{{ cards|tojson }}</script>
   <script type="application/json" id="review-config-data">
-    {{ {"rateUrl": url_for('learning.rate_card'), "doneUrl": url_for('learning.index')}|tojson }}
+    {{ {"rateUrl": url_for('learning.rate_card'), "receiptUrl": url_for('learning.rating_receipt', request_id='REQUEST_ID'), "doneUrl": url_for('learning.index')}|tojson }}
   </script>
   <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js" integrity="sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL" crossorigin="anonymous"></script>

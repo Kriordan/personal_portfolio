@@ -7,7 +7,9 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
+from sqlalchemy import select, update
 from werkzeug.utils import secure_filename
 
 from project.database import db
@@ -15,7 +17,7 @@ from project.learning.queue_builder import build_review_queue
 from project.learning.scheduler_config import get_effective_target_recall
 from project.learning.schedulers import ScheduleInput
 from project.learning.schedulers.factory import get_scheduler
-from project.models import ReviewLog, ReviewProgress, User
+from project.models import ReviewLog, ReviewProgress, ReviewReceipt, User
 
 
 class LearningServiceError(Exception):
@@ -40,6 +42,10 @@ class InvalidCardIdError(ValidationError):
 
 class ConflictError(LearningServiceError):
     """Raised when a resource conflict occurs."""
+
+
+class StaleReviewError(ConflictError):
+    """Another client changed this card after the queue was loaded."""
 
 
 def _ensure_aware(value: datetime) -> datetime:
@@ -88,9 +94,16 @@ def load_note(notes_dir: Path, note_id: str) -> dict[str, Any] | None:
     except json.JSONDecodeError:
         return None
 
+    if not isinstance(data, dict) or data.get("id", note_id) != note_id:
+        return None
     data.setdefault("id", note_id)
-    data.setdefault("title", note_id.replace("-", " ").title())
-    data.setdefault("summary", "")
+    if not isinstance(data.get("title"), str) or not data["title"].strip():
+        data["title"] = note_id.replace("-", " ").title()
+    if not isinstance(data.get("summary"), str):
+        data["summary"] = ""
+    data["tags"] = _tags(data.get("tags"))
+    if not isinstance(data.get("created_at"), str):
+        data["created_at"] = None
     data.setdefault("flashcards", [])
     return data
 
@@ -99,38 +112,47 @@ def load_notes(notes_dir: Path) -> list[dict[str, Any]]:
     """Load all note JSON files under notes directory."""
     notes = []
     for note_path in sorted(notes_dir.glob("*.json")):
-        try:
-            data = json.loads(note_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        note_id = data.get("id") or note_path.stem
-        data.setdefault("id", note_id)
-        data.setdefault("title", note_id.replace("-", " ").title())
-        data.setdefault("summary", "")
-        data.setdefault("flashcards", [])
-        notes.append(data)
+        data = load_note(notes_dir, note_path.stem)
+        if data is not None:
+            notes.append(data)
     return notes
 
 
 def build_cards(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Flatten note flashcards into review-card payloads."""
     cards = []
+    seen = set()
     for note in notes:
         note_id = note.get("id")
         note_title = note.get("title")
-        note_tags = note.get("tags", [])
-        for card in note.get("flashcards", []):
-            card_id = card.get("id")
-            if not card_id:
+        note_tags = _tags(note.get("tags"))
+        raw_cards = note.get("flashcards", [])
+        for card in raw_cards if isinstance(raw_cards, list) else []:
+            if not isinstance(card, dict):
                 continue
-            card_tags = card.get("tags", [])
+            card_id = card.get("id")
+            if (not isinstance(card_id, str) or not card_id or ":" in card_id
+                    or len(f"{note_id}:{card_id}") > 128 or (note_id, card_id) in seen):
+                continue
+            card_tags = _tags(card.get("tags"))
             merged_tags = list(dict.fromkeys([*note_tags, *card_tags]))
             card_type = card.get("type", "qa")
+            fields = {
+                "qa": ("question", "answer"), "incident": ("symptom", "root_cause", "fix"),
+                "cloze": ("text",), "command": ("prompt", "answer"),
+                "code_diff": ("prompt", "before", "after"),
+            }
+            if not isinstance(card_type, str) or card_type not in fields:
+                continue
+            if any(not isinstance(card.get(key), str) or not card[key].strip() for key in fields[card_type]):
+                continue
+            seen.add((note_id, card_id))
+            sections = []
             if card_type == "incident":
                 symptom = card.get("symptom", "")
                 root_cause = card.get("root_cause", "")
                 fix = card.get("fix", "")
-                prevention = card.get("prevention", "")
+                prevention = card.get("prevention", "") if isinstance(card.get("prevention", ""), str) else ""
                 prompt = (
                     f"Symptom: {symptom}\n\n"
                     "What's the likely root cause? How do you fix it? "
@@ -144,6 +166,8 @@ def build_cards(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 if prevention:
                     response_parts.append(f"Prevention: {prevention}")
                 response = "\n".join(response_parts).strip()
+                sections = [{"label": label, "text": value, "code": False} for label, value in
+                            (("Root cause", root_cause), ("Fix", fix), ("Prevention", prevention)) if value]
             elif card_type == "cloze":
                 text = card.get("text", "")
                 prompt = re.sub(r"\{\{c\d+::(.*?)\}\}", "[...]", text)
@@ -151,11 +175,14 @@ def build_cards(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
             elif card_type == "command":
                 prompt = card.get("prompt", "")
                 response = card.get("answer", "")
+                sections = [{"label": "Command", "text": response, "code": True}]
             elif card_type == "code_diff":
                 prompt = f"{card.get('prompt', '')}\n\nWhat code change fixes this?"
                 before = card.get("before", "")
                 after = card.get("after", "")
                 response = f"Before:\n{before}\n\nAfter:\n{after}".strip()
+                sections = [{"label": label, "text": value, "code": True} for label, value in
+                            (("Before", before), ("After", after))]
             else:
                 prompt = card.get("question", "")
                 response = card.get("answer", "")
@@ -168,9 +195,18 @@ def build_cards(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "tags": merged_tags,
                     "prompt": prompt,
                     "response": response,
+                    "response_sections": sections,
                 }
             )
     return cards
+
+
+def _tags(value: Any) -> list[str]:
+    return [tag for tag in value if isinstance(tag, str)] if isinstance(value, list) else []
+
+
+def _is_due(progress: ReviewProgress | None, now: datetime) -> bool:
+    return progress is None or (not progress.is_suspended and _ensure_aware(progress.next_review) <= now)
 
 
 def progress_map(card_ids: list[str], user_id: int) -> dict[str, ReviewProgress]:
@@ -195,23 +231,26 @@ def summarize_notes_for_user(
     cards = build_cards(notes)
     progress_by_card = progress_map([card["card_id"] for card in cards], user_id)
     due_counts: dict[str, int] = {}
+    card_counts: dict[str, int] = {}
     for card in cards:
+        card_counts[card["note_id"]] = card_counts.get(card["note_id"], 0) + 1
         progress = progress_by_card.get(card["card_id"])
-        is_due = progress is None or _ensure_aware(progress.next_review) <= review_now
-        if is_due:
+        if _is_due(progress, review_now):
             due_counts[card["note_id"]] = due_counts.get(card["note_id"], 0) + 1
 
     for note in notes:
-        note["flashcard_count"] = len(note.get("flashcards", []))
+        note["flashcard_count"] = card_counts.get(note["id"], 0)
         note["due_count"] = due_counts.get(note["id"], 0)
     return notes, sum(due_counts.values())
 
 
-def note_with_cards(notes_dir: Path, note_id: str) -> dict[str, Any]:
+def note_with_cards(notes_dir: Path, note_id: str, user_id: int | None = None) -> dict[str, Any]:
     """Load a note and transform flashcards into rendered cards."""
     note_data = load_note(notes_dir, note_id)
     if note_data is None:
         raise NotFoundError("note not found")
+    if user_id is not None:
+        summarize_notes_for_user([note_data], user_id=user_id)
     note_data["flashcards"] = build_cards([note_data])
     return note_data
 
@@ -229,14 +268,111 @@ def review_cards_for_user(
     due_cards = []
     for card in cards:
         progress = progress_by_card.get(card["card_id"])
-        if progress is not None and progress.is_suspended:
-            continue
-        if progress is None or _ensure_aware(progress.next_review) <= review_now:
+        if _is_due(progress, review_now):
+            card["progress_revision"] = progress.revision if progress else 0
             due_cards.append(card)
     return build_review_queue(due_cards, progress_by_card)
 
 
-def rate_card_for_user(
+def review_page(notes_dir: Path, *, user_id: int, note_id: str | None = None, limit: int | None = None) -> dict:
+    if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
+        raise ValidationError("invalid limit")
+    if note_id is not None:
+        note = load_note(notes_dir, note_id)
+        if note is None:
+            raise NotFoundError("note not found")
+        notes = [note]
+    else:
+        notes = load_notes(notes_dir)
+    cards = review_cards_for_user(notes, user_id=user_id)
+    return {"cards": cards[:limit] if limit else cards, "total_due": len(cards)}
+
+
+def validate_request_id(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ValidationError("invalid request_id")
+    try:
+        normalized = str(UUID(value))
+    except (ValueError, AttributeError):
+        raise ValidationError("invalid request_id") from None
+    if value != normalized:
+        raise ValidationError("invalid request_id")
+    return value
+
+
+def rating_payload(payload: Any) -> dict:
+    if not isinstance(payload, dict):
+        raise ValidationError("expected an object")
+    return {key: payload.get(key) for key in (
+        "card_id", "rating", "response_ms", "session_id", "request_id", "expected_revision"
+    )}
+
+
+def _receipt_response(receipt: ReviewReceipt, user: User) -> dict:
+    result = dict(receipt.response)
+    if not user.is_admin:
+        result.pop("debug", None)
+    return result
+
+
+def rating_receipt(user: User, request_id: str) -> dict | None:
+    validate_request_id(request_id)
+    receipt = db.session.get(ReviewReceipt, (user.id, request_id))
+    return _receipt_response(receipt, user) if receipt else None
+
+
+def rate_card_for_user(*, user: User, notes_dir: Path, card_id: str, rating: int,
+                       response_ms: int | None = None, session_id: str | None = None,
+                       request_id: str | None = None, expected_revision: int | None = None,
+                       now: datetime | None = None) -> dict[str, Any]:
+    """Serialize ratings, committing progress, a log, and its receipt atomically."""
+    if type(rating) is not int or not 0 <= rating <= 5:
+        raise InvalidRatingError("rating must be an integer between 0 and 5")
+    if not isinstance(card_id, str) or len(card_id) > 128 or ":" not in card_id:
+        raise InvalidCardIdError("invalid card_id format")
+    if response_ms is not None and (type(response_ms) is not int or not 0 <= response_ms <= 86_400_000):
+        raise ValidationError("invalid response_ms")
+    if session_id is not None and (not isinstance(session_id, str) or not 1 <= len(session_id) <= 64):
+        raise ValidationError("invalid session_id")
+    if expected_revision is not None and (type(expected_revision) is not int or not 0 <= expected_revision <= 2_147_483_647):
+        raise ValidationError("invalid revision")
+    if request_id is not None:
+        validate_request_id(request_id)
+        if expected_revision is None:
+            raise ValidationError("expected_revision required with request_id")
+    payload = dict(card_id=card_id, rating=rating, response_ms=response_ms,
+                   session_id=session_id, expected_revision=expected_revision)
+    try:
+        # The user row exists before a first review. Locking only a progress row
+        # would leave concurrent first reviews unprotected. SQLite fixtures need
+        # a write lock because SELECT FOR UPDATE is a no-op on that backend.
+        if db.session.get_bind().dialect.name == "sqlite":
+            db.session.execute(update(User).where(User.id == user.id).values(id=User.id))
+        else:
+            db.session.execute(select(User.id).where(User.id == user.id).with_for_update()).scalar_one()
+        if request_id:
+            receipt = db.session.get(ReviewReceipt, (user.id, request_id))
+            if receipt:
+                if receipt.payload != payload:
+                    raise ConflictError("This request ID was already used for a different rating.")
+                result = _receipt_response(receipt, user)
+                db.session.commit()
+                return result
+        result = _apply_rating(user=user, notes_dir=notes_dir, card_id=card_id, rating=rating,
+                               response_ms=response_ms, session_id=session_id,
+                               expected_revision=expected_revision, now=now)
+        if request_id:
+            result["request_id"] = request_id
+            db.session.add(ReviewReceipt(user_id=user.id, request_id=request_id, payload=payload,
+                                         response=result, created_at=now or datetime.now(timezone.utc)))
+        db.session.commit()
+        return result
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def _apply_rating(
     *,
     user: User,
     notes_dir: Path,
@@ -244,6 +380,7 @@ def rate_card_for_user(
     rating: int,
     response_ms: int | None = None,
     session_id: str | None = None,
+    expected_revision: int | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Apply a rating to a card and persist progress/log records."""
@@ -269,7 +406,12 @@ def rate_card_for_user(
         raise NotFoundError("card not found")
 
     effective_target_recall = get_effective_target_recall(card.get("tags", []))
-    progress = ReviewProgress.query.filter_by(user_id=user.id, card_id=card_id).one_or_none()
+    progress = ReviewProgress.query.filter_by(user_id=user.id, card_id=card_id).populate_existing().one_or_none()
+    if expected_revision is not None and (
+        expected_revision != (progress.revision if progress else 0)
+        or (progress is not None and progress.is_suspended)
+    ):
+        raise StaleReviewError("This card changed elsewhere. Load a fresh review queue.")
     review_now = now or datetime.now(timezone.utc)
 
     if progress is None:
@@ -284,6 +426,7 @@ def rate_card_for_user(
             interval=1,
             repetitions=0,
             next_review=review_now,
+            revision=0,
         )
 
     before = {
@@ -329,6 +472,7 @@ def rate_card_for_user(
     progress.last_reviewed = review_now
     progress.last_rating = rating
     progress.scheduler_version = schedule_output.scheduler_version
+    progress.revision += 1
     if schedule_output.is_graduated and progress.graduated_at is None:
         progress.graduated_at = review_now
     if rating < 3 and progress.graduated_at is not None:
@@ -365,8 +509,6 @@ def rate_card_for_user(
             session_id=session_id,
         )
     )
-    db.session.commit()
-
     response_data = {
         "card_id": progress.card_id,
         "learning_state": progress.learning_state,
@@ -381,6 +523,9 @@ def rate_card_for_user(
             progress.learning_state,
         ),
         "scheduler_version": progress.scheduler_version,
+        "progress_revision": progress.revision,
+        "saved_at": review_now.isoformat(),
+        "rating": rating,
     }
 
     if user.is_admin:

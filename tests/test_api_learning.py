@@ -2,13 +2,15 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 from unittest.mock import patch
 
 from flask_jwt_extended import create_access_token
 
 from project import create_app
 from project.database import db
-from project.models import ReviewLog, ReviewProgress, User
+from project.models import ReviewLog, ReviewProgress, ReviewReceipt, User
 from project.services import learning_service
 
 NOTE_ID = "flask-basics"
@@ -286,3 +288,109 @@ class ApiLearningTests(unittest.TestCase):
         other_cards = other_review.get_json()["cards"]
         self.assertEqual(len(other_cards), 1)
         self.assertEqual(other_cards[0]["card_id"], CARD_ID)
+
+    def test_receipt_replay_conflict_and_account_privacy(self):
+        uid = self._create_user(email="first@example.test", username="first")
+        other = self._create_user(email="second@example.test", username="second")
+        headers = self._auth_headers(uid)
+        payload = dict(card_id=CARD_ID, rating=4, request_id=str(uuid4()),
+                       expected_revision=0, session_id="session", response_ms=1234)
+        saved = self._post("/api/v1/learning/rate", headers=headers, json=payload)
+        self.assertEqual(saved.status_code, 200)
+        repeated = self._post("/api/v1/learning/rate", headers=headers, json=payload)
+        self.assertEqual(saved.get_json(), repeated.get_json())
+        status_url = f"/api/v1/learning/ratings/{payload['request_id']}"
+        receipt = self._get(status_url, headers=headers)
+        self.assertEqual(receipt.get_json()["receipt"], saved.get_json())
+        self.assertEqual(receipt.headers["Cache-Control"], "private, no-store")
+        self.assertIsNone(self._get(status_url, headers=self._auth_headers(other)).get_json()["receipt"])
+        self.assertEqual(self._get(status_url).status_code, 401)
+        conflicting = self._post("/api/v1/learning/rate", headers=headers, json={**payload, "rating": 0})
+        self.assertEqual(conflicting.status_code, 409)
+        self.assertEqual(conflicting.get_json()["code"], "request_conflict")
+        stale = self._post("/api/v1/learning/rate", headers=headers, json={**payload, "request_id": str(uuid4())})
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual(stale.get_json()["code"], "stale_progress")
+        with self.app.app_context():
+            self.assertEqual(ReviewLog.query.count(), 1)
+            self.assertEqual(ReviewReceipt.query.count(), 1)
+            self.assertEqual(ReviewProgress.query.one().revision, 1)
+
+    def test_legacy_rating_advances_revision_and_website_shares_receipts(self):
+        uid = self._create_user(email="shared@example.test", username="shared")
+        headers = self._auth_headers(uid)
+        self.assertEqual(self._post("/api/v1/learning/rate", headers=headers,
+                                   json=dict(card_id=CARD_ID, rating=4)).status_code, 200)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["_user_id"] = str(uid)
+            session["_fresh"] = True
+        payload = dict(card_id=CARD_ID, rating=3, request_id=str(uuid4()), expected_revision=1)
+        web = self._post("/learning/rate", json=payload)
+        self.assertEqual(web.status_code, 200)
+        api = self._post("/api/v1/learning/rate", headers=headers, json=payload)
+        self.assertEqual(api.get_json(), web.get_json())
+        receipt = self._get(f"/learning/ratings/{payload['request_id']}")
+        self.assertEqual(receipt.get_json()["receipt"], web.get_json())
+        with self.app.app_context():
+            self.assertEqual(ReviewLog.query.count(), 2)
+            self.assertEqual(ReviewProgress.query.one().revision, 2)
+
+    def test_queue_and_summary_share_suspended_future_and_valid_card_rules(self):
+        uid = self._create_user(email="counts@example.test", username="counts")
+        headers = self._auth_headers(uid)
+        cards = [{"id": f"q{i}", "question": f"Question {i}", "answer": "Answer"} for i in range(30)]
+        cards.extend([None, {"id": "bad", "type": "unknown"}, cards[0], {"id": "missing-answer", "question": "?"}])
+        self._write_note(dict(id=NOTE_ID, title="Counts", flashcards=cards))
+        self._write_note(dict(id="other-note", title="Other", flashcards=[{"id": "q", "question": "?", "answer": "!"}]))
+        with self.app.app_context():
+            db.session.add_all([
+                ReviewProgress(user_id=uid, card_id=f"{NOTE_ID}:q0", is_suspended=True,
+                               next_review=datetime.now(timezone.utc)-timedelta(days=1)),
+                ReviewProgress(user_id=uid, card_id=f"{NOTE_ID}:q1",
+                               next_review=datetime.now(timezone.utc)+timedelta(days=1)),
+            ])
+            db.session.commit()
+        overview = self._get("/api/v1/learning/notes", headers=headers).get_json()
+        self.assertEqual(overview["total_due"], 29)
+        self.assertEqual(overview["notes"][0]["flashcard_count"], 30)
+        queue = self._get(f"/api/v1/learning/review?note_id={NOTE_ID}&limit=20", headers=headers).get_json()
+        self.assertEqual(queue["total_due"], 28)
+        self.assertEqual(len(queue["cards"]), 20)
+        self.assertTrue(all(card["note_id"] == NOTE_ID and card["progress_revision"] == 0 for card in queue["cards"]))
+        self.assertFalse({f"{NOTE_ID}:q0", f"{NOTE_ID}:q1"} & {card["card_id"] for card in queue["cards"]})
+        detail = self._get(f"/api/v1/learning/notes/{NOTE_ID}", headers=headers).get_json()["note"]
+        self.assertEqual(detail["due_count"], 28)
+        self.assertEqual(len(detail["flashcards"]), 30)
+        for value in ("0", "101", "1.5", "-1", "", "abc"):
+            self.assertEqual(self._get(f"/api/v1/learning/review?limit={value}", headers=headers).status_code, 400)
+        self.assertEqual(self._get("/api/v1/learning/review?note_id=missing", headers=headers).status_code, 404)
+
+    def test_strict_rating_input_never_changes_progress(self):
+        uid = self._create_user(email="invalid@example.test", username="invalid")
+        headers = self._auth_headers(uid)
+        base = dict(card_id=CARD_ID, rating=4)
+        invalid = [[], "text", True, None, {**base, "rating": True}, {**base, "rating": 3.5},
+                   {**base, "response_ms": -1}, {**base, "response_ms": True},
+                   {**base, "response_ms": 86_400_001}, {**base, "session_id": "x"*65},
+                   {**base, "session_id": []}, {**base, "request_id": "not-a-uuid"},
+                   {**base, "request_id": str(uuid4())}, {**base, "expected_revision": -1},
+                   {**base, "expected_revision": True}, {**base, "card_id": ["bad"]}]
+        for payload in invalid:
+            with self.subTest(payload=payload):
+                self.assertEqual(self._post("/api/v1/learning/rate", headers=headers, json=payload).status_code, 400)
+        with self.app.app_context():
+            self.assertEqual(ReviewProgress.query.count(), 0)
+            self.assertEqual(ReviewLog.query.count(), 0)
+
+    def test_failed_transaction_leaves_no_partial_rating_and_can_retry(self):
+        uid = self._create_user(email="rollback@example.test", username="rollback")
+        payload = dict(card_id=CARD_ID, rating=4, request_id=str(uuid4()), expected_revision=0)
+        with self.app.app_context():
+            user = db.session.get(User, uid)
+            with patch.object(db.session, "commit", side_effect=RuntimeError("commit failed")):
+                with self.assertRaises(RuntimeError):
+                    learning_service.rate_card_for_user(user=user, notes_dir=self.notes_dir, **payload)
+            self.assertEqual(ReviewProgress.query.count(), 0)
+            self.assertEqual(ReviewLog.query.count(), 0)
+            self.assertEqual(ReviewReceipt.query.count(), 0)
+        self.assertEqual(self._post("/api/v1/learning/rate", headers=self._auth_headers(uid), json=payload).status_code, 200)
