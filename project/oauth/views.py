@@ -1,346 +1,224 @@
-"""
-This module handles OAuth 2.0 authentication
-"""
+"""Maintainer-only authorization for the shared Library connection."""
 
-# -*- coding: utf-8 -*-
-import json
-import os
+import secrets
+import time
+from urllib.parse import urlsplit
 
-import flask
-import google.oauth2.credentials
 import google_auth_oauthlib.flow
-import googleapiclient.discovery
 import requests
-from flask import Blueprint
-from flask_login import login_required
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user
+from flask_wtf import FlaskForm
 
-oauth_blueprint = Blueprint(
-    "oauth", __name__, template_folder="templates", url_prefix="/oauth"
+from project.database import db
+from project.extensions import login_manager
+from project.library.credentials import (
+    SCOPES, MOVE_SCOPES, YouTubeConfigurationError, credential_cipher, load_shared_credentials,
+    oauth_client_config, oauth_redirect_uri, save_shared_credentials,
 )
+from project.models import Playlist, YouTubeConnection
+from project.library.workflow import WorkflowError, channel_id, configure_workflow, connected_owner, workflow_status
+from project.library.sync_tracking import assert_import_lock, import_lock
+
+oauth_blueprint = Blueprint("oauth", __name__, template_folder="templates", url_prefix="/oauth")
 
 
-# This OAuth 2.0 access scope allows for full read/write access to the
-# authenticated user's account and requires requests to use an SSL connection.
-SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
-GOOGLE_CLIENT_API_SERVICE_NAME = "youtube"
-GOOGLE_CLIENT_API_SERVICE_VERSION = "v3"
-
-client_config = {
-    "web": {
-        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-        "project_id": os.getenv("GOOGLE_PROJECT_ID"),
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "redirect_uris": [
-            "http://127.0.0.1:5001/oauth",
-            "http://127.0.0.1:5001/oauth/oauth2callback",
-            "http://localhost:5001/oauth/oauth2callback",
-            "https://www.keithriordan.com/oauth/oauth2callback",
-            "https://www.keithriordan.com/oauth",
-        ],
-    }
-}
+@oauth_blueprint.before_request
+def protect_connection():
+    if not current_user.is_authenticated:
+        return login_manager.unauthorized()
+    if not current_user.is_admin:
+        abort(403)
+    # Retire the old credential-bearing browser cookie on the next visit.
+    session.pop("credentials", None)
+    session.pop("state", None)
 
 
-@oauth_blueprint.route("/")
-@login_required
+def private_connection_response(response):
+    if request.blueprint == "oauth":
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+def _connection_page(*, error=None, status=200):
+    connection = db.session.get(YouTubeConnection, 1)
+    configuration_error = None
+    try:
+        oauth_client_config()
+        credential_cipher()
+        callback = oauth_redirect_uri()
+    except YouTubeConfigurationError as exc:
+        configuration_error = str(exc)
+        callback = None
+    connection_url = None
+    if callback and request.host != urlsplit(callback).netloc:
+        parsed = urlsplit(callback)
+        connection_url = f"{parsed.scheme}://{parsed.netloc}/oauth/"
+    return render_template(
+        "oauth/connection.html", form=FlaskForm(), connection=connection,
+        error=error, configuration_error=configuration_error, connection_url=connection_url,
+        workflow=workflow_status(current_user), playlists=Playlist.query.order_by(Playlist.title).all(),
+    ), status
+
+
+def _require_form():
+    if not FlaskForm().validate_on_submit():
+        abort(400, description="The form expired. Reload the connection page and try again.")
+
+
+def _connection_failure(error, message):
+    db.session.rollback()
+    # Provider messages can contain tokens, codes, or credential-bearing URLs.
+    current_app.logger.warning("YouTube connection failed (%s)", type(error).__name__)
+    return _connection_page(error=message, status=503)
+
+
+@oauth_blueprint.get("/")
 def index():
-    """
-    This function returns the index table by calling the print_index_table function.
-    """
-    return print_index_table()
+    return _connection_page()
 
 
-@oauth_blueprint.route("/test")
-@login_required
-def test_api_request():
-    """
-    This function sends an API request to the YouTube Data API to fetch channel
-    details and playlists.
-    It requires the user to have authorized the application and stored the credentials
-    in the session.
-
-    Returns:
-        A JSON response containing the fetched playlists details.
-    """
-    if "credentials" not in flask.session:
-        return flask.redirect("authorize")
-
-    credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
-
-    if credentials.expired:
-        return flask.redirect("authorize")
-
-    youtube_service = googleapiclient.discovery.build(
-        GOOGLE_CLIENT_API_SERVICE_NAME,
-        GOOGLE_CLIENT_API_SERVICE_VERSION,
-        credentials=credentials,
-    )
-    print_channel_details(youtube_service)
-    playlists = fetch_playlists_details(youtube_service)
-
-    # Save credentials back to session in case access token was refreshed.
-    # ACTION ITEM: In a production app, you likely want to save these
-    #              credentials in a persistent database instead.
-    flask.session["credentials"] = credentials_to_dict(credentials)
-
-    if not isinstance(playlists, dict):
-        playlists = {"playlists": playlists}
-
-    return flask.jsonify(**playlists)
-
-
-def print_channel_details(youtube_service):
-    """
-    Prints the details of the authenticated user's YouTube channel.
-
-    Args:
-        youtube_service: An instance of the YouTube service.
-
-    Returns:
-        None
-    """
-    channel_request = youtube_service.channels().list(
-        part="snippet,contentDetails,statistics", mine=True
-    )
-    channel_response = channel_request.execute()
-
-    for item in channel_response["items"]:
-        print("Channel Title:", item["snippet"]["title"])
-        print("Channel ID:", item["id"])
-        print("Description:", item["snippet"]["description"])
-        print("Subscribers:", item["statistics"]["subscriberCount"])
-        print("Total Views:", item["statistics"]["viewCount"])
-        print("-" * 50)
-
-
-def fetch_playlists_details(youtube_service):
-    """
-    Fetches details of playlists from the YouTube service.
-
-    Args:
-        youtube_service: The YouTube service object.
-
-    Returns:
-        A list of playlist details.
-    """
-    playlists = []
-
-    playlist_request = youtube_service.playlists().list(
-        part="snippet,contentDetails",
-        mine=True,
-        maxResults=50,
-    )
-    playlist_response = playlist_request.execute()
-    playlists.extend(playlist_response.get("items", []))
-
-    with open("project/data/jsonfiles/youtube-ids.json", "r", encoding="utf-8") as f:
-        playlist_ids = json.load(f)
-
-    for playlist_id in playlist_ids:
-        request = youtube_service.playlists().list(
-            part="snippet,contentDetails", id=playlist_id
-        )
-        response = request.execute()
-        playlists.extend(response.get("items", []))
-
-    return playlists
-
-
-@oauth_blueprint.route("/authorize")
-@login_required
+@oauth_blueprint.route("/authorize", methods=["GET", "POST"])
 def authorize():
-    """
-    Initiates the OAuth 2.0 Authorization Grant Flow for the application.
-
-    Returns:
-        A redirect response to the authorization URL.
-    """
-
-    # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
-    flow = google_auth_oauthlib.flow.Flow.from_client_config(
-        client_config, scopes=SCOPES
-    )
-
-    # The URI created here must exactly match one of the authorized redirect URIs
-    # for the OAuth 2.0 client, which you configured in the API Console. If this
-    # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
-    # error.
-    flow.redirect_uri = flask.url_for(
-        "oauth.oauth2callback",
-        _external=True,
-        _scheme="https" if not flask.current_app.config["DEBUG"] else None,
-    )
-
-    authorization_url, state = flow.authorization_url(
-        # Enable offline access so that you can refresh an access token without
-        # re-prompting the user for permission. Recommended for web server apps.
-        access_type="offline",
-        # Enable incremental authorization. Recommended as a best practice.
-        include_granted_scopes="true",
-    )
-
-    # Store the state so the callback can verify the auth server response.
-    flask.session["state"] = state
-
-    return flask.redirect(authorization_url)
-
-
-@oauth_blueprint.route("/oauth2callback")
-@login_required
-def oauth2callback():
-    """
-    Callback function for handling OAuth 2.0 authorization response.
-
-    This function is responsible for fetching the OAuth 2.0 tokens from the
-    authorization server's response and storing the credentials in the session
-    and in a token file for CLI access.
-
-    Returns:
-        A redirect response to the "oauth.test_api_request" endpoint.
-    """
-    from project.library.jobs import save_credentials_to_file
-
-    # Get state from URL (returned by Google)
-    url_state = flask.request.args.get("state")
-    # Get expected state from session (stored during authorize)
-    session_state = flask.session.get("state")
-
-    # Validate state parameter to prevent CSRF
-    if not url_state:
-        return "OAuth state missing from callback URL.", 400
-
-    if not session_state:
-        return "OAuth session expired. Please try authorizing again: <a href='/oauth/authorize'>Authorize</a>", 400
-
-    if url_state != session_state:
-        return "OAuth state mismatch. Possible CSRF attack. Please try authorizing again: <a href='/oauth/authorize'>Authorize</a>", 400
-
-    # Use the validated state
-    state = url_state
-
-    flow = google_auth_oauthlib.flow.Flow.from_client_config(
-        client_config, scopes=SCOPES, state=state
-    )
-
-    flow.redirect_uri = flask.url_for(
-        "oauth.oauth2callback",
-        _external=True,
-        _scheme="https" if not flask.current_app.config["DEBUG"] else None,
-    )
-
-    # Use the authorization server's response to fetch the OAuth 2.0 tokens.
-    authorization_response_url = flask.request.url.replace("http://", "https://")
-    flow.fetch_token(authorization_response=authorization_response_url)
-
-    # Store credentials in the session.
-    credentials = flow.credentials
-    creds_dict = credentials_to_dict(credentials)
-    flask.session["credentials"] = creds_dict
-
-    # Also save to token file for CLI commands
-    save_credentials_to_file(creds_dict)
-
-    return flask.redirect(flask.url_for("oauth.test_api_request"))
-
-
-@oauth_blueprint.route("/revoke")
-@login_required
-def revoke():
-    """
-    Revoke the credentials for the current user.
-
-    If the user has not authorized the application, a message is returned
-    prompting the user to authorize before testing the code to revoke credentials.
-
-    Returns:
-        str: A message indicating whether the credentials were successfully revoked
-        or if an error occurred.
-    """
-    if "credentials" not in flask.session:
-        return (
-            'You need to <a href="/authorize">authorize</a> before '
-            + "testing the code to revoke credentials."
+    if request.method == "GET":
+        return redirect(url_for("oauth.index"))
+    _require_form()
+    upgrade = request.form.get("playlist_changes") == "yes"
+    if upgrade and not connected_owner(current_user):
+        abort(403)
+    scopes = MOVE_SCOPES if upgrade else SCOPES
+    try:
+        config = oauth_client_config()
+        credential_cipher()
+        callback = oauth_redirect_uri()
+        if request.host != urlsplit(callback).netloc:
+            return _connection_page(error="Open the connection page on the website linked below.", status=400)
+        flow = google_auth_oauthlib.flow.Flow.from_client_config(
+            config, scopes=scopes, autogenerate_code_verifier=True,
         )
-
-    credentials = google.oauth2.credentials.Credentials(**flask.session["credentials"])
-
-    revoke = requests.post(
-        "https://oauth2.googleapis.com/revoke",
-        params={"token": credentials.token},
-        headers={"content-type": "application/x-www-form-urlencoded"},
-        timeout=10,
-    )
-
-    status_code = getattr(revoke, "status_code")
-    if status_code == 200:
-        return "Credentials successfully revoked." + print_index_table()
-    else:
-        return "An error occurred." + print_index_table()
+        flow.redirect_uri = callback
+        authorization_url, state = flow.authorization_url(access_type="offline", prompt="consent")
+        session["youtube_oauth"] = {
+            "state": state, "created_at": time.time(), "user_id": current_user.id,
+            "code_verifier": flow.code_verifier, "client_id": config["web"]["client_id"],
+            "redirect_uri": callback,
+            "scopes": scopes,
+        }
+        return redirect(authorization_url)
+    except Exception as error:
+        return _connection_failure(error, "YouTube connection could not start. Check the server configuration and retry.")
 
 
-@oauth_blueprint.route("/clear")
-@login_required
+@oauth_blueprint.get("/oauth2callback")
+def oauth2callback():
+    pending = session.get("youtube_oauth")
+    states = request.args.getlist("state")
+    if (not isinstance(pending, dict) or len(states) != 1 or not states[0]
+            or not isinstance(pending.get("state"), str)
+            or not secrets.compare_digest(states[0].encode(), pending["state"].encode())
+            or pending.get("user_id") != current_user.id
+            or not isinstance(pending.get("created_at"), (int, float))
+            or not 0 <= time.time() - pending["created_at"] <= 600):
+        return _connection_page(error="The connection request expired or did not match. Start again.", status=400)
+    # A callback is single-use, including failed exchanges and declined consent.
+    session.pop("youtube_oauth", None)
+    if request.args.get("error"):
+        return _connection_page(error="YouTube access was not granted. The existing connection is unchanged.", status=400)
+    codes = request.args.getlist("code")
+    if len(codes) != 1 or not codes[0]:
+        return _connection_page(error="Google did not return an authorization code. Start again.", status=400)
+    try:
+        config = oauth_client_config()
+        callback = oauth_redirect_uri()
+        if (request.host != urlsplit(callback).netloc or pending.get("redirect_uri") != callback
+                or pending.get("client_id") != config["web"]["client_id"]
+                or not pending.get("code_verifier")):
+            return _connection_page(error="Connection settings changed. Start again.", status=400)
+        scopes = pending.get("scopes", SCOPES)
+        if scopes not in (SCOPES, MOVE_SCOPES):
+            return _connection_page(error="Connection settings changed. Start again.", status=400)
+        if scopes == MOVE_SCOPES and not connected_owner(current_user):
+            abort(403)
+        flow = google_auth_oauthlib.flow.Flow.from_client_config(
+            config, scopes=scopes, state=pending["state"], code_verifier=pending["code_verifier"],
+        )
+        flow.redirect_uri = callback
+        flow.fetch_token(code=codes[0], timeout=15)
+        channel = None
+        if scopes == MOVE_SCOPES:
+            from googleapiclient.discovery import build
+            from google_auth_httplib2 import AuthorizedHttp
+            from httplib2 import Http
+            with build("youtube", "v3", http=AuthorizedHttp(flow.credentials, http=Http(timeout=15))) as service:
+                channel = channel_id(service)
+        save_shared_credentials(flow.credentials, connected_by_id=current_user.id, channel_id=channel, requested_scopes=scopes)
+    except Exception as error:
+        return _connection_failure(error, "YouTube could not be connected. Retry and allow the requested access when Google asks. The existing connection is unchanged.")
+    flash("YouTube is connected for the shared Library. Return to the app and tap Sync from YouTube.", "success")
+    return redirect(url_for("oauth.index"))
+
+
+@oauth_blueprint.route("/test", methods=["GET", "POST"])
+def test_api_request():
+    if request.method == "GET":
+        return redirect(url_for("oauth.index"))
+    _require_form()
+    try:
+        from project.library.jobs import get_youtube_service
+        with get_youtube_service() as service:
+            service.channels().list(part="id", mine=True, maxResults=1).execute()
+    except Exception as error:
+        return _connection_failure(error, "YouTube could not verify the connection. Try reconnecting; a temporary provider failure can also cause this.")
+    flash("YouTube accepted the saved connection. No Library import was run.", "success")
+    return redirect(url_for("oauth.index"))
+
+
+@oauth_blueprint.route("/revoke", methods=["GET", "POST"])
+def revoke():
+    if request.method == "GET":
+        return redirect(url_for("oauth.index"))
+    _require_form()
+    try:
+        with import_lock() as acquired:
+            if not acquired:
+                raise WorkflowError("Library is busy.")
+            connection = db.session.get(YouTubeConnection, 1)
+            if connection is not None:
+                credentials = load_shared_credentials()
+                assert_import_lock()
+                result = requests.post(
+                    "https://oauth2.googleapis.com/revoke",
+                    data={"token": credentials.refresh_token}, timeout=15,
+                )
+                result.raise_for_status()
+                db.session.delete(connection)
+                assert_import_lock()
+                db.session.commit()
+    except Exception as error:
+        return _connection_failure(error, "YouTube access could not be revoked. The saved connection is unchanged.")
+    session.pop("youtube_oauth", None)
+    flash("YouTube access was revoked and the saved connection removed. The saved Library catalog remains available.", "success")
+    return redirect(url_for("oauth.index"))
+
+
+@oauth_blueprint.post("/workflow")
+def save_workflow():
+    _require_form()
+    if not connected_owner(current_user):
+        abort(403)
+    try:
+        configure_workflow(current_user, request.form.get("source_playlist_id", ""), request.form.get("destination_playlist_id", ""))
+    except WorkflowError as error:
+        db.session.rollback()
+        return _connection_page(error=str(error), status=error.status)
+    except Exception as error:
+        return _connection_failure(error, "Couldn’t verify and save the playlists. The previous setup is unchanged. Check YouTube access and try again.")
+    flash("Move to watched is configured. Return to the app and refresh the added playlist.", "success")
+    return redirect(url_for("oauth.index"))
+
+
+@oauth_blueprint.route("/clear", methods=["GET", "POST"])
 def clear_credentials():
-    """
-    Clears the credentials stored in the session.
-
-    Returns:
-        str: A message indicating that the credentials have been cleared.
-    """
-    if "credentials" in flask.session:
-        del flask.session["credentials"]
-    return "Credentials have been cleared.<br><br>" + print_index_table()
-
-
-def credentials_to_dict(credentials):
-    """
-    Converts the given credentials object to a dictionary.
-
-    Args:
-        credentials: An object containing the credentials information.
-
-    Returns:
-        A dictionary containing the token, refresh_token, token_uri, client_id,
-        client_secret, and scopes from the credentials object.
-    """
-    return {
-        "token": credentials.token,
-        "refresh_token": credentials.refresh_token,
-        "token_uri": credentials.token_uri,
-        "client_id": credentials.client_id,
-        "client_secret": credentials.client_secret,
-        "scopes": credentials.scopes,
-    }
-
-
-def print_index_table():
-    """
-    Returns an HTML table containing links and descriptions for different API requests.
-
-    Returns:
-        str: HTML table containing links and descriptions.
-    """
-    return (
-        "<table>"
-        + '<tr><td><a href="/test">Test an API request</a></td>'
-        + "<td>Submit an API request and see a formatted JSON response. "
-        + "    Go through the authorization flow if there are no stored "
-        + "    credentials for the user.</td></tr>"
-        + '<tr><td><a href="/authorize">Test the auth flow directly</a></td>'
-        + "<td>Go directly to the authorization flow. If there are stored "
-        + "    credentials, you still might not be prompted to reauthorize "
-        + "    the application.</td></tr>"
-        + '<tr><td><a href="/revoke">Revoke current credentials</a></td>'
-        + "<td>Revoke the access token associated with the current user "
-        + "    session. After revoking credentials, if you go to the test "
-        + "    page, you should see an <code>invalid_grant</code> error."
-        + "</td></tr>"
-        + '<tr><td><a href="/clear">Clear Flask session credentials</a></td>'
-        + "<td>Clear the access token currently stored in the user session. "
-        + '    After clearing the token, if you <a href="/test">test the '
-        + "    API request</a> again, you should go back to the auth flow."
-        + "</td></tr></table>"
-    )
+    # Legacy links no longer clear or replace the shared connection.
+    return redirect(url_for("oauth.index"))
