@@ -16,6 +16,7 @@ import {
   type ApiUser,
 } from '@/lib/api-client';
 import { disconnectListSocket } from '@/lib/list-socket';
+import { clearLearningSession } from '@/lib/learning-runtime';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
 
@@ -23,6 +24,8 @@ interface AuthState {
   /** Null until session restoration finishes. */
   isAuthenticated: boolean | null;
   user: ApiUser | null;
+  userError: boolean;
+  retryUser: () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -38,11 +41,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     enabled: isAuthenticated === true,
   });
   const user = profile.data?.user ?? null;
+  const { refetch: refetchProfile } = profile;
+  const retryUser = useCallback(() => {
+    void refetchProfile();
+  }, [refetchProfile]);
 
   useEffect(() => {
     // If a request 401s even after refresh, the session is unrecoverable.
     // Registered before session restoration so a failed restore is caught too.
     setUnauthorizedListener(() => {
+      void clearLearningSession().catch(() => {});
       disconnectListSocket();
       tokenStorage.clear();
       queryClient.clear();
@@ -77,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     let cancelled = false;
     async function clearMissingAccount() {
+      await clearLearningSession().catch(() => {});
       disconnectListSocket();
       await tokenStorage.clear();
       if (cancelled) return;
@@ -90,10 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [profile.error]);
 
   const signOut = useCallback(async () => {
+    // Unmount account screens before any asynchronous cleanup can rerender them.
+    setIsAuthenticated(null);
+    const learningCleanup = clearLearningSession().catch(() => {});
     disconnectListSocket();
+    queryClient.clear();
     await authApi.logout();
     await tokenStorage.clear();
-    queryClient.clear();
+    await learningCleanup;
     setIsAuthenticated(false);
   }, []);
 
@@ -108,8 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ isAuthenticated, user, signIn, signOut }),
-    [isAuthenticated, user, signIn, signOut],
+    () => ({
+      isAuthenticated,
+      user,
+      userError: profile.isError,
+      retryUser,
+      signIn,
+      signOut,
+    }),
+    [isAuthenticated, user, profile.isError, retryUser, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
