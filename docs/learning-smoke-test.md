@@ -1,6 +1,6 @@
 # Learning smoke test
 
-Checklist for the [Learning modernization slice](learning-modernization-plan.md). Implementation and fixture results are recorded below; release identifiers will be added after the build and deployment finish. Leave an item unchecked unless its entire stated behavior was exercised.
+Checklist for the [Learning modernization slice](learning-modernization-plan.md). Implementation, fixture results and the matching preview/backend release are recorded below. Leave an item unchecked unless its entire stated behavior was exercised.
 
 Failure injection uses a disposable fixture with temporary notes/database and two users. A production rating changes your personal review schedule; use only cards you intend to review. Browsing and revealing answers should not change progress.
 
@@ -60,4 +60,20 @@ October 14 planning baseline: the existing API test fixture reproduced duplicate
 - The read-only production migration preflight found migration `c9d0e1f2a3b4`, zero duplicate progress groups, zero progress rows and zero review logs. No production rating was submitted. The additive migration stops before changing schema if duplicate progress exists.
 - The EAS archive contains the Learning sources and excludes local environment/credential files, databases, dependencies and generated native projects; the inspector's own Git metadata is excluded from that assessment.
 
-The grouped checklist above remains unchecked where it includes an untested condition. Smaller iPhones, full VoiceOver/TalkBack, software-keyboard combinations, native cold links, offline device transitions, delayed-save logout/account switching, and standalone physical-device acceptance still need an explicit pass. Automated coverage is not a substitute for those interactions. All earlier Grocery/Wishlist/Library follow-ups, Android preview, production EAS environment, Google Testing/credential work, and the November 5 security-exception deadline remain open as previously recorded.
+The grouped checklist above remains unchecked where it includes an untested condition. Full VoiceOver/TalkBack, combined largest-text/software-keyboard checks, native cold links, offline device transitions, delayed-save logout/account switching, and standalone physical-device acceptance still need an explicit pass. Automated coverage is not a substitute for those interactions. All earlier Grocery/Wishlist/Library follow-ups, Android preview, production EAS environment, Google Testing/credential work, and the November 5 security-exception deadline remain open as previously recorded.
+
+
+Additional October 14 checks: a disposable **iPhone SE (3rd generation) / iOS 27.0** passed software-keyboard sign-in/search and a readable two-column rating layout. [Keyboard](screenshots/learning-modernization/ios-se-keyboard.png) · [Review](screenshots/learning-modernization/ios-se-review.png). A second fixture client committed the same card after the SE loaded its queue. The SE retained its answer, rejected the stale rating, and loaded a fresh four-card note queue; saved totals remained three logs/receipts, including only the competing client's new rating. No stale write was applied. Web checks also verified an empty note, a no-results combination of search and Due filter, invalid and missing note URLs, retained content/counts after failed refresh, and successful explicit retry.
+
+
+### Released preview and backend
+
+[PR #112](https://github.com/Kriordan/personal_portfolio/pull/112) contains backend commit `457298c` and mobile source **`89a76443418a96ca843766bd9331c3511005d6a0`**. Backend, mobile, web, and all CodeQL jobs pass on this application source; the PR-specific CodeQL query returned zero open findings.
+
+The approved deployment released **Heroku v139 on October 14 at 4:11 p.m. EDT**, from `89a7644`. A separate production process verified migration **`d0e1f2a3b4c5`**, the receipt table, the unique progress constraint, the repository's 37 valid cards, and the unchanged 186-playlist catalog. Production review logs remained zero. The website returned 200; protected Learning notes/receipt routes returned the expected JSON 401 with `private, no-store`. The web dyno is up. Legacy-client behavior is covered by the shared API regression suite; no production learning rating was submitted.
+
+The [Learning iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/7ab8e8b9-b47f-4b82-838f-24311018c9a1) **finished at 4:17:17 p.m. EDT on October 14** from the same application source. It is an internal-distribution physical-device build using the existing registered-device signing credentials and `https://keithriordan.herokuapp.com`. No new signing credential, App Store/TestFlight submission, OTA update, or PR merge was made. The IPA download endpoint returned HTTP 200. Installation and a deliberate physical-iPhone review remain pending; successful build/download checks do not establish that acceptance.
+
+The iPhone SE additionally preserved its current command card, revealed answer, 20-card snapshot and progress across background/foreground. The release-evidence commit changes documentation/screenshots only, so it does not require another backend deployment or application build. Earlier follow-ups remain open except for GitHub's now-confirmed closure of Mako alert #248.
+
+The disposable fixture API, Metro, PostgreSQL server, iPhone simulator and Android emulator were stopped after validation. The temporary iPhone SE simulator was deleted; the existing iPhone simulator was restored to Light appearance and its original text size.
