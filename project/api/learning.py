@@ -106,9 +106,16 @@ def api_rate_card():
         return jsonify({"error": "Invalid review request."}), 400
     except learning_service.NotFoundError:
         return jsonify({"error": "card not found"}), 404
-    except learning_service.ConflictError as error:
-        code = "stale_progress" if isinstance(error, learning_service.StaleReviewError) else "request_conflict"
-        return jsonify({"error": str(error), "code": code}), 409
+    except learning_service.StaleReviewError:
+        return jsonify({
+            "error": "This card changed elsewhere. Load a fresh review queue.",
+            "code": "stale_progress",
+        }), 409
+    except learning_service.ConflictError:
+        return jsonify({
+            "error": "This request ID was already used for a different rating.",
+            "code": "request_conflict",
+        }), 409
     return jsonify(response_data), 200
 
 

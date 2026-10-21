@@ -233,6 +233,45 @@ class ApiLearningTests(unittest.TestCase):
         self.assertEqual(response.get_json()["error"], "Invalid review request.")
         self.assertNotIn("should-not-leak", response.get_data(as_text=True))
 
+    @patch("project.services.learning_service.rate_card_for_user")
+    def test_api_and_website_conflicts_do_not_expose_exception_details(self, mock_rate):
+        user_id = self._create_user(email="learner@example.com", username="learner")
+        headers = self._auth_headers(user_id)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["_user_id"] = str(user_id)
+            session["_fresh"] = True
+
+        cases = (
+            (
+                learning_service.StaleReviewError,
+                "This card changed elsewhere. Load a fresh review queue.",
+                "stale_progress",
+            ),
+            (
+                learning_service.ConflictError,
+                "This request ID was already used for a different rating.",
+                "request_conflict",
+            ),
+        )
+        for path in ("/api/v1/learning/rate", "/learning/rate"):
+            for exception_type, message, code in cases:
+                with self.subTest(path=path, exception_type=exception_type.__name__):
+                    mock_rate.side_effect = exception_type(
+                        "database connection: should-not-leak"
+                    )
+                    response = self._post(
+                        path,
+                        headers=headers if path.startswith("/api/") else {},
+                        json={"card_id": CARD_ID, "rating": 4},
+                    )
+                    expected = {"error": message}
+                    if path.startswith("/api/"):
+                        expected["code"] = code
+                    self.assertEqual(response.status_code, 409)
+                    self.assertEqual(response.get_json(), expected)
+                    self.assertEqual(response.headers["Cache-Control"], "private, no-store")
+                    self.assertNotIn("should-not-leak", response.get_data(as_text=True))
+
     def test_rate_persists_progress_and_log(self):
         user_id = self._create_user(email="learner@example.com", username="learner")
 

@@ -398,7 +398,7 @@ See [Learning smoke results](learning-smoke-test.md#october-14-implementation-va
 
 ### Released preview and backend
 
-[PR #112](https://github.com/Kriordan/personal_portfolio/pull/112) contains backend commit `457298c` and mobile source **`89a76443418a96ca843766bd9331c3511005d6a0`**. Backend, mobile, web, and all CodeQL jobs pass on this application source; the PR-specific CodeQL query returned zero open findings.
+[PR #112](https://github.com/Kriordan/personal_portfolio/pull/112) contains backend commit `457298c` and mobile source **`89a76443418a96ca843766bd9331c3511005d6a0`**. Backend, mobile, web, and all CodeQL jobs passed on this application source. Correction on October 21: the earlier zero-findings query checked `refs/pull/112/merge`, but alerts #35 and #36 were attached to `refs/pull/112/head`. Successful scan jobs and an empty query against the merge reference did not establish a clean PR.
 
 The approved deployment released **Heroku v139 on October 14 at 4:11 p.m. EDT**, from `89a7644`. A separate production process verified migration **`d0e1f2a3b4c5`**, the receipt table, the unique progress constraint, the repository's 37 valid cards, and the unchanged 186-playlist catalog. Production review logs remained zero. The website returned 200; protected Learning notes/receipt routes returned the expected JSON 401 with `private, no-store`. The web dyno is up. Legacy-client behavior is covered by the shared API regression suite; no production learning rating was submitted.
 
@@ -407,3 +407,7 @@ The [Learning iPhone preview](https://expo.dev/accounts/kriordan/projects/person
 The iPhone SE additionally preserved its current command card, revealed answer, 20-card snapshot and progress across background/foreground. The release-evidence commit changes documentation/screenshots only, so it does not require another backend deployment or application build. Earlier follow-ups remain open except for GitHub's now-confirmed closure of Mako alert #248.
 
 The disposable fixture API, Metro, PostgreSQL server, iPhone simulator and Android emulator were stopped after validation. The temporary iPhone SE simulator was deleted; the existing iPhone simulator was restored to Light appearance and its original text size.
+
+### October 21: Learning CodeQL correction
+
+The API and website rating handlers now return explicit public conflict messages instead of exception text. The regression test covers both conflict types on both endpoints, preserving their HTTP status, recovery codes and privacy headers; all 25 targeted Learning tests pass. See [the correction and verification requirements](learning-smoke-test.md#october-21-rating-conflict-error-handling). The existing iPhone preview remains compatible; the recorded Heroku v139 release predates this backend-only correction. All earlier native validation follow-ups remain open.
