@@ -1,6 +1,7 @@
 """Private Jobwizard JSON endpoints. Public errors never contain exceptions."""
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from werkzeug.exceptions import Unauthorized
 
 from project.database import db
 from project.models import User
@@ -22,7 +23,6 @@ def _user():
     except (TypeError, ValueError):
         user = None
     if user is None:
-        from werkzeug.exceptions import Unauthorized
         raise Unauthorized()
     return user
 
@@ -32,6 +32,11 @@ def _payload():
     if not isinstance(value, dict):
         raise service.ValidationError()
     return value
+
+
+@jobwizard_api_blueprint.errorhandler(Unauthorized)
+def unauthorized(_error):
+    return jsonify(error="Sign in to continue.", code="unauthorized"), 401
 
 
 @jobwizard_api_blueprint.errorhandler(service.ValidationError)

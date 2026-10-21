@@ -68,6 +68,17 @@ class OrganizerTests(unittest.TestCase):
             self.assertEqual(JobMutationReceipt.query.count(), 1)
             self.assertIsNotNone(Job.query.one().saved_at)
 
+    def test_removed_account_token_returns_private_json_401(self):
+        self.setup_owner()
+        from project.models import User
+        with self.app.app_context():
+            db.session.delete(db.session.get(User, self.owner))
+            db.session.commit()
+        response = self._get("/api/v1/jobwizard/jobs", headers=self.headers)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json["code"], "unauthorized")
+        self.assertEqual(response.headers["Cache-Control"], "private, no-store")
+
     def test_archive_restore_revision_and_receipt_before_revision(self):
         self.setup_owner()
         created, _ = self.create()
