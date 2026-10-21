@@ -1,138 +1,155 @@
-import { useQuery } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { RefreshControl } from 'react-native';
+import { JobForm } from '@/components/job-form';
 import {
-  ActivityIndicator,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
-
+  JobActivityStatus,
+  JobLink,
+  JobScreenshot,
+} from '@/components/jobwizard-content';
+import {
+  InlineError,
+  NativeAction,
+  PageHeading,
+  Screen,
+  ScreenState,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useJob, useJobActivity } from '@/hooks/use-jobwizard';
+import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
-import { jobScreenshotUrl, jobwizardApi, jobwizardKeys } from '@/lib/jobwizard-api';
-
+import { routeJobId, safeJobUrl, type Job } from '@/lib/jobwizard-model';
 export default function JobDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
-  const jobId = Number(id);
-
-  const jobQuery = useQuery({
-    queryKey: jobwizardKeys.job(jobId),
-    queryFn: () => jobwizardApi.getJob(jobId),
-    enabled: Number.isFinite(jobId) && isAuthenticated === true,
-  });
-
-  if (jobQuery.isPending) {
+  const auth = useAuth(),
+    { id } = useLocalSearchParams<{ id: string }>();
+  if (!auth.user)
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
-    );
-  }
-
-  if (jobQuery.isError) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">
-          {jobQuery.error instanceof Error ? jobQuery.error.message : 'Couldn’t load job.'}
-        </ThemedText>
-        <Pressable style={styles.button} onPress={() => jobQuery.refetch()}>
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            Retry
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
-    );
-  }
-
-  const { job } = jobQuery.data;
-  const screenshotUrl = jobScreenshotUrl(job);
-
-  return (
-    <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: job.title }} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={jobQuery.isRefetching} onRefresh={() => jobQuery.refetch()} />
+      <ScreenState
+        loading={!auth.userError}
+        title={
+          auth.userError ? 'Couldn’t load your account' : 'Loading your account'
         }
-      >
-        <ThemedText type="subtitle">{job.title}</ThemedText>
-        <ThemedText themeColor="textSecondary">{job.company_name}</ThemedText>
-        {job.posted_date ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            Posted {new Date(job.posted_date).toLocaleDateString()}
-          </ThemedText>
-        ) : null}
-
-        <Pressable style={styles.button} onPress={() => Linking.openURL(job.listing_url)}>
-          <ThemedText type="smallBold" style={styles.buttonText}>
-            Open Original Listing
-          </ThemedText>
-        </Pressable>
-
-        {screenshotUrl ? (
-          <>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-              LISTING SCREENSHOT
-            </ThemedText>
-            <Pressable onPress={() => Linking.openURL(screenshotUrl)}>
-              <Image
-                source={{ uri: screenshotUrl }}
-                style={styles.screenshot}
-                resizeMode="cover"
-              />
-            </Pressable>
-          </>
-        ) : (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.sectionHeader}>
-            No screenshot available for this listing.
-          </ThemedText>
-        )}
-      </ScrollView>
-    </ThemedView>
+        onRetry={auth.userError ? auth.retryUser : undefined}
+      />
+    );
+  return (
+    <JobDetail key={`${auth.user.id}:${String(id)}`} id={routeJobId(id)} />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  scrollContent: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  sectionHeader: {
-    marginTop: Spacing.three,
-  },
-  screenshot: {
-    width: '100%',
-    height: 480,
-    borderRadius: Spacing.two,
-  },
-  button: {
-    backgroundColor: '#3c87f7',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-  },
-});
+function JobDetail({ id }: { id: number }) {
+  const query = useJob(id),
+    activity = useJobActivity(),
+    router = useRouter();
+  const [editing, setEditing] = useState<Job | null>(null),
+    [refreshing, setRefreshing] = useState(false);
+  const unavailable =
+    !id ||
+    (query.error instanceof ApiError &&
+      [403, 404].includes(query.error.status));
+  if (unavailable && !editing)
+    return (
+      <Screen>
+        <PageHeading
+          title="Job unavailable"
+          subtitle="It may have been removed or belong to another account."
+        />
+        <NativeAction
+          label="Back to Jobwizard"
+          onPress={() => router.replace('/jobwizard')}
+        />
+      </Screen>
+    );
+  if (!query.data && !editing && query.isPending)
+    return (
+      <ScreenState
+        loading={!query.isPaused}
+        title={query.isPaused ? 'You’re offline' : 'Loading job'}
+      />
+    );
+  if (!query.data && !editing)
+    return (
+      <ScreenState
+        title="Couldn’t load job"
+        onRetry={() => void query.refetch()}
+      />
+    );
+  const job = query.data?.job ?? editing!;
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Job' }} />
+      <Screen
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void Promise.all([
+                query.refetch(),
+                activity.session.check(),
+              ]).finally(() => setRefreshing(false));
+            }}
+          />
+        }
+      >
+        <PageHeading
+          title={job.title}
+          subtitle={job.company_name}
+          eyebrow={job.archived_at ? 'Archived job' : 'Saved job'}
+        />
+        <ThemedText selectable>{job.listing_url}</ThemedText>
+        {safeJobUrl(job.listing_url) ? (
+          <JobLink url={job.listing_url} />
+        ) : (
+          <InlineError message="This listing link is unsafe or invalid. Edit the job to replace it." />
+        )}
+        {job.saved_at || job.posted_date ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {job.saved_at ? 'Saved' : 'Date recorded'}{' '}
+            {new Date((job.saved_at ?? job.posted_date)!).toLocaleDateString()}
+          </ThemedText>
+        ) : null}
+        <NativeAction
+          label="Edit job"
+          secondary
+          onPress={() => setEditing(job)}
+          disabled={!!activity.attempt}
+        />
+        <NativeAction
+          label={job.archived_at ? 'Restore job' : 'Archive job'}
+          secondary
+          disabled={!activity.ready || !!activity.attempt}
+          onPress={() =>
+            void activity.session.begin({
+              kind: 'save',
+              jobId: job.id,
+              input: {
+                expected_revision: job.revision,
+                archived: !job.archived_at,
+              },
+            })
+          }
+        />
+        <ThemedText type="small" themeColor="textSecondary">
+          {job.archived_at
+            ? 'Restore to return this job to Active.'
+            : 'Archiving keeps this job and its screenshot. Restore it anytime.'}
+        </ThemedText>
+        <JobActivityStatus activity={activity} />
+        {query.isError ? (
+          <InlineError
+            message="Couldn’t refresh. This is the last loaded job."
+            onRetry={() => void query.refetch()}
+          />
+        ) : null}
+        <JobScreenshot job={job} activity={activity} />
+      </Screen>
+      {editing ? (
+        <JobForm
+          job={editing}
+          onSaved={() => setEditing(null)}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+    </>
+  );
+}
