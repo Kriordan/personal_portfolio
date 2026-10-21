@@ -118,3 +118,13 @@ EXPO_NO_DOTENV=1 npm run lint
 ### October 14: merged Mako alert closure
 
 GitHub's read-only alert API now confirms [Mako alert #248](https://github.com/Kriordan/personal_portfolio/security/dependabot/248) is **fixed**, with `fixed_at` **2026-10-14T19:35:02Z**. This closes the post-merge confirmation follow-up for PR #111. The three npm advisories and November 5 exception deadline remain unchanged; the Learning slice adds no dependency or security exception.
+
+### October 21: Learning PR audit rerun
+
+Rerunning PR #112 after its CodeQL correction surfaced security advisories published since the previous successful checks. [Web run 39636910426](https://github.com/Kriordan/personal_portfolio/actions/runs/39636910426) failed on `follow-redirects`; [backend run 39636910618](https://github.com/Kriordan/personal_portfolio/actions/runs/39636910618) stopped at `pip-audit`, reporting one Certifi advisory and eight Pillow advisories. No check or exception was relaxed.
+
+- Root `follow-redirects` **1.16.0 → 1.16.1** fixes [GHSA-8r9p-f939-6h3c](https://github.com/advisories/GHSA-8r9p-f939-6h3c) and [GHSA-q3jh-wrc6-jgq8](https://github.com/advisories/GHSA-q3jh-wrc6-jgq8). It is a BrowserSync/http-proxy development dependency. Only its lockfile entry changed; root package constraints and the mobile lockfile are unchanged. The root audit gate passes with its existing single `braces` exception.
+- Certifi **2026.1.4 → 2026.10.19** addresses `PYSEC-2026-4320`, using the [published upstream release](https://pypi.org/project/certifi/2026.10.19/).
+- Pillow **12.3.0 → 13.0.0** addresses the eight findings reported by the audit. The declared range is now `>=13.0.0,<14`. The [upstream compatibility notes](https://pillow.readthedocs.io/en/stable/releasenotes/13.0.0.html#backwards-incompatible-changes) were checked against Wishlist's image processing: the project uses Python 3.13 and converts uploads to RGB/RGBA before saving, without the removed APIs. Existing photo tests cover decoding, EXIF orientation, metadata removal, rejected animation/oversized images, and atomic storage failures.
+
+Only Certifi and Pillow changed versions in `poetry.lock`. Local verification passes: 25 targeted Learning tests; full discovery of 195 backend tests with the ten PostgreSQL cases skipped locally (they run in CI); root audit-policy/CDN tests; Sass build; and Poetry lock validation. No production data or deployment changed in this follow-up. The three existing npm advisories and November 5 exception deadline remain unchanged. Default-branch Dependabot alerts #249/#250 may remain open until this branch is merged and GitHub rescans it.
