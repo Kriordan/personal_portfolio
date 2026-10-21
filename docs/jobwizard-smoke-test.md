@@ -29,7 +29,7 @@ Use the disposable two-account fixture for failures and concurrency. Live accept
 
 ## Screenshots
 
-- [ ] Confirm a normal job save does not call ApiLeap/S3. Only the explicit Capture action starts capture, and its explanation identifies that the listing link goes to the screenshot service.
+- [x] Confirm a normal job save does not call ApiLeap/S3. Only the explicit Capture action starts capture, and its explanation identifies that the listing link goes to the screenshot service.
 - [ ] Capture a fixture page and verify progress, completion time and the uncropped preview. Open the full screenshot and return. Opening a screenshot must not start a new capture.
 - [ ] Double-tap capture, navigate away/back and background/foreground the app. One attempt/provider call runs; status resumes from the server. No unattended retry purchases another capture.
 - [ ] Fail provider authentication, quota, timeout, status, content type, image decoding and S3 upload independently in the fixture. The job remains saved, no invalid image reference is published, and any previous good screenshot remains available.
@@ -52,9 +52,9 @@ Use the disposable two-account fixture for failures and concurrency. Live accept
 
 ## Release evidence
 
-- [ ] Record full backend/PostgreSQL, mobile, browser, migration, typecheck/lint, exports, Expo compatibility and audit results. Confirm actual CodeQL findings on PR head/merge references, not only scan-job success.
+- [x] Record full backend/PostgreSQL, mobile, browser, migration, typecheck/lint, exports, Expo compatibility and audit results. Confirm actual CodeQL findings on PR head/merge references, not only scan-job success.
 - [ ] Record implementation source, additive migration head, Heroku release and healthy old/new-client responses. Keep legacy job ownership, IDs, dates and screenshot references intact.
-- [ ] Inspect the EAS upload for excluded secrets/local databases and build a fresh internal iPhone preview with the approved signing setup and HTTPS API. Record build ID/link and matched backend release.
+- [x] Inspect the EAS upload for excluded secrets/local databases and build a fresh internal iPhone preview with the approved signing setup and HTTPS API. Record build ID/link and matched backend release.
 - [ ] Install that preview on the physical iPhone and complete a deliberate add/edit/archive/restore flow. Record device/OS, screenshots and exact checked steps; build/download success alone is not acceptance.
 
 ## Planning evidence
@@ -66,9 +66,9 @@ October 21: all **17 existing Jobwizard API/service tests pass** on the merged b
 
 The organizer, additive migration `e1f2a3b4c5d6`, account-scoped mutation receipts, revision checks, and optional durable capture attempts are implemented. New captures use private `j/` object keys and 15-minute signed links. Legacy image references are retained but shown as unavailable until their storage mapping/privacy can be verified. Older previews can save/read jobs but cannot display the new private captures.
 
-Automated validation: **214 backend tests** passed with all PostgreSQL integration tests enabled before the final capture guard checks; Linux CI subsequently passed **215 tests**, including killing a capture child when its parent dies, including migration preservation, duplicate submissions, stale writes, process-death recovery and screenshot failures. **75 mobile tests**, TypeScript, lint, Expo 57 dependency compatibility and iOS/Android/web production exports passed. Existing **18 browser security checks** and **4 root tests** passed. Python audit found no known vulnerabilities; root/mobile audits matched their existing bounded exceptions. The November 5 security review deadline is unchanged.
+Automated validation: final Linux CI passed **217 backend tests**, including all PostgreSQL cases and the worker parent-death test. **75 mobile tests**, TypeScript, lint, Expo 57 dependency compatibility and iOS/Android/web production exports passed. Existing **18 browser security checks** and **4 root tests** passed. Python audit found no known vulnerabilities; root/mobile audits matched their existing bounded exceptions. The November 5 security review deadline is unchanged.
 
-Observed native evidence: iPhone 18 Pro simulator, iOS 27.0, development client against the disposable fixture (320 jobs for account 1, three for account 2). Company A–Z menu displayed all four labels; mixed whitespace search found the expected record. Add saved immediately and opened details; capture required a separate deliberate confirmation. A tall synthetic screenshot appeared. Archive/restore retained the ID and image. Cancelling the dirty-form discard prompt retained all fields. A competing API edit received a 409 in the open editor; the draft stayed intact, Compare latest showed the competing version, and explicit Keep my draft followed by Save succeeded. Screenshot evidence is retained locally at `/private/tmp/jobwizard-evidence/iphone-detail.png`.
+Observed native evidence: iPhone 18 Pro simulator, iOS 27.0, development client against the disposable fixture (320 jobs for account 1, three for account 2). Company A–Z menu displayed all four labels; mixed whitespace search found the expected record. Add saved immediately and opened details; capture required a separate deliberate confirmation. A tall synthetic screenshot appeared. Archive/restore retained the ID and image. Cancelling the dirty-form discard prompt retained all fields. A competing API edit received a 409 in the open editor; the draft stayed intact, Compare latest showed the competing version, and explicit Keep my draft followed by Save succeeded. Screenshot evidence is retained locally at [iPhone details](assets/jobwizard/iphone-detail.png).
 
 Interactive website fixture: login, form-based save, detail, archive and restore succeeded. The form's POST method was explicitly repaired and regression-tested. The shared service preserves unchanged oversized legacy fields during unrelated edits, including website edits.
 
@@ -80,4 +80,14 @@ Live storage configuration is explicitly approved for IAM user `portfolio-heroku
 
 Additional iPhone check: a saved edit deliberately returned a failed response, and receipt reads were temporarily unavailable. The app retained the pending operation and draft. Restoring receipt reads recovered the saved job automatically without another write: 325 fixture jobs and 10 receipts both before and after recovery.
 
-The completed preliminary iPhone build `fb74be7d-900d-41bd-8cda-d877d278cf4d` (source `bc92118`, 17:46:29 UTC, IPA HEAD 200) will be replaced to include clearer capture-unavailable wording. Do not use it as the final release reference.
+The preliminary iPhone build `fb74be7d-900d-41bd-8cda-d877d278cf4d` is superseded by the final preview below.
+
+
+## Final release evidence
+
+- [PR #116](https://github.com/Kriordan/personal_portfolio/pull/116), application/backend source **`0f2a580`**. Backend, mobile, web and all CodeQL jobs passed on this source. CodeQL analysis records match the PR head commit; queries for open findings at both `refs/pull/116/head` and `refs/pull/116/merge` returned zero.
+- **Heroku v144** deployed from `0f2a580`, migration **`e1f2a3b4c5d6`** verified. Production had zero saved jobs before and after the additive migration; populated-fixture preservation is covered in PostgreSQL tests. Health returned 200; unauthenticated job/status routes returned private/no-store JSON 401. The website redirects signed-out visitors to login. Read-only production verification confirmed the final Unicode boundary fix and disabled capture gate.
+- [Final internal iPhone preview `2fc3dec3-0464-4c97-9181-20baf3832898`](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2fc3dec3-0464-4c97-9181-20baf3832898) finished at **17:55:31 UTC** on October 21 (1:55 p.m. EDT), app source **`ade51e0`**. The subsequent `0f2a580` change is backend/test only. IPA HEAD returned 200. Existing registered-device signing credentials and the HTTPS Heroku API were reused. No App Store/TestFlight or OTA release occurred. Physical installation/acceptance remains open.
+- Private screenshot storage is enabled and verified; **ApiLeap capture is disabled** with `JOBWIZARD_CAPTURE_ENABLED=0` because the provider returned HTTP 500. Do not mark live screenshots ready or enable the gate until a deliberate public capture succeeds. No provider/credential substitution was made.
+- Additional iPhone failure check: a failed list refresh retained 292 cached active jobs with explicit stale-data text; Retry recovered after fixture reads were restored. [Overview](assets/jobwizard/iphone-overview.png), [stale refresh](assets/jobwizard/iphone-stale-refresh.png), [detail](assets/jobwizard/iphone-detail.png).
+- The disposable API, Metro, PostgreSQL and emulator processes started for validation were stopped. All earlier feature and accessibility follow-ups remain as listed above.
