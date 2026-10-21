@@ -104,7 +104,8 @@ def guard_worker(parent_pid):
 
 def main():
     try:
-        payload = json.loads(sys.stdin.read(8192))
+        # JSON escaping can expand a valid 2,048-character URL to over 8 KiB.
+        payload = json.loads(sys.stdin.read(16384))
         guard_worker(payload["parent_pid"])
         result = capture_artifact(payload["url"], payload["key"])
         print(json.dumps(result))

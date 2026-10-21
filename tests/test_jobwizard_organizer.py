@@ -207,6 +207,14 @@ class OrganizerTests(unittest.TestCase):
 
 
 class CaptureProviderTests(unittest.TestCase):
+    def test_worker_accepts_unicode_url_within_the_service_limit(self):
+        url = "https://example.com/?q=" + "界" * 1500
+        self.assertTrue(service.safe_listing_url(url))
+        payload = json.dumps(dict(url=url, key="j/" + "a" * 32 + ".png", parent_pid=os.getpid()))
+        with patch.object(capture_worker.sys, "stdin", io.StringIO(payload)), patch.object(capture_worker.sys, "stdout", io.StringIO()), patch.object(capture_worker, "guard_worker"), patch.object(capture_worker, "capture_artifact", return_value={}) as provider:
+            self.assertEqual(capture_worker.main(), 0)
+            self.assertEqual(provider.call_args.args[0], url)
+
     def test_capture_requires_explicit_enablement_after_readiness_check(self):
         with patch.dict(os.environ, dict(APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", JOBWIZARD_CAPTURE_ENABLED="0")):
             self.assertFalse(capture.configured())
