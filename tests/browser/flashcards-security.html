@@ -54,6 +54,44 @@
     fixtures.append(fallback);
     await loadRenderer();
     outcomes.push(["missing sanitizer falls back to text", !fallback.querySelector("img, strong") && fallback.textContent === dirty]);
+
+    // Exercise the real website save handlers: failure must never advance,
+    // and an explicit retry must preserve the original attempted payload.
+    const review = document.createElement("section");
+    review.innerHTML = `<div data-review-card data-flip-card><div id="card-question"></div><div id="card-answer"></div><div id="card-note-title"></div></div>
+      <div id="review-progress"></div><div id="flashcard-actions"><button data-rating="4">Good</button></div>
+      <p id="review-save-error" hidden></p><button id="review-save-retry" hidden>Retry</button><a id="review-reload" hidden>Reload</a>`;
+    fixtures.append(review);
+    for (const [id, value] of [["review-cards-data", [1, 2].map(n => ({ card_id: `note:${n}`, prompt: `Question ${n}`, response: "Answer", progress_revision: 0 }))], ["review-config-data", { rateUrl: "/rate", receiptUrl: "/ratings/REQUEST_ID" }]]) {
+      const script = document.createElement("script");
+      script.type = "application/json"; script.id = id; script.textContent = JSON.stringify(value); review.append(script);
+    }
+    const posts = [];
+    let behavior = "failed";
+    window.fetch = async (url, options) => {
+      if (options?.method === "POST") {
+        posts.push(JSON.parse(options.body));
+        return { ok: false, status: behavior === "stale" ? 409 : 503 };
+      }
+      return { ok: true, json: async () => ({ receipt: behavior === "saved" ? { ...posts[0], next_review_display: "Due tomorrow" } : null }) };
+    };
+    await loadRenderer();
+    const flip = review.querySelector("[data-review-card]");
+    const good = review.querySelector("[data-rating]");
+    const settle = () => new Promise(resolve => setTimeout(resolve, 20));
+    flip.click(); good.click(); good.click();
+    await settle();
+    outcomes.push(["rapid rating taps send once", posts.length === 1]);
+    outcomes.push(["failed save retains card and retry", document.getElementById("review-progress").textContent === "Card 1 of 2" && !document.getElementById("review-save-retry").hidden]);
+    behavior = "saved";
+    document.getElementById("review-save-retry").click();
+    await settle();
+    outcomes.push(["retry freezes original attempt", posts.length === 2 && JSON.stringify(posts[0]) === JSON.stringify(posts[1])]);
+    outcomes.push(["receipt confirms one advance", document.getElementById("review-progress").textContent === "Card 2 of 2"]);
+    behavior = "stale";
+    flip.click(); good.click();
+    await settle();
+    outcomes.push(["stale review requires fresh queue", document.getElementById("review-progress").textContent === "Card 2 of 2" && !document.getElementById("review-reload").hidden && document.getElementById("review-save-retry").hidden]);
     const failed = outcomes.filter(([, passed]) => !passed);
     document.getElementById("results").textContent = `${failed.length ? "FAIL" : "PASS"}: ${outcomes.length} checks; DOMPurify ${version}\n` + outcomes.map(([name, passed]) => `${passed ? "PASS" : "FAIL"} ${name}`).join("\n");
     document.documentElement.dataset.testResult = failed.length ? "fail" : "pass";

@@ -233,6 +233,11 @@
     let graduatedCount = 0;
     const tagLapses = {};
     let isSubmitting = false;
+    let pendingAttempt = null;
+    let staleQueue = false;
+    const saveError = document.getElementById("review-save-error");
+    const saveRetry = document.getElementById("review-save-retry");
+    const reloadLink = document.getElementById("review-reload");
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const updateProgress = () => {
@@ -246,6 +251,7 @@
     };
 
     const unlockActions = () => {
+      if (isSubmitting || pendingAttempt || staleQueue) return;
       actionsEl?.classList.remove("is-disabled");
     };
 
@@ -290,27 +296,64 @@
 
     const sendRating = async (cardId, rating) => {
       if (!rateUrlWithDebug) return;
-      const responseMs = Math.max(0, Math.round(performance.now() - cardStart));
+      if (!pendingAttempt) {
+        pendingAttempt = {
+          card_id: cardId, rating,
+          response_ms: Math.min(86400000, Math.max(0, Math.round(performance.now() - cardStart))),
+          session_id: sessionId, request_id: crypto.randomUUID(),
+          expected_revision: cards[currentIndex].progress_revision,
+        };
+      }
+      if (saveError) saveError.hidden = true;
+      if (saveRetry) saveRetry.hidden = true;
       try {
         const response = await fetch(rateUrlWithDebug, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            card_id: cardId,
-            rating,
-            response_ms: responseMs,
-            session_id: sessionId,
-          }),
+          body: JSON.stringify(pendingAttempt),
+          signal: AbortSignal.timeout(30000),
         });
         if (!response.ok) {
-          return null;
+          if ([400, 401, 403, 404, 409].includes(response.status)) {
+            staleQueue = true;
+            pendingAttempt = null;
+            if (saveError) {
+              saveError.textContent = response.status === 409
+                ? "This card changed elsewhere. Load a fresh queue."
+                : "This rating could not be saved. Sign in if needed and load a fresh queue.";
+              saveError.hidden = false;
+            }
+            if (reloadLink) reloadLink.hidden = false;
+            return null;
+          }
+          throw new Error("Rating confirmation unavailable");
         }
-        return response.json();
-      } catch (error) {
-        console.error("Failed to rate card", error);
-        return null;
+        const result = await response.json();
+        pendingAttempt = null;
+        return result;
+      } catch {
+        // A missing response is not a failed write. Check the durable receipt,
+        // then allow only an explicit replay of the identical attempt.
+        try {
+          const status = await fetch(config.receiptUrl.replace("REQUEST_ID", pendingAttempt.request_id), {
+            cache: "no-store", signal: AbortSignal.timeout(10000),
+          });
+          if (status.ok) {
+            const { receipt } = await status.json();
+            if (receipt) {
+              pendingAttempt = null;
+              return receipt;
+            }
+          }
+        } catch { /* Keep the attempted payload frozen. */ }
+        if (saveError) {
+          saveError.textContent = "Save confirmation is unavailable. Retry the same rating when connected; it will only be applied once.";
+          saveError.hidden = false;
+        }
+        if (saveRetry) saveRetry.hidden = false;
+          return null;
       }
     };
 
@@ -322,16 +365,8 @@
       }
     });
 
-    actionsEl?.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-rating]");
-      if (
-        !button ||
-        actionsEl.classList.contains("is-disabled") ||
-        isSubmitting
-      ) {
-        return;
-      }
-      const rating = Number(button.dataset.rating);
+    const submitRating = (rating) => {
+      if (isSubmitting || staleQueue) return;
       const card = cards[currentIndex];
       if (!card) return;
 
@@ -340,6 +375,7 @@
 
       sendRating(card.card_id, rating).then((data) => {
         isSubmitting = false;
+        if (!data) return;
         if (data?.next_review_display) {
           showToast(data.next_review_display);
           if (data.next_review_display.startsWith("Graduated:")) {
@@ -349,7 +385,7 @@
         if (data?.debug) {
           console.log("Scheduler debug", data.debug);
         }
-        if (rating === 0) {
+        if (data.rating === 0) {
           lapseCount += 1;
           const tags = card.tags || [];
           tags.forEach((tag) => {
@@ -383,6 +419,15 @@
         }
         renderCard();
       });
+    };
+
+    saveRetry?.addEventListener("click", () => {
+      if (pendingAttempt) submitRating(pendingAttempt.rating);
+    });
+    actionsEl?.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-rating]");
+      if (!button || actionsEl.classList.contains("is-disabled")) return;
+      submitRating(Number(button.dataset.rating));
     });
 
     document.addEventListener("keydown", (event) => {
@@ -413,55 +458,7 @@
         !actionsEl.classList.contains("is-disabled") &&
         !isSubmitting
       ) {
-        const rating = ratingMap[event.code];
-        const card = cards[currentIndex];
-        isSubmitting = true;
-        lockActions();
-        sendRating(card.card_id, rating).then((data) => {
-          isSubmitting = false;
-          if (data?.next_review_display) {
-            showToast(data.next_review_display);
-            if (data.next_review_display.startsWith("Graduated:")) {
-              graduatedCount += 1;
-            }
-          }
-          if (data?.debug) {
-            console.log("Scheduler debug", data.debug);
-          }
-          if (rating === 0) {
-            lapseCount += 1;
-            const tags = card.tags || [];
-            tags.forEach((tag) => {
-              tagLapses[tag] = (tagLapses[tag] || 0) + 1;
-            });
-          }
-          completedCount += 1;
-          currentIndex += 1;
-          if (currentIndex >= cards.length) {
-            reviewCard.setAttribute("hidden", "true");
-            actionsEl?.setAttribute("hidden", "true");
-            if (summaryEl) {
-              summaryEl.hidden = false;
-            }
-            if (summaryTextEl) {
-              summaryTextEl.textContent = `You reviewed ${completedCount} card${completedCount === 1 ? "" : "s"}.`;
-            }
-            if (summaryStatsEl) {
-              summaryStatsEl.textContent = `Reviewed: ${completedCount} | Lapses: ${lapseCount} | Graduated: ${graduatedCount}`;
-            }
-            if (summaryWeakEl) {
-              const sortedTags = Object.entries(tagLapses)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([tag]) => tag);
-              summaryWeakEl.textContent = sortedTags.length
-                ? `Weak areas: ${sortedTags.join(", ")}`
-                : "Weak areas: None yet";
-            }
-            return;
-          }
-          renderCard();
-        });
+        submitRating(ratingMap[event.code]);
       }
     });
 
