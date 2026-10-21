@@ -1,14 +1,31 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ job.title }} - {{ job.company_name }}{% endblock %}
-
-{% block header %}{% endblock %}
-
 {% block body %}
-  <h2 class="Job-title">{{ job.title }}</h2>
-  <h3 class="Job-company">{{ job.company_name }}</h3>
-  <a class="Job-sourcelink" href="{{ job.listing_url }}" target="_blank">original listing</a>
-  <a class="Job-screenshotLink" href="https://jobwizard-test.s3.amazonaws.com/{{job.listing_image}}">screenshot</a>
+<h1 class="Job-title">{{ job.title }}</h1>
+<h2 class="Job-company">{{ job.company_name }}</h2>
+<p>{{ 'Archived' if job.archived_at else 'Active' }}{% if job.saved_at %} · Saved {{ job.saved_at }}{% elif job.posted_date %} · Date recorded {{ job.posted_date }}{% endif %}</p>
+<p>{{ job.listing_url }}</p>
+{% if job.can_open_listing %}<a href="{{ job.listing_url }}" target="_blank" rel="noopener noreferrer">Open listing</a>{% else %}<p>Edit this job to provide a valid HTTP(S) listing URL.</p>{% endif %}
+<a href="{{ url_for('jobwizard.edit_job', job_id=job.id) }}">Edit job</a>
+<form method="post" action="{{ url_for('jobwizard.job_action', job_id=job.id) }}">
+  {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_revision }}
+  <button name="action" value="{{ 'restore' if job.archived_at else 'archive' }}">{{ 'Restore' if job.archived_at else 'Archive' }}</button>
+</form>
+<h2>Screenshot</h2>
+{% if capture.latest %}<p>Latest capture: {{ capture.latest.status }}{% if capture.latest.finished_at %} · {{ capture.latest.finished_at }}{% endif %}</p>{% endif %}
+{% if capture.image %}
+  <p>Captured {{ capture.image.captured_at }}{% if capture.image.outdated %} · From an older listing URL{% endif %}</p>
+  <a href="{{ capture.image.url }}" target="_blank" rel="noopener noreferrer">Open full screenshot</a>
+{% elif capture.legacy_unavailable %}<p>The legacy screenshot is unavailable. Its original reference is preserved.</p>
+{% else %}<p>No screenshot available.</p>{% endif %}
+{% if capture.configured and not capture.busy %}
+<p>Optional capture sends this listing URL to ApiLeap, a screenshot service. Your job is already saved.</p>
+<form method="post" action="{{ url_for('jobwizard.job_action', job_id=job.id) }}">
+  {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_revision }}
+  <button name="action" value="capture">Capture screenshot</button>
+</form>
+{% elif not capture.configured %}<p>Screenshot capture is not configured. You can still save and edit jobs.</p>{% endif %}
+<a href="{{ url_for('jobwizard.get_job', job_id=job.id) }}">Refresh capture status</a>
+<a href="{{ url_for('jobwizard.home') }}">Back to Jobwizard</a>
 {% endblock %}
-
 {% block footer %}{% endblock %}

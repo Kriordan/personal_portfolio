@@ -45,7 +45,7 @@ class JobwizardServiceTests(unittest.TestCase):
             session["_fresh"] = True
         return user_id
 
-    def test_create_job_persists_and_renders_screenshot(self):
+    def test_create_job_persists_without_screenshot(self):
         user_id = self._create_user()
         with self.app.app_context():
             with patch.object(Job, "render_screenshot") as mock_render:
@@ -56,7 +56,7 @@ class JobwizardServiceTests(unittest.TestCase):
                     listing_url="https://example.com/job",
                 )
 
-            mock_render.assert_called_once_with()
+            mock_render.assert_not_called()
             self.assertIsNotNone(job.id)
             persisted = db.session.get(Job, job.id)
             self.assertEqual(persisted.title, "Engineer")

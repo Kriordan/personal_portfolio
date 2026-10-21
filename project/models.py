@@ -1,14 +1,7 @@
-import logging
-import os
 import secrets
-import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import urlencode
 
-import boto3
-import requests
-from botocore.exceptions import ClientError
 from flask_login import UserMixin
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -295,6 +288,11 @@ class Job(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
     )
 
+    saved_at = db.Column(db.DateTime(timezone=True))
+    updated_at = db.Column(db.DateTime(timezone=True))
+    archived_at = db.Column(db.DateTime(timezone=True))
+    revision = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+
     owner = db.relationship("User")
 
     def __init__(self, title, company_name, listing_url, posted_date, user_id):
@@ -308,37 +306,33 @@ class Job(db.Model):
         return "<Job %r>" % self.company_name
 
     def render_screenshot(self):
-        if os.getenv("ENV") == "development":
-            session = boto3.Session(profile_name="personalportfolio")
-            s3 = session.client("s3")
-        else:
-            s3 = boto3.client("s3")
+        """Legacy compatibility only. Captures require an explicit tracked action."""
+        return False
 
-        apileap_url = "https://apileap.com/api/screenshot/v1/urltoimage?"
-        params = urlencode(
-            {
-                "url": self.listing_url,
-                "access_key": os.getenv("APILEAP_ACCESS_KEY"),
-                "full_page": "true",
-            }
-        )
-        apileap_image_response = requests.get(apileap_url + params, stream=True)
-        apileap_image_response_object = apileap_image_response.raw
 
-        unique_filename_hex = uuid.uuid4().hex
-        screenshot_filename = f"{unique_filename_hex}.jpeg"
-        self.listing_image = screenshot_filename
+class JobMutationReceipt(db.Model):
+    __tablename__ = "job_mutation_receipt"
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    request_id = db.Column(db.String(36), primary_key=True)
+    payload = db.Column(db.JSON, nullable=False)
+    response = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
 
-        bucket = os.getenv("JOBWIZARD_S3_BUCKET")
 
-        try:
-            s3.upload_fileobj(
-                apileap_image_response_object, bucket, screenshot_filename
-            )
-        except ClientError as e:
-            logging.error(e)
-            return False
-        return True
+class JobCapture(db.Model):
+    __tablename__ = "job_capture"
+    id = db.Column(db.String(36), primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    source_url = db.Column(db.String, nullable=False)
+    source_revision = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(16), nullable=False)
+    started_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    finished_at = db.Column(db.DateTime(timezone=True))
+    error_code = db.Column(db.String(32))
+    object_key = db.Column(db.String(200))
+    width = db.Column(db.Integer)
+    height = db.Column(db.Integer)
 
 
 class LibrarySyncRun(db.Model):

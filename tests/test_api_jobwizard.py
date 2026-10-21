@@ -119,7 +119,7 @@ class ApiJobwizardTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 201)
-        mock_render.assert_called_once_with()
+        mock_render.assert_not_called()
         job = response.get_json()["job"]
         for key in (
             "id",
@@ -154,7 +154,7 @@ class ApiJobwizardTests(unittest.TestCase):
             "title, company_name, and listing_url are required",
         )
 
-    @patch("project.api.jobwizard.jobwizard_service.create_job_for_user")
+    @patch("project.api.jobwizard.service.create_job_for_user")
     def test_create_job_does_not_expose_validation_exception_details(self, mock_create):
         mock_create.side_effect = jobwizard_service.ValidationError(
             "database password: should-not-leak"

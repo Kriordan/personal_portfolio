@@ -1,0 +1,9 @@
+{% from "_form.html" import render_form with context %}
+{% extends 'base.html' %}
+{% block body %}
+<h1>{{ 'Edit job' if job else 'Add job' }}</h1>
+<p>Save now. Optionally capture a screenshot from the saved job afterward.</p>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+{{ render_form(form, action=request.path, method="post") }}
+<a href="{{ url_for('jobwizard.get_job', job_id=job.id) if job else url_for('jobwizard.home') }}">{{ 'Current job' if job else 'Back to Jobwizard' }}</a>
+{% endblock %}

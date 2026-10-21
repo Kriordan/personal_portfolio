@@ -1,24 +1,26 @@
 {% from "_form.html" import render_form with context %}
 {% extends 'base.html' %}
-
 {% block body %}
-  <div class="Joblist-container">
-    <h1 class="Joblist-title">Jobwizard</h1>
-    {{ render_form(form, action=url_for('jobwizard.create_job')) }}
-    <div class="Joblist-joblist">
-      {% for job in jobs %}
-        <div class="Joblist-job">
-          <a class="Joblist-joblink" href="{{ url_for('jobwizard.get_job', job_id = job.id) }}">
-            <h4 class="Joblist-jobtitle">{{ job.title }}</h4>
-            <p class="Joblist-jobcompany">{{ job.company_name }}</p>
-          </a>
-          <a class="Joblist-joblistinglink" href={{ job.listing_url }} target="_blank">
-            <span>link</span>
-          </a>
-        </div>
-      {% endfor %}
+<div class="Joblist-container">
+  <h1 class="Joblist-title">Jobwizard</h1>
+  <p>Your private saved jobs. Saving does not capture a screenshot.</p>
+  {{ render_form(form, action=url_for('jobwizard.create_job'), method='post') }}
+  <nav aria-label="Saved job views">
+    {% for value in ['active', 'archived', 'all'] %}
+      <a href="{{ url_for('jobwizard.home', view=value) }}" {% if view == value %}aria-current="page"{% endif %}>{{ value|title }}</a>
+    {% endfor %}
+  </nav>
+  <div class="Joblist-joblist">
+    {% for job in jobs %}
+    <div class="Joblist-job">
+      <a class="Joblist-joblink" href="{{ url_for('jobwizard.get_job', job_id=job.id) }}">
+        <h2 class="Joblist-jobtitle">{{ job.title }}</h2>
+        <p class="Joblist-jobcompany">{{ job.company_name }}{% if job.archived_at %} · Archived{% endif %}</p>
+      </a>
+      {% if job.can_open_listing %}<a class="Joblist-joblistinglink" href="{{ job.listing_url }}" target="_blank" rel="noopener noreferrer">Open listing</a>{% endif %}
     </div>
+    {% else %}<p>No {{ view if view != 'all' else 'saved' }} jobs.</p>{% endfor %}
   </div>
+</div>
 {% endblock %}
-
 {% block footer %}{% endblock %}
