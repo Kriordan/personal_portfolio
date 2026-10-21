@@ -411,3 +411,10 @@ The disposable fixture API, Metro, PostgreSQL server, iPhone simulator and Andro
 ### October 21: Learning CodeQL correction
 
 The API and website rating handlers now return explicit public conflict messages instead of exception text. The regression test covers both conflict types on both endpoints, preserving their HTTP status, recovery codes and privacy headers; all 25 targeted Learning tests pass. See [the correction and verification requirements](learning-smoke-test.md#october-21-rating-conflict-error-handling). The existing iPhone preview remains compatible; the recorded Heroku v139 release predates this backend-only correction. All earlier native validation follow-ups remain open.
+
+
+## Jobwizard organizer — October 21, 2026
+
+Implementation and current validation evidence are recorded in [the Jobwizard checklist](jobwizard-smoke-test.md). The new flow saves immediately, then offers optional screenshot capture. It adds private account-scoped browse/search/sort, add/edit, reversible archiving, revision conflict protection and durable mutation/capture recovery. Expo 57, Expo Router, @expo/ui, TanStack Query and Flask remain unchanged.
+
+213 backend/PostgreSQL tests, 75 mobile tests, typecheck/lint, all-platform exports, Expo compatibility, 18 browser checks and root tests passed. Python/root/mobile audits passed their existing policies; the three retained npm alerts and November 5 review are unchanged. The iPhone simulator and website fixture flows have specific evidence in the checklist; Android, accessibility, physical-preview and longer recovery/expiry checks remain open. Preserve every preceding feature's outstanding validation rather than treating this section as blanket acceptance. Deployment, CI/CodeQL and preview references will be added when confirmed.
