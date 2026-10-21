@@ -24,7 +24,7 @@
   {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_revision }}
   <button name="action" value="capture">Capture screenshot</button>
 </form>
-{% elif not capture.configured %}<p>Screenshot capture is not configured. You can still save and edit jobs.</p>{% endif %}
+{% elif not capture.configured %}<p>Screenshot capture is currently unavailable. You can still save and edit jobs.</p>{% endif %}
 <a href="{{ url_for('jobwizard.get_job', job_id=job.id) }}">Refresh capture status</a>
 <a href="{{ url_for('jobwizard.home') }}">Back to Jobwizard</a>
 {% endblock %}

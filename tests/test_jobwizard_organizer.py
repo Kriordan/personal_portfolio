@@ -138,7 +138,7 @@ class OrganizerTests(unittest.TestCase):
         self.setup_owner()
         response, _ = self.create()
         job_id = response.json["job"]["id"]
-        env = dict(APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")
+        env = dict(JOBWIZARD_CAPTURE_ENABLED="1", APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")
         with self.app.app_context(), patch.dict(os.environ, env):
             request_id = str(uuid4())
             def artifact(url, key):
@@ -183,7 +183,7 @@ class OrganizerTests(unittest.TestCase):
             service.mutate_job(user_id=self.owner, job_id=job_id,
                 payload=dict(expected_revision=0, listing_url="https://example.com/new"))
             return dict(object_key=key, width=100, height=900)
-        with self.app.app_context(), patch.dict(os.environ, dict(APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")), patch.object(capture, "_run_capture", side_effect=artifact):
+        with self.app.app_context(), patch.dict(os.environ, dict(JOBWIZARD_CAPTURE_ENABLED="1", APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")), patch.object(capture, "_run_capture", side_effect=artifact):
             result = capture.capture_job(user_id=self.owner, job_id=job_id,
                 payload=dict(request_id=str(uuid4()), expected_revision=0))
             self.assertEqual(result["latest"]["status"], "succeeded")
@@ -207,6 +207,12 @@ class OrganizerTests(unittest.TestCase):
 
 
 class CaptureProviderTests(unittest.TestCase):
+    def test_capture_requires_explicit_enablement_after_readiness_check(self):
+        with patch.dict(os.environ, dict(APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", JOBWIZARD_CAPTURE_ENABLED="0")):
+            self.assertFalse(capture.configured())
+            with patch.dict(os.environ, {"JOBWIZARD_CAPTURE_ENABLED": "1"}):
+                self.assertTrue(capture.configured())
+
     def image(self):
         stream = io.BytesIO()
         metadata = Image.Exif()

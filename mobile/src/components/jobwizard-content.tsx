@@ -235,8 +235,8 @@ export function JobScreenshot({
         />
       ) : status ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Screenshot capture isn’t configured. Saving and editing jobs still
-          works.
+          Screenshot capture is currently unavailable. Saving and editing jobs
+          still works.
         </ThemedText>
       ) : null}
       <ThemedText type="small" themeColor="textSecondary">

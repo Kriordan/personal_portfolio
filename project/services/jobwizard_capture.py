@@ -20,7 +20,7 @@ TTL = 900
 
 
 def configured():
-    return bool(os.getenv("APILEAP_ACCESS_KEY") and bucket())
+    return bool(os.getenv("JOBWIZARD_CAPTURE_ENABLED") == "1" and os.getenv("APILEAP_ACCESS_KEY") and bucket())
 
 
 def image_origins():
