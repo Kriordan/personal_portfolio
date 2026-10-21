@@ -2,6 +2,10 @@
 import io
 import json
 import os
+import signal
+import subprocess
+import sys
+import time
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
@@ -204,7 +208,11 @@ class OrganizerTests(unittest.TestCase):
 
 class CaptureProviderTests(unittest.TestCase):
     def image(self):
-        stream = io.BytesIO(); Image.new("RGB", (20, 50), "blue").save(stream, "PNG"); return stream.getvalue()
+        stream = io.BytesIO()
+        metadata = Image.Exif()
+        metadata[0x010E] = "Provider metadata must not be retained"
+        Image.new("RGB", (20, 50), "blue").save(stream, "PNG", exif=metadata)
+        return stream.getvalue()
 
     def test_provider_and_storage_are_validated_before_publishing(self):
         response = Mock(status_code=200, headers={"Content-Type": "image/png"})
@@ -216,6 +224,8 @@ class CaptureProviderTests(unittest.TestCase):
             result = capture_worker.capture_artifact("https://example.com", "j/" + "a" * 32 + ".png")
             self.assertEqual(result["height"], 50)
             self.assertEqual(storage.put_object.call_args.kwargs["CacheControl"], "private, no-store")
+            with Image.open(io.BytesIO(storage.put_object.call_args.kwargs["Body"])) as stored:
+                self.assertEqual(stored.info, {})
             for status, content, data in ((500, "image/png", self.image()), (200, "text/html", b"error"), (200, "image/png", b"not an image")):
                 storage.put_object.reset_mock(); response.status_code = status; response.headers["Content-Type"] = content; response.iter_content.return_value = [data]
                 with self.assertRaises(Exception): capture_worker.capture_artifact("https://example.com", "j/" + "b" * 32 + ".png")
@@ -232,3 +242,32 @@ class CaptureProviderTests(unittest.TestCase):
             capture._run_capture("https://example.com", "j/key.png")
         self.assertEqual(run.call_args.kwargs["timeout"], 22)
         self.assertEqual(run.call_args.kwargs["env"]["PYTHON_DOTENV_DISABLED"], "1")
+        self.assertEqual(json.loads(run.call_args.kwargs["input"])["parent_pid"], os.getpid())
+
+    @unittest.skipUnless(sys.platform == "linux", "Production parent-death signal requires Linux")
+    def test_capture_child_stops_when_parent_dies(self):
+        child_code = "from project.jobwizard.capture_worker import guard_worker; import os,sys,time; guard_worker(int(sys.argv[1])); print(os.getpid(),flush=True); time.sleep(90)"
+        parent_code = f"import subprocess,sys,os,time; p=subprocess.Popen([sys.executable,'-c',{child_code!r},str(os.getpid())],stdout=subprocess.PIPE,text=True); print(p.stdout.readline().strip(),flush=True); time.sleep(90)"
+        parent = subprocess.Popen([sys.executable, "-c", parent_code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        child_pid = None
+        try:
+            import select
+            self.assertTrue(select.select([parent.stdout], [], [], 15)[0])
+            child_pid = int(parent.stdout.readline().strip())
+            parent.terminate()
+            parent.communicate(timeout=5)
+            from pathlib import Path
+            stat = Path(f"/proc/{child_pid}/stat")
+            deadline = time.monotonic() + 3
+            while stat.exists() and stat.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+                time.sleep(.05)
+            self.assertTrue(not stat.exists() or stat.read_text().split()[2] == "Z")
+        finally:
+            if parent.poll() is None:
+                parent.terminate()
+            parent.communicate(timeout=5)
+            if child_pid:
+                try:
+                    os.kill(child_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass

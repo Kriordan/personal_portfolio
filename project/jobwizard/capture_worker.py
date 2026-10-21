@@ -9,6 +9,7 @@ import json
 import os
 import re
 import socket
+import signal
 import sys
 import warnings
 from urllib.parse import urlsplit
@@ -76,16 +77,35 @@ def capture_artifact(url, key):
             width, height = image.size
             image.load()
             output = io.BytesIO()
-            image.convert("RGB").save(output, format="PNG")
+            sanitized = Image.new("RGB", image.size)
+            sanitized.paste(image.convert("RGB"))
+            sanitized.save(output, format="PNG")
     if output.tell() > MAX_BYTES:
         raise ValueError("image too large")
     storage.put_object(Bucket=bucket(), Key=key, Body=output.getvalue(), ContentType="image/png", CacheControl="private, no-store")
     return {"object_key": key, "width": width, "height": height}
 
 
+def guard_worker(parent_pid):
+    """Bound orphan lifetime too; Linux production dies with its web process."""
+    if type(parent_pid) is not int or parent_pid != os.getppid():
+        raise RuntimeError("parent unavailable")
+    signal.signal(signal.SIGALRM, signal.SIG_DFL)
+    signal.alarm(21)
+    if sys.platform == "linux":
+        import ctypes
+        # Configure in the fresh child, never preexec_fn in a threaded server.
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0:
+            raise RuntimeError("parent monitoring unavailable")
+        if parent_pid != os.getppid():
+            raise RuntimeError("parent unavailable")
+
+
 def main():
     try:
         payload = json.loads(sys.stdin.read(8192))
+        guard_worker(payload["parent_pid"])
         result = capture_artifact(payload["url"], payload["key"])
         print(json.dumps(result))
     except Exception:

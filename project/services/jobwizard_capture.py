@@ -31,7 +31,7 @@ def image_origins():
 
 def _run_capture(url, key):
     completed = subprocess.run([sys.executable, "-m", "project.jobwizard.capture_worker"],
-        input=json.dumps({"url": url, "key": key}), capture_output=True, text=True, timeout=22,
+        input=json.dumps({"url": url, "key": key, "parent_pid": os.getpid()}), capture_output=True, text=True, timeout=22,
         cwd=Path(__file__).resolve().parents[2], env={**os.environ, "PYTHON_DOTENV_DISABLED": "1"})
     if completed.returncode:
         raise RuntimeError("capture failed")
