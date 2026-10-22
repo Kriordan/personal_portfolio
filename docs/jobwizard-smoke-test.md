@@ -131,3 +131,5 @@ The user approved the recommended implementation after the evaluation. See [roll
 - [ ] Complete the inherited VoiceOver/TalkBack, large-text/small-device, background/relaunch/account-switch and 15-minute signed-access renewal checks.
 
 Backend regression: 223 tests on macOS with real disposable PostgreSQL (one Linux-only check skipped). Mobile: 76 tests, typecheck/lint. Root/provider: 8 tests. Browser security: 18 checks. iOS/Android/web exports passed. The gate remains `0` on production v144 until the reviewed replacement is merged and deployed. Dependency exceptions and their November 5 review are unchanged.
+
+The [updated iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/254badeb-dd80-4afa-8406-7c7f7645f5ba) finished October 22 at 15:09:06 UTC from `209bd6c` (subsequent changes are backend/CI/docs only); IPA HEAD returned 200. Browserless usage reconciled at 28/1,000 units, leaving 972; no paid upgrade, proxy or CAPTCHA use. Temporary key material and preview/test processes were cleaned up after validation.
