@@ -32,9 +32,16 @@ Automated: 224 backend tests with real disposable PostgreSQL (one Linux-only par
 
 Observed iPhone simulator (18 Pro, iOS 27): protected in-app opening, correct Gem image, double-tap and button zoom, page buttons through the footer, reset, Close back to the same detail, failed-image message and successful manual access renewal. Fixture counts stayed at one existing capture and zero provider calls. Simulator automation delivered zero-distance drag events, so physical pinch/pan acceptance remains open rather than being inferred from the buttons.
 
+Observed Android emulator (Pixel 10, API 36.1): in-app opening, button zoom, page controls through the footer, reset, Android Back to the same detail, failed-image state and successful manual access renewal. Header spacing was corrected during this check. Drag automation did not establish working panning; physical pinch/pan and TalkBack remain open. Combined viewer fixture results: 32 image reads, 40 status reads, one pre-existing capture, zero capture calls.
+
+The [internal iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/3e975954-9013-4933-abae-a0bcdfa1c789) finished successfully from `b025b1d`. The subsequent source change only adds Android header spacing; iPhone behavior is unchanged. It uses the existing production HTTPS API. Existing screenshots can be viewed immediately; Gem capture requires the reviewed backend deployment.
+
+Native screenshots: [iPhone](assets/jobwizard-gem-iphone.png), [Android](assets/jobwizard-gem-android.png).
+
 - [ ] Install the new internal preview on the physical iPhone. Open an existing screenshot; zoom/pan to all four edges and the footer; reset and Close. Confirm no browser opens and no capture starts.
 - [ ] After merge/backend deployment, deliberately recapture the existing Gem job. Verify the final receipt, correct title/description/footer, private delivery and production elapsed time. Retain any previous good image on failure.
-- [ ] Confirm full viewer behavior on Android, including Back, zoom, panning and image-error recovery. Record actual interactions separately from exports.
+- [x] Android emulator: opening, button zoom, paging, reset, Back and image-error recovery.
+- [ ] Physical Android: pinch/pan, accessibility and device-specific performance.
 - [ ] Leave active/backgrounded beyond signed-link lifetime; foreground offline, recover online, then sign out/switch account. Verify no prior-account image or completion survives.
 - [ ] Complete smaller-device, largest Dynamic Type, dark-mode, VoiceOver and TalkBack checks. Buttons are labelled; screenshot text is still an image, not extracted accessible job text.
 

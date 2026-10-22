@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenshotCanvas from '@/components/screenshot-canvas';
 import { InlineError, NativeAction, ScreenState } from '@/components/screen';
@@ -156,7 +156,12 @@ function Screenshot({ id }: { id: number }) {
 }
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  close: { minWidth: 44, minHeight: 44, justifyContent: 'center' },
+  close: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    marginRight: Platform.OS === 'android' ? 16 : 0,
+  },
   caption: { paddingHorizontal: 16, paddingTop: 8, gap: 4 },
   message: { padding: 24, gap: 16 },
 });
