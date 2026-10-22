@@ -31,7 +31,7 @@ Automated validation: 223 backend tests (one Linux-only parent-death check skipp
 
 Native evidence and remaining acceptance are tracked in [the smoke checklist](jobwizard-smoke-test.md). The fixture can load existing readiness images with `JOBWIZARD_PREVIEW_CAPTURE_RESULTS=/absolute/private/results.json`; it never calls Browserless. Fixture data and production saved jobs remain separate.
 
-## Deployment sequence
+## Original deployment sequence (completed through v147)
 
 1. Merge the reviewed PR, then deploy that merged backend to Heroku with `JOBWIZARD_CAPTURE_ENABLED=0`. The currently deployed v144 still uses ApiLeap; enabling it would not enable Browserless.
 2. Configure the existing Browserless key as the server-only `BROWSERLESS_API_TOKEN` through a secret-safe method. Keep the verified private bucket/region and existing narrow `j/` IAM policy. Do not put the key in Expo variables, Git, CLI arguments or logs. No new key or broader AWS permission is needed.
@@ -44,3 +44,10 @@ Rollback is the capture gate (`0`); saving/editing jobs continues. Do not delete
 Provider usage reconciled after implementation checks: **28 total units used, 972 remaining** on the free account (18 evaluation + 10 implementation/readiness sessions); zero proxy/CAPTCHA units. Capacity/quota rejection mappings are covered by offline fixtures, not by intentionally exhausting the account. A provider 429 is described separately from this app's two-slot limit, and 403 is not assumed to prove an invalid credential. Android Studio still shows the prior Gradle/CMake toolchain failure and no running device; changed Android interactions remain unverified.
 
 The [internal iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/254badeb-dd80-4afa-8406-7c7f7645f5ba) finished October 22 at 15:09:06 UTC from app source `209bd6c`; its IPA availability check returned 200. Later commits change server messages, CI coverage and documentation only. Physical acceptance and authenticated production-route capture still require the deployment sequence above.
+
+
+## Current production status
+
+PR #117 is merged as `60d36d9`. With explicit user approval, Heroku deployed code v145, configured the existing Browserless key v146, and enabled capture v147. Authenticated production capture passed in 11.01 seconds with private signed-only delivery; the validation job was archived. The user confirmed physical-iPhone capture works. Earlier disabled-gate and pending-live-capture statements describe the predeployment checkpoint.
+
+Gem support and the in-app viewer are the [next reviewed slice](jobwizard-gem-viewer.md); extraction remains deferred. The existing production key and storage permissions are sufficient. Keep remaining physical, accessibility, lifecycle, account-switch and signed-link renewal checks open until observed.

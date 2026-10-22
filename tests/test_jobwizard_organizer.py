@@ -308,6 +308,8 @@ class CaptureProviderTests(unittest.TestCase):
 
     def test_capture_target_scope_rejects_private_and_unverified_routes(self):
         valid = {
+            "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n": "gem",
+            "https://jobs.gem.com/deep-infra/am9icG9zdDr3xy5kCFcEUbterRQTwOHi/?src=LinkedIn": "gem",
             "https://job-boards.greenhouse.io/acme/jobs/123?gh_src=public": "greenhouse",
             "https://jobs.eu.lever.co/acme/" + "a" * 36: "lever",
             "https://jobs.ashbyhq.com/acme/" + "b" * 36: "ashby",
@@ -319,6 +321,17 @@ class CaptureProviderTests(unittest.TestCase):
             with patch.object(capture_worker, "browserless_image") as provider:
                 with self.assertRaises(CaptureError): capture_worker.capture_artifact(url, "j/" + "a" * 32 + ".png")
                 provider.assert_not_called()
+
+    def test_gem_only_accepts_public_listing_routes_and_known_attribution(self):
+        base = "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n"
+        for suffix in ("?src=LinkedIn", "?gh_src=board&utm_campaign=jobs", "?source=company"):
+            self.assertEqual(target_profile(base + suffix), "gem")
+        for url in (base + "/apply", base + "#application", base + "?token=secret", base + "?redirect=https://evil.test",
+                    base.replace("jobs.gem.com", "jobs.gem.com.evil.test"), base.replace("https:", "http:"),
+                    base.replace("jobs.gem.com", "internal.gem.com"), base.replace("jobs.gem.com", "user:pass@jobs.gem.com"),
+                    "https://jobs.gem.com/function-health", "https://jobs.gem.com/function-health/short-id",
+                    "https://job-boards.greenhouse.io/acme/jobs/123?src=LinkedIn"):
+            self.assertIsNone(target_profile(url))
 
     def test_worker_only_returns_allowlisted_failure_codes(self):
         payload = json.dumps(dict(url="https://example.com", key="j/" + "a" * 32 + ".png", parent_pid=os.getpid()))

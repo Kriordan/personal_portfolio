@@ -3,7 +3,7 @@ import re
 from urllib.parse import parse_qsl, urlsplit
 
 ERROR_MESSAGES = {
-    "unsupported_target": "Capture supports public Greenhouse, Lever, Ashby and Workday listing links. You can still save and open this link.",
+    "unsupported_target": "Capture supports public Gem, Greenhouse, Lever, Ashby and Workday listing links. This link is not supported yet; you can still save and open it.",
     "page_expired": "This listing appears to have expired. Open the original link to check.",
     "page_blocked": "The job site blocked capture or requires sign-in. Open the original link to view it.",
     "page_not_ready": "The listing did not finish loading. Open the original link and try capture again later.",
@@ -33,11 +33,17 @@ def target_profile(url):
     parsed = urlsplit(url)
     if parsed.scheme != "https" or parsed.port not in (None, 443) or parsed.fragment:
         return None
-    # Do not forward arbitrary query credentials or private invitation links.
-    if any(key not in {"gh_src", "source", "lever-source"} and not key.startswith("utm_")
+    host, path = parsed.hostname, parsed.path
+    # Gem uses src for public job-board attribution. Do not broaden other hosts
+    # or forward arbitrary query credentials/private invitation links.
+    allowed_query = {"gh_src", "source", "lever-source"}
+    if host == "jobs.gem.com":
+        allowed_query.add("src")
+    if any(key not in allowed_query and not key.startswith("utm_")
            for key, _ in parse_qsl(parsed.query, keep_blank_values=True)):
         return None
-    host, path = parsed.hostname, parsed.path
+    if host == "jobs.gem.com" and re.fullmatch(r"/[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}/am9icG9zdD[a-zA-Z0-9_-]{22}/?", path):
+        return "gem"
     if host in {"boards.greenhouse.io", "job-boards.greenhouse.io", "job-boards.eu.greenhouse.io"} and re.fullmatch(r"/[^/]+/jobs/[0-9]+/?", path):
         return "greenhouse"
     if host in {"jobs.lever.co", "jobs.eu.lever.co"} and re.fullmatch(r"/[^/]+/[a-fA-F0-9-]{36}/?", path):

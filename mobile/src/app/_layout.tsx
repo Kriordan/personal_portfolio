@@ -47,6 +47,10 @@ function AppNavigation() {
         <Stack.Screen name="jobwizard/index" options={{ title: 'Jobwizard' }} />
         <Stack.Screen name="jobwizard/new" options={{ title: 'New job' }} />
         <Stack.Screen name="jobwizard/[id]" options={{ title: 'Job' }} />
+        <Stack.Screen
+          name="jobwizard/[id]/screenshot"
+          options={{ title: 'Screenshot', presentation: 'fullScreenModal' }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="login" options={{ headerShown: false }} />

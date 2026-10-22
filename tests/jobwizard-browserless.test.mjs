@@ -26,6 +26,16 @@ test("remote browser restricts redirects, embeds and resources to explicit HTTPS
   assert.equal(allowed(`${origin}/socket`, "websocket"), false);
 });
 
+test("Gem resources cannot broaden navigation to its CDN or arbitrary domains", () => {
+  const origin = "https://jobs.gem.com";
+  const hosts = ["jobs.gem.com", "static.gem.com", "usercontent.zscdn.net", "maxcdn.bootstrapcdn.com"];
+  assert.ok(allowedRequest("https://static.gem.com/assets/logo.png", "image", false, origin, hosts));
+  assert.ok(allowedRequest("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", "stylesheet", false, origin, hosts));
+  assert.equal(allowedRequest("https://static.gem.com/other", "document", true, origin, hosts), false);
+  assert.equal(allowedRequest("https://jobs.gem.com.evil.test/", "image", false, origin, hosts), false);
+  assert.equal(allowedRequest("https://www.googletagmanager.com/gtag/js", "script", false, origin, hosts), false);
+});
+
 test("HTTP 200 alone does not establish a live job description", () => {
   const state = {
     status: 200,
