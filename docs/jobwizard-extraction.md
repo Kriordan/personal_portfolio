@@ -64,7 +64,15 @@ The online Expo package check recommends newer SDK 57 patch releases for Expo/UI
 
 Native testing fixed two issues: a late manually entered title could remain selected for replacement, and Android's grouped form row only displayed the first child of a multi-root review component. The review and bullet editors now each expose one native Column root. Existing-summary rows have distinct React keys.
 
-Evidence: [iPhone saved details](assets/jobwizard-extraction/iphone-saved.png), [iPhone review](assets/jobwizard-extraction/iphone-review.png), [Android saved details/source](assets/jobwizard-extraction/android-saved.png). Native preview/build identifiers and CI are recorded after publishing below.
+Evidence: [iPhone saved details](assets/jobwizard-extraction/iphone-saved.png), [iPhone review](assets/jobwizard-extraction/iphone-review.png), [Android saved details/source](assets/jobwizard-extraction/android-saved.png). An additional native provider-failure check was blocked when the Mac locked; automated failure/manual-save checks pass, and physical failure-screen validation remains open.
+
+### Review and installable iPhone preview
+
+[PR #120](https://github.com/Kriordan/personal_portfolio/pull/120) contains the implementation. Code commit `5d1ddcdd7289b0f6aea60e8edbe092c36911a2dc` passed all seven GitHub checks (backend, web, mobile, three CodeQL analyses and the CodeQL result). The branch had no open CodeQL alerts when checked.
+
+[Internal iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ac514269-4280-4b73-8475-ccc3484208d3): EAS build `ac514269-4280-4b73-8475-ccc3484208d3`, finished October 22 at 20:25 UTC, from code commit `5d1ddcd`, profile `preview`, app 1.0.0/build 1. The archive is available for installation and uses the existing registered iPhone/provisioning profile. No signing credentials were changed. The upload archive was checked for local credentials before submission.
+
+This preview targets the existing production Flask API. Extraction cannot be exercised against production until the backend migration/code, provider configuration and feature flag are deployed after merge. The recorded native interaction checks instead used the disposable local fixture. The final revision-conflict prompt refinement passed mobile regression, type/lint/export and CI checks; physical-device confirmation remains part of acceptance.
 
 ## Smoke and rollout checklist
 

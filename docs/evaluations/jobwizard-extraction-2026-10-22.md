@@ -73,6 +73,8 @@ Full raw captures, model responses and source hashes are retained locally outsid
 
 ## Next implementation work
 
+Implementation checkpoint: persistence, mobile review/save, native fixture checks and the iPhone preview are now complete in [PR #120](https://github.com/Kriordan/personal_portfolio/pull/120). See the [implementation and rollout record](../jobwizard-extraction.md). The following scope was the evaluation's handoff; production acceptance remains outstanding.
+
 Continue the [approved plan](../jobwizard-extraction-plan.md): owner-scoped durable read/summary attempts, additive accepted-details storage, fenced/idempotent provider operations and the shared new/existing-job review UI. Preserve missing-employer input, partial warnings, visible conflicts, deliberate retry and immediate manual saving. Do not hide a source's location-specific pay ranges behind an aggregate range without a details warning.
 
 Before rollout, validate populated PostgreSQL migration/ownership/concurrency/recovery, old/new-client compatibility, native iPhone/Android review and accessibility, and a recorded iPhone preview. Complete CI/CodeQL and deploy only through the planned gated release. The earlier screenshot/device/lifecycle follow-ups, November 5 security review and Python runtime patch remain open; this evaluation closes none of them.
