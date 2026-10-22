@@ -289,7 +289,7 @@ class CaptureProviderTests(unittest.TestCase):
             self.assertFalse(session.trust_env)
             self.assertFalse(session.post.call_args.kwargs["allow_redirects"])
             self.assertEqual(session.post.call_args.args[0], "https://production-sfo.browserless.io/function")
-            for status, expected in ((401, "provider_auth"), (402, "provider_quota"), (429, "capture_capacity"), (408, "capture_timeout"), (504, "capture_timeout"), (500, "capture_failed"), (302, "capture_failed")):
+            for status, expected in ((401, "provider_auth"), (403, "provider_access"), (402, "provider_quota"), (429, "provider_busy"), (408, "capture_timeout"), (504, "capture_timeout"), (500, "capture_failed"), (302, "capture_failed")):
                 session.post.reset_mock(); response.status_code = status
                 with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
                 self.assertEqual(error.exception.code, expected); self.assertEqual(session.post.call_count, 1)

@@ -40,3 +40,5 @@ Native evidence and remaining acceptance are tracked in [the smoke checklist](jo
 5. Record the release/build IDs and acceptance evidence. Keep Android interaction, accessibility, physical-device, background/relaunch, signed-link expiry and inherited feature validation items open until exercised.
 
 Rollback is the capture gate (`0`); saving/editing jobs continues. Do not delete old captures, old provider credentials or jobs as part of rollback. Review whether the old ApiLeap credential can be retired separately after adoption.
+
+Provider usage reconciled after implementation checks: **28 total units used, 972 remaining** on the free account (18 evaluation + 10 implementation/readiness sessions); zero proxy/CAPTCHA units. Capacity/quota rejection mappings are covered by offline fixtures, not by intentionally exhausting the account. A provider 429 is described separately from this app's two-slot limit, and 403 is not assumed to prove an invalid credential. Android Studio still shows the prior Gradle/CMake toolchain failure and no running device; changed Android interactions remain unverified.

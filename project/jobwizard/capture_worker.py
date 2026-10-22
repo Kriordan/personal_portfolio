@@ -96,8 +96,8 @@ def browserless_image(url, profile):
                 "token": os.environ["BROWSERLESS_API_TOKEN"], "timeout": 16000,
             }, json={"code": PROVIDER_CODE, "context": {"url": url, "profile": profile}},
                     stream=True, timeout=(2, 17), allow_redirects=False) as response:
-                code = {401: "provider_auth", 403: "provider_auth", 402: "provider_quota",
-                        429: "capture_capacity", 408: "capture_timeout", 504: "capture_timeout"}.get(response.status_code)
+                code = {401: "provider_auth", 403: "provider_access", 402: "provider_quota",
+                        429: "provider_busy", 408: "capture_timeout", 504: "capture_timeout"}.get(response.status_code)
                 if code:
                     raise CaptureError(code)
                 if response.status_code != 200 or response.headers.get("Content-Type", "").split(";")[0].lower() != "application/json":
