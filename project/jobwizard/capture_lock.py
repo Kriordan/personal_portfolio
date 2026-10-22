@@ -11,11 +11,11 @@ NAMESPACE = 741938205
 
 
 @contextmanager
-def capture_lock(job_id):
+def capture_lock(job_id, namespace=NAMESPACE):
     if db.engine.dialect.name == "sqlite":
         # Single-process disposable fixtures only; production uses PostgreSQL.
         with _guard:
-            lock = _locks.setdefault(job_id, Lock())
+            lock = _locks.setdefault((namespace, job_id), Lock())
         acquired = lock.acquire(blocking=False)
         try:
             yield (lambda: None) if acquired else None
@@ -26,7 +26,7 @@ def capture_lock(job_id):
     if db.engine.dialect.name != "postgresql":
         raise RuntimeError("Capture requires PostgreSQL")
     with db.engine.connect() as connection:
-        params = dict(namespace=NAMESPACE, job_id=job_id)
+        params = dict(namespace=namespace, job_id=job_id)
         acquired = connection.execute(text("SELECT pg_try_advisory_lock(:namespace, :job_id)"), params).scalar()
         pid = connection.execute(text("SELECT pg_backend_pid()")).scalar() if acquired else None
         connection.commit()
@@ -47,3 +47,14 @@ def capture_lock(job_id):
                     connection.commit()
                 except Exception:
                     connection.invalidate()
+
+
+@contextmanager
+def capture_capacity():
+    """Two non-queued sessions across web processes/dynos, separate from job locks."""
+    for slot in range(2):
+        with capture_lock(slot, namespace=NAMESPACE + 1) as fence:
+            if fence:
+                yield fence
+                return
+    yield None

@@ -19,7 +19,7 @@ jobs:
           node-version: "24.14.0"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: node --test tests/check-npm-audit.test.cjs
+      - run: node --test tests/check-npm-audit.test.cjs tests/jobwizard-browserless.test.mjs
       - run: node scripts/check-npm-audit.cjs
       - run: node scripts/check-browser-dependencies.cjs
       - run: node tests/browser/run-security-check.cjs

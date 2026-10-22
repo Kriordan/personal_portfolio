@@ -6,7 +6,11 @@ import { Card, InlineError, NativeAction } from './screen';
 import { ThemedText } from './themed-text';
 import { useJobActivity, useJobCapture } from '@/hooks/use-jobwizard';
 import { confirmAction } from '@/lib/confirm-action';
-import { safeJobUrl, type Job } from '@/lib/jobwizard-model';
+import {
+  captureAttemptMessage,
+  safeJobUrl,
+  type Job,
+} from '@/lib/jobwizard-model';
 
 export function JobActivityStatus({
   activity,
@@ -126,7 +130,7 @@ export function JobScreenshot({
     confirming.current = true;
     confirmAction(
       'Capture this listing?',
-      'Send this listing URL to ApiLeap to capture a screenshot? Avoid private or tokenized links. Your job is already saved.',
+      'Send this public listing URL to Browserless to capture a screenshot? Avoid private or tokenized links. Embedded videos are omitted. Your job is already saved.',
       'Capture',
       () => {
         confirming.current = false;
@@ -162,14 +166,7 @@ export function JobScreenshot({
       ) : null}
       {status?.latest ? (
         <ThemedText accessibilityLiveRegion="polite">
-          {
-            {
-              running: 'Capturing…',
-              succeeded: 'Capture complete',
-              failed: 'Capture failed. Your job is still saved.',
-              interrupted: 'Capture interrupted. Your job is still saved.',
-            }[status.latest.status]
-          }
+          {captureAttemptMessage(status.latest)}
         </ThemedText>
       ) : null}
       {image ? (
@@ -190,6 +187,7 @@ export function JobScreenshot({
                 width: '100%',
                 aspectRatio: Math.max(0.12, image.width / image.height),
                 maxHeight: 650,
+                alignSelf: 'center',
               }}
               accessibilityLabel={`Listing screenshot for ${job.title}`}
               onError={() => {
@@ -215,7 +213,7 @@ export function JobScreenshot({
             : 'No screenshot available.'}
         </ThemedText>
       ) : null}
-      {status?.configured ? (
+      {status?.configured && status.supported !== false ? (
         <NativeAction
           label={
             status.busy || status.latest?.status === 'running'
@@ -233,6 +231,11 @@ export function JobScreenshot({
           }
           onPress={capture}
         />
+      ) : status?.supported === false ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          Capture supports public Greenhouse, Lever, Ashby and Workday listing
+          links. You can still save and open this link.
+        </ThemedText>
       ) : status ? (
         <ThemedText type="small" themeColor="textSecondary">
           Screenshot capture is currently unavailable. Saving and editing jobs
@@ -240,7 +243,8 @@ export function JobScreenshot({
         </ThemedText>
       ) : null}
       <ThemedText type="small" themeColor="textSecondary">
-        Optional capture sends the listing URL to ApiLeap.
+        Optional capture sends the public listing URL to Browserless. Embedded
+        videos are omitted. Check the preview against the original listing.
       </ThemedText>
     </Card>
   );

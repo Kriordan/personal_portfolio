@@ -1,0 +1,103 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import capture, {
+  allowedRequest,
+  pageFailure,
+} from "../project/jobwizard/browserless_capture.mjs";
+
+test("remote browser restricts redirects, embeds and resources to explicit HTTPS hosts", () => {
+  const origin = "https://jobs.ashbyhq.com",
+    hosts = ["jobs.ashbyhq.com", "cdn.ashbyprd.com"];
+  const allowed = (url, type = "image", main = false) =>
+    allowedRequest(url, type, main, origin, hosts);
+  assert.ok(allowed(`${origin}/acme/a`, "document", true));
+  assert.ok(allowed("https://cdn.ashbyprd.com/image.png"));
+  for (const url of [
+    "http://jobs.ashbyhq.com/a",
+    "file:///etc/passwd",
+    "https://127.0.0.1/",
+    "https://jobs.ashbyhq.com.evil.test/",
+    "https://user:pass@jobs.ashbyhq.com/",
+    "https://jobs.ashbyhq.com:444/",
+  ])
+    assert.equal(allowed(url), false);
+  assert.equal(allowed("https://cdn.ashbyprd.com/", "document", true), false);
+  assert.equal(allowed(`${origin}/embed`, "document"), false);
+  assert.equal(allowed(`${origin}/socket`, "websocket"), false);
+});
+
+test("HTTP 200 alone does not establish a live job description", () => {
+  const state = {
+    status: 200,
+    title: "Careers",
+    text: "",
+    descriptionLength: 0,
+  };
+  assert.equal(
+    pageFailure({ ...state, text: "This job is no longer available" }),
+    "page_expired",
+  );
+  assert.equal(
+    pageFailure({ ...state, title: "Just a moment…" }),
+    "page_blocked",
+  );
+  assert.equal(pageFailure({ ...state, status: 404 }), "page_expired");
+  assert.equal(pageFailure({ ...state, status: 503 }), "page_unavailable");
+  assert.equal(pageFailure({ ...state, status: 403 }), "page_blocked");
+  assert.equal(
+    pageFailure({
+      ...state,
+      text: "What to expect when a position is no longer available",
+      descriptionLength: 2000,
+    }),
+    null,
+  );
+});
+
+function pageFixture(state, status = 200) {
+  const calls = [];
+  return {
+    calls,
+    setViewport: async (x) => calls.push(["viewport", x]),
+    setRequestInterception: async () => {},
+    on: () => {},
+    goto: async () => ({ status: () => status }),
+    evaluate: async (_, arg) => (arg ? state : { width: 1280, height: 9000 }),
+    addStyleTag: async () => {},
+    screenshot: async (options) => {
+      calls.push(["screenshot", options]);
+      return "AAAA";
+    },
+  };
+}
+const context = { url: "https://jobs.ashbyhq.com/acme/abc", profile: "ashby" };
+test("expired pages never reach screenshot capture", async () => {
+  const page = pageFixture({
+    title: "Careers",
+    text: "This job is no longer available",
+    descriptionLength: 0,
+  });
+  assert.equal((await capture({ page, context })).data.error, "page_expired");
+  assert.equal(page.calls.filter(([name]) => name === "screenshot").length, 0);
+});
+test("a stable visible description produces exactly one full-page capture", async () => {
+  const page = pageFixture({
+    title: "Engineer",
+    text: "Real job",
+    descriptionLength: 1000,
+    content: "x".repeat(1000),
+    height: 9000,
+    visible: true,
+    heading: true,
+    fonts: true,
+  });
+  const result = await capture({ page, context });
+  assert.equal(result.data.image, "AAAA");
+  const screenshots = page.calls.filter(([name]) => name === "screenshot");
+  assert.equal(screenshots.length, 1);
+  assert.deepEqual(screenshots[0][1], {
+    type: "png",
+    fullPage: true,
+    encoding: "base64",
+  });
+});
