@@ -107,7 +107,8 @@ test("a stable visible description produces exactly one full-page capture", asyn
   assert.equal(screenshots.length, 1);
   assert.deepEqual(screenshots[0][1], {
     type: "png",
-    fullPage: true,
+    clip: { x: 0, y: 0, width: 1280, height: 9000 },
+    captureBeyondViewport: true,
     encoding: "base64",
   });
 });

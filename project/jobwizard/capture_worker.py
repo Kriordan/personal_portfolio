@@ -115,9 +115,21 @@ def browserless_image(url, profile):
     result = payload["data"]
     if "error" in result:
         raise CaptureError(result["error"] if isinstance(result["error"], str) else "capture_failed")
+    width, height = result.get("width"), result.get("height")
+    if type(width) is not int or type(height) is not int or width <= 0 or height <= 0:
+        raise CaptureError()
+    if width * height > MAX_PIXELS:
+        raise CaptureError("image_too_large")
     data = base64.b64decode(result["image"], validate=True)
     if len(data) > MAX_BYTES:
         raise CaptureError("image_too_large")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        with Image.open(io.BytesIO(data)) as image:
+            # A valid PNG can still be a clipped screenshot. Never publish it
+            # when its decoded dimensions differ from the measured document.
+            if image.size != (width, height):
+                raise CaptureError()
     return data
 
 
