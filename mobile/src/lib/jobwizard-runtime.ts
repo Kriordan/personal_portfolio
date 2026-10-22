@@ -6,6 +6,7 @@ import { jobwizardApi } from './jobwizard-api';
 import { reconcileJob } from './jobwizard-cache';
 import { JobSession } from './jobwizard-session';
 import { queryClient } from './query-client';
+import { clearExtractionSession } from './job-extraction-runtime';
 
 const key = 'jobwizard.pending.v1';
 let tail: Promise<unknown> = Promise.resolve();
@@ -67,5 +68,5 @@ export function jobSession(userId: number) {
 export async function clearJobSession() {
   current?.session.dispose();
   current = null;
-  await storage.clear();
+  await Promise.all([storage.clear(), clearExtractionSession()]);
 }

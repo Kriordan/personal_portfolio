@@ -292,6 +292,7 @@ class Job(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True))
     archived_at = db.Column(db.DateTime(timezone=True))
     revision = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    accepted_details = db.Column(db.JSON)
 
     owner = db.relationship("User")
 
@@ -333,6 +334,29 @@ class JobCapture(db.Model):
     object_key = db.Column(db.String(200))
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
+
+
+class JobExtraction(db.Model):
+    """Private, expiring two-stage receipt. Accepted excerpts live on the job."""
+    __tablename__ = "job_extraction"
+    id = db.Column(db.String(36), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
+    source_revision = db.Column(db.Integer)
+    source_url = db.Column(db.String(2048), nullable=False)
+    retry_of = db.Column(db.String(36))
+    status = db.Column(db.String(20), nullable=False)
+    stage = db.Column(db.String(12), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    fetched_at = db.Column(db.DateTime(timezone=True))
+    summary_started_at = db.Column(db.DateTime(timezone=True))
+    finished_at = db.Column(db.DateTime(timezone=True))
+    accepted_at = db.Column(db.DateTime(timezone=True))
+    error_code = db.Column(db.String(32))
+    source = db.Column(db.JSON)
+    result = db.Column(db.JSON)
+    metrics = db.Column(db.JSON)
 
 
 class LibrarySyncRun(db.Model):

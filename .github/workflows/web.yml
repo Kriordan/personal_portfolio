@@ -22,5 +22,5 @@ jobs:
       - run: node --test tests/check-npm-audit.test.cjs tests/jobwizard-browserless.test.mjs
       - run: node scripts/check-npm-audit.cjs
       - run: node scripts/check-browser-dependencies.cjs
-      - run: node tests/browser/run-security-check.cjs
+      - run: npm run test:browser
       - run: npm run sass

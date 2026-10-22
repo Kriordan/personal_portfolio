@@ -1,3 +1,7 @@
+import type {
+  AcceptedDetails,
+  ReviewedDetails,
+} from './job-extraction-model';
 export interface JobInput {
   title: string;
   company_name: string;
@@ -13,6 +17,7 @@ export interface Job extends JobInput {
   archived_at: string | null;
   revision: number;
   can_open_listing: boolean;
+  accepted_details?: AcceptedDetails | null;
 }
 export interface CaptureAttempt {
   id: string;
@@ -106,7 +111,11 @@ export function browseJobs(
   view: JobView,
   sort: JobSort,
 ) {
-  const words = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const words = search
+    .trim()
+    .toLocaleLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
   return jobs
     .filter(
       (job) =>
@@ -165,6 +174,7 @@ export type JobWrite = {
   request_id: string;
   expected_revision?: number;
   archived?: boolean;
+  reviewed_details?: ReviewedDetails;
 } & Partial<JobInput>;
 export interface JobOperation {
   kind: 'save' | 'capture';
@@ -189,7 +199,8 @@ export function storedOperation(value: unknown): value is JobOperation {
     return false;
   if (
     op.jobId !== null &&
-    (!Number.isInteger(input.expected_revision) || input.expected_revision! < 0)
+    (!Number.isInteger(input.expected_revision) ||
+      input.expected_revision! < 0)
   )
     return false;
   if (op.kind === 'capture') return op.jobId !== null;

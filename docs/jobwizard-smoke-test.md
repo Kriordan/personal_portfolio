@@ -142,3 +142,7 @@ The next slice adds constrained Gem support and an in-app fullscreen viewer. See
 
 
 October 22 deployment follow-up: the user confirmed the PR #118 preview looks good and physical-iPhone pinch/drag works. v148 deployed the merge, but the first Gem production image was clipped and its verification receipt was corrected to failed. The explicit-bounds capture and pre-upload dimension check are documented in [the Gem release evidence](jobwizard-gem-viewer.md#production-deployment-and-capture-width-follow-up). Other unchecked device/lifecycle/accessibility items remain open.
+
+## October 22: listing extraction follow-up
+
+Use the [extraction smoke/rollout checklist](jobwizard-extraction.md#smoke-and-rollout-checklist) for optional title/company/bullet suggestions before save and on existing jobs. Accepted details persist separately from screenshots. Prior screenshot/storage/physical-device follow-ups above remain open unless explicitly recorded as completed.

@@ -6,6 +6,8 @@ from werkzeug.exceptions import Unauthorized
 from project.database import db
 from project.models import User
 from project.services import jobwizard_capture, jobwizard_service as service
+from project.services import jobwizard_extraction as extraction
+from project.jobwizard.extraction_errors import SuggestionError, MESSAGES
 
 jobwizard_api_blueprint = Blueprint("api_jobwizard", __name__, url_prefix="/jobwizard")
 
@@ -60,7 +62,7 @@ def conflict(_error):
 @jobwizard_api_blueprint.get("/jobs")
 @jwt_required()
 def api_get_jobs():
-    return jsonify(jobs=[service.serialize_job(job) for job in service.list_jobs_for_user(_user().id)])
+    return jsonify(jobs=[service.serialize_job(job, detail=False) for job in service.list_jobs_for_user(_user().id)])
 
 
 @jobwizard_api_blueprint.post("/jobs")
@@ -107,3 +109,29 @@ def api_capture_status(job_id):
 @jwt_required()
 def api_capture(job_id):
     return jsonify(capture=jobwizard_capture.capture_job(user_id=_user().id, job_id=job_id, payload=_payload()))
+
+
+@jobwizard_api_blueprint.errorhandler(SuggestionError)
+def suggestion_error(error):
+    db.session.rollback()
+    return jsonify(code=error.code, error=MESSAGES[error.code]), error.status
+
+
+@jobwizard_api_blueprint.post("/extractions")
+@jwt_required()
+def api_extract():
+    return jsonify(extraction=extraction.start(user_id=_user().id, payload=_payload()))
+
+
+@jobwizard_api_blueprint.get("/extractions/<attempt_id>")
+@jwt_required()
+def api_extraction_status(attempt_id):
+    return jsonify(extraction=extraction.status(user_id=_user().id, attempt_id=attempt_id))
+
+
+@jobwizard_api_blueprint.post("/extractions/<attempt_id>/summary")
+@jwt_required()
+def api_summarize(attempt_id):
+    if _payload():
+        raise service.ValidationError()
+    return jsonify(extraction=extraction.summarize(user_id=_user().id, attempt_id=attempt_id))

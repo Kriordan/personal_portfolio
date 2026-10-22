@@ -4,6 +4,7 @@ import capture, {
   allowedRequest,
   pageFailure,
 } from "../project/jobwizard/browserless_capture.mjs";
+import extract from "../project/jobwizard/browserless_extract.mjs";
 
 test("remote browser restricts redirects, embeds and resources to explicit HTTPS hosts", () => {
   const origin = "https://jobs.ashbyhq.com",
@@ -111,4 +112,22 @@ test("a stable visible description produces exactly one full-page capture", asyn
     captureBeyondViewport: true,
     encoding: "base64",
   });
+});
+
+test("text extraction does not depend on font loading or screenshot pixel bounds", async () => {
+  const page = pageFixture({});
+  const source = {heading: "Engineer", description: "Final description", jsonld: []};
+  page.evaluate = async (_, arg) => Object.hasOwn(arg, "image") ? {
+    title: "Engineer", text: "Job", descriptionLength: 1000,
+    content: "x".repeat(1000), height: 50000, visible: true,
+    heading: true, fonts: false,
+  } : source;
+  assert.deepEqual((await extract({page, context})).data, source);
+  assert.equal(page.calls.filter(([name]) => name === "screenshot").length, 0);
+});
+
+test("blocked pages do not produce source data for summarization", async () => {
+  const page = pageFixture({title: "Access denied", text: "", descriptionLength: 0});
+  assert.equal((await extract({page, context})).data.error, "page_blocked");
+  assert.equal(page.calls.filter(([name]) => name === "screenshot").length, 0);
 });

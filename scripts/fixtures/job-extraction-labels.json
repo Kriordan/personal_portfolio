@@ -1,0 +1,67 @@
+{
+  "labelled_on": "2026-10-22",
+  "method": "Manual source review before model scoring. These are assertions to assess, not model inputs. A partial/missing field is preferable to a false one.",
+  "listings": {
+    "gem-function": {
+      "company_values": ["Function Health"],
+      "critical": ["Remote restricted to US/Canada", "Full time", "10+ years of software engineering", "React/frontend depth and backend APIs; Python or similar", "No salary or sponsorship invented"],
+      "useful": ["Lead web/mobile architecture and accessible user experiences", "Mentorship and end-to-end ownership"],
+      "traps": ["Advanced React Native is nice-to-have, not an independent required qualification", "Company funding is not salary"]
+    },
+    "gem-bilt": {
+      "company_values": ["Bilt"],
+      "critical": ["New York in office", "Full time", "4+ years production backend services", "$170,000–$300,000 dependent on experience/level plus equity and annual performance bonus", "At least one backend language, not all three required", "Hands-on LLM experience and daily use of AI coding agents"],
+      "useful": ["Own agent/conversation backend, evaluation and reliability"],
+      "traps": ["Currency and salary period are not explicit in the source; do not invent USD/year"]
+    },
+    "greenhouse-clear": {
+      "company_values": ["CLEAR", "CLEAR - Corporate"],
+      "critical": ["New York; on-site tag", "3+ years backend Java", "$180,000–$220,000 is total compensation combining base and new-hire equity", "Cloud development; at least a few listed technologies, not every tool required"],
+      "useful": ["Build secure identity applications; full-stack ownership"],
+      "traps": ["Do not call the entire range base salary", "Currency/pay period and employment type are not explicitly specified"]
+    },
+    "greenhouse-scale-infrastructure": {
+      "company_values": ["Scale AI"],
+      "critical": ["Job subtitle: San Francisco or New York", "USD 179,400–224,250 base; location/level dependent", "4+ years full-time engineering post-graduation", "Python OR JavaScript/TypeScript plus SQL; Kubernetes/cloud experience", "90-day waiting period before reapplying for same role", "Full-time position"],
+      "useful": ["Build multi-cloud infrastructure and customer integrations"],
+      "traps": ["Seattle appears in pay disclosure, not job-location subtitle", "Do not invent remote eligibility or annual period"]
+    },
+    "lever-sep": {
+      "company_values": ["SEP"],
+      "critical": ["Westfield Indiana office; no relocation financial assistance", "Full time", "2+ years professional full-time experience excluding internships", "Legally authorized to work in US", "No visa sponsorship and no OPT/CPT work authorization"],
+      "useful": ["Cross-functional client software projects and mentoring"],
+      "traps": ["No salary stated", "No specific language among examples is mandatory"]
+    },
+    "lever-filevine": {
+      "company_values": ["Filevine"],
+      "critical": ["Explicit conflict: header San Francisco/on-site versus description remote or hybrid/in-office SF, NY, Chicago, Salt Lake City", "Full time", "6+ years frontend; React and TypeScript", "$150,000–250,000 base, dependent on qualifications/location"],
+      "useful": ["Own web/Word UI architecture and AI integration", "Office add-in, LLM or legal-tech experience is bonus"],
+      "traps": ["Do not silently choose remote or onsite", "Do not invent currency/pay period"]
+    },
+    "ashby-ashby": {
+      "company_values": ["Ashby"],
+      "critical": ["US remote", "Full time", "Compensation varies by L4/L5 and SF/NYC, Seattle, other US; do not flatten qualifications", "All engineers have follow-the-sun on-call", "In-person meetings at least twice annually", "Prior experience in listed stack explicitly not required"],
+      "useful": ["Scale platform infrastructure/security/reliability with independent ownership", "Written async communication and SQL/coding"],
+      "traps": ["L4 ranges 250–295K SF/NYC, 239–284K Seattle, 232–270K other US; L5 272–323K, 266–315K, 252–299K", "Do not turn global benefits references into worldwide eligibility"]
+    },
+    "ashby-sentry": {
+      "company_values": ["Sentry"],
+      "critical": ["San Francisco hybrid three office days weekly", "Full time", "USD 155,000–190,000 base; actual pay varies", "At least 2–3 years engineering experience", "Language alternatives: Python, Rust, Go or Java; cloud alternatives Kubernetes/AWS/GCP", "Kafka/Flink/Spark experience nice-to-have"],
+      "useful": ["Build streaming/Kafka platform and reliable high-throughput systems"],
+      "traps": ["JSON-LD TELECOMMUTE contradicts visible hybrid attendance; visible restriction wins"]
+    },
+    "workday-genesys": {
+      "company_values": ["Genesys"],
+      "critical": ["Galway Ireland, two to three office days per week", "Full time", "2+ years software engineering", "Degree in CS/software engineering/data science or related", "Java/Spring Boot or similar languages/frameworks", "No salary invented"],
+      "useful": ["Build and operate event-data/customer-journey platform", "Testing, REST/event architecture, cloud/CI/CD/databases"],
+      "traps": ["Agentic systems and listed AWS services are desirable rather than individually mandatory", "Generic flexible benefits do not remove office attendance"]
+    },
+    "workday-booz-allen": {
+      "company_values": ["Booz Allen", "Booz Allen Hamilton", "631 Booz Allen Hamilton_United States"],
+      "allow_missing_company": true,
+      "critical": ["Aurora Colorado; full time", "Active TS/SCI clearance and willingness to take polygraph", "HS/GED plus 10+ years OR bachelor's plus 5+ years", "USD 86,900–198,000 annualized salary, varies by location/qualifications/contract", "Required skills assessment/minimum proficiency", "Deadline November 18, 2026; generic within-90-days statement also present", "Interview AI assistance prohibited unless explicitly allowed"],
+      "useful": ["Container/cloud software, LLM prompts/tools/agents and Git", "Camera/identity verification during hiring"],
+      "traps": ["Generic descriptions of remote/hybrid/onsite policy do not establish this role's work model", "Master's, AWS certification and listed security certifications are preferred", "Eight bullets may require an explicit additional-detail warning"]
+    }
+  }
+}

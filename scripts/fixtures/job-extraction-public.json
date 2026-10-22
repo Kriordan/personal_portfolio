@@ -1,0 +1,108 @@
+{
+  "selected_on": "2026-10-22",
+  "purpose": "Public listing extraction evaluation, not job recommendations. Expected fields require revalidation.",
+  "listings": [
+    {
+      "id": "gem-function",
+      "profile": "gem",
+      "title": "Staff Software Engineer (Frontend / UI)",
+      "company": "Function Health",
+      "url": "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n"
+    },
+    {
+      "id": "gem-bilt",
+      "profile": "gem",
+      "title": "Software Engineer, AI",
+      "company": "Bilt",
+      "url": "https://jobs.gem.com/bilt/am9icG9zdDp_UbLc7VvvxH5UBGl-J5a0"
+    },
+    {
+      "id": "greenhouse-clear",
+      "platform": "Greenhouse",
+      "title": "Software Engineer Backend (Java)",
+      "company": "CLEAR",
+      "url": "https://job-boards.greenhouse.io/clear/jobs/8107053",
+      "expected": "job",
+      "profile": "greenhouse"
+    },
+    {
+      "id": "greenhouse-scale-infrastructure",
+      "platform": "Greenhouse",
+      "title": "Infrastructure Software Engineer, Enterprise GenAI",
+      "company": "Scale AI",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4665557005",
+      "expected": "job",
+      "profile": "greenhouse"
+    },
+    {
+      "id": "lever-sep",
+      "platform": "Lever",
+      "title": "Experienced Software Engineer (in person)",
+      "company": "SEP",
+      "url": "https://jobs.lever.co/sep/80cd8c15-bafc-49a9-b8f1-5d407e891ec0",
+      "expected": "job",
+      "profile": "lever"
+    },
+    {
+      "id": "lever-filevine",
+      "platform": "Lever",
+      "title": "Senior Software Engineer (Frontend)",
+      "company": "Filevine",
+      "url": "https://jobs.lever.co/filevine/0679e9c6-2033-43ac-bd3c-d50f0c76439e",
+      "expected": "job",
+      "profile": "lever"
+    },
+    {
+      "id": "ashby-ashby",
+      "platform": "Ashby",
+      "title": "Staff Platform Engineer - Americas",
+      "company": "Ashby",
+      "url": "https://jobs.ashbyhq.com/ashby/0f5dbf59-687b-4d88-88a7-73ee0a66b48d",
+      "expected": "job",
+      "profile": "ashby"
+    },
+    {
+      "id": "ashby-sentry",
+      "platform": "Ashby",
+      "title": "Software Engineer, Streaming Platform",
+      "company": "Sentry",
+      "url": "https://jobs.ashbyhq.com/sentry/5ee81d6f-e837-43bb-af06-8f26c992a766",
+      "expected": "job",
+      "profile": "ashby"
+    },
+    {
+      "id": "workday-visa",
+      "platform": "Workday",
+      "title": "Software Engineer",
+      "company": "Visa",
+      "url": "https://visa.wd5.myworkdayjobs.com/Visa/job/Software-Engineer_REF089009W",
+      "expected": "job",
+      "profile": "workday"
+    },
+    {
+      "id": "workday-genesys",
+      "platform": "Workday",
+      "title": "Software Engineer",
+      "company": "Genesys",
+      "url": "https://genesys.wd1.myworkdayjobs.com/en-US/Genesys/job/Software-Engineer_JR112513-1",
+      "expected": "job",
+      "profile": "workday"
+    },
+    {
+      "id": "workday-cisco",
+      "profile": "workday",
+      "title": "Software Engineer",
+      "company": "Cisco",
+      "url": "https://cisco.wd5.myworkdayjobs.com/en-US/Cisco_Careers/job/Software-Engineer_2022318",
+      "replaces": "workday-visa"
+    },
+    {
+      "id": "workday-booz-allen",
+      "profile": "workday",
+      "title": "Software Engineer",
+      "company": "Booz Allen Hamilton",
+      "url": "https://bah.wd1.myworkdayjobs.com/en-US/BAH_Jobs/job/Software-Engineer_R0247468",
+      "replaces": "workday-cisco"
+    }
+  ]
+}

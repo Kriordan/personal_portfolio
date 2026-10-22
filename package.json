@@ -15,7 +15,7 @@
     "sass": "gulp sass",
     "watch": "gulp watch",
     "dev": "gulp",
-    "test:browser": "node tests/browser/run-security-check.cjs",
+    "test:browser": "node tests/browser/run-security-check.cjs && node tests/browser/run-extraction-check.mjs",
     "audit:security": "node scripts/check-npm-audit.cjs"
   },
   "repository": {
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/Kriordan/personal_portfolio",
   "dependencies": {
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "marked": "^17.0.1"
   }
 }
