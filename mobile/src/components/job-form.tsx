@@ -10,6 +10,7 @@ import { ExtractionReview } from './job-extraction-review';
 import { useJobExtraction } from '@/hooks/use-job-extraction';
 import {
   extractionMatches,
+  reviewedDetailsError,
   type ReviewedDetails,
 } from '@/lib/job-extraction-model';
 import { JobActivityStatus } from './jobwizard-content';
@@ -73,11 +74,13 @@ function ReadyJobForm({
   const [review, setReview] = useState<{
     details: ReviewedDetails;
     url: string;
+    revision?: number;
   } | null>(() =>
     restoring?.input.reviewed_details
       ? {
           details: restoring.input.reviewed_details,
           url: restoring.input.listing_url!,
+          revision: restoring.input.expected_revision,
         }
       : null,
   );
@@ -186,10 +189,11 @@ function ReadyJobForm({
     }
     submitting.current = true;
     setError(null);
-    if (review && review.url !== values.listing_url) {
-      setError(
-        'The URL changed. Discard the selected bullets before saving, or suggest fresh details.',
-      );
+    const reviewError = review
+      ? reviewedDetailsError(review, values.listing_url, revision)
+      : null;
+    if (reviewError) {
+      setError(reviewError);
       submitting.current = false;
       return;
     }
@@ -446,7 +450,8 @@ function ReadyJobForm({
                   if (fields.title !== undefined) title.set(fields.title);
                   if (fields.company_name !== undefined)
                     company.set(fields.company_name);
-                  if (details) setReview({ details, url: url.read().trim() });
+                  if (details)
+                    setReview({ details, url: url.read().trim(), revision });
                   setUsedId(extraction.result!.id);
                   setError(null);
                 }}
@@ -508,7 +513,13 @@ function ReadyJobForm({
                         setRevision(latest.revision);
                         setLatest(null);
                         setError(
-                          'Your draft is preserved. Review it, then save to update the latest version.',
+                          (review &&
+                            reviewedDetailsError(
+                              review,
+                              url.read(),
+                              latest.revision,
+                            )) ||
+                            'Your draft is preserved. Review it, then save to update the latest version.',
                         );
                       })();
                     }}

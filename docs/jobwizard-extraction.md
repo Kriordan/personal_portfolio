@@ -17,7 +17,7 @@ Migration `f2a3b4c5d6e7` adds nullable `job.accepted_details` and owner-scoped `
 - `POST /api/v1/jobwizard/extractions`: caller-generated UUID, frozen URL and optional owned job/revision; commits a source receipt before returning.
 - `POST /api/v1/jobwizard/extractions/<id>/summary`: consumes that source once. Replaying a completed/failed request does not call a provider again.
 - `GET /api/v1/jobwizard/extractions/<id>`: owner-scoped recovery only. Lost-process operations become interrupted under the account lock.
-- Job create/PATCH accepts selected bullet indices and edited text atomically with the job and existing mutation receipt. Excerpts come from the server, never from caller-supplied provenance. Revision conflicts preserve the mobile draft.
+- Job create/PATCH accepts selected bullet indices and edited text atomically with the job and existing mutation receipt. Excerpts come from the server, never from caller-supplied provenance. Revision conflicts preserve the mobile draft. After comparing a newer revision, stale selected bullets must be discarded or re-extracted before saving; the client explains this before sending another rejected mutation.
 
 One extraction runs per account. Extraction and capture share two Browserless slots; summarization has one separate slot. Persistent limits allow ten new extraction attempts and twenty summaries per account/hour. An explicit failed-summary retry creates a linked receipt and reuses the original source without extending its expiry. Paid calls are not automatically retried after failure, backgrounding, reconnect or restart.
 
@@ -45,7 +45,7 @@ All automated providers are mocked except the explicitly recorded public-listing
 | Backend unit/integration discovery | 251 tests pass; one Linux-only parent-death case skipped on macOS |
 | PostgreSQL 18 | Populated upgrade/downgrade, process death, locking and cross-process replay cases ran locally; no PostgreSQL skip |
 | Python consistency/security | Poetry lock check, `pip check`, pip-audit pass |
-| Mobile | 88 tests, TypeScript, ESLint and local SDK 57 compatibility pass |
+| Mobile | 89 tests, TypeScript, ESLint and local SDK 57 compatibility pass |
 | Exports | Web, iOS and Android production JS/Hermes exports pass; these are not native builds |
 | Root/provider | 11 tests pass, including Gem capture bounds/readiness regressions |
 | Browser | 18 security checks and 9 extraction DOM checks pass |

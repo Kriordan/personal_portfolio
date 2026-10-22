@@ -4,10 +4,20 @@ import { randomUUID } from 'node:crypto';
 import { ExtractionSession } from '../src/lib/job-extraction-session.ts';
 import {
   extractionMatches,
+  reviewedDetailsError,
   useSuggestedField,
   validExtractionRequest,
 } from '../src/lib/job-extraction-model.ts';
 const url = 'https://job-boards.greenhouse.io/acme/jobs/123';
+test('reviewed bullets stay bound to their URL and revision after conflict recovery', () => {
+  assert.equal(reviewedDetailsError({ url }, url), null);
+  assert.equal(reviewedDetailsError({ url, revision: 1 }, url, 1), null);
+  assert.match(
+    reviewedDetailsError({ url, revision: 1 }, url, 2),
+    /older job version/,
+  );
+  assert.match(reviewedDetailsError({ url }, `${url}4`), /URL changed/);
+});
 test('late manual entry stays protected until replacement is explicitly selected', () => {
   assert.equal(useSuggestedField(null, ''), true);
   assert.equal(useSuggestedField(null, 'My saved title'), false);

@@ -51,6 +51,17 @@ export interface ReviewedDetails {
   extraction_id: string;
   bullets: { index: number; text: string }[];
 }
+export function reviewedDetailsError(
+  source: { url: string; revision?: number },
+  url: string,
+  revision?: number,
+) {
+  if (source.url !== url.trim())
+    return 'The URL changed. Discard the selected bullets before saving, or suggest fresh details.';
+  if (source.revision !== revision)
+    return 'Your text is preserved, but the selected bullets belong to an older job version. Discard the selected bullets, then suggest fresh details before saving.';
+  return null;
+}
 export interface AcceptedDetails {
   source_url: string;
   fetched_at: string;
