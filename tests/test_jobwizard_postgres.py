@@ -100,3 +100,26 @@ with create_app({self.config!r}).app_context():
             migration.downgrade(); migration.upgrade()
             row = connection.execute(text("SELECT id,user_id,posted_date,listing_image,saved_at,archived_at,revision FROM jobs")).one()
             self.assertEqual(tuple(row[:4]), before); self.assertIsNone(row.saved_at); self.assertIsNone(row.archived_at); self.assertEqual(row.revision, 0)
+
+    def test_capacity_is_shared_across_processes_and_released_on_death(self):
+        job_id = self.submit(self.payload)["job"]["id"]
+        script = f'''from project import create_app
+from project.jobwizard.capture_lock import capture_capacity
+with create_app({self.config!r}).app_context(), capture_capacity() as a, capture_capacity() as b:
+    assert a and b
+    print("READY", flush=True)
+    input()
+'''
+        child = subprocess.Popen([sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            self.assertTrue(select.select([child.stdout], [], [], 15)[0])
+            self.assertEqual(child.stdout.readline().strip(), "READY")
+            with patch.object(capture, "configured", return_value=True), patch.object(capture, "_run_capture") as provider:
+                result = capture.capture_job(user_id=1, job_id=job_id, payload=dict(request_id=str(uuid4()), expected_revision=0))
+                self.assertEqual(result["requested"]["error_code"], "capture_capacity")
+                provider.assert_not_called()
+        finally:
+            child.terminate(); child.communicate(timeout=10)
+        with patch.object(capture, "configured", return_value=True), patch.object(capture, "_run_capture", side_effect=lambda url, key: dict(object_key=key, width=2, height=5)):
+            result = capture.capture_job(user_id=1, job_id=job_id, payload=dict(request_id=str(uuid4()), expected_revision=0))
+            self.assertEqual(result["requested"]["status"], "succeeded")

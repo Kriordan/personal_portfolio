@@ -124,7 +124,7 @@ This development workflow requires Metro and the API to keep running. The separa
 - Sign in to Expo to reuse hosted builds and signing credentials. Local `node_modules`, generated `ios/` and `android/` folders, and build caches can be regenerated.
 - Check the database separately: Git and EAS do not carry local users, lists, gifts, or other database records. Preserve an old database backup if that data is needed, even if the new database's migrations are current.
 - For YouTube sync, check the ignored `client_secret.json`, `project/data/youtube_token.json`, and `project/data/jsonfiles/` inputs. OAuth credentials can be restored or authorization repeated as appropriate.
-- For optional integrations, check the credentials listed in `docs/verification-runbook.md`, including `APILEAP_ACCESS_KEY` for job screenshots and AWS access for uploads. Keep secrets out of Git.
+- For optional integrations, check the credentials listed in `docs/verification-runbook.md`, including server-only `BROWSERLESS_API_TOKEN` for optional job screenshots and AWS access for private uploads. Keep secrets out of Git.
 
 References: [Expo iPhone builds](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/), [managed signing credentials](https://docs.expo.dev/app-signing/managed-credentials/), and [development builds and native dependency changes](https://docs.expo.dev/develop/development-builds/introduction/).
 

@@ -91,3 +91,43 @@ The preliminary iPhone build `fb74be7d-900d-41bd-8cda-d877d278cf4d` is supersede
 - Private screenshot storage is enabled and verified; **ApiLeap capture is disabled** with `JOBWIZARD_CAPTURE_ENABLED=0` because the provider returned HTTP 500. Do not mark live screenshots ready or enable the gate until a deliberate public capture succeeds. No provider/credential substitution was made.
 - Additional iPhone failure check: a failed list refresh retained 292 cached active jobs with explicit stale-data text; Retry recovered after fixture reads were restored. [Overview](assets/jobwizard/iphone-overview.png), [stale refresh](assets/jobwizard/iphone-stale-refresh.png), [detail](assets/jobwizard/iphone-detail.png).
 - The disposable API, Metro, PostgreSQL and emulator processes started for validation were stopped. All earlier feature and accessibility follow-ups remain as listed above.
+
+## Browserless evaluation — October 22
+
+PR #116 merged as `a5a5364`. The user approved a bounded evaluation of Browserless on public job listings, not production provider replacement or a paid subscription. The evaluation is complete on `feature/browserless-evaluation`: **9/12 current listings passed the initial visual check; two explicit Workday follow-ups raised the combined result to 11/12**. One long Ashby page still has missing parts of final disclosure lines. Eighteen completed captures consumed 18 units according to distinct provider request IDs. The existing key was used temporarily outside the repository and removed afterward. See the [full evaluation and next implementation scope](evaluations/browserless-2026-10-22.md) and [machine-readable evidence](evaluations/browserless-2026-10-22-results.json). Production capture remains disabled.
+
+Evaluation artifacts:
+
+- [`scripts/evaluate-browserless.py`](../scripts/evaluate-browserless.py): a standalone evaluator using the existing Requests/Pillow dependencies. It does not import Flask, read the app's `.env`, access production jobs, or upload to S3. A dry run validates the selection without credentials or network calls. Each explicit run uses a fresh output directory and makes one sequential request per selected entry, with no automatic retry or requested proxy/CAPTCHA options.
+- [`scripts/fixtures/browserless-public-jobs.json`](../scripts/fixtures/browserless-public-jobs.json): 12 public listings across Greenhouse, Lever/Lever EU, Ashby, and Workday, plus an Example Domain control and a known expired SmartRecruiters listing. Search results for two older listings redirected to careers pages; those were replaced before selecting the sample. These are rendering samples, not job recommendations.
+- The selected Greenhouse/Lever descriptions were verified through current public pages. Normal-browser checks confirmed all four Ashby descriptions and both Workday descriptions. Workday content appeared after the initial page response, making premature capture a specific risk to evaluate. Local baseline text is in `/private/tmp/browserless-evaluation/`.
+
+The initial recipe uses a 1280×900 viewport at device scale 1, full-page PNG, `domcontentloaded`, a one-second settling delay, and scrolling for lazy content. Provider time is capped at 18 seconds; the local operation is capped at 22 seconds and uses the production 8 MiB / 24-megapixel image limits. This measures capture/download/image processing from the Mac, **not Heroku latency or S3 upload time**. The 18-second local threshold reserves some time for storage; it does not prove the production deadline is met.
+
+Evaluation checks (production readiness remains separate):
+
+- [x] Verify the merged baseline, compile the evaluator, and complete its 14-entry dry run.
+- [x] Sign in; verify free allowance and account usage before running the positive control, then the 12-listing sample and expired control. Never print the token, provider request URL containing it, or raw error bodies.
+- [x] Record actual account/request-log units before and after. Do not equate elapsed local time with billed browser time.
+- [x] Review every returned image against the source: correct title/company, readable description, qualifications and final section, no obstruction, missing lower content, login screen, or challenge page. A valid PNG or HTTP 200 is insufficient.
+- [x] Classify source expiration/redirect separately from provider failures. Check target response status and failed stylesheet counters when returned; absent metadata means unknown.
+- [x] Record latency, download size, dimensions, errors, and image-review verdicts. Any targeted second recipe must be recorded separately from the initial result; do not silently replace failures with retries.
+- [x] Assess provider retention/logging and target restrictions before recommending production use. Keep existing private S3 ownership and expiring delivery.
+- [x] Recommend the next implementation only after results: bounded synchronous provider replacement if it meets the budget, or a separate durable background-capture design if slow pages need more time.
+
+Reference documentation: [screenshot API](https://docs.browserless.io/rest-apis/screenshot-api), [request options and response diagnostics](https://docs.browserless.io/rest-apis/request-configuration), [timeouts](https://docs.browserless.io/rest-apis/timeouts), [usage logs](https://docs.browserless.io/overview/request-logs), [pricing](https://www.browserless.io/pricing). All existing native, accessibility, production capture, and dependency follow-ups remain open where unverified.
+
+## Browserless implementation — October 22
+
+The user approved the recommended implementation after the evaluation. See [rollout details and limits](jobwizard-browserless-rollout.md). The adapter now uses the Function REST API, description/layout readiness checks, constrained platform/CDN requests, one capture per deliberate attempt and two shared PostgreSQL capacity slots. The preview names Browserless and shows safe failure reasons while retaining previous good images. Existing unchecked acceptance items above remain open.
+
+- [x] Capture one public listing each on Greenhouse, Lever, Ashby and Workday with the adapter. Local runs took 4.319–7.661 seconds. The long Ashby disclosure paragraphs and dynamic Workday final description rendered.
+- [x] Run long Ashby and Workday captures in an isolated Heroku dyno through private S3: 9.617 and 11.279 seconds; signed reads 200/private-no-store, unsigned reads 403. No production jobs or web release were changed.
+- [x] Verify failure receipts, no unattended retries, duplicate request replay, preserved previous images, source edits, account isolation, malformed/oversized responses, private storage checks and cross-process capacity/death recovery in automated tests.
+- [x] On iPhone 18 Pro/iOS 27 simulator, show both real private S3 readiness images through the disposable fixture. Open the full Ashby image in Safari and return. Confirm Browserless disclosure. Deliberately simulate an expired listing; show its specific error and retain the previous Workday image.
+- [ ] Install and accept the updated physical-iPhone preview against the deployed Browserless backend.
+- [ ] After merge/deployment, verify one app-initiated capture against the authenticated production route and reconcile the provider usage receipt. The isolated Heroku worker checks above do not replace this release check.
+- [ ] Exercise the changed capture messages and retained image on Android; an export alone is not interaction evidence.
+- [ ] Complete the inherited VoiceOver/TalkBack, large-text/small-device, background/relaunch/account-switch and 15-minute signed-access renewal checks.
+
+Backend regression: 223 tests on macOS with real disposable PostgreSQL (one Linux-only check skipped). Mobile: 76 tests, typecheck/lint. Root/provider: 8 tests. Browser security: 18 checks. iOS/Android/web exports passed. The gate remains `0` on production v144 until the reviewed replacement is merged and deployed. Dependency exceptions and their November 5 review are unchanged.

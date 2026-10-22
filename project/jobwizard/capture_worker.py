@@ -3,6 +3,7 @@
 The parent kills and waits for this process at 22 seconds, including DNS, provider
 streaming, image decoding and S3. No unattended thread/task outlives the request.
 """
+import base64
 import io
 import ipaddress
 import json
@@ -12,15 +13,19 @@ import socket
 import signal
 import sys
 import warnings
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import boto3
 import requests
 from botocore.config import Config
 from PIL import Image
+from project.jobwizard.capture_policy import CaptureError, target_profile
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_PIXELS = 24_000_000
+MAX_RESPONSE_BYTES = ((MAX_BYTES + 2) // 3) * 4 + 4096
+PROVIDER_CODE = Path(__file__).with_name("browserless_capture.mjs").read_text()
 
 
 def bucket():
@@ -53,27 +58,23 @@ def validate_public_target(url):
 def capture_artifact(url, key):
     if not re.fullmatch(r"j/[a-f0-9]{32}\.png", key):
         raise ValueError("invalid key")
+    profile = target_profile(url)
+    if not profile:
+        raise CaptureError("unsupported_target")
     validate_public_target(url)
     storage = s3_client()
     block = storage.get_public_access_block(Bucket=bucket())["PublicAccessBlockConfiguration"]
     if not all(block.get(setting) is True for setting in (
         "BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")):
         raise ValueError("private storage required")
-    with requests.get("https://apileap.com/api/screenshot/v1/urltoimage", params={
-        "url": url, "access_key": os.environ["APILEAP_ACCESS_KEY"], "full_page": "true",
-    }, stream=True, timeout=(2, 12), allow_redirects=False) as response:
-        if response.status_code != 200 or response.headers.get("Content-Type", "").split(";")[0].lower() not in {"image/png", "image/jpeg"}:
-            raise ValueError("invalid provider response")
-        data = bytearray()
-        for chunk in response.iter_content(64 * 1024):
-            data.extend(chunk)
-            if len(data) > MAX_BYTES:
-                raise ValueError("image too large")
+    data = browserless_image(url, profile)
     with warnings.catch_warnings():
         warnings.simplefilter("error", Image.DecompressionBombWarning)
         with Image.open(io.BytesIO(data)) as image:
-            if image.format not in {"PNG", "JPEG"} or image.width * image.height > MAX_PIXELS:
-                raise ValueError("invalid image")
+            if image.format not in {"PNG", "JPEG"}:
+                raise CaptureError()
+            if image.width * image.height > MAX_PIXELS:
+                raise CaptureError("image_too_large")
             width, height = image.size
             image.load()
             output = io.BytesIO()
@@ -81,9 +82,43 @@ def capture_artifact(url, key):
             sanitized.paste(image.convert("RGB"))
             sanitized.save(output, format="PNG")
     if output.tell() > MAX_BYTES:
-        raise ValueError("image too large")
+        raise CaptureError("image_too_large")
     storage.put_object(Bucket=bucket(), Key=key, Body=output.getvalue(), ContentType="image/png", CacheControl="private, no-store")
     return {"object_key": key, "width": width, "height": height}
+
+
+def browserless_image(url, profile):
+    """One bounded, non-retried request. Never expose the token-bearing URL."""
+    with requests.Session() as session:
+        session.trust_env = False
+        try:
+            with session.post("https://production-sfo.browserless.io/function", params={
+                "token": os.environ["BROWSERLESS_API_TOKEN"], "timeout": 16000,
+            }, json={"code": PROVIDER_CODE, "context": {"url": url, "profile": profile}},
+                    stream=True, timeout=(2, 17), allow_redirects=False) as response:
+                code = {401: "provider_auth", 403: "provider_auth", 402: "provider_quota",
+                        429: "capture_capacity", 408: "capture_timeout", 504: "capture_timeout"}.get(response.status_code)
+                if code:
+                    raise CaptureError(code)
+                if response.status_code != 200 or response.headers.get("Content-Type", "").split(";")[0].lower() != "application/json":
+                    raise CaptureError()
+                raw = bytearray()
+                for chunk in response.iter_content(64 * 1024):
+                    raw.extend(chunk)
+                    if len(raw) > MAX_RESPONSE_BYTES:
+                        raise CaptureError("image_too_large")
+        except requests.Timeout:
+            raise CaptureError("capture_timeout") from None
+    payload = json.loads(raw)
+    if not isinstance(payload, dict) or payload.get("type") != "application/json" or not isinstance(payload.get("data"), dict):
+        raise CaptureError()
+    result = payload["data"]
+    if "error" in result:
+        raise CaptureError(result["error"] if isinstance(result["error"], str) else "capture_failed")
+    data = base64.b64decode(result["image"], validate=True)
+    if len(data) > MAX_BYTES:
+        raise CaptureError("image_too_large")
+    return data
 
 
 def guard_worker(parent_pid):
@@ -109,9 +144,9 @@ def main():
         guard_worker(payload["parent_pid"])
         result = capture_artifact(payload["url"], payload["key"])
         print(json.dumps(result))
-    except Exception:
+    except Exception as error:
         # Exceptions can include the provider API key, signed links or listing URL.
-        print('{"error":"capture_failed"}')
+        print(json.dumps({"error": error.code if isinstance(error, CaptureError) else "capture_failed"}))
         return 1
     return 0
 

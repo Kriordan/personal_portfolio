@@ -9,11 +9,27 @@ import {
 } from '@tanstack/react-query';
 import {
   browseJobs,
+  captureAttemptMessage,
   jobwizardKeys,
   routeJobId,
   safeJobUrl,
   storedOperation,
 } from '../src/lib/jobwizard-model.ts';
+test('capture receipt explains the outcome without claiming content was verified', () => {
+  assert.match(
+    captureAttemptMessage({ status: 'succeeded' }),
+    /Review the preview/,
+  );
+  assert.match(
+    captureAttemptMessage({
+      status: 'failed',
+      error_message: 'This listing appears to have expired.',
+    }),
+    /expired.*job is still saved/,
+  );
+  assert.match(captureAttemptMessage({ status: 'failed' }), /Capture failed/);
+  assert.match(captureAttemptMessage({ status: 'interrupted' }), /interrupted/);
+});
 import { JobSession } from '../src/lib/jobwizard-session.ts';
 import { jobRefreshOptions, reconcileJob } from '../src/lib/jobwizard-cache.ts';
 const tick = () => new Promise((resolve) => setImmediate(resolve));

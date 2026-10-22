@@ -9,7 +9,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from project.database import db
-from project.jobwizard.capture_lock import capture_lock
+from project.jobwizard.capture_lock import capture_lock, capture_capacity
+from project.jobwizard.capture_policy import CaptureError, ERROR_MESSAGES, target_profile
 from project.jobwizard.capture_worker import bucket, s3_client
 from project.models import Job, JobCapture
 from project.services.jobwizard_service import (
@@ -20,7 +21,7 @@ TTL = 900
 
 
 def configured():
-    return bool(os.getenv("JOBWIZARD_CAPTURE_ENABLED") == "1" and os.getenv("APILEAP_ACCESS_KEY") and bucket())
+    return bool(os.getenv("JOBWIZARD_CAPTURE_ENABLED") == "1" and os.getenv("BROWSERLESS_API_TOKEN") and bucket())
 
 
 def image_origins():
@@ -30,11 +31,20 @@ def image_origins():
 
 
 def _run_capture(url, key):
-    completed = subprocess.run([sys.executable, "-m", "project.jobwizard.capture_worker"],
-        input=json.dumps({"url": url, "key": key, "parent_pid": os.getpid()}), capture_output=True, text=True, timeout=22,
-        cwd=Path(__file__).resolve().parents[2], env={**os.environ, "PYTHON_DOTENV_DISABLED": "1"})
+    try:
+        completed = subprocess.run([sys.executable, "-m", "project.jobwizard.capture_worker"],
+            input=json.dumps({"url": url, "key": key, "parent_pid": os.getpid()}), capture_output=True, text=True, timeout=22,
+            cwd=Path(__file__).resolve().parents[2], env={**os.environ, "PYTHON_DOTENV_DISABLED": "1"})
+    except subprocess.TimeoutExpired:
+        raise CaptureError("capture_timeout") from None
     if completed.returncode:
-        raise RuntimeError("capture failed")
+        if completed.returncode == -14:  # The worker's total SIGALRM budget.
+            raise CaptureError("capture_timeout")
+        try:
+            error = json.loads(completed.stdout).get("error")
+        except (ValueError, AttributeError):
+            error = None
+        raise CaptureError(error if isinstance(error, str) else "capture_failed")
     result = json.loads(completed.stdout)
     if (result.get("object_key") != key or type(result.get("width")) is not int
             or type(result.get("height")) is not int or not 0 < result["width"] * result["height"] <= 24_000_000):
@@ -54,7 +64,8 @@ def _serialize(attempt):
     if not attempt:
         return None
     return dict(id=attempt.id, status=attempt.status, started_at=iso(attempt.started_at),
-                finished_at=iso(attempt.finished_at), error_code=attempt.error_code)
+                finished_at=iso(attempt.finished_at), error_code=attempt.error_code,
+                error_message=ERROR_MESSAGES.get(attempt.error_code) if attempt.status in {"failed", "interrupted"} else None)
 
 
 def _snapshot(job, requested=None):
@@ -73,7 +84,8 @@ def _snapshot(job, requested=None):
             image = None
     attempt = base.filter_by(id=requested).first() if requested else None
     return dict(latest=_serialize(latest), requested=_serialize(attempt), image=image,
-                legacy_unavailable=bool(job.listing_image and not available), configured=configured())
+                legacy_unavailable=bool(job.listing_image and not available), configured=configured(),
+                supported=bool(target_profile(job.listing_url)), provider="Browserless")
 
 
 def capture_status(*, user_id, job_id, request_id=None):
@@ -119,7 +131,12 @@ def capture_job(*, user_id, job_id, payload):
         fence()
         db.session.commit()
         try:
-            artifact = _run_capture(attempt.source_url, f"j/{uuid4().hex}.png")
+            with capture_capacity() as capacity_fence:
+                if not capacity_fence:
+                    raise CaptureError("capture_capacity")
+                capacity_fence()
+                artifact = _run_capture(attempt.source_url, f"j/{uuid4().hex}.png")
+                capacity_fence()
             fence()
             # Preserve the original source; a later URL edit is represented as outdated.
             job = get_job_for_user(user_id=user_id, job_id=job_id)
@@ -130,12 +147,12 @@ def capture_job(*, user_id, job_id, payload):
             attempt.finished_at = now()
             fence()
             db.session.commit()
-        except Exception:
+        except Exception as error:
             db.session.rollback()
             fence()  # A lost lock must never be reacquired or used to publish a result.
             attempt = db.session.get(JobCapture, request_id)
             attempt.status = "failed"
-            attempt.error_code = "capture_failed"
+            attempt.error_code = error.code if isinstance(error, CaptureError) else "capture_failed"
             attempt.finished_at = now()
             db.session.commit()
         return _snapshot(get_job_for_user(user_id=user_id, job_id=job_id), request_id)

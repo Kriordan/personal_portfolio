@@ -20,11 +20,14 @@ export interface CaptureAttempt {
   started_at: string;
   finished_at: string | null;
   error_code: string | null;
+  error_message?: string | null;
 }
 export interface CaptureStatus {
   latest: CaptureAttempt | null;
   requested: CaptureAttempt | null;
   configured: boolean;
+  supported?: boolean;
+  provider?: string;
   busy?: boolean;
   unavailable?: boolean;
   legacy_unavailable: boolean;
@@ -36,6 +39,12 @@ export interface CaptureStatus {
     captured_at: string;
     outdated: boolean;
   } | null;
+}
+export function captureAttemptMessage(attempt: CaptureAttempt) {
+  if (attempt.status === 'running') return 'Capturing screenshot…';
+  if (attempt.status === 'succeeded')
+    return 'Screenshot saved. Review the preview to check the listing content.';
+  return `${attempt.error_message ?? (attempt.status === 'interrupted' ? 'Capture was interrupted.' : 'Capture failed.')} Your job is still saved.`;
 }
 export type JobView = 'active' | 'archived' | 'all';
 export type JobSort = 'newest' | 'oldest' | 'company' | 'title';

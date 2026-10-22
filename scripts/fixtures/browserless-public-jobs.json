@@ -1,0 +1,20 @@
+{
+  "selected_on": "2026-10-22",
+  "purpose": "Public job-page rendering evaluation; these are test samples, not job recommendations.",
+  "listings": [
+    {"id": "control-example", "platform": "control", "title": "Example Domain", "url": "https://example.com/", "expected": "public_control"},
+    {"id": "greenhouse-clear", "platform": "Greenhouse", "title": "Software Engineer Backend (Java)", "company": "CLEAR", "url": "https://job-boards.greenhouse.io/clear/jobs/8107053", "expected": "job"},
+    {"id": "greenhouse-scale-infrastructure", "platform": "Greenhouse", "title": "Infrastructure Software Engineer, Enterprise GenAI", "company": "Scale AI", "url": "https://job-boards.greenhouse.io/scaleai/jobs/4665557005", "expected": "job"},
+    {"id": "greenhouse-scale-enterprise", "platform": "Greenhouse", "title": "Software Engineer, Enterprise AI", "company": "Scale AI", "url": "https://job-boards.greenhouse.io/scaleai/jobs/4513943005", "expected": "job"},
+    {"id": "lever-sep", "platform": "Lever", "title": "Experienced Software Engineer (in person)", "company": "SEP", "url": "https://jobs.lever.co/sep/80cd8c15-bafc-49a9-b8f1-5d407e891ec0", "expected": "job"},
+    {"id": "lever-filevine", "platform": "Lever", "title": "Senior Software Engineer (Frontend)", "company": "Filevine", "url": "https://jobs.lever.co/filevine/0679e9c6-2033-43ac-bd3c-d50f0c76439e", "expected": "job"},
+    {"id": "lever-prima", "platform": "Lever EU", "title": "Data Software Engineer", "company": "Prima", "url": "https://jobs.eu.lever.co/prima/ccacdc20-430a-4086-b85c-a8f3e5d68418", "expected": "job"},
+    {"id": "ashby-ashby", "platform": "Ashby", "title": "Staff Platform Engineer - Americas", "company": "Ashby", "url": "https://jobs.ashbyhq.com/ashby/0f5dbf59-687b-4d88-88a7-73ee0a66b48d", "expected": "job"},
+    {"id": "ashby-sentry", "platform": "Ashby", "title": "Software Engineer, Streaming Platform", "company": "Sentry", "url": "https://jobs.ashbyhq.com/sentry/5ee81d6f-e837-43bb-af06-8f26c992a766", "expected": "job"},
+    {"id": "ashby-mechanize", "platform": "Ashby", "title": "Software Engineer", "company": "Mechanize", "url": "https://jobs.ashbyhq.com/mechanize/1ef28bb2-6251-4da6-a590-a4a7606368cb", "expected": "job"},
+    {"id": "ashby-elicit", "platform": "Ashby", "title": "Senior Software Engineer", "company": "Elicit", "url": "https://jobs.ashbyhq.com/elicit/aa99e2e9-5b15-4cd3-ac9d-9c9177ff61c8", "expected": "job"},
+    {"id": "workday-visa", "platform": "Workday", "title": "Software Engineer", "company": "Visa", "url": "https://visa.wd5.myworkdayjobs.com/Visa/job/Software-Engineer_REF089009W", "expected": "job"},
+    {"id": "workday-genesys", "platform": "Workday", "title": "Software Engineer", "company": "Genesys", "url": "https://genesys.wd1.myworkdayjobs.com/en-US/Genesys/job/Software-Engineer_JR112513-1", "expected": "job"},
+    {"id": "control-expired-servicenow", "platform": "SmartRecruiters", "title": "Software Engineer (expired)", "company": "ServiceNow", "url": "https://jobs.smartrecruiters.com/servicenow/744000155459130", "expected": "expired_job"}
+  ]
+}

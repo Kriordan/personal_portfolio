@@ -10,7 +10,7 @@
     "sass": "^1.97.2"
   },
   "scripts": {
-    "test": "node --test tests/check-npm-audit.test.cjs && node scripts/check-browser-dependencies.cjs",
+    "test": "node --test tests/check-npm-audit.test.cjs tests/jobwizard-browserless.test.mjs && node scripts/check-browser-dependencies.cjs",
     "gulp": "gulp",
     "sass": "gulp sass",
     "watch": "gulp watch",

@@ -1,4 +1,5 @@
 """Saved-job correctness, receipts and capture failure paths; no live providers."""
+import base64
 import io
 import json
 import os
@@ -16,8 +17,9 @@ from PIL import Image
 from project.database import db
 from project.models import Job, JobCapture, JobMutationReceipt
 from project.services import jobwizard_service as service, jobwizard_capture as capture
-from project.jobwizard.capture_lock import capture_lock
+from project.jobwizard.capture_lock import capture_lock, capture_capacity
 from project.jobwizard import capture_worker
+from project.jobwizard.capture_policy import CaptureError, target_profile
 from tests import test_api_jobwizard as baseline
 
 
@@ -138,7 +140,7 @@ class OrganizerTests(unittest.TestCase):
         self.setup_owner()
         response, _ = self.create()
         job_id = response.json["job"]["id"]
-        env = dict(JOBWIZARD_CAPTURE_ENABLED="1", APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")
+        env = dict(JOBWIZARD_CAPTURE_ENABLED="1", BROWSERLESS_API_TOKEN="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")
         with self.app.app_context(), patch.dict(os.environ, env):
             request_id = str(uuid4())
             def artifact(url, key):
@@ -169,6 +171,31 @@ class OrganizerTests(unittest.TestCase):
                 self.assertEqual(capture.capture_status(user_id=self.owner, job_id=job_id)["latest"]["status"], "running")
             self.assertEqual(capture.capture_status(user_id=self.owner, job_id=job_id)["latest"]["status"], "interrupted")
 
+    def test_capacity_failure_is_receipted_and_requires_a_new_deliberate_attempt(self):
+        self.setup_owner()
+        job_id = self._create_job(user_id=self.owner)
+        request_id = str(uuid4())
+        with self.app.app_context(), patch.object(capture, "configured", return_value=True), patch.object(capture, "_run_capture") as provider:
+            with capture_capacity() as first, capture_capacity() as second:
+                self.assertIsNotNone(first); self.assertIsNotNone(second)
+                result = capture.capture_job(user_id=self.owner, job_id=job_id, payload=dict(request_id=request_id, expected_revision=0))
+                self.assertEqual(result["requested"]["error_code"], "capture_capacity")
+                self.assertIn("slots", result["requested"]["error_message"])
+            repeated = capture.capture_job(user_id=self.owner, job_id=job_id, payload=dict(request_id=request_id, expected_revision=0))
+            self.assertEqual(repeated["requested"], result["requested"])
+            provider.assert_not_called()
+
+    def test_storage_or_provider_failure_has_a_safe_reason(self):
+        self.setup_owner()
+        job_id = self._create_job(user_id=self.owner)
+        with self.app.app_context(), patch.object(capture, "configured", return_value=True):
+            for failure, code in ((CaptureError("page_expired"), "page_expired"), (RuntimeError("S3 SECRET"), "capture_failed")):
+                with patch.object(capture, "_run_capture", side_effect=failure):
+                    result = capture.capture_job(user_id=self.owner, job_id=job_id, payload=dict(request_id=str(uuid4()), expected_revision=0))
+                self.assertEqual(result["requested"]["error_code"], code)
+                self.assertIsNone(result["image"])
+                self.assertNotIn("SECRET", json.dumps(result))
+
     def test_competing_status_reads_do_not_claim_capture_is_running(self):
         self.setup_owner()
         job_id = self._create_job(user_id=self.owner)
@@ -183,7 +210,7 @@ class OrganizerTests(unittest.TestCase):
             service.mutate_job(user_id=self.owner, job_id=job_id,
                 payload=dict(expected_revision=0, listing_url="https://example.com/new"))
             return dict(object_key=key, width=100, height=900)
-        with self.app.app_context(), patch.dict(os.environ, dict(JOBWIZARD_CAPTURE_ENABLED="1", APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")), patch.object(capture, "_run_capture", side_effect=artifact):
+        with self.app.app_context(), patch.dict(os.environ, dict(JOBWIZARD_CAPTURE_ENABLED="1", BROWSERLESS_API_TOKEN="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", AWS_ACCESS_KEY_ID="fixture", AWS_SECRET_ACCESS_KEY="fixture")), patch.object(capture, "_run_capture", side_effect=artifact):
             result = capture.capture_job(user_id=self.owner, job_id=job_id,
                 payload=dict(request_id=str(uuid4()), expected_revision=0))
             self.assertEqual(result["latest"]["status"], "succeeded")
@@ -216,7 +243,7 @@ class CaptureProviderTests(unittest.TestCase):
             self.assertEqual(provider.call_args.args[0], url)
 
     def test_capture_requires_explicit_enablement_after_readiness_check(self):
-        with patch.dict(os.environ, dict(APILEAP_ACCESS_KEY="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", JOBWIZARD_CAPTURE_ENABLED="0")):
+        with patch.dict(os.environ, dict(BROWSERLESS_API_TOKEN="fixture", JOBWIZARD_PRIVATE_S3_BUCKET="fixture-private", JOBWIZARD_CAPTURE_ENABLED="0")):
             self.assertFalse(capture.configured())
             with patch.dict(os.environ, {"JOBWIZARD_CAPTURE_ENABLED": "1"}):
                 self.assertTrue(capture.configured())
@@ -229,21 +256,77 @@ class CaptureProviderTests(unittest.TestCase):
         return stream.getvalue()
 
     def test_provider_and_storage_are_validated_before_publishing(self):
-        response = Mock(status_code=200, headers={"Content-Type": "image/png"})
-        response.__enter__ = Mock(return_value=response); response.__exit__ = Mock(return_value=False)
-        response.iter_content.return_value = [self.image()]
         storage = Mock()
         storage.get_public_access_block.return_value = {"PublicAccessBlockConfiguration": dict.fromkeys(("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"), True)}
-        with patch.object(capture_worker, "validate_public_target"), patch.object(capture_worker, "s3_client", return_value=storage), patch.object(capture_worker.requests, "get", return_value=response), patch.dict(os.environ, {"APILEAP_ACCESS_KEY": "fixture"}):
-            result = capture_worker.capture_artifact("https://example.com", "j/" + "a" * 32 + ".png")
+        url = "https://job-boards.greenhouse.io/company/jobs/123"
+        with patch.object(capture_worker, "validate_public_target"), patch.object(capture_worker, "s3_client", return_value=storage), patch.object(capture_worker, "browserless_image", return_value=self.image()) as provider:
+            result = capture_worker.capture_artifact(url, "j/" + "a" * 32 + ".png")
             self.assertEqual(result["height"], 50)
             self.assertEqual(storage.put_object.call_args.kwargs["CacheControl"], "private, no-store")
             with Image.open(io.BytesIO(storage.put_object.call_args.kwargs["Body"])) as stored:
                 self.assertEqual(stored.info, {})
-            for status, content, data in ((500, "image/png", self.image()), (200, "text/html", b"error"), (200, "image/png", b"not an image")):
-                storage.put_object.reset_mock(); response.status_code = status; response.headers["Content-Type"] = content; response.iter_content.return_value = [data]
-                with self.assertRaises(Exception): capture_worker.capture_artifact("https://example.com", "j/" + "b" * 32 + ".png")
+            for data in (b"not an image", b"<html>Error</html>"):
+                storage.put_object.reset_mock(); provider.return_value = data
+                with self.assertRaises(Exception): capture_worker.capture_artifact(url, "j/" + "b" * 32 + ".png")
                 storage.put_object.assert_not_called()
+            provider.return_value = self.image()
+            with patch.object(capture_worker, "MAX_PIXELS", 999):
+                with self.assertRaises(CaptureError): capture_worker.capture_artifact(url, "j/" + "b" * 32 + ".png")
+            storage.put_object.assert_not_called()
+            provider.reset_mock()
+            storage.get_public_access_block.return_value["PublicAccessBlockConfiguration"]["BlockPublicPolicy"] = False
+            with self.assertRaises(ValueError): capture_worker.capture_artifact(url, "j/" + "b" * 32 + ".png")
+            provider.assert_not_called()
+
+    def test_transport_failures_and_size_limits_never_retry(self):
+        response = Mock(status_code=200, headers={"Content-Type": "application/json; charset=UTF-8"})
+        response.__enter__ = Mock(return_value=response); response.__exit__ = Mock(return_value=False)
+        response.iter_content.return_value = [json.dumps({"type": "application/json", "data": {"image": base64.b64encode(self.image()).decode()}}).encode()]
+        with patch.object(capture_worker.requests, "Session") as factory, patch.dict(os.environ, {"BROWSERLESS_API_TOKEN": "fixture"}):
+            session = factory.return_value.__enter__.return_value
+            session.post.return_value = response
+            self.assertEqual(capture_worker.browserless_image("https://example.com", "ashby"), self.image())
+            self.assertFalse(session.trust_env)
+            self.assertFalse(session.post.call_args.kwargs["allow_redirects"])
+            self.assertEqual(session.post.call_args.args[0], "https://production-sfo.browserless.io/function")
+            for status, expected in ((401, "provider_auth"), (402, "provider_quota"), (429, "capture_capacity"), (408, "capture_timeout"), (504, "capture_timeout"), (500, "capture_failed"), (302, "capture_failed")):
+                session.post.reset_mock(); response.status_code = status
+                with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
+                self.assertEqual(error.exception.code, expected); self.assertEqual(session.post.call_count, 1)
+            response.status_code = 200
+            for payload in ({"type": "application/json", "data": {"error": "page_expired"}}, {"type": "application/json", "data": {"error": "SECRET"}}, [], {"image": "bad"}):
+                response.iter_content.return_value = [json.dumps(payload).encode()]
+                with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
+                self.assertNotIn("SECRET", str(error.exception))
+            response.iter_content.return_value = [b"x" * 100]
+            with patch.object(capture_worker, "MAX_RESPONSE_BYTES", 99):
+                with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
+                self.assertEqual(error.exception.code, "image_too_large")
+            session.post.side_effect = capture_worker.requests.Timeout("token-secret")
+            with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
+            self.assertEqual(error.exception.code, "capture_timeout")
+
+    def test_capture_target_scope_rejects_private_and_unverified_routes(self):
+        valid = {
+            "https://job-boards.greenhouse.io/acme/jobs/123?gh_src=public": "greenhouse",
+            "https://jobs.eu.lever.co/acme/" + "a" * 36: "lever",
+            "https://jobs.ashbyhq.com/acme/" + "b" * 36: "ashby",
+            "https://acme.wd5.myworkdayjobs.com/Jobs/job/Role_123": "workday",
+        }
+        for url, profile in valid.items(): self.assertEqual(target_profile(url), profile)
+        for url in ("https://127.0.0.1/job/a", "https://jobs.ashbyhq.com.evil.test/acme/" + "b" * 36, "http://job-boards.greenhouse.io/acme/jobs/123", "https://job-boards.greenhouse.io:444/acme/jobs/123", "https://job-boards.greenhouse.io/acme/jobs/123?token=secret", "https://job-boards.greenhouse.io/acme", "https://example.com/job"):
+            self.assertIsNone(target_profile(url))
+            with patch.object(capture_worker, "browserless_image") as provider:
+                with self.assertRaises(CaptureError): capture_worker.capture_artifact(url, "j/" + "a" * 32 + ".png")
+                provider.assert_not_called()
+
+    def test_worker_only_returns_allowlisted_failure_codes(self):
+        payload = json.dumps(dict(url="https://example.com", key="j/" + "a" * 32 + ".png", parent_pid=os.getpid()))
+        for failure, expected in ((CaptureError("page_expired"), "page_expired"), (RuntimeError("SECRET"), "capture_failed")):
+            output = io.StringIO()
+            with patch.object(capture_worker.sys, "stdin", io.StringIO(payload)), patch.object(capture_worker.sys, "stdout", output), patch.object(capture_worker, "guard_worker"), patch.object(capture_worker, "capture_artifact", side_effect=failure):
+                self.assertEqual(capture_worker.main(), 1)
+            self.assertEqual(json.loads(output.getvalue()), {"error": expected})
 
     def test_private_targets_are_rejected_without_provider_calls(self):
         with patch.object(capture_worker.socket, "getaddrinfo", return_value=[(2, 1, 6, '', ('127.0.0.1', 80))]):

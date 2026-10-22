@@ -13,17 +13,19 @@
 </form>
 <h2>Screenshot</h2>
 {% if capture.latest %}<p>Latest capture: {{ capture.latest.status }}{% if capture.latest.finished_at %} · {{ capture.latest.finished_at }}{% endif %}</p>{% endif %}
+{% if capture.latest and capture.latest.error_message %}<p>{{ capture.latest.error_message }} Your job is still saved.</p>{% endif %}
 {% if capture.image %}
   <p>Captured {{ capture.image.captured_at }}{% if capture.image.outdated %} · From an older listing URL{% endif %}</p>
   <a href="{{ capture.image.url }}" target="_blank" rel="noopener noreferrer">Open full screenshot</a>
 {% elif capture.legacy_unavailable %}<p>The legacy screenshot is unavailable. Its original reference is preserved.</p>
 {% else %}<p>No screenshot available.</p>{% endif %}
-{% if capture.configured and not capture.busy %}
-<p>Optional capture sends this listing URL to ApiLeap, a screenshot service. Your job is already saved.</p>
+{% if capture.configured and capture.supported and not capture.busy %}
+<p>Optional capture sends this public listing URL to Browserless. Embedded videos are omitted. Your job is already saved. Check the preview against the original listing.</p>
 <form method="post" action="{{ url_for('jobwizard.job_action', job_id=job.id) }}">
   {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_revision }}
   <button name="action" value="capture">Capture screenshot</button>
 </form>
+{% elif not capture.supported %}<p>Capture supports public Greenhouse, Lever, Ashby and Workday listing links. You can still save and open this link.</p>
 {% elif not capture.configured %}<p>Screenshot capture is currently unavailable. You can still save and edit jobs.</p>{% endif %}
 <a href="{{ url_for('jobwizard.get_job', job_id=job.id) }}">Refresh capture status</a>
 <a href="{{ url_for('jobwizard.home') }}">Back to Jobwizard</a>
