@@ -390,10 +390,17 @@ class CaptureProviderTests(unittest.TestCase):
             parent.communicate(timeout=5)
             from pathlib import Path
             stat = Path(f"/proc/{child_pid}/stat")
+            def child_stopped():
+                try:
+                    return stat.read_text().split()[2] == "Z"
+                except (FileNotFoundError, ProcessLookupError):
+                    # The kernel can reap the child between opening /proc/stat
+                    # and reading it. Disappearance is the expected success.
+                    return True
             deadline = time.monotonic() + 3
-            while stat.exists() and stat.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+            while not child_stopped() and time.monotonic() < deadline:
                 time.sleep(.05)
-            self.assertTrue(not stat.exists() or stat.read_text().split()[2] == "Z")
+            self.assertTrue(child_stopped())
         finally:
             if parent.poll() is None:
                 parent.terminate()
