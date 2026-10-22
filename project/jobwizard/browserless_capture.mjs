@@ -177,13 +177,16 @@ export default async function capture({ page, context }) {
         "iframe,video{display:none !important}*{animation:none !important;transition:none !important;caret-color:transparent !important}",
     });
     const size = await page.evaluate(() => ({
-      width: Math.max(innerWidth, document.documentElement.scrollWidth),
-      height: Math.max(innerHeight, document.documentElement.scrollHeight),
+      width: Math.ceil(Math.max(innerWidth, document.documentElement.scrollWidth)),
+      height: Math.ceil(Math.max(innerHeight, document.documentElement.scrollHeight)),
     }));
     if (size.width * size.height > 24000000) return fail("image_too_large");
     const image = await page.screenshot({
       type: "png",
-      fullPage: true,
+      // Use measured document bounds. The hosted browser's fullPage path can
+      // return its default 800px surface even after a 1280px viewport is set.
+      clip: { x: 0, y: 0, width: size.width, height: size.height },
+      captureBeyondViewport: true,
       encoding: "base64",
     });
     if (image.length > Math.ceil((8 * 1024 * 1024) / 3) * 4)

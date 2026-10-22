@@ -1,6 +1,6 @@
 # Gem capture and in-app screenshot viewer — October 22, 2026
 
-This slice builds on merged PR #117 (`60d36d9`) and production Heroku v147. Browserless capture is enabled there, and the user confirmed that capture works on their physical iPhone. Gem support and this viewer require the new reviewed release. Job-detail extraction remains deferred.
+This slice builds on merged PR #117 (`60d36d9`) and production Heroku v147. Browserless capture is enabled there, and the user confirmed that capture works on their physical iPhone. PR #118 was subsequently merged as `80cd71a` and deployed as Heroku v148; the production verification and width follow-up are recorded below. Job-detail extraction remains deferred.
 
 ## Scope
 
@@ -38,7 +38,8 @@ The [internal iPhone preview](https://expo.dev/accounts/kriordan/projects/person
 
 Native screenshots: [iPhone](assets/jobwizard-gem-iphone.png), [Android](assets/jobwizard-gem-android.png).
 
-- [ ] Install the new internal preview on the physical iPhone. Open an existing screenshot; zoom/pan to all four edges and the footer; reset and Close. Confirm no browser opens and no capture starts.
+- [x] User installed/reviewed the new iPhone preview and confirmed pinch and drag work on the physical device (October 22).
+- [ ] Physical iPhone: explicitly confirm all four edges/footer, reset/Close, no browser launch and no extra capture. The user confirmation above establishes pinch/drag, not every remaining checklist item.
 - [ ] After merge/backend deployment, deliberately recapture the existing Gem job. Verify the final receipt, correct title/description/footer, private delivery and production elapsed time. Retain any previous good image on failure.
 - [x] Android emulator: opening, button zoom, paging, reset, Back and image-error recovery.
 - [ ] Physical Android: pinch/pan, accessibility and device-specific performance.
@@ -46,3 +47,23 @@ Native screenshots: [iPhone](assets/jobwizard-gem-iphone.png), [Android](assets/
 - [ ] Complete smaller-device, largest Dynamic Type, dark-mode, VoiceOver and TalkBack checks. Buttons are labelled; screenshot text is still an image, not extracted accessible job text.
 
 All unchecked items in [the Jobwizard smoke checklist](jobwizard-smoke-test.md) and earlier Grocery/Wishlist/Library/Learning checklists remain open. The November 5 dependency-security follow-up and Python runtime patch follow-up are unchanged. Merge/deploy this backend after review; no new provider key, AWS policy, paid plan or capture gate change is needed.
+
+
+## Production deployment and capture-width follow-up
+
+Merged PR #118 (`80cd71a`) deployed to Heroku v148 on October 22. The web dyno is up; public home returns 200, unauthenticated capture status returns 401, authenticated private status returns 200 with `private, no-store`, and migration remains `e1f2a3b4c5d6`. Deployed Gem policy/recipe hashes match the reviewed source. The existing provider key, capture gate and private storage configuration are unchanged.
+
+A single production capture of the existing Gem job returned a success receipt in 10.901 seconds, but visual verification showed a clipped right edge: the PNG was 800 × 7692 instead of the intended 1280-pixel width. HTTP success and valid PNG bytes did not establish complete content. That verification receipt was corrected to `failed`; its private object was retained and is no longer offered as a successful image. No prior user capture was changed.
+
+The follow-up captures the measured document rectangle explicitly with `clip` and `captureBeyondViewport`, avoiding reliance on the hosted browser's `fullPage` sizing. The worker also compares decoded image dimensions against the measured bounds before upload; missing/malformed bounds, or clipped width/height, fail without storage or an automatic retry. This is a fidelity fix, not a claim that dimensions alone prove every word is present. [Puppeteer screenshot option reference](https://pptr.dev/api/puppeteer.screenshotoptions).
+
+Two isolated Heroku readiness captures with the modified files succeeded without changing the deployed release or saved jobs:
+
+| Listing | Dimensions | Capture + private upload | Visual check |
+| --- | --- | ---: | --- |
+| Same Function Health Gem listing | 1280 × 7692 | 9.618 s | Full title/right edge and form/footer visible |
+| Previously tested long Ashby listing | 1280 × 9090 | 7.812 s | Final benefits and both disclosure paragraphs visible |
+
+The corrected Gem [top](assets/jobwizard-gem-width-top.png) and [footer](assets/jobwizard-gem-width-footer.png) are retained as evidence. Readiness objects remain private under `j/6f985eb13c29463a98349d6fe0c149b1.png` and `j/ed0d4c386e634fb8977a2fc5b197759d.png`; the app identity has no deletion permission. This follow-up passed 225 backend tests with real disposable PostgreSQL (one Linux-only skip on macOS) and all nine root/provider tests. A regression test proves clipped and malformed dimensions never reach S3 or retry the provider.
+
+The width fix still needs review/deployment before production Gem capture can be accepted. No new iPhone build, migration, dependency, credential or AWS permission is needed. All remaining lifecycle, privacy, accessibility, Android gesture and security follow-ups stay open.

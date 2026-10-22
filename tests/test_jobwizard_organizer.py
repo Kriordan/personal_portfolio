@@ -281,7 +281,7 @@ class CaptureProviderTests(unittest.TestCase):
     def test_transport_failures_and_size_limits_never_retry(self):
         response = Mock(status_code=200, headers={"Content-Type": "application/json; charset=UTF-8"})
         response.__enter__ = Mock(return_value=response); response.__exit__ = Mock(return_value=False)
-        response.iter_content.return_value = [json.dumps({"type": "application/json", "data": {"image": base64.b64encode(self.image()).decode()}}).encode()]
+        response.iter_content.return_value = [json.dumps({"type": "application/json", "data": {"image": base64.b64encode(self.image()).decode(), "width": 20, "height": 50}}).encode()]
         with patch.object(capture_worker.requests, "Session") as factory, patch.dict(os.environ, {"BROWSERLESS_API_TOKEN": "fixture"}):
             session = factory.return_value.__enter__.return_value
             session.post.return_value = response
@@ -305,6 +305,28 @@ class CaptureProviderTests(unittest.TestCase):
             session.post.side_effect = capture_worker.requests.Timeout("token-secret")
             with self.assertRaises(CaptureError) as error: capture_worker.browserless_image("https://example.com", "ashby")
             self.assertEqual(error.exception.code, "capture_timeout")
+
+    def test_clipped_provider_image_is_rejected_before_storage(self):
+        response = Mock(status_code=200, headers={"Content-Type": "application/json"})
+        response.__enter__ = Mock(return_value=response); response.__exit__ = Mock(return_value=False)
+        storage = Mock()
+        storage.get_public_access_block.return_value = {"PublicAccessBlockConfiguration": dict.fromkeys(
+            ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"), True)}
+        # Valid image bytes do not prove full document coverage. Both shorter
+        # width and shorter height, plus malformed bounds, must fail closed.
+        with patch.object(capture_worker.requests, "Session") as factory, patch.dict(os.environ, {"BROWSERLESS_API_TOKEN": "fixture"}), patch.object(capture_worker, "validate_public_target"), patch.object(capture_worker, "s3_client", return_value=storage):
+            session = factory.return_value.__enter__.return_value
+            session.post.return_value = response
+            for width, height in ((32, 50), (20, 60), (None, 50), (True, 50), (20.0, 50), (-20, 50)):
+                with self.subTest(width=width, height=height):
+                    session.post.reset_mock()
+                    response.iter_content.return_value = [json.dumps({"type": "application/json", "data": {
+                        "image": base64.b64encode(self.image()).decode(), "width": width, "height": height,
+                    }}).encode()]
+                    with self.assertRaises(CaptureError):
+                        capture_worker.capture_artifact("https://jobs.gem.com/acme/am9icG9zdDoAAAAAAAAAAAAAAAAAAAAA", "j/" + "a" * 32 + ".png")
+                    storage.put_object.assert_not_called()
+                    self.assertEqual(session.post.call_count, 1)
 
     def test_capture_target_scope_rejects_private_and_unverified_routes(self):
         valid = {
@@ -368,10 +390,17 @@ class CaptureProviderTests(unittest.TestCase):
             parent.communicate(timeout=5)
             from pathlib import Path
             stat = Path(f"/proc/{child_pid}/stat")
+            def child_stopped():
+                try:
+                    return stat.read_text().split()[2] == "Z"
+                except (FileNotFoundError, ProcessLookupError):
+                    # The kernel can reap the child between opening /proc/stat
+                    # and reading it. Disappearance is the expected success.
+                    return True
             deadline = time.monotonic() + 3
-            while stat.exists() and stat.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+            while not child_stopped() and time.monotonic() < deadline:
                 time.sleep(.05)
-            self.assertTrue(not stat.exists() or stat.read_text().split()[2] == "Z")
+            self.assertTrue(child_stopped())
         finally:
             if parent.poll() is None:
                 parent.terminate()
