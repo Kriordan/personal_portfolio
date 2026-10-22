@@ -1,8 +1,10 @@
 """Disposable Jobwizard fixture at localhost:5058. Never uses real jobs/providers.
 
 Accounts: jobs1@example.test and jobs2@example.test / JobwizardPreview123!
-POST /fixture/state controls reads/writes/receipts/capture (success|failure),
+POST /fixture/state controls reads/writes/receipts/capture/images (success|failure),
 write mode lost drops the response after commit; delay controls write latency.
+GET /fixture/results includes provider/status/image counters. Optional artifact
+JSON entries may include image_path for a local PNG; no provider is called.
 """
 import io
 import json
@@ -38,12 +40,15 @@ def main():
             JWT_ACCESS_TOKEN_EXPIRES=timedelta(seconds=20), JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=1),
             WTF_CSRF_ENABLED=False, SESSION_COOKIE_SECURE=False, RATELIMIT_ENABLED=False))
         talisman.force_https = False
-        mode = dict(reads="success", writes="success", receipts="success", capture="success", delay=0)
+        mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0)
+        counters = dict(image_reads=0, capture_calls=0, status_reads=0)
         # Optional real readiness artifacts: signed URLs stay outside Git. This
         # fixture reads existing images; it never calls a paid capture provider.
         artifacts_path = os.getenv("JOBWIZARD_PREVIEW_CAPTURE_RESULTS")
         artifacts = json.loads(Path(artifacts_path).read_text()) if artifacts_path else []
         signed_images = {item["artifact"]["object_key"]: item["signed_url"] for item in artifacts}
+        local_images = {item["artifact"]["object_key"].split("/")[-1]: Path(item["image_path"])
+                        for item in artifacts if item.get("image_path")}
         image = Image.new("RGB", (320, 1600), "#edf2f5"); draw = ImageDraw.Draw(image)
         for y in range(40, 1550, 100): draw.text((25, y), f"Saved listing preview - section {y // 100 + 1}", fill="#163744")
         image_bytes = io.BytesIO(); image.save(image_bytes, "PNG")
@@ -73,7 +78,14 @@ def main():
             payload = request.get_json(); mode.update({key: payload[key] for key in mode if key in payload}); return jsonify(mode)
         @app.get("/fixture/results")
         def results():
-            return jsonify(jobs=Job.query.count(), receipts=JobMutationReceipt.query.count(), captures=JobCapture.query.count())
+            return jsonify(jobs=Job.query.count(), receipts=JobMutationReceipt.query.count(), captures=JobCapture.query.count(), **counters)
+        @app.get("/fixture/artifacts/<name>")
+        def local_image(name):
+            counters["image_reads"] += 1
+            if mode["images"] == "failure": return "Unavailable", 403
+            path = local_images.get(name)
+            if not path: return "Missing", 404
+            return send_file(path, mimetype="image/png", max_age=0)
         @app.get("/fixture/screenshot.png")
         def screenshot():
             return send_file(io.BytesIO(image_bytes.getvalue()), mimetype="image/png", max_age=0)
@@ -85,6 +97,7 @@ def main():
                 time.sleep(min(20, max(0, float(mode["delay"]))))
                 if mode["writes"] == "failure": return jsonify(error="Fixture save unavailable"), 503
             if request.method == "GET":
+                if request.path.endswith("/capture"): counters["status_reads"] += 1
                 if "/receipts/" in request.path:
                     if mode["receipts"] == "failure": return jsonify(error="Fixture receipt unavailable"), 503
                 elif mode["reads"] == "failure": return jsonify(error="Fixture read unavailable"), 503
@@ -94,12 +107,19 @@ def main():
                 return jsonify(error="Fixture response lost after commit"), 503
             return response
         def artifact(url, key):
+            counters["capture_calls"] += 1
             time.sleep(2)
             if mode["capture"] == "failure": raise RuntimeError("Fixture capture unavailable")
             if mode["capture"] not in {"success", "failure"}: raise CaptureError(mode["capture"])
             return dict(object_key=key, width=320, height=1600)
         storage = Mock()
-        storage.generate_presigned_url.side_effect = lambda *args, **kwargs: signed_images.get(kwargs["Params"]["Key"]) or f"http://127.0.0.1:5058/fixture/screenshot.png?version={uuid4()}"
+        def signed_image(*args, **kwargs):
+            key = kwargs["Params"]["Key"]
+            url = signed_images.get(key)
+            if key.split("/")[-1] in local_images:
+                return f"{url}?version={uuid4()}"
+            return url or f"http://127.0.0.1:5058/fixture/screenshot.png?version={uuid4()}"
+        storage.generate_presigned_url.side_effect = signed_image
         with patch.object(jobwizard_capture, "configured", return_value=True), patch.object(jobwizard_capture, "bucket", return_value="fixture-private"), patch.object(jobwizard_capture, "s3_client", return_value=storage), patch.object(jobwizard_capture, "_run_capture", side_effect=artifact):
             app.run(host="127.0.0.1", port=5058, use_reloader=False, threaded=True)
 

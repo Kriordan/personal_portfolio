@@ -1,6 +1,13 @@
 // Executed by Browserless /function, never in the user's browser. No cookies,
 // profiles, proxies, CAPTCHA solving, form submissions or automatic recapture.
 const profiles = {
+  gem: {
+    // Gem's generated numeric class suffix varies by employer/page. Scope the
+    // description to the listing body, excluding the application form.
+    description: '[class*="jobPostingContent-"] [class*="typography-"] > [class*="container-"]',
+    heading: '[class*="jobPostingContent-"] [class*="jobPostingHeader-"]',
+    hosts: ["static.gem.com", "usercontent.zscdn.net", "maxcdn.bootstrapcdn.com"],
+  },
   greenhouse: {
     description: ".job__description, #content",
     heading: "h1",

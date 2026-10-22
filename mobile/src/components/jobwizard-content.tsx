@@ -121,6 +121,7 @@ export function JobScreenshot({
   activity: ReturnType<typeof useJobActivity>;
 }) {
   const query = useJobCapture(job.id, true);
+  const router = useRouter();
   const status = query.data?.capture;
   const [failedUri, setFailedUri] = useState<string | null>(null),
     attemptedRenewal = useRef<string | null>(null),
@@ -204,7 +205,15 @@ export function JobScreenshot({
             Captured {new Date(image.captured_at).toLocaleString()}
             {image.outdated ? ' · From an older listing URL' : ''}
           </ThemedText>
-          <JobLink url={image.url} label="Open full screenshot" />
+          <NativeAction
+            label="Open full screenshot"
+            onPress={() =>
+              router.push({
+                pathname: '/jobwizard/[id]/screenshot',
+                params: { id: job.id },
+              })
+            }
+          />
         </>
       ) : status ? (
         <ThemedText themeColor="textSecondary">
@@ -233,8 +242,9 @@ export function JobScreenshot({
         />
       ) : status?.supported === false ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Capture supports public Greenhouse, Lever, Ashby and Workday listing
-          links. You can still save and open this link.
+          Capture supports public Gem, Greenhouse, Lever, Ashby and Workday
+          listing links. This link is not supported yet; you can still save and
+          open it.
         </ThemedText>
       ) : status ? (
         <ThemedText type="small" themeColor="textSecondary">
