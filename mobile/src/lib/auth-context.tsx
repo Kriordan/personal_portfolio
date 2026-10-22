@@ -16,6 +16,7 @@ import {
   type ApiUser,
 } from '@/lib/api-client';
 import { disconnectListSocket } from '@/lib/list-socket';
+import { clearJobSession } from '@/lib/jobwizard-runtime';
 import { clearLearningSession } from '@/lib/learning-runtime';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Registered before session restoration so a failed restore is caught too.
     setUnauthorizedListener(() => {
       void clearLearningSession().catch(() => {});
+      void clearJobSession().catch(() => {});
       disconnectListSocket();
       tokenStorage.clear();
       queryClient.clear();
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     async function clearMissingAccount() {
       await clearLearningSession().catch(() => {});
+      await clearJobSession().catch(() => {});
       disconnectListSocket();
       await tokenStorage.clear();
       if (cancelled) return;
@@ -102,11 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Unmount account screens before any asynchronous cleanup can rerender them.
     setIsAuthenticated(null);
     const learningCleanup = clearLearningSession().catch(() => {});
+    const jobCleanup = clearJobSession().catch(() => {});
     disconnectListSocket();
     queryClient.clear();
     await authApi.logout();
     await tokenStorage.clear();
     await learningCleanup;
+    await jobCleanup;
     setIsAuthenticated(false);
   }, []);
 
