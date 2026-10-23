@@ -90,8 +90,8 @@ def job_fields(payload, *, existing=None):
     return cleaned
 
 
-def serialize_job(job):
-    return {
+def serialize_job(job, *, detail=True):
+    result = {
         "id": job.id, "title": job.title, "company_name": job.company_name,
         "listing_url": job.listing_url, "listing_image": job.listing_image or "",
         "posted_date": iso(job.posted_date), "user_id": job.user_id,
@@ -99,6 +99,10 @@ def serialize_job(job):
         "archived_at": iso(job.archived_at), "revision": job.revision,
         "can_open_listing": safe_listing_url(job.listing_url),
     }
+    if detail:
+        result["accepted_details"] = ({**job.accepted_details,
+            "outdated": job.accepted_details["source_url"] != job.listing_url} if job.accepted_details else None)
+    return result
 
 
 def list_jobs_for_user(user_id):
@@ -129,7 +133,7 @@ def mutate_job(*, user_id, payload, job_id=None, posted_date=None):
     """Serialize an owner's writes; commit the result and receipt in one transaction."""
     if not isinstance(payload, dict):
         raise ValidationError()
-    allowed = {"request_id", "title", "company_name", "listing_url"}
+    allowed = {"request_id", "title", "company_name", "listing_url", "reviewed_details"}
     if job_id is not None:
         allowed |= {"expected_revision", "archived"}
     if set(payload) - allowed:
@@ -173,13 +177,17 @@ def mutate_job(*, user_id, payload, job_id=None, posted_date=None):
                 if type(payload["archived"]) is not bool:
                     raise ValidationError()
                 values["archived_at"] = (job.archived_at or now()) if payload["archived"] else None
-            if not values:
+            if not values and "reviewed_details" not in payload:
                 raise ValidationError()
             values.update(revision=expected + 1, updated_at=now())
             changed = db.session.execute(update(Job).where(Job.id == job.id, Job.user_id == user_id, Job.revision == expected).values(**values))
             if changed.rowcount != 1:
                 raise StaleJobError()
             db.session.refresh(job)
+        if "reviewed_details" in payload:
+            from project.services.jobwizard_extraction import accept
+            job.accepted_details = accept(user_id=user_id, job=job,
+                review=payload["reviewed_details"], original_job_id=job_id)
         result = {"job": serialize_job(job), "request_id": request_id}
         if request_id:
             db.session.add(JobMutationReceipt(user_id=user_id, request_id=request_id,

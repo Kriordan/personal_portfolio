@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl } from 'react-native';
+import { JobImportantDetails } from '@/components/job-important-details';
 import { JobForm } from '@/components/job-form';
 import {
   JobActivityStatus,
@@ -27,7 +28,9 @@ export default function JobDetailScreen() {
       <ScreenState
         loading={!auth.userError}
         title={
-          auth.userError ? 'Couldn’t load your account' : 'Loading your account'
+          auth.userError
+            ? 'Couldn’t load your account'
+            : 'Loading your account'
         }
         onRetry={auth.userError ? auth.retryUser : undefined}
       />
@@ -105,7 +108,9 @@ function JobDetail({ id }: { id: number }) {
         {job.saved_at || job.posted_date ? (
           <ThemedText type="small" themeColor="textSecondary">
             {job.saved_at ? 'Saved' : 'Date recorded'}{' '}
-            {new Date((job.saved_at ?? job.posted_date)!).toLocaleDateString()}
+            {new Date(
+              (job.saved_at ?? job.posted_date)!,
+            ).toLocaleDateString()}
           </ThemedText>
         ) : null}
         <NativeAction
@@ -141,6 +146,13 @@ function JobDetail({ id }: { id: number }) {
             onRetry={() => void query.refetch()}
           />
         ) : null}
+        <JobImportantDetails details={job.accepted_details} />
+        <NativeAction
+          label="Suggest details"
+          secondary
+          disabled={!!activity.attempt}
+          onPress={() => setEditing(job)}
+        />
         <JobScreenshot job={job} activity={activity} />
       </Screen>
       {editing ? (

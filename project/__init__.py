@@ -149,6 +149,8 @@ def register_commands(app):
     app.cli.add_command(sync_yt_subs)
     app.cli.add_command(eval_scheduler)
     app.cli.add_command(purge_attempts)
+    from project.services.jobwizard_extraction import prune_extractions
+    app.cli.add_command(prune_extractions)
 
 
 def register_jinja_env(app):

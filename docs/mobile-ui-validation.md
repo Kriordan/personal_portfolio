@@ -422,3 +422,7 @@ Implementation and current validation evidence are recorded in [the Jobwizard ch
 ### Jobwizard Browserless follow-up — October 22
 
 The approved provider replacement and readiness checks are documented in [the rollout](jobwizard-browserless-rollout.md) and [smoke checklist](jobwizard-smoke-test.md#browserless-implementation--october-22). Isolated Heroku captures of long Ashby/dynamic Workday pages succeeded through private S3 in 9.617/11.279 seconds; signed/unsigned checks passed. Both real images rendered in the iPhone 18 Pro/iOS 27 simulator fixture; full-image opening/return, provider disclosure and an expired-page failure with previous image preserved were exercised. This is not physical-device or production-route acceptance. Production remains v144 with capture disabled pending merge/deployment. Preserve all preceding feature, Android, accessibility, lifecycle, expiry and security review follow-ups.
+
+## October 22: Jobwizard reviewed listing details
+
+Backend persistence and mobile review/save are implemented; [the extraction validation record](jobwizard-extraction.md) contains scope, native evidence, the real-provider readiness check, configuration and rollout checklist. iPhone new-job review/edit/remove/save and Android existing-job replacement/save passed on native development clients against disposable fixtures. Cross-device revision conflict kept the iPhone draft. These checks do not close the earlier physical-device/accessibility/background matrix. No production deployment is included.

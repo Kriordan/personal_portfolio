@@ -28,7 +28,9 @@ from project import create_app
 from project.database import db
 from project.extensions import talisman
 from project.models import Gift, Job, JobCapture, JobMutationReceipt, Playlist, User
-from project.services import jobwizard_capture
+from project.services import jobwizard_capture, jobwizard_extraction
+from project.jobwizard.extraction import normalize_source, validate_summary
+from project.jobwizard.extraction_errors import SuggestionError
 from project.jobwizard.capture_policy import CaptureError
 
 
@@ -40,8 +42,8 @@ def main():
             JWT_ACCESS_TOKEN_EXPIRES=timedelta(seconds=20), JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=1),
             WTF_CSRF_ENABLED=False, SESSION_COOKIE_SECURE=False, RATELIMIT_ENABLED=False))
         talisman.force_https = False
-        mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0)
-        counters = dict(image_reads=0, capture_calls=0, status_reads=0)
+        mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0, extraction="success", summary="success", extraction_delay=2)
+        counters = dict(image_reads=0, capture_calls=0, status_reads=0, extraction_reads=0, extraction_summaries=0)
         # Optional real readiness artifacts: signed URLs stay outside Git. This
         # fixture reads existing images; it never calls a paid capture provider.
         artifacts_path = os.getenv("JOBWIZARD_PREVIEW_CAPTURE_RESULTS")
@@ -112,6 +114,23 @@ def main():
             if mode["capture"] == "failure": raise RuntimeError("Fixture capture unavailable")
             if mode["capture"] not in {"success", "failure"}: raise CaptureError(mode["capture"])
             return dict(object_key=key, width=320, height=1600)
+        def suggestions(stage, **payload):
+            counters['extraction_reads' if stage == 'read' else 'extraction_summaries'] += 1
+            time.sleep(min(20, max(0, float(mode['extraction_delay']))))
+            if mode['extraction' if stage == 'read' else 'summary'] != 'success':
+                raise SuggestionError('timeout')
+            if stage == 'read':
+                source = normalize_source(dict(final_url=payload['url'], heading='Senior Platform Engineer',
+                    page_title='Job Application for Senior Platform Engineer at Cedar Labs', header_text='Cedar Labs Senior Platform Engineer',
+                    jsonld=[], description='Build reliable Python services and PostgreSQL data pipelines for customers. Remote within the United States only. Visa sponsorship is not available. Base salary is $140,000–$180,000 USD per year. This is a full-time role. Three years of relevant engineering experience is required.'), payload['url'], 'greenhouse')
+                return dict(source=source, seconds=2)
+            source = payload['source']
+            ids = [block['id'] for block in source['blocks'] if block['kind'] == 'visible_description']
+            bullets = [dict(category='location', text='Remote within the United States only.', evidence=ids),
+                       dict(category='constraints', text='Visa sponsorship is not available.', evidence=ids),
+                       dict(category='compensation', text='Base salary: $140,000–$180,000 USD per year.', evidence=ids),
+                       dict(category='responsibilities', text='Build Python services and PostgreSQL data pipelines.', evidence=ids)]
+            return dict(result=validate_summary(dict(bullets=bullets, more_details=True, conflicts=[]), source), seconds=2, model='fixture')
         storage = Mock()
         def signed_image(*args, **kwargs):
             key = kwargs["Params"]["Key"]
@@ -120,7 +139,7 @@ def main():
                 return f"{url}?version={uuid4()}"
             return url or f"http://127.0.0.1:5058/fixture/screenshot.png?version={uuid4()}"
         storage.generate_presigned_url.side_effect = signed_image
-        with patch.object(jobwizard_capture, "configured", return_value=True), patch.object(jobwizard_capture, "bucket", return_value="fixture-private"), patch.object(jobwizard_capture, "s3_client", return_value=storage), patch.object(jobwizard_capture, "_run_capture", side_effect=artifact):
+        with patch.dict(os.environ, JOBWIZARD_EXTRACTION_ENABLED="1", BROWSERLESS_API_TOKEN="fixture", OPENAI_API_KEY="fixture"), patch.object(jobwizard_extraction, "_run", side_effect=suggestions), patch.object(jobwizard_capture, "configured", return_value=True), patch.object(jobwizard_capture, "bucket", return_value="fixture-private"), patch.object(jobwizard_capture, "s3_client", return_value=storage), patch.object(jobwizard_capture, "_run_capture", side_effect=artifact):
             app.run(host="127.0.0.1", port=5058, use_reloader=False, threaded=True)
 
 

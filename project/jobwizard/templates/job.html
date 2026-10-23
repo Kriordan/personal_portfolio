@@ -11,6 +11,13 @@
   {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_revision }}
   <button name="action" value="{{ 'restore' if job.archived_at else 'archive' }}">{{ 'Restore' if job.archived_at else 'Archive' }}</button>
 </form>
+{% if job.accepted_details %}
+<h2>Important details</h2>
+<p>From listing · {{ job.accepted_details.fetched_at }}{% if job.accepted_details.outdated %} · From an older listing URL{% endif %}</p>
+{% if job.accepted_details.partial %}<p>This summary may omit important details. Check the original listing.</p>{% endif %}
+<ul>{% for bullet in job.accepted_details.bullets %}<li>{{ bullet.text }}{% if bullet.edited %} (Edited by you){% endif %}
+<details><summary>View source</summary>{% for evidence in bullet.evidence %}<p>{{ evidence.quote }}</p>{% endfor %}</details></li>{% endfor %}</ul>
+{% endif %}
 <h2>Screenshot</h2>
 {% if capture.latest %}<p>Latest capture: {{ capture.latest.status }}{% if capture.latest.finished_at %} · {{ capture.latest.finished_at }}{% endif %}</p>{% endif %}
 {% if capture.latest and capture.latest.error_message %}<p>{{ capture.latest.error_message }} Your job is still saved.</p>{% endif %}

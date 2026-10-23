@@ -9,6 +9,12 @@ export function useNativeText(initialValue = '') {
     text,
     input: { value, onChangeText: setText },
     read: () => value.value,
+    set: (next: string) => {
+      // Native observable must update with the reviewed value as well as React.
+      // eslint-disable-next-line react-hooks/immutability
+      value.value = next;
+      setText(next);
+    },
     clear: () => {
       // Expo's observable is mutable native storage, not an immutable React state value.
       // eslint-disable-next-line react-hooks/immutability

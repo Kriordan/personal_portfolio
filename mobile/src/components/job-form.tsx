@@ -6,6 +6,13 @@ import { KeyboardAvoidingView, Modal, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeField } from './native-form';
 import { InlineError, PageHeading, ScreenState } from './screen';
+import { ExtractionReview } from './job-extraction-review';
+import { useJobExtraction } from '@/hooks/use-job-extraction';
+import {
+  extractionMatches,
+  reviewedDetailsError,
+  type ReviewedDetails,
+} from '@/lib/job-extraction-model';
 import { JobActivityStatus } from './jobwizard-content';
 import { useJobActivity } from '@/hooks/use-jobwizard';
 import { useNativeText } from '@/hooks/use-native-text';
@@ -15,6 +22,7 @@ import { confirmAction } from '@/lib/confirm-action';
 import {
   jobwizardApi,
   jobValidation,
+  safeJobUrl,
   type Job,
   type JobInput,
 } from '@/lib/jobwizard-api';
@@ -48,6 +56,7 @@ function ReadyJobForm({
 }: JobFormProps & {
   activity: ReturnType<typeof useJobActivity>;
 }) {
+  const extraction = useJobExtraction();
   const restoring =
     activity.attempt?.kind === 'save' &&
     activity.attempt.jobId === (job?.id ?? null) &&
@@ -62,13 +71,29 @@ function ReadyJobForm({
   const title = useNativeText(initial.title),
     company = useNativeText(initial.company_name),
     url = useNativeText(initial.listing_url);
+  const [review, setReview] = useState<{
+    details: ReviewedDetails;
+    url: string;
+    revision?: number;
+  } | null>(() =>
+    restoring?.input.reviewed_details
+      ? {
+          details: restoring.input.reviewed_details,
+          url: restoring.input.listing_url!,
+          revision: restoring.input.expected_revision,
+        }
+      : null,
+  );
+  const [usedId, setUsedId] = useState<string | null>(null);
   const [revision, setRevision] = useState(job?.revision),
     [latest, setLatest] = useState<Job | null>(null),
     [error, setError] = useState<string | null>(null);
   const [finished, setFinished] = useState<Job | 'close' | null>(null),
     [sheetVersion, setSheetVersion] = useState(0),
     [width, setWidth] = useState(320);
-  const ownRequest = useRef<string | null>(restoring?.input.request_id ?? null),
+  const ownRequest = useRef<string | null>(
+      restoring?.input.request_id ?? null,
+    ),
     submitting = useRef(false),
     notified = useRef(false),
     mounted = useRef(true);
@@ -81,14 +106,23 @@ function ReadyJobForm({
     company_name: company.read().trim(),
     listing_url: url.read().trim(),
   });
+  const reviewing =
+    !!extraction.result &&
+    extraction.result.status !== 'accepted' &&
+    usedId !== extraction.result.id &&
+    extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
   const dirty =
     title.text !== initial.title ||
     company.text !== initial.company_name ||
-    url.text !== initial.listing_url;
+    url.text !== initial.listing_url ||
+    !!review ||
+    reviewing;
   const changed = () =>
     title.read() !== initial.title ||
     company.read() !== initial.company_name ||
-    url.read() !== initial.listing_url;
+    url.read() !== initial.listing_url ||
+    !!review ||
+    reviewing;
   const close = (nativeDismissal = false) => {
     if (submitting.current || activity.phase === 'saving') return;
     if (changed())
@@ -155,10 +189,22 @@ function ReadyJobForm({
     }
     submitting.current = true;
     setError(null);
+    const reviewError = review
+      ? reviewedDetailsError(review, values.listing_url, revision)
+      : null;
+    if (reviewError) {
+      setError(reviewError);
+      submitting.current = false;
+      return;
+    }
     const pending = activity.session.begin({
       kind: 'save',
       jobId: job?.id ?? null,
-      input: { ...values, ...(job ? { expected_revision: revision } : {}) },
+      input: {
+        ...values,
+        ...(review ? { reviewed_details: review.details } : {}),
+        ...(job ? { expected_revision: revision } : {}),
+      },
     });
     ownRequest.current =
       activity.session.snapshot().attempt?.input.request_id ?? null;
@@ -194,10 +240,148 @@ function ReadyJobForm({
                 <View style={{ width: Math.max(1, width - 64) }}>
                   <PageHeading
                     title={job ? 'Edit job' : 'Add job'}
-                    subtitle="Save the details now. Capture a screenshot afterward if you want one."
+                    subtitle="Paste a listing link, review optional suggestions, then save. Screenshot capture is available afterward."
                   />
                 </View>
               </RNHostView>
+              <NativeField
+                label="Listing URL"
+                {...url.input}
+                editable={!busy}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="done"
+              />
+              <Text>
+                Optional: Browserless reads the public listing. OpenAI
+                summarizes its text. Your notes, profile and screenshots are
+                not sent.
+              </Text>
+              <Button
+                label={
+                  extraction.working
+                    ? extraction.stage === 'read'
+                      ? 'Reading listing…'
+                      : 'Preparing suggestions…'
+                    : 'Suggest details'
+                }
+                disabled={
+                  busy ||
+                  !extraction.ready ||
+                  extraction.working ||
+                  extraction.uncertain ||
+                  !safeJobUrl(url.text.trim())
+                }
+                onPress={() => {
+                  const sourceUrl = url.read().trim();
+                  setUsedId(null);
+                  void extraction.session.begin(
+                    {
+                      listing_url: sourceUrl,
+                      ...(job
+                        ? { job_id: job.id, expected_revision: revision }
+                        : {}),
+                    },
+                    () => mounted.current && url.read().trim() === sourceUrl,
+                  );
+                }}
+              />
+              {extraction.error ? <Text>{extraction.error}</Text> : null}
+              {extraction.request &&
+              !url.text.trim() &&
+              (extraction.request.job_id ?? null) === (job?.id ?? null) ? (
+                <Button
+                  label="Use previous listing URL"
+                  variant="text"
+                  disabled={busy}
+                  onPress={() => url.set(extraction.request!.listing_url)}
+                />
+              ) : null}
+              {!extraction.ready ? (
+                <Button
+                  label="Restore suggestion status"
+                  variant="text"
+                  onPress={() => void extraction.session.restore()}
+                />
+              ) : null}
+              {extraction.request ? (
+                <Button
+                  label="Check suggestion status"
+                  variant="text"
+                  disabled={extraction.working}
+                  onPress={() => void extraction.session.check()}
+                />
+              ) : null}
+              {extraction.request &&
+              !extraction.result &&
+              !extraction.working ? (
+                <Button
+                  label="Retry same request"
+                  variant="outlined"
+                  onPress={() => void extraction.session.retrySame()}
+                />
+              ) : null}
+              {extraction.result &&
+              extractionMatches(
+                extraction.result,
+                url.text,
+                job?.id ?? null,
+                revision,
+              ) &&
+              extraction.result.can_summarize ? (
+                <Button
+                  label="Continue preparing details"
+                  variant="outlined"
+                  disabled={extraction.working || busy}
+                  onPress={() => void extraction.session.continue()}
+                />
+              ) : null}
+              {extraction.result &&
+              extractionMatches(
+                extraction.result,
+                url.text,
+                job?.id ?? null,
+                revision,
+              ) &&
+              ['failed', 'interrupted'].includes(extraction.result.status) ? (
+                <Button
+                  label={
+                    extraction.result.stage === 'summary'
+                      ? 'Retry summary'
+                      : 'Read listing again'
+                  }
+                  variant="outlined"
+                  disabled={extraction.working || busy}
+                  onPress={() => {
+                    const sourceUrl = url.read().trim();
+                    setUsedId(null);
+                    void extraction.session.begin(
+                      {
+                        listing_url: sourceUrl,
+                        retry_of: extraction.result!.id,
+                        ...(job
+                          ? { job_id: job.id, expected_revision: revision }
+                          : {}),
+                      },
+                      () =>
+                        mounted.current && url.read().trim() === sourceUrl,
+                    );
+                  }}
+                />
+              ) : null}
+              {extraction.result &&
+              !extractionMatches(
+                extraction.result,
+                url.text,
+                job?.id ?? null,
+                revision,
+              ) ? (
+                <Text>
+                  Previous suggestions belong to a different URL or job
+                  version. Your draft is unchanged.
+                </Text>
+              ) : null}
               <NativeField
                 label="Job title"
                 {...title.input}
@@ -210,17 +394,86 @@ function ReadyJobForm({
                 editable={!busy}
                 returnKeyType="next"
               />
-              <NativeField
-                label="Listing URL"
-                {...url.input}
-                editable={!busy}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                returnKeyType="done"
-              />
               <Text>Title and company: up to 200 characters each.</Text>
             </FieldGroup.Section>
+            {extraction.result &&
+            extractionMatches(
+              extraction.result,
+              url.text,
+              job?.id ?? null,
+              revision,
+            ) &&
+            extraction.result.status !== 'running' &&
+            extraction.result.status !== 'accepted' &&
+            usedId !== extraction.result.id &&
+            Object.keys(extraction.result.fields).length ? (
+              <ExtractionReview
+                key={`${extraction.result.id}:${extraction.result.status}`}
+                extraction={extraction.result}
+                current={{
+                  title: title.text,
+                  company_name: company.text,
+                  listing_url: url.text,
+                }}
+                hasSummary={!!job?.accepted_details || !!review}
+                currentSummary={
+                  review?.details.bullets ??
+                  job?.accepted_details?.bullets ??
+                  []
+                }
+                disabled={busy || extraction.working}
+                onUse={(fields, details, compared) => {
+                  if (
+                    !extractionMatches(
+                      extraction.result!,
+                      url.read(),
+                      job?.id ?? null,
+                      revision,
+                    )
+                  ) {
+                    setError(
+                      'The URL or job version changed. Suggest details again.',
+                    );
+                    return;
+                  }
+                  if (
+                    (fields.title !== undefined &&
+                      title.read() !== compared.title) ||
+                    (fields.company_name !== undefined &&
+                      company.read() !== compared.company_name)
+                  ) {
+                    setError(
+                      'Your text changed while reviewing. Review the current values before replacing them.',
+                    );
+                    return;
+                  }
+                  if (fields.title !== undefined) title.set(fields.title);
+                  if (fields.company_name !== undefined)
+                    company.set(fields.company_name);
+                  if (details)
+                    setReview({ details, url: url.read().trim(), revision });
+                  setUsedId(extraction.result!.id);
+                  setError(null);
+                }}
+              />
+            ) : null}
+            {review ? (
+              <FieldGroup.Section>
+                <Text>{`${review.details.bullets.length} reviewed details will be saved.`}</Text>
+                {review.details.bullets.map((bullet) => (
+                  <Text key={bullet.index}>{`• ${bullet.text}`}</Text>
+                ))}
+                <Button
+                  label="Discard selected bullets"
+                  variant="text"
+                  disabled={busy}
+                  onPress={() => {
+                    setReview(null);
+                    setUsedId(null);
+                  }}
+                />
+              </FieldGroup.Section>
+            ) : null}
             <FieldGroup.Section>
               {error ||
               activity.error ||
@@ -260,7 +513,13 @@ function ReadyJobForm({
                         setRevision(latest.revision);
                         setLatest(null);
                         setError(
-                          'Your draft is preserved. Review it, then save to update the latest version.',
+                          (review &&
+                            reviewedDetailsError(
+                              review,
+                              url.read(),
+                              latest.revision,
+                            )) ||
+                            'Your draft is preserved. Review it, then save to update the latest version.',
                         );
                       })();
                     }}

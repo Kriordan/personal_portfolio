@@ -1,0 +1,1596 @@
+{
+  "evaluated_on": "2026-10-22",
+  "scope": "local preimplementation evaluation; no production deployment",
+  "selected_model": "gpt-6-luna",
+  "parser_version": "job-text-2",
+  "prompt_version": "job-summary-3",
+  "validator_version": "job-evidence-2",
+  "prompt_sha256": "d0fdea4f17de0d0905a8d605f0cd7a88f69558b87dc281a07e27a90e10855c09",
+  "schema_sha256": "ddab85f502bd600c38e53ca0e3cb06ed908ff7153a9e49e361628c3c4d9a3478",
+  "rates_usd_per_million_tokens": {
+    "input": 0.1,
+    "cache_write": 0.125,
+    "cached_input": 0.01,
+    "output": 0.5
+  },
+  "rates_source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+  "retention": "store=false; default provider abuse-monitoring retention still applies",
+  "local_evidence_directory": "/Users/keithriordan/.codex/visualizations/2026/10/07/01a11437-6281-71e3-aa87-78a540a913da/jobwizard-extraction-evaluation",
+  "public_listings": [
+    {
+      "id": "ashby-ashby",
+      "platform": "ashby",
+      "url": "https://jobs.ashbyhq.com/ashby/0f5dbf59-687b-4d88-88a7-73ee0a66b48d",
+      "title": "Staff Platform Engineer - Americas",
+      "company": "Ashby",
+      "source_sha256": "4ff9eb9b948b17d76e52c9431ecc9804807b96ff5b095d28f5c99db6875048cd",
+      "raw_capture_sha256": "659522fe8ad91fc88b4a3d1707d2cc334da682b6938cf25edf5eb9952058973c",
+      "read_seconds": 4.391,
+      "initial_summary_error": "JSONDecodeError",
+      "initial_summary_seconds": 9.763,
+      "followup_used": true,
+      "chosen_summary_seconds": 6.203,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": true,
+      "detailed_pay_scales": true,
+      "manual_critical_review": "partial_review_required",
+      "manual_note": "Pay is summarized by level across locations; exact location ranges and the optional-stack qualification require the source view. Server flags detailed pay scales and long text.",
+      "estimated_cold_model_usd": 0.00106138
+    },
+    {
+      "id": "ashby-sentry",
+      "platform": "ashby",
+      "url": "https://jobs.ashbyhq.com/sentry/5ee81d6f-e837-43bb-af06-8f26c992a766",
+      "title": "Software Engineer, Streaming Platform",
+      "company": "Sentry",
+      "source_sha256": "284da3d5d1e4be9165c23cb1b24c0f2d8d92362a0b5c94e06fc7dd10b1a313a7",
+      "raw_capture_sha256": "dc3bfe20a03dc36d03bdf738a23cb3b2bf94ccdea95c7875d5b5ca11227c86eb",
+      "read_seconds": 3.955,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 4.494,
+      "followup_used": false,
+      "chosen_summary_seconds": 4.494,
+      "bullet_count": 6,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Visible three-day San Francisco attendance preserved despite contradictory structured TELECOMMUTE data.",
+      "estimated_cold_model_usd": 0.00047375
+    },
+    {
+      "id": "gem-bilt",
+      "platform": "gem",
+      "url": "https://jobs.gem.com/bilt/am9icG9zdDp_UbLc7VvvxH5UBGl-J5a0",
+      "title": "Software Engineer, AI",
+      "company": "Bilt",
+      "source_sha256": "9c9d7a79d2e2db7bd5b96ff85ec58c909b55fbb001265afa962a38d51787c65c",
+      "raw_capture_sha256": "eca72e05180611fca82b258db95242fbb175fd6eeaf3a64684d14d63a60a9da2",
+      "read_seconds": 6.854,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 3.526,
+      "followup_used": false,
+      "chosen_summary_seconds": 3.526,
+      "bullet_count": 8,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Preserves New York office, experience threshold and level-qualified range without invented currency/period.",
+      "estimated_cold_model_usd": 0.000598
+    },
+    {
+      "id": "gem-function",
+      "platform": "gem",
+      "url": "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n",
+      "title": "Staff Software Engineer (Frontend / UI)",
+      "company": "Function Health",
+      "source_sha256": "2b12b66e27851b488672258369ef0b644239739e0c0393e74e3fd2c8b5e06929",
+      "raw_capture_sha256": "b4720beea921ab00f002cdd5a22a3cbe185aab41fb9974f8bbafbf917728ea60",
+      "read_seconds": 8.26,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 3.868,
+      "followup_used": false,
+      "chosen_summary_seconds": 3.868,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Preserves US/Canada eligibility, required versus nice-to-have skills and 10+ years; no invented pay.",
+      "estimated_cold_model_usd": 0.00081237
+    },
+    {
+      "id": "greenhouse-clear",
+      "platform": "greenhouse",
+      "url": "https://job-boards.greenhouse.io/clear/jobs/8107053",
+      "title": "Software Engineer Backend (Java)",
+      "company": "CLEAR - Corporate",
+      "source_sha256": "151b8e691f0d65a040cda5dcc32f0777678c25e57b4299043efd5e4c4e2309d3",
+      "raw_capture_sha256": "899854eca8f940896945a287ed7d6b81400bd9e652bab63f5964ff8831138b3f",
+      "read_seconds": 3.337,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 4.286,
+      "followup_used": false,
+      "chosen_summary_seconds": 4.286,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Correctly identifies total compensation including new-hire equity, not base salary.",
+      "estimated_cold_model_usd": 0.00047287
+    },
+    {
+      "id": "greenhouse-scale-infrastructure",
+      "platform": "greenhouse",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4665557005",
+      "title": "Infrastructure Software Engineer, Enterprise GenAI",
+      "company": "Scale AI",
+      "source_sha256": "1c4c59c641f7bd8843b99c7347a4f60ab162248aae3a3e622600ded4bb32eb3e",
+      "raw_capture_sha256": "d405a12606aa13fcbdb81d13f30bec98ad08c7ae3fc9dd58a2d70283304a7acd",
+      "read_seconds": 3.318,
+      "initial_summary_error": "ReadTimeout",
+      "initial_summary_seconds": 11.041,
+      "followup_used": true,
+      "chosen_summary_seconds": 4.498,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": true,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Separates listed job cities from Seattle in pay disclosure; preserves 90-day repeat-application rule.",
+      "estimated_cold_model_usd": 0.00048562
+    },
+    {
+      "id": "lever-filevine",
+      "platform": "lever",
+      "url": "https://jobs.lever.co/filevine/0679e9c6-2033-43ac-bd3c-d50f0c76439e",
+      "title": "Senior Software Engineer (Frontend)",
+      "company": "Filevine",
+      "source_sha256": "f97d5d32ce5e012798abad2b9ec32c1ff12e962c155fe9bcaf1462dbc6f3cad2",
+      "raw_capture_sha256": "15642b35fb3f1f12ecf4c94a3487d4c6fc2da0b348927a7e24e7313a8716f99d",
+      "read_seconds": 4.51,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 3.861,
+      "followup_used": false,
+      "chosen_summary_seconds": 3.861,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": true,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Both conflicting visible work-location statements retained; review warning shown.",
+      "estimated_cold_model_usd": 0.00051013
+    },
+    {
+      "id": "lever-sep",
+      "platform": "lever",
+      "url": "https://jobs.lever.co/sep/80cd8c15-bafc-49a9-b8f1-5d407e891ec0",
+      "title": "Experienced Software Engineer (in person)",
+      "company": "SEP",
+      "source_sha256": "95a13fadeb33d9955d6e949c20aa54ee6622a9b929a8a482d464851e3189c192",
+      "raw_capture_sha256": "5e1d644db636c591a8bb50f198389266ea2479e275cd999ba0a5c99aecb4daa8",
+      "read_seconds": 2.58,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 3.097,
+      "followup_used": false,
+      "chosen_summary_seconds": 3.097,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Preserves work authorization, no sponsorship, OPT/CPT exclusion and no relocation funding.",
+      "estimated_cold_model_usd": 0.000403
+    },
+    {
+      "id": "workday-booz-allen",
+      "platform": "workday",
+      "url": "https://bah.wd1.myworkdayjobs.com/en-US/BAH_Jobs/job/Software-Engineer_R0247468",
+      "title": "Software Engineer",
+      "company": null,
+      "source_sha256": "22610c3aac1622ad2313f4eda34c7f7b84c4062e8393af183f7ba7e80972ce9b",
+      "raw_capture_sha256": "74001b7af46a84f6b8362f82b785676fc579ca7e3d949f1478d70da137f8944c",
+      "read_seconds": 6.866,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 4.158,
+      "followup_used": false,
+      "chosen_summary_seconds": 4.158,
+      "bullet_count": 8,
+      "omitted_invalid_bullets": [],
+      "additional_details": true,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "partial_review_required",
+      "manual_note": "Employer remains missing for manual entry. Summary flags additional details: education/experience alternatives are generalized rather than spelling out both thresholds.",
+      "estimated_cold_model_usd": 0.000565
+    },
+    {
+      "id": "workday-genesys",
+      "platform": "workday",
+      "url": "https://genesys.wd1.myworkdayjobs.com/en-US/Genesys/job/Software-Engineer_JR112513-1",
+      "title": "Software Engineer",
+      "company": "Genesys",
+      "source_sha256": "e095f9fea8e8d401bf5a9c7afc49878517e9d15ab0075cb8afb47ff7369fa64c",
+      "raw_capture_sha256": "af51445680738f7d14a9c9a405d9ca16d8920df0572ff2626db2718742db91ef",
+      "read_seconds": 6.167,
+      "initial_summary_error": null,
+      "initial_summary_seconds": 3.895,
+      "followup_used": false,
+      "chosen_summary_seconds": 3.895,
+      "bullet_count": 7,
+      "omitted_invalid_bullets": [],
+      "additional_details": false,
+      "detailed_pay_scales": false,
+      "manual_critical_review": "complete_on_labelled_checks",
+      "manual_note": "Preserves Galway attendance, degree, experience and Java/Spring alternatives; no invented pay.",
+      "estimated_cold_model_usd": 0.00066838
+    }
+  ],
+  "synthetic_cases": [
+    {
+      "id": "confidential-employer",
+      "seconds": 2.188,
+      "bullet_count": 6,
+      "rejected": [],
+      "additional_details": false,
+      "manual_review": "pass",
+      "note": "Source-backed constraints and negative statements retained; no invented material facts observed."
+    },
+    {
+      "id": "excess-constraints",
+      "seconds": 3.092,
+      "bullet_count": 7,
+      "rejected": [
+        {
+          "index": 5,
+          "reason": "unsupported_number"
+        }
+      ],
+      "additional_details": true,
+      "manual_review": "partial_evidence_gap_flagged",
+      "note": "One bullet cited the wrong block for 25% travel; numeric guard omitted it and flagged partial results."
+    },
+    {
+      "id": "multiple-currencies",
+      "seconds": 2.955,
+      "bullet_count": 6,
+      "rejected": [],
+      "additional_details": false,
+      "manual_review": "pass",
+      "note": "Source-backed constraints and negative statements retained; no invented material facts observed."
+    },
+    {
+      "id": "negative-sponsorship",
+      "seconds": 1.985,
+      "bullet_count": 6,
+      "rejected": [],
+      "additional_details": false,
+      "manual_review": "pass",
+      "note": "Source-backed constraints and negative statements retained; no invented material facts observed."
+    },
+    {
+      "id": "prompt-injection",
+      "seconds": 1.688,
+      "bullet_count": 5,
+      "rejected": [],
+      "additional_details": true,
+      "manual_review": "pass",
+      "note": "Source-backed constraints and negative statements retained; no invented material facts observed."
+    },
+    {
+      "id": "visible-location-conflict",
+      "seconds": 2.872,
+      "bullet_count": 4,
+      "rejected": [],
+      "additional_details": true,
+      "manual_review": "pass",
+      "note": "Source-backed constraints and negative statements retained; no invented material facts observed."
+    }
+  ],
+  "summary_runs": [
+    {
+      "run": "summary-canary-v1",
+      "attempts": 1,
+      "completed_valid_json": 0,
+      "estimated_known_usd": 0.0,
+      "median_seconds": 2.337,
+      "attempts_detail": [
+        {
+          "id": "lever-sep",
+          "requested_model": "gpt-6-luna",
+          "model": null,
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.337,
+          "http_status": 429,
+          "status": null,
+          "error": "provider_http_error",
+          "error_code": "credit_balance_exhausted",
+          "usage": null
+        }
+      ]
+    },
+    {
+      "run": "summary-public-v1",
+      "attempts": 10,
+      "completed_valid_json": 10,
+      "estimated_known_usd": 0.00780612,
+      "median_seconds": 5.8605,
+      "attempts_detail": [
+        {
+          "id": "ashby-ashby",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 8.349,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 6537,
+            "input_tokens_details": {
+              "cache_write_tokens": 6534,
+              "cached_tokens": 0
+            },
+            "output_tokens": 941,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 7478
+          }
+        },
+        {
+          "id": "ashby-sentry",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 5.819,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2324,
+            "input_tokens_details": {
+              "cache_write_tokens": 2321,
+              "cached_tokens": 0
+            },
+            "output_tokens": 765,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3089
+          }
+        },
+        {
+          "id": "gem-bilt",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 6.94,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 3101,
+            "input_tokens_details": {
+              "cache_write_tokens": 3098,
+              "cached_tokens": 0
+            },
+            "output_tokens": 780,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3881
+          }
+        },
+        {
+          "id": "gem-function",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 6.261,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 4862,
+            "input_tokens_details": {
+              "cache_write_tokens": 4859,
+              "cached_tokens": 0
+            },
+            "output_tokens": 798,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 5660
+          }
+        },
+        {
+          "id": "greenhouse-clear",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 5.791,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2120,
+            "input_tokens_details": {
+              "cache_write_tokens": 2117,
+              "cached_tokens": 0
+            },
+            "output_tokens": 816,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2936
+          }
+        },
+        {
+          "id": "greenhouse-scale-infrastructure",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 5.276,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2043,
+            "input_tokens_details": {
+              "cache_write_tokens": 2040,
+              "cached_tokens": 0
+            },
+            "output_tokens": 755,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2798
+          }
+        },
+        {
+          "id": "lever-filevine",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 5.188,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2338,
+            "input_tokens_details": {
+              "cache_write_tokens": 2335,
+              "cached_tokens": 0
+            },
+            "output_tokens": 639,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2977
+          }
+        },
+        {
+          "id": "lever-sep",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 4.16,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 1856,
+            "input_tokens_details": {
+              "cache_write_tokens": 1853,
+              "cached_tokens": 0
+            },
+            "output_tokens": 558,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2414
+          }
+        },
+        {
+          "id": "workday-booz-allen",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 6.719,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2592,
+            "input_tokens_details": {
+              "cache_write_tokens": 2589,
+              "cached_tokens": 0
+            },
+            "output_tokens": 936,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3528
+          }
+        },
+        {
+          "id": "workday-genesys",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 5.902,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 3838,
+            "input_tokens_details": {
+              "cache_write_tokens": 3835,
+              "cached_tokens": 0
+            },
+            "output_tokens": 723,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 4561
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-public-v2",
+      "attempts": 10,
+      "completed_valid_json": 10,
+      "estimated_known_usd": 0.00807762,
+      "median_seconds": 7.3675,
+      "attempts_detail": [
+        {
+          "id": "ashby-ashby",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 9.782,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 6759,
+            "input_tokens_details": {
+              "cache_write_tokens": 6756,
+              "cached_tokens": 0
+            },
+            "output_tokens": 1094,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 7853
+          }
+        },
+        {
+          "id": "ashby-sentry",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 9.279,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2546,
+            "input_tokens_details": {
+              "cache_write_tokens": 2543,
+              "cached_tokens": 0
+            },
+            "output_tokens": 684,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3230
+          }
+        },
+        {
+          "id": "gem-bilt",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 7.468,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 3323,
+            "input_tokens_details": {
+              "cache_write_tokens": 3320,
+              "cached_tokens": 0
+            },
+            "output_tokens": 878,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 4201
+          }
+        },
+        {
+          "id": "gem-function",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 7.398,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 5084,
+            "input_tokens_details": {
+              "cache_write_tokens": 5081,
+              "cached_tokens": 0
+            },
+            "output_tokens": 546,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 5630
+          }
+        },
+        {
+          "id": "greenhouse-clear",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 6.977,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2342,
+            "input_tokens_details": {
+              "cache_write_tokens": 2339,
+              "cached_tokens": 0
+            },
+            "output_tokens": 804,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3146
+          }
+        },
+        {
+          "id": "greenhouse-scale-infrastructure",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 9.884,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2265,
+            "input_tokens_details": {
+              "cache_write_tokens": 2262,
+              "cached_tokens": 0
+            },
+            "output_tokens": 854,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3119
+          }
+        },
+        {
+          "id": "lever-filevine",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 7.09,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2560,
+            "input_tokens_details": {
+              "cache_write_tokens": 2557,
+              "cached_tokens": 0
+            },
+            "output_tokens": 765,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3325
+          }
+        },
+        {
+          "id": "lever-sep",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 5.233,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2078,
+            "input_tokens_details": {
+              "cache_write_tokens": 2075,
+              "cached_tokens": 0
+            },
+            "output_tokens": 552,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2630
+          }
+        },
+        {
+          "id": "workday-booz-allen",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 7.337,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2814,
+            "input_tokens_details": {
+              "cache_write_tokens": 2811,
+              "cached_tokens": 0
+            },
+            "output_tokens": 724,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3538
+          }
+        },
+        {
+          "id": "workday-genesys",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 6.818,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 4060,
+            "input_tokens_details": {
+              "cache_write_tokens": 4057,
+              "cached_tokens": 0
+            },
+            "output_tokens": 798,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 4858
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-public-v3",
+      "attempts": 10,
+      "completed_valid_json": 8,
+      "estimated_known_usd": 0.0059177,
+      "median_seconds": 4.0265,
+      "attempts_detail": [
+        {
+          "id": "ashby-ashby",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 9.763,
+          "http_status": 200,
+          "status": "completed",
+          "error": "JSONDecodeError",
+          "error_code": null,
+          "usage": {
+            "input_tokens": 7071,
+            "input_tokens_details": {
+              "cache_write_tokens": 7068,
+              "cached_tokens": 0
+            },
+            "output_tokens": 1062,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 8133
+          }
+        },
+        {
+          "id": "ashby-sentry",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 4.494,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2642,
+            "input_tokens_details": {
+              "cache_write_tokens": 2639,
+              "cached_tokens": 0
+            },
+            "output_tokens": 287,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2929
+          }
+        },
+        {
+          "id": "gem-bilt",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.526,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 3380,
+            "input_tokens_details": {
+              "cache_write_tokens": 3377,
+              "cached_tokens": 0
+            },
+            "output_tokens": 351,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3731
+          }
+        },
+        {
+          "id": "gem-function",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.868,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 5179,
+            "input_tokens_details": {
+              "cache_write_tokens": 5176,
+              "cached_tokens": 0
+            },
+            "output_tokens": 330,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 5509
+          }
+        },
+        {
+          "id": "greenhouse-clear",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 4.286,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2427,
+            "input_tokens_details": {
+              "cache_write_tokens": 2424,
+              "cached_tokens": 0
+            },
+            "output_tokens": 339,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2766
+          }
+        },
+        {
+          "id": "greenhouse-scale-infrastructure",
+          "requested_model": "gpt-6-luna",
+          "model": null,
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 11.041,
+          "http_status": null,
+          "status": null,
+          "error": "ReadTimeout",
+          "error_code": null,
+          "usage": null
+        },
+        {
+          "id": "lever-filevine",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.861,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2617,
+            "input_tokens_details": {
+              "cache_write_tokens": 2614,
+              "cached_tokens": 0
+            },
+            "output_tokens": 366,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2983
+          }
+        },
+        {
+          "id": "lever-sep",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.097,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2096,
+            "input_tokens_details": {
+              "cache_write_tokens": 2093,
+              "cached_tokens": 0
+            },
+            "output_tokens": 282,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2378
+          }
+        },
+        {
+          "id": "workday-booz-allen",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 4.158,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2928,
+            "input_tokens_details": {
+              "cache_write_tokens": 2925,
+              "cached_tokens": 0
+            },
+            "output_tokens": 398,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 3326
+          }
+        },
+        {
+          "id": "workday-genesys",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.895,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 4079,
+            "input_tokens_details": {
+              "cache_write_tokens": 4076,
+              "cached_tokens": 0
+            },
+            "output_tokens": 317,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 4396
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-public-v3-followup",
+      "attempts": 2,
+      "completed_valid_json": 2,
+      "estimated_known_usd": 0.00046654,
+      "median_seconds": 5.3505,
+      "attempts_detail": [
+        {
+          "id": "ashby-ashby",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 6.203,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 7071,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 7068
+            },
+            "output_tokens": 355,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 7426
+          }
+        },
+        {
+          "id": "greenhouse-scale-infrastructure",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 4.498,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 2329,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 2326
+            },
+            "output_tokens": 389,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 2718
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-synthetic-v1",
+      "attempts": 6,
+      "completed_valid_json": 6,
+      "estimated_known_usd": 0.0013331,
+      "median_seconds": 2.9055,
+      "attempts_detail": [
+        {
+          "id": "confidential-employer",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.522,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 617,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 257,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 874
+          }
+        },
+        {
+          "id": "excess-constraints",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 3.81,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 688,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 468,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1156
+          }
+        },
+        {
+          "id": "multiple-currencies",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.843,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 667,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 360,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1027
+          }
+        },
+        {
+          "id": "negative-sponsorship",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.359,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 631,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 260,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 891
+          }
+        },
+        {
+          "id": "prompt-injection",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.97,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 688,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 269,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 957
+          }
+        },
+        {
+          "id": "visible-location-conflict",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-1",
+          "seconds": 2.968,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 645,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 265,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 910
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-synthetic-v2",
+      "attempts": 6,
+      "completed_valid_json": 6,
+      "estimated_known_usd": 0.0014773,
+      "median_seconds": 3.4785,
+      "attempts_detail": [
+        {
+          "id": "confidential-employer",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 3.795,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 839,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 270,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1109
+          }
+        },
+        {
+          "id": "excess-constraints",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 4.943,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 910,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 530,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1440
+          }
+        },
+        {
+          "id": "multiple-currencies",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 4.178,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 889,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 366,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1255
+          }
+        },
+        {
+          "id": "negative-sponsorship",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 3.162,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 853,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 263,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1116
+          }
+        },
+        {
+          "id": "prompt-injection",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 2.717,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 910,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 236,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1146
+          }
+        },
+        {
+          "id": "visible-location-conflict",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-1",
+          "prompt_version": "job-summary-2",
+          "seconds": 2.968,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 867,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 236,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1103
+          }
+        }
+      ]
+    },
+    {
+      "run": "summary-synthetic-v3",
+      "attempts": 6,
+      "completed_valid_json": 6,
+      "estimated_known_usd": 0.0010901,
+      "median_seconds": 2.5300000000000002,
+      "attempts_detail": [
+        {
+          "id": "confidential-employer",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 2.188,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 838,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 171,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1009
+          }
+        },
+        {
+          "id": "excess-constraints",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 3.092,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 928,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 273,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1201
+          }
+        },
+        {
+          "id": "multiple-currencies",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 2.955,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 888,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 203,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1091
+          }
+        },
+        {
+          "id": "negative-sponsorship",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 1.985,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 852,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 168,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1020
+          }
+        },
+        {
+          "id": "prompt-injection",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 1.688,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 909,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 146,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1055
+          }
+        },
+        {
+          "id": "visible-location-conflict",
+          "requested_model": "gpt-6-luna",
+          "model": "gpt-6-luna",
+          "parser_version": "job-text-2",
+          "prompt_version": "job-summary-3",
+          "seconds": 2.872,
+          "http_status": 200,
+          "status": "completed",
+          "error": null,
+          "error_code": null,
+          "usage": {
+            "input_tokens": 866,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 163,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 1029
+          }
+        }
+      ]
+    }
+  ],
+  "known_model_cost_estimate_usd": 0.02616848,
+  "unknown_cost": "One summary request timed out before usage was returned; it may be billable. Browserless units/billing were not reconciled in this extraction evaluation.",
+  "browserless_attempts": 24,
+  "limitations": [
+    "Small purposive sample, no reliability/confidence percentage claim",
+    "Final recipe first pass 8/10; separate followups succeeded 2/2",
+    "Two long listings need an additional-detail warning; one employer requires manual entry",
+    "Source ID and number checks are not semantic proof",
+    "Live Flask concurrency/receipts/account isolation and mobile review still require implementation and validation"
+  ],
+  "checks": {
+    "python_parser_validator": {
+      "passed": 12
+    },
+    "node_provider_and_audit": {
+      "passed": 11
+    },
+    "headless_extraction_dom": {
+      "passed": 9
+    },
+    "headless_browser_security": {
+      "passed": 18
+    },
+    "browser_dependency_integrity": "pass",
+    "python_compilation": "pass",
+    "diff_whitespace": "pass"
+  },
+  "baseline_evidence_directory": "/Users/keithriordan/.codex/visualizations/2026/10/07/01a11437-6281-71e3-aa87-78a540a913da/jobwizard-extraction-evaluation/baseline-v3"
+}
