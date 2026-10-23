@@ -5,6 +5,19 @@ import { Platform } from 'react-native';
 import { apiRequest } from './api-client';
 import { ExtractionSession } from './job-extraction-session';
 import type { Extraction, ExtractionRequest } from './job-extraction-model';
+import { reportOperationFailure } from './monitoring';
+import type { FailurePhase } from './monitoring-policy';
+
+async function observedRequest<T>(phase: FailurePhase, requestId: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    const failure = error as { status?: number; body?: { code?: unknown } };
+    if (failure && typeof failure.status === 'number')
+      reportOperationFailure({ phase, requestId, status: failure.status, code: failure.body?.code });
+    throw error;
+  }
+}
 const key = 'jobwizard.extraction.v1';
 let tail: Promise<unknown> = Promise.resolve();
 function serial<T>(fn: () => Promise<T>) {
@@ -43,21 +56,25 @@ export function extractionSession(userId: number) {
         foreground: () => focusManager.isFocused(),
         api: {
           start: (request: ExtractionRequest) =>
-            apiRequest<{ extraction: Extraction }>('/jobwizard/extractions', {
-              method: 'POST',
-              body: request,
-              timeoutMs: 23_000,
-            }),
+            observedRequest('read', request.request_id, () =>
+              apiRequest<{ extraction: Extraction }>('/jobwizard/extractions', {
+                method: 'POST',
+                body: request,
+                timeoutMs: 23_000,
+                requestId: request.request_id,
+              })),
           summarize: (id: string) =>
-            apiRequest<{ extraction: Extraction }>(
-              `/jobwizard/extractions/${encodeURIComponent(id)}/summary`,
-              { method: 'POST', body: {}, timeoutMs: 15_000 },
-            ),
+            observedRequest('summary', id, () =>
+              apiRequest<{ extraction: Extraction }>(
+                `/jobwizard/extractions/${encodeURIComponent(id)}/summary`,
+                { method: 'POST', body: {}, timeoutMs: 15_000, requestId: id },
+              )),
           get: (id: string) =>
-            apiRequest<{ extraction: Extraction }>(
-              `/jobwizard/extractions/${encodeURIComponent(id)}`,
-              { timeoutMs: 12_000 },
-            ),
+            observedRequest('status', id, () =>
+              apiRequest<{ extraction: Extraction }>(
+                `/jobwizard/extractions/${encodeURIComponent(id)}`,
+                { timeoutMs: 12_000, requestId: id },
+              )),
         },
       }),
     };
