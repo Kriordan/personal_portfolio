@@ -41,7 +41,8 @@ Mobile configuration is compiled into the build. To stop reporting from an insta
 - [x] Full local backend suite: 256 tests, 19 PostgreSQL-dependent checks skipped locally. CI supplies PostgreSQL for those checks.
 - [x] 98 mobile tests, TypeScript, ESLint, Expo 57 dependency compatibility and iOS/Android/web exports. The npm security gate has only the three existing documented exceptions.
 - [x] Final iOS Release simulator build with the Expo-compatible Sentry SDK, reporting disabled.
-- [ ] Android native build and launch validation.
+- [x] Android arm64 Release build with the Expo-compatible Sentry SDK, reporting disabled.
+- [ ] Launch and smoke-test the final native monitoring builds. Device UI automation is currently blocked by the locked Mac.
 - [ ] Sentry account/projects, server-side privacy settings and free-plan limits verified.
 - [ ] Build-only upload token and DSNs configured without exposing secrets in source, logs or bundles.
 - [ ] Controlled Flask error and JavaScript error visible in the correct environment; stack frames resolve to source and releases identify the tested commits/builds.
