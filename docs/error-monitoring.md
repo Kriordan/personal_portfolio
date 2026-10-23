@@ -39,7 +39,7 @@ Mobile configuration is compiled into the build. To stop reporting from an insta
 - [x] Mobile privacy/filter tests and build-token exclusion/configuration tests.
 - [x] Flask in-memory transport verifies real automatic exception capture, scrubbed payloads, request correlation, disabled default and resilience to reporting failures.
 - [x] Full local backend suite: 256 tests, 19 PostgreSQL-dependent checks skipped locally. CI supplies PostgreSQL for those checks.
-- [x] 98 mobile tests, TypeScript, ESLint, Expo 57 dependency compatibility and iOS/Android/web exports. The npm security gate has only the three existing documented exceptions.
+- [x] 98 mobile tests, TypeScript, ESLint, Expo 57 dependency compatibility and iOS/Android/web exports. After the October 23 `braces` advisory withdrawal, the npm security gate has no root exceptions and only the two existing mobile exceptions.
 - [x] Final iOS Release simulator build with the Expo-compatible Sentry SDK, reporting disabled.
 - [x] Android arm64 Release build with the Expo-compatible Sentry SDK, reporting disabled.
 - [ ] Launch and smoke-test the final native monitoring builds. Device UI automation is currently blocked by the locked Mac.
