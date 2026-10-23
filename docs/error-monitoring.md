@@ -16,6 +16,8 @@ Sentry is opt-in and errors-only for the Expo iOS/Android app and Flask. Web and
 
 Use the existing Sentry account's free plan, with separate `personal-portfolio-mobile` (React Native) and `personal-portfolio-flask` projects. Check the account's actual quota; leave paid overages and optional products off. Do not enable integrations that upload user content. Configure issue notifications for new/regressed errors after verifying the sample events.
 
+On October 23, both projects were created in the `keith-riordan` organization. Its Developer plan includes 5,000 errors per usage month, with no payment method or billing details on file. Organization settings now require server-side/default data scrubbing and prevent IP storage; enhanced privacy is on, public issue sharing and automatic JavaScript source fetching are off, and minidump attachments remain disabled. Additional sensitive-field scrubbing covers credentials, notes, listing text, screenshots, summaries and job URLs. No optional paid product or repository integration was enabled. The `org:ci` upload token is prepared but awaits explicit credential-creation approval; DSNs have been saved privately, not committed or activated in production.
+
 For Heroku, configure `SENTRY_DSN`, `SENTRY_ENVIRONMENT=production`, and `SENTRY_RELEASE` to the deployed Git SHA. Prefer an explicit release value; `HEROKU_SLUG_COMMIT` is a fallback when runtime metadata is available. Set `SENTRY_ENABLED=1` only after the privacy smoke test. The SDK is inactive without both the flag and DSN. `SENTRY_ENABLED=0` disables subsequent reporting after the app restarts.
 
 For each EAS preview/production environment, configure:
@@ -42,10 +44,12 @@ Mobile configuration is compiled into the build. To stop reporting from an insta
 - [x] 98 mobile tests, TypeScript, ESLint, Expo 57 dependency compatibility and iOS/Android/web exports. After the October 23 `braces` advisory withdrawal, the npm security gate has no root exceptions and only the two existing mobile exceptions.
 - [x] Final iOS Release simulator build with the Expo-compatible Sentry SDK, reporting disabled.
 - [x] Android arm64 Release build with the Expo-compatible Sentry SDK, reporting disabled.
-- [ ] Launch and smoke-test the final native monitoring builds. Device UI automation is currently blocked by the locked Mac.
-- [ ] Sentry account/projects, server-side privacy settings and free-plan limits verified.
+- [x] iPhone 17 Pro / iOS 26.5 Release simulator build reaches the sign-in screen with reporting disabled. Use local ad hoc simulator signing: the unsigned build stalled during secure-storage restoration. This does not use the Apple distribution certificate.
+- [ ] Android Release launch and full authenticated native regression checks. The build passes; the integrated emulator is running, but the remaining UI checks are not yet complete.
+- [x] Sentry account/projects, server-side privacy settings and free-plan limits verified.
 - [ ] Build-only upload token and DSNs configured without exposing secrets in source, logs or bundles.
-- [ ] Controlled Flask error and JavaScript error visible in the correct environment; stack frames resolve to source and releases identify the tested commits/builds.
+- [x] Controlled Flask exception received in `preview-validation`, release `e8439604acdba8d6255166f8a5066a5a181c0d87`. Event `4bcafb7c7b204b9785f598c98661c3ba` retains five stack locations and the response's opaque request ID. The stored JSON contains no injected synthetic private content, request, breadcrumbs or extra data; its IP is removed. The synthetic issue was resolved after inspection. This used an isolated local Flask test client, with no public endpoint or production deployment.
+- [ ] Controlled JavaScript error visible in the correct environment; uploaded source maps resolve frames to source and releases identify the tested commits/builds.
 - [ ] Follow-up before enabling native crash handling: native payload privacy filtering/memory-content configuration, synthetic crash inspection on iOS and Android, symbolication and crash-on-next-launch delivery. Use a disposable test build; never add a public crash endpoint or a production user-facing crash button.
 - [ ] Correlate one synthetic failed Jobwizard operation across mobile and Flask using the same UUID. Verify expected 401/404/409/410/429, offline, unsupported listing and uncertain timeout flows remain quiet and do not retry provider calls.
 - [ ] Verify normal sign-in, Library sync, Learning review, Wishlist and Jobwizard save/capture still work; monitoring transport failure must not block them.
