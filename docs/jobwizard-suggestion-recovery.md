@@ -22,6 +22,6 @@ A direct production read of the supplied Justworks listing (`https://job-boards.
 - [x] Apply selected suggestions, save and reopen in the disposable iPhone simulator fixture; reviewed title/company and all four bullets persisted.
 - [ ] Confirm manual saving remains available after a rejected extraction on the physical iPhone.
 
-The free EAS cloud iOS build quota is exhausted until November 1. A local signed preview is pending completion of signing setup. No replacement preview is available yet.
+The Expo account was upgraded to Starter on October 23, so the free cloud-build quota is no longer the planned constraint. A replacement signed preview is pending the approved Apple distribution-certificate rotation and Apple sign-in. Keep the existing certificate valid until the replacement preview is ready, then revoke it as approved. No replacement preview is available yet.
 
 The simulator URL was entered through accessibility automation; it is not evidence for the physical iPhone's paste behavior. Native fixture providers are mocked and incur no Browserless/OpenAI calls. Preserve all earlier unchecked items in [extraction validation](jobwizard-extraction.md), [Jobwizard smoke tests](jobwizard-smoke-test.md), [mobile validation](mobile-ui-validation.md), and [security follow-ups](security/dependabot-2026-10-05.md). Production rollout evidence is tracked separately in PR #121.
