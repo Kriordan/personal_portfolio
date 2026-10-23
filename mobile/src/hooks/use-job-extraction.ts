@@ -19,7 +19,8 @@ export function useJobExtraction() {
     const offFocus = focusManager.subscribe(refresh),
       offOnline = onlineManager.subscribe(refresh);
     const timer = setInterval(() => {
-      if (session.snapshot().uncertain && focusManager.isFocused())
+      const current = session.snapshot();
+      if (current.uncertain && !current.missing && focusManager.isFocused())
         void session.check();
     }, 5000);
     return () => {

@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Modal, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeField } from './native-form';
 import { InlineError, PageHeading, ScreenState } from './screen';
+import { ThemedText } from './themed-text';
 import { ExtractionReview } from './job-extraction-review';
 import { useJobExtraction } from '@/hooks/use-job-extraction';
 import {
@@ -111,6 +112,15 @@ function ReadyJobForm({
     extraction.result.status !== 'accepted' &&
     usedId !== extraction.result.id &&
     extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
+  const suggestionNotice = extraction.working
+    ? extraction.stage === 'read'
+      ? 'Reading the listing. You can keep this form open while it finishes.'
+      : 'Preparing the bullet summary. Your draft is unchanged.'
+    : reviewing && extraction.result?.status === 'complete'
+      ? 'Suggestions are ready. Scroll down to review them, then choose Use selected suggestions.'
+      : reviewing && extraction.result?.can_summarize
+        ? 'The listing has been read. Continue preparing details to finish the summary.'
+        : null;
   const dirty =
     title.text !== initial.title ||
     company.text !== initial.company_name ||
@@ -287,7 +297,19 @@ function ReadyJobForm({
                   );
                 }}
               />
-              {extraction.error ? <Text>{extraction.error}</Text> : null}
+              {extraction.error || suggestionNotice ? (
+                <RNHostView matchContents>
+                  <View style={{ width: Math.max(1, width - 64) }}>
+                    {extraction.error ? (
+                      <InlineError message={extraction.error} />
+                    ) : (
+                      <ThemedText accessibilityLiveRegion="polite">
+                        {suggestionNotice}
+                      </ThemedText>
+                    )}
+                  </View>
+                </RNHostView>
+              ) : null}
               {extraction.request &&
               !url.text.trim() &&
               (extraction.request.job_id ?? null) === (job?.id ?? null) ? (
@@ -319,7 +341,17 @@ function ReadyJobForm({
                 <Button
                   label="Retry same request"
                   variant="outlined"
-                  onPress={() => void extraction.session.retrySame()}
+                  disabled={busy}
+                  onPress={() => {
+                    const request = extraction.request!;
+                    void extraction.session.retrySame(
+                      () =>
+                        mounted.current &&
+                        url.read().trim() === request.listing_url &&
+                        (request.job_id ?? null) === (job?.id ?? null) &&
+                        request.expected_revision === revision,
+                    );
+                  }}
                 />
               ) : null}
               {extraction.result &&
