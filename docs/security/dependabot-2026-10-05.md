@@ -132,3 +132,9 @@ Only Certifi and Pillow changed versions in `poetry.lock`. Local verification pa
 ### October 22: DOMPurify patch during Jobwizard extraction
 
 The current root audit found three new DOMPurify advisories: [GHSA-cg2g-xh64-v4q7](https://github.com/advisories/GHSA-cg2g-xh64-v4q7), [GHSA-mrv2-3pqr-j5jr](https://github.com/advisories/GHSA-mrv2-3pqr-j5jr), and [GHSA-c6gr-qvv4-5v3f](https://github.com/advisories/GHSA-c6gr-qvv4-5v3f). Updated the exact root dependency/lock from **3.4.16 to 3.4.17**, plus Learning note/review CDN references and matching SHA384 integrity. The patch passes root audit-policy/CDN tests and all 18 browser security checks; no exception was added. Python pip-audit reports no known vulnerabilities. Root/mobile audit gates retain only the three previously documented npm exceptions and their November 5 review deadline. Default-branch alert closure still depends on merge/rescan.
+
+### October 23: withdrawn braces advisory
+
+GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) at **2026-10-23T12:53:02Z**, stating that it is not a practically exploitable vulnerability. Fresh npm audit data no longer includes it. The strict CI gate correctly rejected the now-stale exception, so its root and mobile entries were removed without changing packages or weakening the gate.
+
+The root has no remaining audit exceptions. Mobile still retains `node-forge` and `decode-uri-component`, including their **November 5** review deadline and existing mitigation/release follow-ups. This withdrawal is not a new patched `braces` release. Local npm advisory caches can briefly retain the withdrawn finding; when comparing fresh CI results, use a new temporary `npm_config_cache` directory. Historical validation counts above describe their original dates.
