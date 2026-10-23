@@ -16,9 +16,12 @@ A direct production read of the supplied Justworks listing (`https://job-boards.
 - [x] 94 mobile tests; TypeScript and ESLint.
 - [x] Production JavaScript/Hermes exports for iOS, Android and web; EAS upload archive excludes local credential files.
 - [x] iPhone 18 Pro / iOS 27 development client against the disposable local fixture: restored missing receipt, deliberate retry, visible unsupported-link rejection, corrected supported URL, two-stage completion and reachable review.
-- [ ] Verify the final working/complete status copy in a native build.
+- [x] Verify the final working/complete status copy in the iPhone 18 Pro / iOS 27 development client.
 - [ ] Android native regression for the changed feedback and retry flow.
 - [ ] Install the updated iPhone preview; paste the exact Justworks link; confirm either reviewable suggestions or a visible, actionable error. Record the error if rejected. The original production HTTP 400 cause remains unconfirmed until this check supplies further evidence.
-- [ ] Apply selected suggestions, save and reopen; confirm manual saving remains available after a rejected extraction.
+- [x] Apply selected suggestions, save and reopen in the disposable iPhone simulator fixture; reviewed title/company and all four bullets persisted.
+- [ ] Confirm manual saving remains available after a rejected extraction on the physical iPhone.
+
+The free EAS cloud iOS build quota is exhausted until November 1. A local signed build initially failed because Fastlane was unavailable; Fastlane is now installed in a temporary build directory. That failure log exposed an encoded signing-credential argument in this chat's tool output. The local log was redacted. Replacement of the affected Apple distribution certificate and revocation of the exposed certificate are awaiting explicit approval because revocation can invalidate installed ad hoc previews. No replacement preview is available yet.
 
 The simulator URL was entered through accessibility automation; it is not evidence for the physical iPhone's paste behavior. Native fixture providers are mocked and incur no Browserless/OpenAI calls. Preserve all earlier unchecked items in [extraction validation](jobwizard-extraction.md), [Jobwizard smoke tests](jobwizard-smoke-test.md), [mobile validation](mobile-ui-validation.md), and [security follow-ups](security/dependabot-2026-10-05.md). Production rollout evidence is tracked separately in PR #121.
