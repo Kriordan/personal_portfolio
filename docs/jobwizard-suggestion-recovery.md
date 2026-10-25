@@ -28,3 +28,15 @@ The Expo account was upgraded to Starter on October 23. On October 25, the user 
 The simulator URL was entered through accessibility automation; it is not evidence for the physical iPhone's paste behavior. Native fixture providers are mocked and incur no Browserless/OpenAI calls. Preserve all earlier unchecked items in [extraction validation](jobwizard-extraction.md), [Jobwizard smoke tests](jobwizard-smoke-test.md), [mobile validation](mobile-ui-validation.md), and [security follow-ups](security/dependabot-2026-10-05.md). Production rollout evidence is tracked separately in PR #121.
 
 Android development automation note: fast hardware-key entry containing two `r` characters within 200 ms triggers React Native's development reload shortcut because Compose fields are not Android `EditText` views. Entering the URL in chunks avoids that shortcut. This observation is limited to the development client and is not evidence for a Release-build paste failure.
+
+## October 25: compact job details
+
+Job details now put **Show listing, Copy link, Edit job, and Archive/Restore job** in an accessible three-dot menu beside the heading. iOS uses a SwiftUI menu; Android uses a native Compose menu; web has a dismissible keyboard-accessible fallback. The caption shows the website and saved date instead of a long URL. Copying reports success without adding a row. Opening retains the safe-URL check; editing and archive/restore retain the existing operation and revision guards.
+
+Each saved bullet has a compact **Source** disclosure beside it; the review form also uses the plain Source link. Evidence and edited/outdated/partial provenance remain intact. Touch targets remain at least 44 points tall.
+
+- [x] iPhone 18 Pro / iOS 27: accessible menu trigger and all four labels, copy feedback, browser handoff, existing edit form, archive/restore, saved and review Source expansion/collapse, compact wrapping layout.
+- [x] TypeScript, lint, 94 mobile tests, SDK compatibility and all-platform exports. Root/mobile security gates pass with the separately documented October 25 Zod exposure exception; no advisory is dismissed or deadline extended.
+- [ ] Accept the compact layout and original Justworks paste flow on the physical iPhone using the new preview; the earlier `39bb5cb8` preview does not include these UI changes.
+
+The existing physical-device, accessibility, lifecycle, production-diagnosis and user-operated certificate-revocation follow-ups above remain open.

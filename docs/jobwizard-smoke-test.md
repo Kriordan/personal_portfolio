@@ -6,6 +6,9 @@ Use the disposable two-account fixture for failures and concurrency. Live accept
 
 ## Browse and details
 
+- [ ] Open the three-dot job actions menu. Show listing opens only a valid HTTP(S) URL; Copy link copies the exact saved URL and announces success; Edit preserves the current form; Archive changes to Restore after confirmation. Dismiss without selecting and repeat with an unresolved operation.
+- [ ] Expand/collapse Source beside saved bullets and within suggestion review. Check evidence, edited/outdated notices, long text, large text, keyboard focus, VoiceOver/TalkBack labels and 44-point touch targets. Copy feedback must not add a large layout jump.
+
 - [ ] Cold-launch the new preview, restore/sign in, and reach Jobwizard through Home and Tools. Confirm protected routes and Me sign-out still work.
 - [ ] Active is the default view. Search title, company and hostname using mixed case/whitespace. Combine search with Active/Archived/All and each sort. Clear a no-results query without losing the selected filter.
 - [ ] Newest/oldest saved, Company A–Z and Title A–Z are stable with equal values. Unknown save dates sort last; legacy dates are not presented as verified publication/save dates.
