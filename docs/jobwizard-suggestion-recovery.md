@@ -36,7 +36,10 @@ Job details now put **Show listing, Copy link, Edit job, and Archive/Restore job
 Each saved bullet has a compact **Source** disclosure beside it; the review form also uses the plain Source link. Evidence and edited/outdated/partial provenance remain intact. Touch targets remain at least 44 points tall.
 
 - [x] iPhone 18 Pro / iOS 27: accessible menu trigger and all four labels, copy feedback, browser handoff, existing edit form, archive/restore, saved and review Source expansion/collapse, compact wrapping layout.
+- [x] Pixel 10 / Android 16 API 36.1: native menu opens with all four labels, Copy link feedback, archive then restore the same job, saved Source expansion/collapse, compact layout with wrapped bullets. Native rebuild/install succeeded.
+- [x] Web fixture: keyboard focus enters the action dialog, Escape/Cancel dismiss and restore trigger focus, Copy link feedback, Source expansion, and disabled Show listing for the unsafe legacy URL. Full assistive-technology and larger-text passes remain open in the smoke checklist.
 - [x] TypeScript, lint, 94 mobile tests, SDK compatibility and all-platform exports. Root/mobile security gates pass with the separately documented October 25 Zod exposure exception; no advisory is dismissed or deadline extended.
+- [x] All seven PR checks pass at implementation commit `a54b9b5`; no open CodeQL findings on PR head or merge references. Updated iPhone preview [6424dc30](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/6424dc30-5b56-4de8-bef7-9c1c58abd1d4) finished October 25 at 17:41 UTC from that commit. Its downloaded IPA passes strict/deep signature verification, uses replacement certificate `FBC7A`, includes the registered iPhone, and disables debugging. Version 1.0.0/build 1; SHA-256 `6620f2d0bc0f70cc883511a9b8a6998dc7a0c264dd8304f0d65f73af90286399`.
 - [ ] Accept the compact layout and original Justworks paste flow on the physical iPhone using the new preview; the earlier `39bb5cb8` preview does not include these UI changes.
 
 The existing physical-device, accessibility, lifecycle, production-diagnosis and user-operated certificate-revocation follow-ups above remain open.
