@@ -65,3 +65,67 @@ test('automatic error payload drops content and credentials but retains stack lo
   assert.equal(event.contexts.os.version, '27.0');
   assert.equal(hint.attachments, undefined);
 });
+
+// Exercise the runtime reporter too: the pure policy tests cannot detect a
+// disconnected beforeSend hook, duplicate reports, or a throwing SDK adapter.
+let monitoringModuleId = 0;
+async function loadMonitoring({ enabled = '1', platform = 'ios', development = false, dsn = 'https://public@example.invalid/1', failCapture = false } = {}) {
+  const { readFileSync } = await import('node:fs');
+  const ts = (await import('typescript')).default;
+  let source = readFileSync(new URL('../src/lib/monitoring.ts', import.meta.url), 'utf8')
+    .replace("import * as Sentry from '@sentry/react-native';", `
+      export const calls = { initialized: 0, events: [], options: null };
+      const Sentry = {
+        init(options) { calls.initialized++; calls.options = options; },
+        setUser() {}, setTag() {},
+        captureMessage(message, context) {
+          if (${failCapture}) throw new Error('Transport unavailable');
+          calls.events.push(calls.options.beforeSend({ message, ...context, extra: { private: 'PRIVATE_CANARY' } }));
+        },
+      };
+      const __DEV__ = ${development};
+    `)
+    .replace("import Constants from 'expo-constants';", "const Constants = { expoConfig: { extra: { monitoringCommit: 'abcdef1234567' } } };")
+    .replace("import { Platform } from 'react-native';", `const Platform = { OS: ${JSON.stringify(platform)} };`)
+    .replace("'./monitoring-policy'", JSON.stringify(new URL('../src/lib/monitoring-policy.ts', import.meta.url).href))
+    .replaceAll('process.env.EXPO_PUBLIC_SENTRY_ENABLED', JSON.stringify(enabled))
+    .replaceAll('process.env.EXPO_PUBLIC_SENTRY_DSN', JSON.stringify(dsn))
+    .replaceAll('process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT', "'test'");
+  source += `\n// isolated test module ${++monitoringModuleId}\n`;
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+}
+
+test('runtime reporting stays inactive without native release opt-in', async () => {
+  for (const options of [{ enabled: '0' }, { development: true }, { platform: 'web' }, { dsn: '' }]) {
+    const runtime = await loadMonitoring(options);
+    runtime.initializeMonitoring();
+    runtime.reportOperationFailure({ phase: 'read', requestId: id, status: 500, code: 'failed' });
+    assert.equal(runtime.calls.initialized, 0);
+    assert.deepEqual(runtime.calls.events, []);
+  }
+});
+
+test('runtime reports one scrubbed event for an unexpected outcome and keeps recovery outcomes quiet', async () => {
+  const runtime = await loadMonitoring();
+  runtime.initializeMonitoring();
+  runtime.initializeMonitoring();
+  assert.equal(runtime.calls.initialized, 1);
+  for (const status of [0, 401, 403, 404, 409, 410, 429])
+    runtime.reportOperationFailure({ phase: 'read', requestId: id, status, code: 'unknown' });
+  for (const code of ['unsupported', 'unavailable'])
+    runtime.reportOperationFailure({ phase: 'read', requestId: id, status: 503, code });
+  assert.deepEqual(runtime.calls.events, []);
+  const failure = { phase: 'read', requestId: id, status: 400, code: 'invalid_request' };
+  runtime.reportOperationFailure(failure);
+  runtime.reportOperationFailure(failure);
+  assert.equal(runtime.calls.events.length, 1);
+  assert.equal(runtime.calls.events[0].tags.request_id, id);
+  assert.equal(JSON.stringify(runtime.calls.events).includes('PRIVATE_CANARY'), false);
+});
+
+test('a throwing monitoring transport does not escape to the operation caller', async () => {
+  const runtime = await loadMonitoring({ failCapture: true });
+  runtime.initializeMonitoring();
+  assert.doesNotThrow(() => runtime.reportOperationFailure({ phase: 'summary', requestId: id, status: 500, code: 'provider_auth' }));
+});

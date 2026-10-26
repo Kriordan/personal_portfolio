@@ -3,7 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
-from flask import Flask
+from flask import Flask, abort, jsonify
 import sentry_sdk
 from sentry_sdk.transport import Transport
 from project.monitoring import configure_monitoring, report_extraction_failure, scrub_event, valid_request_id
@@ -76,6 +76,47 @@ class MonitoringTests(unittest.TestCase):
             self.assertNotIn(SECRET, json.dumps(transport.events))
             with patch("sentry_sdk.capture_message", side_effect=RuntimeError("Transport failed")):
                 report_extraction_failure("read", "invalid_request", attempt_id=ID)
+
+    def test_expected_http_failures_do_not_emit_automatic_flask_events(self):
+        app, transport = self.enabled_app()
+
+        @app.get("/api/v1/expected/<int:status>")
+        def expected(status):
+            abort(status)
+
+        @app.get("/api/v1/unsupported")
+        def unsupported():
+            report_extraction_failure("read", "unsupported", attempt_id=ID)
+            return jsonify(code="unsupported", error=SECRET), 400
+
+        @app.get("/api/v1/unavailable")
+        def unavailable():
+            report_extraction_failure("read", "unavailable", attempt_id=ID)
+            return jsonify(code="unavailable", error=SECRET), 503
+
+        client = app.test_client()
+        for status in [401, 403, 404, 409, 410, 429]:
+            with self.subTest(status=status):
+                response = client.get(f"/api/v1/expected/{status}", headers={"X-Request-ID": ID})
+                self.assertEqual(response.status_code, status)
+                self.assertEqual(response.headers["X-Request-ID"], ID)
+        self.assertEqual(client.get("/api/v1/unsupported").status_code, 400)
+        self.assertEqual(client.get("/api/v1/unavailable").status_code, 503)
+        self.assertEqual(transport.events, [])
+
+    def test_transport_failure_preserves_api_result_and_request_correlation(self):
+        app, transport = self.enabled_app()
+
+        @app.post("/api/v1/provider-failed")
+        def failed():
+            report_extraction_failure("summary", "provider_auth", attempt_id=ID)
+            return jsonify(code="provider_auth"), 502
+
+        with patch.object(transport, "capture_envelope", side_effect=RuntimeError("Transport offline")):
+            response = app.test_client().post("/api/v1/provider-failed", headers={"X-Request-ID": ID})
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json, {"code": "provider_auth"})
+        self.assertEqual(response.headers["X-Request-ID"], ID)
 
     def test_scrubber_drops_attachments_context_and_arbitrary_metadata(self):
         hint = {"attachments": [SECRET]}
