@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { NativeAction } from './screen';
+import { SourceLink } from './source-link';
 import { ThemedText } from './themed-text';
 import type { AcceptedDetails } from '@/lib/job-extraction-model';
 export function JobImportantDetails({
@@ -28,22 +28,20 @@ export function JobImportantDetails({
         </ThemedText>
       ) : null}
       {details.bullets.map((bullet, index) => (
-        <View key={index} style={{ gap: 8 }}>
-          <ThemedText selectable>{`• ${bullet.text}`}</ThemedText>
+        <View key={index} style={{ gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <ThemedText selectable style={{ flex: 1 }}>{`• ${bullet.text}`}</ThemedText>
+            <SourceLink
+              detail={index + 1}
+              expanded={opened === index}
+              onPress={() => setOpened(opened === index ? null : index)}
+            />
+          </View>
           {bullet.edited ? (
             <ThemedText type="small" themeColor="textSecondary">
               Edited by you · source supports the original suggestion
             </ThemedText>
           ) : null}
-          <NativeAction
-            secondary
-            label={
-              opened === index
-                ? 'Hide source'
-                : `View source for detail ${index + 1}`
-            }
-            onPress={() => setOpened(opened === index ? null : index)}
-          />
           {opened === index
             ? bullet.evidence.map((evidence) => (
                 <ThemedText key={evidence.block_id} selectable type="small">

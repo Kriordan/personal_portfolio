@@ -1,4 +1,5 @@
-import { Button, Column, Text } from '@expo/ui';
+import { Button, Column, RNHostView, Text } from '@expo/ui';
+import { SourceLink } from './source-link';
 import { useEffect, useRef, useState } from 'react';
 import { fillWidth } from './native-width';
 import { NativeField } from './native-form';
@@ -221,11 +222,9 @@ function BulletEditor({
           ? 'Suggested from listing'
           : 'Edited by you · original source below'}
       </Text>
-      <Button
-        label={source ? 'Hide source' : `View source for detail ${index + 1}`}
-        variant="text"
-        onPress={() => setSource(!source)}
-      />
+      <RNHostView matchContents>
+        <SourceLink detail={index + 1} expanded={source} onPress={() => setSource(!source)} />
+      </RNHostView>
       {source ? (
         <Text>{bullet.evidence.map((e) => e.quote).join('\n\n')}</Text>
       ) : null}

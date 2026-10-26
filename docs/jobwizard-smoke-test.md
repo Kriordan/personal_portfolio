@@ -6,6 +6,9 @@ Use the disposable two-account fixture for failures and concurrency. Live accept
 
 ## Browse and details
 
+- [ ] Open the three-dot job actions menu. Show listing opens only a valid HTTP(S) URL; Copy link copies the exact saved URL and announces success; Edit preserves the current form; Archive changes to Restore after confirmation. Dismiss without selecting and repeat with an unresolved operation.
+- [ ] Expand/collapse Source beside saved bullets and within suggestion review. Check evidence, edited/outdated notices, long text, large text, keyboard focus, VoiceOver/TalkBack labels and 44-point touch targets. Copy feedback must not add a large layout jump.
+
 - [ ] Cold-launch the new preview, restore/sign in, and reach Jobwizard through Home and Tools. Confirm protected routes and Me sign-out still work.
 - [ ] Active is the default view. Search title, company and hostname using mixed case/whitespace. Combine search with Active/Archived/All and each sort. Clear a no-results query without losing the selected filter.
 - [ ] Newest/oldest saved, Company A–Z and Title A–Z are stable with equal values. Unknown save dates sort last; legacy dates are not presented as verified publication/save dates.
@@ -146,3 +149,15 @@ October 22 deployment follow-up: the user confirmed the PR #118 preview looks go
 ## October 22: listing extraction follow-up
 
 Use the [extraction smoke/rollout checklist](jobwizard-extraction.md#smoke-and-rollout-checklist) for optional title/company/bullet suggestions before save and on existing jobs. Accepted details persist separately from screenshots. Prior screenshot/storage/physical-device follow-ups above remain open unless explicitly recorded as completed.
+
+
+## October 25: compact index review (local development clients)
+
+The index now has search/Add icons beside its heading, a short count/privacy caption, and inline native filter/sort menus with the selected values visible. Search expands only when requested; Cancel clears it and restores the compact list. See the [research and design decision](jobwizard-modernization-plan.md#index-layout-refinement--october-25-2026).
+
+- iPhone 18 Pro / iOS 27: verified Active/Newest overview (291 active synthetic jobs), native sort selection to Company A–Z, Archived filter (30), composed Cedar search (7), no-matching state, Cancel clearing/collapsing to 30, Add form navigation, and retained filter/sort on return. Accessibility exposes named search/Add buttons and filter/sort popup controls with their selected values. This is not a full VoiceOver audit.
+- Pixel 10 / Android API 36.1: verified menu checkmarks, Company A–Z ordering, Archived filter (30), Cedar search (7), and Cancel. Native validation caught and corrected the SVG data-URL encoding required by Android; all four icons render. Existing save confirmation remains visible below the controls.
+- TypeScript, ESLint, 94 existing mobile tests, and iOS/Android/web production exports passed. The final icon/layout adjustments were checked with native rendering and another typecheck/lint/export pass. No backend behavior changed and no paid provider was used.
+- Evidence: [iPhone overview](assets/jobwizard/index-iphone.png), [native sort menu](assets/jobwizard/index-sort-iphone.png), [combined search/filter](assets/jobwizard/index-search-iphone.png), [Android](assets/jobwizard/index-android.png). All listings in this evidence are disposable fixture data.
+
+**No new EAS build was started.** The existing preview `6424dc30-5b56-4de8-bef7-9c1c58abd1d4` predates these index changes. The user requested screenshot approval before another cloud preview; continue local iteration until that approval. Preserve the original Justworks physical-iPhone acceptance, manual-save-after-rejection check, full VoiceOver/TalkBack, larger text/smaller-device/software-keyboard combinations, and earlier lifecycle/expiry checks. Old certificate D6D52 revocation remains user-operated after replacement installation. Sentry stays in separate PR #123; dependency exceptions still require the November 5 review.

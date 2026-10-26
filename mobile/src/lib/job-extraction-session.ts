@@ -22,6 +22,7 @@ interface State {
   ready: boolean;
   working: boolean;
   uncertain: boolean;
+  missing: boolean;
   request: ExtractionRequest | null;
   result: Extraction | null;
   error: string | null;
@@ -33,6 +34,7 @@ export class ExtractionSession {
     ready: false,
     working: false,
     uncertain: false,
+    missing: false,
     request: null,
     result: null,
     error: null,
@@ -106,6 +108,7 @@ export class ExtractionSession {
       result,
       stage: result.stage,
       uncertain: result.status === 'running',
+      missing: false,
       error: result.error_message,
     });
   }
@@ -118,12 +121,15 @@ export class ExtractionSession {
     } catch (error) {
       const status = (error as { status?: number }).status;
       this.update({
-        ...(status === 410 ? { result: null } : {}),
+        ...([404, 410].includes(status ?? 0) ? { result: null } : {}),
         uncertain: status !== 410,
+        missing: status === 404,
         error:
           status === 410
             ? 'Suggestions expired after 24 hours. Read the listing again.'
-            : 'Completion is not confirmed. Check status or deliberately retry the same request.',
+            : status === 404
+              ? 'No saved result was found for the previous suggestion request. Retry that same request to resolve it safely.'
+              : 'Completion is not confirmed. Check status or deliberately retry the same request.',
       });
     } finally {
       this.lock = false;
@@ -158,6 +164,7 @@ export class ExtractionSession {
         result: null,
         error: null,
         uncertain: false,
+        missing: false,
         stage: 'read',
       });
     } catch {
@@ -177,8 +184,17 @@ export class ExtractionSession {
     )
       await this.continue();
   };
-  retrySame = async () => {
-    if (!this.state.result) await this.send('read');
+  retrySame = async (mayContinue: () => boolean = () => false) => {
+    if (!this.state.result) {
+      await this.send('read');
+      if (
+        this.active &&
+        this.deps.foreground() &&
+        mayContinue() &&
+        this.snapshot().result?.can_summarize
+      )
+        await this.continue();
+    }
   };
   continue = async () => {
     if (this.state.result?.status === 'ready') await this.send('summary');
@@ -187,7 +203,7 @@ export class ExtractionSession {
     const request = this.state.request;
     if (!this.active || this.lock || !request || !this.deps.online()) return;
     this.lock = true;
-    this.update({ working: true, stage, error: null });
+    this.update({ working: true, stage, error: null, missing: false });
     try {
       this.receive(
         (
@@ -200,10 +216,26 @@ export class ExtractionSession {
       const status = (error as { status?: number }).status;
       const definitive =
         status && [400, 401, 403, 404, 409, 410, 429, 503].includes(status);
+      // These read-stage rejections occur before provider work. Do not restore
+      // them as an uncertain paid operation after returning to the form.
+      if (
+        stage === 'read' &&
+        [400, 404, 410].includes(status ?? 0) &&
+        !this.state.result
+      ) {
+        try {
+          await this.deps.storage.clear();
+          this.update({ request: null });
+        } catch {
+          // Keep the frozen UUID if durable cleanup failed; replay is still safe.
+        }
+      }
       this.update({
         uncertain: !definitive,
+        missing: false,
         error: definitive
-          ? (error as Error).message
+          ? (error as Error).message ||
+            'The suggestion request was rejected. Check the listing URL and try again.'
           : 'Completion is not confirmed. Check status before retrying.',
       });
     } finally {
