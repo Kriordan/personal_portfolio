@@ -15,6 +15,7 @@ from project.lottery.calculations import calculate, is_stale, money, odds, rank
 from project.lottery.metadata import validate_metadata
 from project.lottery.models import LotteryGameMetadata, LotteryRefreshRun, LotterySnapshot
 from project.lottery.service import LOCK_NAMESPACE, import_metadata, latest_snapshot, refresh
+from project.lottery.views import source_stamp
 from project.lottery.sources import CT_CATALOG, NY_COUNT, NY_FEED, NY_INFO, PublicClient, SourceError, ct_catalog, ct_game, draw_game, flight_values, ny_games
 from project.jobwizard.capture_lock import capture_lock
 
@@ -70,6 +71,7 @@ class CalculationTests(unittest.TestCase):
         self.assertEqual(money(1000000),"$1,000,000")
         self.assertEqual(odds(.0000312),"1 in 32,000")
         self.assertEqual(odds(0),"No qualifying prizes")
+        self.assertEqual(source_stamp('2026-10-25T04:00:00+00:00','ct'),'Oct 25, 2026')
 
 
 class SourceTests(unittest.TestCase):

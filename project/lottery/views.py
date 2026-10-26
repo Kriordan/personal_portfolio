@@ -17,6 +17,13 @@ def stamp(value):
     return utc(value).astimezone(ZoneInfo("America/New_York")).strftime("%b %-d, %Y · %-I:%M %p %Z")
 
 
+def source_stamp(value, state):
+    # CT publishes a calendar date, not a publication time.
+    if state == "ct":
+        return utc(value).astimezone(ZoneInfo("America/New_York")).strftime("%b %-d, %Y")
+    return stamp(value)
+
+
 def status(source):
     snapshot = latest_snapshot(source)
     success = LotteryRefreshRun.query.filter_by(source=source, status="success").order_by(LotteryRefreshRun.finished_at.desc()).first()
@@ -52,7 +59,8 @@ def index():
     response = make_response(render_template("lottery/index.html", state=state, target=target, basis=basis,
                                             prices=prices, available=available, targets=TARGETS, query=query,
                                             games=visible, picks=picks, pending=pending, info=info, draw=draw,
-                                            money=money, odds=odds, stamp=stamp))
+                                            money=money, odds=odds, stamp=stamp,
+                                            source_stamp=lambda value: source_stamp(value, state)))
     response.headers["Cache-Control"] = "private, no-store"
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response

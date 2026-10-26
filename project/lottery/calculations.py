@@ -34,7 +34,7 @@ def odds(probability):
 
 def calculate(game, target):
     result = dict(game, launch_probability=None, probability=None, per_dollar=None,
-                  qualifying_remaining=0, top_remaining=0, reason=game.get("issue"))
+                  qualifying_remaining=0, top_remaining=None, reason=game.get("issue"))
     tiers = game.get("tiers", [])
     if tiers:
         result["top_remaining"] = tiers[0].get("remaining", 0)
