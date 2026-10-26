@@ -1,0 +1,3495 @@
+{
+  "schema_version": 1,
+  "games": [
+    {
+      "game_number": "1713",
+      "name": "$3,000,000 200X CASHWORD",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:30:51.684Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1713",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1713",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 4,
+          "odds_denominator": 3645937.5
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 1201,
+          "odds_denominator": 12143.01
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 1516,
+          "odds_denominator": 9619.89
+        },
+        {
+          "source_label": "$6,000",
+          "label": "$6,000",
+          "amount": 6000,
+          "original": 1820,
+          "odds_denominator": 8013.05
+        },
+        {
+          "source_label": "$3,000",
+          "label": "$3,000",
+          "amount": 3000,
+          "original": 1822,
+          "odds_denominator": 8004.25
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 35032,
+          "odds_denominator": 416.3
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 48662,
+          "odds_denominator": 299.69
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 60815,
+          "odds_denominator": 239.81
+        },
+        {
+          "source_label": "$150",
+          "label": "$150",
+          "amount": 150,
+          "original": 145758,
+          "odds_denominator": 100.05
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 349922,
+          "odds_denominator": 41.68
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 583525,
+          "odds_denominator": 24.99
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 583350,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 1983303,
+          "odds_denominator": 7.35
+        }
+      ]
+    },
+    {
+      "game_number": "1709",
+      "name": "$5,000,000 SPECTACULAR",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:30:52.320Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1709",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1709",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4631550.0
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 20,
+          "odds_denominator": 926310.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 45,
+          "odds_denominator": 411693.33
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 164,
+          "odds_denominator": 112964.63
+        },
+        {
+          "source_label": "$2,500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 1236,
+          "odds_denominator": 14988.83
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 37085,
+          "odds_denominator": 499.56
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 147034,
+          "odds_denominator": 126.0
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 555875,
+          "odds_denominator": 33.33
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 926140,
+          "odds_denominator": 20.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1296906,
+          "odds_denominator": 14.28
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1852460,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1704",
+      "name": "$50 OR $100",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:30:52.916Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1704",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1704",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 173062,
+          "odds_denominator": 66.69
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 1269631,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1703",
+      "name": "$1,000,000 50X CASHWORD",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:30:53.366Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1703",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1703",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$50,000/YR/20YRS",
+          "label": "$50K Annual Installments",
+          "amount": 1000000,
+          "original": 4,
+          "odds_denominator": 4582150.0
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 94,
+          "odds_denominator": 194985.11
+        },
+        {
+          "source_label": "$2,500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 1549,
+          "odds_denominator": 11832.54
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 13789,
+          "odds_denominator": 1329.22
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 45835,
+          "odds_denominator": 399.88
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 146168,
+          "odds_denominator": 125.39
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 150373,
+          "odds_denominator": 121.89
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 366621,
+          "odds_denominator": 49.99
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 586409,
+          "odds_denominator": 31.26
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1099683,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1833245,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1700",
+      "name": "MILLIONAIRE RICHES",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:30:53.858Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1700",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1700",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4580112.5
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 25,
+          "odds_denominator": 732818.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 45,
+          "odds_denominator": 407121.11
+        },
+        {
+          "source_label": "$4,000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 307,
+          "odds_denominator": 59675.73
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 1228,
+          "odds_denominator": 14918.93
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 27453,
+          "odds_denominator": 667.34
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 22944,
+          "odds_denominator": 798.49
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 152880,
+          "odds_denominator": 119.84
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 457869,
+          "odds_denominator": 40.01
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 366540,
+          "odds_denominator": 49.98
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 732946,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1282457,
+          "odds_denominator": 14.29
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1831783,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1697",
+      "name": "$3,000,000 MAX MULTIPLIER",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:05.736Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1697",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1697",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 3,
+          "odds_denominator": 5890133.33
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 15,
+          "odds_denominator": 1178026.67
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 18,
+          "odds_denominator": 981688.89
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 33093,
+          "odds_denominator": 533.96
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 46086,
+          "odds_denominator": 383.42
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 173297,
+          "odds_denominator": 101.97
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 176776,
+          "odds_denominator": 99.96
+        },
+        {
+          "source_label": "$25",
+          "label": "$25",
+          "amount": 25,
+          "original": 530132,
+          "odds_denominator": 33.33
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1413602,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1767060,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1694",
+      "name": "$2,000,000 100X CASHWORD",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:06.252Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1694",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1694",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$100,000/YR/20YRS",
+          "label": "$100K Annual Installments",
+          "amount": 2000000,
+          "original": 4,
+          "odds_denominator": 4539512.5
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 302634.17
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 915,
+          "odds_denominator": 19844.86
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 2274,
+          "odds_denominator": 7985.07
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 60480,
+          "odds_denominator": 300.23
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 151446,
+          "odds_denominator": 119.9
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 242054,
+          "odds_denominator": 75.02
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 227147,
+          "odds_denominator": 79.94
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 726322,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1162083,
+          "odds_denominator": 15.63
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 2179011,
+          "odds_denominator": 8.33
+        }
+      ]
+    },
+    {
+      "game_number": "1691",
+      "name": "300X THE MONEY",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:06.866Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1691",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1691",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500,000/YR/20YRS",
+          "label": "$500K Annual Installments",
+          "amount": 10000000,
+          "original": 4,
+          "odds_denominator": 4458862.5
+        },
+        {
+          "source_label": "$150,000",
+          "label": "$150,000",
+          "amount": 150000,
+          "original": 15,
+          "odds_denominator": 1189030.0
+        },
+        {
+          "source_label": "$50,000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 25,
+          "odds_denominator": 713418.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 297257.5
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 918,
+          "odds_denominator": 19428.59
+        },
+        {
+          "source_label": "$3,000",
+          "label": "$3,000",
+          "amount": 3000,
+          "original": 2908,
+          "odds_denominator": 6133.24
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 29799,
+          "odds_denominator": 598.53
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 37511,
+          "odds_denominator": 475.47
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 59336,
+          "odds_denominator": 300.58
+        },
+        {
+          "source_label": "$150",
+          "label": "$150",
+          "amount": 150,
+          "original": 178184,
+          "odds_denominator": 100.1
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 713538,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 713202,
+          "odds_denominator": 25.01
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 3210818,
+          "odds_denominator": 5.55
+        }
+      ]
+    },
+    {
+      "game_number": "1688",
+      "name": "$3,000,000 BONUS STARS",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:07.574Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1688",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1688",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": null,
+          "original": 3,
+          "odds_denominator": 5878683.33
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 8,
+          "odds_denominator": 2204506.25
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 12,
+          "odds_denominator": 1469670.83
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 23496,
+          "odds_denominator": 750.6
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 47748,
+          "odds_denominator": 369.36
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 141174,
+          "odds_denominator": 124.92
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 146837,
+          "odds_denominator": 120.11
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 176463,
+          "odds_denominator": 99.94
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 529056,
+          "odds_denominator": 33.33
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1410959,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1939892,
+          "odds_denominator": 9.09
+        }
+      ],
+      "issue": "Official annuity labels conflict ($250K annual on game page; $150K/year for 20 years in prize feed)"
+    },
+    {
+      "game_number": "1684",
+      "name": "200Xtra",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:08.098Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1684",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1684",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4562437.5
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 30,
+          "odds_denominator": 608325.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 127,
+          "odds_denominator": 143698.82
+        },
+        {
+          "source_label": "$4,000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 608,
+          "odds_denominator": 30016.04
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 2281,
+          "odds_denominator": 8000.77
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 9505,
+          "odds_denominator": 1920.02
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 36500,
+          "odds_denominator": 499.99
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 182498,
+          "odds_denominator": 100.0
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 364948,
+          "odds_denominator": 50.01
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 365082,
+          "odds_denominator": 49.99
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 729990,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 730037,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 729950,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1824888,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1681",
+      "name": "100Xtra",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:15.842Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1681",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1681",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 4,
+          "odds_denominator": 5498575.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 8,
+          "odds_denominator": 2749287.5
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 12,
+          "odds_denominator": 1832858.33
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 20,
+          "odds_denominator": 1099715.0
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 5875,
+          "odds_denominator": 3743.71
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 13701,
+          "odds_denominator": 1605.31
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 217221,
+          "odds_denominator": 101.25
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 769672,
+          "odds_denominator": 28.58
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 880001,
+          "odds_denominator": 24.99
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1099743,
+          "odds_denominator": 20.0
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 2639194,
+          "odds_denominator": 8.33
+        }
+      ]
+    },
+    {
+      "game_number": "1677",
+      "name": "$100, $200 OR $500!",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:16.421Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1677",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1677",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 61362,
+          "odds_denominator": 100.04
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 122841,
+          "odds_denominator": 49.97
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 798084,
+          "odds_denominator": 7.69
+        }
+      ]
+    },
+    {
+      "game_number": "1674",
+      "name": "$5,000 HOLIDAY FRENZY/$5,000 GOLD",
+      "price": 10,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-08-07",
+      "verified_at": "2026-10-26T17:31:16.863Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1674",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1674",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 513,
+          "odds_denominator": 11867.84
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 1507,
+          "odds_denominator": 4039.95
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 113461,
+          "odds_denominator": 53.66
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 187689,
+          "odds_denominator": 32.44
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 608820,
+          "odds_denominator": 10.0
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 669661,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1671",
+      "name": "$5,000,000 BLITZ",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:17.492Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1671",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1671",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4523550.0
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 25,
+          "odds_denominator": 723768.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 301570.0
+        },
+        {
+          "source_label": "$4,000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 301,
+          "odds_denominator": 60113.62
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 1134,
+          "odds_denominator": 15956.08
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 23292,
+          "odds_denominator": 776.84
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 18860,
+          "odds_denominator": 959.4
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 120535,
+          "odds_denominator": 150.12
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 452449,
+          "odds_denominator": 39.99
+        },
+        {
+          "source_label": "$80",
+          "label": "$80",
+          "amount": 80,
+          "original": 361729,
+          "odds_denominator": 50.02
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 723611,
+          "odds_denominator": 25.01
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1266718,
+          "odds_denominator": 14.28
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1809730,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1686",
+      "name": "$10,000 A WEEK FOR LIFE",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:17.948Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1686",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1686",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$10,000/WEEK/LIFE",
+          "label": "$10,000/WEEK/LIFE",
+          "amount": null,
+          "original": 3,
+          "odds_denominator": 8163900.0
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 257,
+          "odds_denominator": 95298.44
+        },
+        {
+          "source_label": "$2,500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 845,
+          "odds_denominator": 28984.26
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 38180,
+          "odds_denominator": 641.48
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 270738,
+          "odds_denominator": 90.46
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 685965,
+          "odds_denominator": 35.7
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 1273507,
+          "odds_denominator": 19.23
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1861046,
+          "odds_denominator": 13.16
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 2448942,
+          "odds_denominator": 10.0
+        }
+      ],
+      "issue": "Lifetime award value needs verification"
+    },
+    {
+      "game_number": "1667",
+      "name": "$3,000,000 CA$H",
+      "price": 10,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-05-21",
+      "verified_at": "2026-10-26T17:31:18.492Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1667",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1667",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 3,
+          "odds_denominator": 3294416.67
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 8,
+          "odds_denominator": 1235406.25
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 12,
+          "odds_denominator": 823604.17
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 10131,
+          "odds_denominator": 975.55
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 24750,
+          "odds_denominator": 399.32
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 69290,
+          "odds_denominator": 142.64
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 82418,
+          "odds_denominator": 119.92
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 98756,
+          "odds_denominator": 100.08
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 296558,
+          "odds_denominator": 33.33
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 790529,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1087238,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1663",
+      "name": "MYSTERY MULTIPLIER",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:18.948Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1663",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1663",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4529987.5
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 32,
+          "odds_denominator": 566248.44
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 301999.17
+        },
+        {
+          "source_label": "$4,000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 311,
+          "odds_denominator": 58263.5
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 1141,
+          "odds_denominator": 15880.76
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 9452,
+          "odds_denominator": 1917.05
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 30206,
+          "odds_denominator": 599.88
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 45241,
+          "odds_denominator": 400.52
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 145722,
+          "odds_denominator": 124.35
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 362593,
+          "odds_denominator": 49.97
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 362205,
+          "odds_denominator": 50.03
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 724604,
+          "odds_denominator": 25.01
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 724798,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 724798,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1811995,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1666",
+      "name": "$1,000,000 BONUS CASHWORD",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:19.466Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1666",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1666",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$50,000/YR/20YRS",
+          "label": "$50K Annual Installments",
+          "amount": 1000000,
+          "original": 4,
+          "odds_denominator": 4580212.5
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 94,
+          "odds_denominator": 194902.66
+        },
+        {
+          "source_label": "$2,500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 1514,
+          "odds_denominator": 12100.96
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 13721,
+          "odds_denominator": 1335.24
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 45843,
+          "odds_denominator": 399.64
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 145951,
+          "odds_denominator": 125.53
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 150522,
+          "odds_denominator": 121.72
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 366489,
+          "odds_denominator": 49.99
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 586162,
+          "odds_denominator": 31.26
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1099253,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1832245,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1660",
+      "name": "BONUS BUCKS",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:20.005Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1660",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1660",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 3,
+          "odds_denominator": 5902483.33
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 10,
+          "odds_denominator": 1770745.0
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 15,
+          "odds_denominator": 1180496.67
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 14731,
+          "odds_denominator": 1202.05
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 36909,
+          "odds_denominator": 479.76
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 138096,
+          "odds_denominator": 128.23
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 147608,
+          "odds_denominator": 119.96
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 354085,
+          "odds_denominator": 50.01
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 531287,
+          "odds_denominator": 33.33
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1416597,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1947883,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1657",
+      "name": "WIN EITHER $100 OR $200!",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:20.475Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1657",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1657",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 180436,
+          "odds_denominator": 50.01
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 947420,
+          "odds_denominator": 9.52
+        }
+      ]
+    },
+    {
+      "game_number": "1654",
+      "name": "MONEY MATCH",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:24.859Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1654",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1654",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 3,
+          "odds_denominator": 5829633.33
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 10,
+          "odds_denominator": 1748890.0
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 15,
+          "odds_denominator": 1165926.67
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 28399,
+          "odds_denominator": 615.83
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 43743,
+          "odds_denominator": 399.81
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 122715,
+          "odds_denominator": 142.52
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 145841,
+          "odds_denominator": 119.92
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 174827,
+          "odds_denominator": 100.04
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 524581,
+          "odds_denominator": 33.34
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1399284,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1923713,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1650",
+      "name": "ULTIMATE CASH",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:25.644Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1650",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1650",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500,000/YR/20YRS",
+          "label": "$500K Annual Installments",
+          "amount": 10000000,
+          "original": 3,
+          "odds_denominator": 6176733.33
+        },
+        {
+          "source_label": "$20,000",
+          "label": "$20,000",
+          "amount": 20000,
+          "original": 25,
+          "odds_denominator": 741208.0
+        },
+        {
+          "source_label": "$8,000",
+          "label": "$8,000",
+          "amount": 8000,
+          "original": 40,
+          "odds_denominator": 463255.0
+        },
+        {
+          "source_label": "$4,000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 1875,
+          "odds_denominator": 9882.77
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 3093,
+          "odds_denominator": 5991.01
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 86365,
+          "odds_denominator": 214.56
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 185428,
+          "odds_denominator": 99.93
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 741198,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 1111858,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 2964760,
+          "odds_denominator": 6.25
+        }
+      ]
+    },
+    {
+      "game_number": "1646",
+      "name": "$50 OR $100",
+      "price": 10,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-01-16",
+      "verified_at": "2026-10-26T17:31:26.236Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1646",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1646",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 123659,
+          "odds_denominator": 49.98
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 617935,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1643",
+      "name": "BONUS 100X",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:26.983Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1643",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1643",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$250,000/YR/20YRS",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4473037.5
+        },
+        {
+          "source_label": "$25,000",
+          "label": "$25,000",
+          "amount": 25000,
+          "original": 35,
+          "odds_denominator": 511204.29
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 125,
+          "odds_denominator": 143137.2
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 588,
+          "odds_denominator": 30428.83
+        },
+        {
+          "source_label": "$2,000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 2233,
+          "odds_denominator": 8012.61
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 9318,
+          "odds_denominator": 1920.17
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 29821,
+          "odds_denominator": 599.98
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 44731,
+          "odds_denominator": 399.99
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 147014,
+          "odds_denominator": 121.7
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 357915,
+          "odds_denominator": 49.99
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 357771,
+          "odds_denominator": 50.01
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 715686,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 715614,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 715686,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1789287,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1639",
+      "name": "SET FOR LIFE",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:27.540Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1639",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1639",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$5,000/WEEK/LIFE",
+          "label": "$5K/WK/LIFE",
+          "amount": null,
+          "original": 6,
+          "odds_denominator": 8018625.0
+        },
+        {
+          "source_label": "$50,000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 20,
+          "odds_denominator": 2405587.5
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 465,
+          "odds_denominator": 103466.13
+        },
+        {
+          "source_label": "$1,000",
+          "label": "$1,000",
+          "amount": 1000,
+          "original": 601,
+          "odds_denominator": 80052.83
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 42063,
+          "odds_denominator": 1143.8
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 514947,
+          "odds_denominator": 93.43
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 2004718,
+          "odds_denominator": 24.0
+        },
+        {
+          "source_label": "$25",
+          "label": "$25",
+          "amount": 25,
+          "original": 962235,
+          "odds_denominator": 50.0
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 3271843,
+          "odds_denominator": 14.7
+        },
+        {
+          "source_label": "$15",
+          "label": "$15",
+          "amount": 15,
+          "original": 962172,
+          "odds_denominator": 50.0
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 4425857,
+          "odds_denominator": 10.87
+        }
+      ],
+      "issue": "Lifetime award value needs verification"
+    },
+    {
+      "game_number": "1640",
+      "name": "BONUS 50X",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:28.088Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1640",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1640",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150,000/YR/20YRS",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 4,
+          "odds_denominator": 5620862.5
+        },
+        {
+          "source_label": "$10,000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 7,
+          "odds_denominator": 3211921.43
+        },
+        {
+          "source_label": "$5,000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 12,
+          "odds_denominator": 1873620.83
+        },
+        {
+          "source_label": "$2,500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 25,
+          "odds_denominator": 899338.0
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 6005,
+          "odds_denominator": 3744.12
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 14067,
+          "odds_denominator": 1598.31
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 211350,
+          "odds_denominator": 106.38
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 786962,
+          "odds_denominator": 28.57
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 786797,
+          "odds_denominator": 28.58
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1124255,
+          "odds_denominator": 20.0
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 2810554,
+          "odds_denominator": 8.0
+        }
+      ]
+    },
+    {
+      "game_number": "1629",
+      "name": "$100, $200 0R $500",
+      "price": 30,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2025-11-07",
+      "verified_at": "2026-10-26T17:31:28.608Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1629",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1629",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 61795,
+          "odds_denominator": 99.99
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 123451,
+          "odds_denominator": 50.05
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 803384,
+          "odds_denominator": 7.69
+        }
+      ]
+    },
+    {
+      "game_number": "1612",
+      "name": "$3,000,000 MAX",
+      "price": 10,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-03-06",
+      "verified_at": "2026-10-26T17:31:29.161Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1612",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1612",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$150000/Yr/20Yrs",
+          "label": "$150K Annual Installments",
+          "amount": 3000000,
+          "original": 3,
+          "odds_denominator": 6011400.0
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 15,
+          "odds_denominator": 1202280.0
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 18,
+          "odds_denominator": 1001900.0
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 30063,
+          "odds_denominator": 599.88
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 45119,
+          "odds_denominator": 399.7
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 126577,
+          "odds_denominator": 142.48
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 150380,
+          "odds_denominator": 119.92
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 180261,
+          "odds_denominator": 100.04
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 540890,
+          "odds_denominator": 33.34
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1442942,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1983758,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1609",
+      "name": "$2,000,000 CASHWORD",
+      "price": 20,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-06-10",
+      "verified_at": "2026-10-26T17:31:29.895Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1609",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1609",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$100000/Yr/20Yrs",
+          "label": "$100K Annual Installments",
+          "amount": 2000000,
+          "original": 4,
+          "odds_denominator": 4571312.5
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 304754.17
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 926,
+          "odds_denominator": 19746.49
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 2286,
+          "odds_denominator": 7998.8
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 60968,
+          "odds_denominator": 299.92
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 152273,
+          "odds_denominator": 120.08
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 243854,
+          "odds_denominator": 74.98
+        },
+        {
+          "source_label": "$60",
+          "label": "$60",
+          "amount": 60,
+          "original": 228648,
+          "odds_denominator": 79.97
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 731410,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1170262,
+          "odds_denominator": 15.62
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 2194183,
+          "odds_denominator": 8.33
+        }
+      ]
+    },
+    {
+      "game_number": "1606",
+      "name": "$10,000,000 CASH",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:31.432Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1606",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1606",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500000/YR/20YRS",
+          "label": "$500K Annual Installments",
+          "amount": 10000000,
+          "original": 3,
+          "odds_denominator": 6097983.33
+        },
+        {
+          "source_label": "$25000",
+          "label": "$25,000",
+          "amount": 25000,
+          "original": 25,
+          "odds_denominator": 731758.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 40,
+          "odds_denominator": 457348.75
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 1837,
+          "odds_denominator": 9958.6
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 3062,
+          "odds_denominator": 5974.51
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 66182,
+          "odds_denominator": 276.42
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 182901,
+          "odds_denominator": 100.02
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 731805,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 1097735,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 2926742,
+          "odds_denominator": 6.25
+        }
+      ]
+    },
+    {
+      "game_number": "1603",
+      "name": "SHOW ME $500",
+      "price": 10,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2026-02-20",
+      "verified_at": "2026-10-26T17:31:39.972Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1603",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1603",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 42396,
+          "odds_denominator": 685.03
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 135168,
+          "odds_denominator": 133.47
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 631438,
+          "odds_denominator": 28.57
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 631392,
+          "odds_denominator": 28.57
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 902098,
+          "odds_denominator": 20.0
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1984478,
+          "odds_denominator": 9.09
+        }
+      ]
+    },
+    {
+      "game_number": "1585",
+      "name": "JACKPOT FORTUNE",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:40.700Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1585",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1585",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "JACKPOT ($500K/YR/20",
+          "label": "$500K Annual Installments",
+          "amount": 10000000,
+          "original": 3,
+          "odds_denominator": 6048683.33
+        },
+        {
+          "source_label": "$50000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 25,
+          "odds_denominator": 725842.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 40,
+          "odds_denominator": 453651.25
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 1804,
+          "odds_denominator": 10058.79
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 3051,
+          "odds_denominator": 5947.57
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 45439,
+          "odds_denominator": 399.35
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 83662,
+          "odds_denominator": 216.9
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 113635,
+          "odds_denominator": 159.69
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 725722,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 1088791,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 2903552,
+          "odds_denominator": 6.25
+        }
+      ]
+    },
+    {
+      "game_number": "1579",
+      "name": "$5,000,000 CASH ROYALE",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:42.554Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1579",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1579",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "Jackpot ($250K/YR/20",
+          "label": "$250K Annual Installments",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 4538562.5
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 77,
+          "odds_denominator": 235769.48
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 1806,
+          "odds_denominator": 10052.19
+        },
+        {
+          "source_label": "$2500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 3764,
+          "odds_denominator": 4823.13
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 51020,
+          "odds_denominator": 355.83
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 151423,
+          "odds_denominator": 119.89
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 453878,
+          "odds_denominator": 40.0
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 726225,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1452285,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1815182,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1571",
+      "name": "ALL CASH",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:43.270Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1571",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1571",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 1680,
+          "odds_denominator": 6176.55
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 21383,
+          "odds_denominator": 485.27
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 34596,
+          "odds_denominator": 299.94
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 259328,
+          "odds_denominator": 40.01
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 674574,
+          "odds_denominator": 15.38
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1245176,
+          "odds_denominator": 8.33
+        }
+      ]
+    },
+    {
+      "game_number": "1561",
+      "name": "INSTANT $500",
+      "price": 10,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:44.106Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1561",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1561",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 56773,
+          "odds_denominator": 326.45
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 185453,
+          "odds_denominator": 99.94
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 386143,
+          "odds_denominator": 48.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 463197,
+          "odds_denominator": 40.01
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 1112235,
+          "odds_denominator": 16.66
+        },
+        {
+          "source_label": "$15",
+          "label": "$15",
+          "amount": 15,
+          "original": 370842,
+          "odds_denominator": 49.98
+        },
+        {
+          "source_label": "$10",
+          "label": "$10",
+          "amount": 10,
+          "original": 1853183,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1546",
+      "name": "VIP MILLIONS",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:44.944Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1546",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1546",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$5000000",
+          "label": "$5,000,000",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 5481975.0
+        },
+        {
+          "source_label": "$1000000",
+          "label": "$1,000,000",
+          "amount": 1000000,
+          "original": 30,
+          "odds_denominator": 730930.0
+        },
+        {
+          "source_label": "$50000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 15,
+          "odds_denominator": 1461860.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 41,
+          "odds_denominator": 534826.83
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 564,
+          "odds_denominator": 38879.26
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 752,
+          "odds_denominator": 29159.44
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 45683,
+          "odds_denominator": 480.0
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 57378,
+          "odds_denominator": 382.17
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 84514,
+          "odds_denominator": 259.46
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 986725,
+          "odds_denominator": 22.22
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 1315865,
+          "odds_denominator": 16.66
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 3617830,
+          "odds_denominator": 6.06
+        }
+      ]
+    },
+    {
+      "game_number": "1540",
+      "name": "MILLIONAIRE MAKER",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:45.554Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1540",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1540",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$1000000",
+          "label": "$1,000,000",
+          "amount": 1000000,
+          "original": 20,
+          "odds_denominator": 1089650.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 160,
+          "odds_denominator": 136206.25
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 2284,
+          "odds_denominator": 9541.59
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 4550,
+          "odds_denominator": 4789.67
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 56072,
+          "odds_denominator": 388.66
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 170750,
+          "odds_denominator": 127.63
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 544963,
+          "odds_denominator": 39.99
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 871716,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 1743444,
+          "odds_denominator": 12.5
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 2179304,
+          "odds_denominator": 10.0
+        }
+      ]
+    },
+    {
+      "game_number": "1528",
+      "name": "$300,000,000 CASH PAYOUT",
+      "price": 20,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:46.143Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1528",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1528",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$5000000",
+          "label": "$5,000,000",
+          "amount": 5000000,
+          "original": 4,
+          "odds_denominator": 5186687.5
+        },
+        {
+          "source_label": "$500000",
+          "label": "$500,000",
+          "amount": 500000,
+          "original": 8,
+          "odds_denominator": 2593343.75
+        },
+        {
+          "source_label": "$50000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 20,
+          "odds_denominator": 1037337.5
+        },
+        {
+          "source_label": "$25000",
+          "label": "$25,000",
+          "amount": 25000,
+          "original": 40,
+          "odds_denominator": 518668.75
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 247,
+          "odds_denominator": 83994.94
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 3483,
+          "odds_denominator": 5956.57
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 51979,
+          "odds_denominator": 399.14
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 13824,
+          "odds_denominator": 1500.78
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 138309,
+          "odds_denominator": 150.0
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 415053,
+          "odds_denominator": 49.99
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 1244668,
+          "odds_denominator": 16.67
+        },
+        {
+          "source_label": "$40",
+          "label": "$40",
+          "amount": 40,
+          "original": 829889,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$30",
+          "label": "$30",
+          "amount": 30,
+          "original": 829737,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$20",
+          "label": "$20",
+          "amount": 20,
+          "original": 2323564,
+          "odds_denominator": 8.93
+        }
+      ]
+    },
+    {
+      "game_number": "1512",
+      "name": "X SERIES: 200X",
+      "price": 30,
+      "status": "active",
+      "start_date": null,
+      "end_date": null,
+      "verified_at": "2026-10-26T17:31:46.659Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1512",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1512",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$10000000",
+          "label": "$10,000,000",
+          "amount": 10000000,
+          "original": 5,
+          "odds_denominator": 4319110.0
+        },
+        {
+          "source_label": "$100000",
+          "label": "$100,000",
+          "amount": 100000,
+          "original": 15,
+          "odds_denominator": 1439703.33
+        },
+        {
+          "source_label": "$50000",
+          "label": "$50,000",
+          "amount": 50000,
+          "original": 25,
+          "odds_denominator": 863822.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 359925.83
+        },
+        {
+          "source_label": "$5000",
+          "label": "$5,000",
+          "amount": 5000,
+          "original": 546,
+          "odds_denominator": 39552.29
+        },
+        {
+          "source_label": "$2000",
+          "label": "$2,000",
+          "amount": 2000,
+          "original": 728,
+          "odds_denominator": 29664.22
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 25246,
+          "odds_denominator": 855.4
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 28675,
+          "odds_denominator": 753.11
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 72194,
+          "odds_denominator": 299.13
+        },
+        {
+          "source_label": "$150",
+          "label": "$150",
+          "amount": 150,
+          "original": 215991,
+          "odds_denominator": 99.98
+        },
+        {
+          "source_label": "$125",
+          "label": "$125",
+          "amount": 125,
+          "original": 215946,
+          "odds_denominator": 100.0
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 755840,
+          "odds_denominator": 28.57
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 863831,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 3779138,
+          "odds_denominator": 5.71
+        }
+      ]
+    },
+    {
+      "game_number": "1489",
+      "name": "$10,000,000 DELUXE",
+      "price": 30,
+      "status": "ended",
+      "start_date": null,
+      "end_date": "2025-11-06",
+      "verified_at": "2026-10-26T17:31:47.338Z",
+      "url": "https://nylottery.ny.gov/scratch-off-game?game=1489",
+      "provenance": [
+        "https://nylottery.ny.gov/scratch-off-game?game=1489",
+        "https://edit.nylottery.ny.gov/sites/default/files/Scratch-Off%20Game%20Reports%20as%20of%2010.26.2026.pdf",
+        "https://data.ny.gov/d/nzqa-7unk"
+      ],
+      "tiers": [
+        {
+          "source_label": "$10000000",
+          "label": "$10,000,000",
+          "amount": 10000000,
+          "original": 5,
+          "odds_denominator": 3521600.0
+        },
+        {
+          "source_label": "$100000",
+          "label": "$100,000",
+          "amount": 100000,
+          "original": 10,
+          "odds_denominator": 1760800.0
+        },
+        {
+          "source_label": "$10000",
+          "label": "$10,000",
+          "amount": 10000,
+          "original": 60,
+          "odds_denominator": 293466.67
+        },
+        {
+          "source_label": "$4000",
+          "label": "$4,000",
+          "amount": 4000,
+          "original": 295,
+          "odds_denominator": 59688.14
+        },
+        {
+          "source_label": "$2500",
+          "label": "$2,500",
+          "amount": 2500,
+          "original": 743,
+          "odds_denominator": 23698.52
+        },
+        {
+          "source_label": "$500",
+          "label": "$500",
+          "amount": 500,
+          "original": 3654,
+          "odds_denominator": 4818.83
+        },
+        {
+          "source_label": "$400",
+          "label": "$400",
+          "amount": 400,
+          "original": 5897,
+          "odds_denominator": 2985.93
+        },
+        {
+          "source_label": "$300",
+          "label": "$300",
+          "amount": 300,
+          "original": 7336,
+          "odds_denominator": 2400.22
+        },
+        {
+          "source_label": "$250",
+          "label": "$250",
+          "amount": 250,
+          "original": 22065,
+          "odds_denominator": 798.01
+        },
+        {
+          "source_label": "$200",
+          "label": "$200",
+          "amount": 200,
+          "original": 42636,
+          "odds_denominator": 412.98
+        },
+        {
+          "source_label": "$150",
+          "label": "$150",
+          "amount": 150,
+          "original": 176080,
+          "odds_denominator": 100.0
+        },
+        {
+          "source_label": "$125",
+          "label": "$125",
+          "amount": 125,
+          "original": 176080,
+          "odds_denominator": 100.0
+        },
+        {
+          "source_label": "$100",
+          "label": "$100",
+          "amount": 100,
+          "original": 616280,
+          "odds_denominator": 28.57
+        },
+        {
+          "source_label": "$75",
+          "label": "$75",
+          "amount": 75,
+          "original": 704320,
+          "odds_denominator": 25.0
+        },
+        {
+          "source_label": "$50",
+          "label": "$50",
+          "amount": 50,
+          "original": 3081400,
+          "odds_denominator": 5.71
+        }
+      ]
+    }
+  ]
+}

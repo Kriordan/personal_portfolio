@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Scratch-off comparison{% endblock %}
+{% block header %}<header class="lottery-topbar"><a href="{{ url_for('foyer.home') }}">Keith Riordan</a><span>Private tools</span><a href="{{ url_for('account.logout') }}">Logout</a></header>{% endblock %}
+{% block metadata %}<meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="{{ url_for('static', filename='css/lottery.css') }}">{% endblock %}
+{% block body %}
+<main class="lottery" id="scratch-offs">
+  <div class="lottery-heading"><p class="eyebrow">NY + CT · private comparison</p><h1>Before you pick a ticket.</h1><p>Compare the chance of a bigger prize using the latest saved lottery data.</p></div>
+  <form method="get" id="lottery-filters" class="lottery-filters">
+    <fieldset class="lottery-states"><legend class="sr-only">State</legend>
+      {% for value,label in [('ny','New York'),('ct','Connecticut')] %}<label><input type="radio" name="state" value="{{ value }}" {% if state==value %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+    </fieldset>
+    <div class="lottery-controls">
+      <fieldset><legend>Ticket price</legend><div class="lottery-prices">
+        {% for price in available %}<label><input type="checkbox" name="price" value="{{ price }}" {% if price in prices %}checked{% endif %}><span>{{ money(price) }}</span></label>{% else %}<span>Available after the first refresh</span>{% endfor %}
+      </div></fieldset>
+      <label>Prize target<select name="target" id="lottery-target">{% for amount in targets %}<option value="{{ amount }}" {% if target==amount %}selected{% endif %}>{{ money(amount) }}+</option>{% endfor %}</select></label>
+      <label>Compare by<select name="basis"><option value="ticket" {% if basis=='ticket' %}selected{% endif %}>Chance on one ticket</option><option value="dollar" {% if basis=='dollar' %}selected{% endif %}>Chance per dollar</option></select></label>
+    </div>
+    <div class="lottery-presets"><span>Quick targets</span><button type="submit" name="preset" value="1000" data-target="1000">$1,000+</button><button type="submit" name="preset" value="100000" data-target="100000">$100,000+</button></div>
+    <div class="lottery-search"><label for="lottery-query" class="sr-only">Search game name or number</label><input id="lottery-query" name="q" type="search" placeholder="Game name or number" value="{{ query }}"><button type="submit">Apply filters</button></div>
+    <input type="hidden" name="prices_set" value="1">
+  </form>
+
+  <aside class="lottery-note"><strong>Estimates, with limits.</strong> Unclaimed prizes include some tickets already purchased. Neither state publishes verified unsold-ticket counts. These estimates use lower-prize claims as a proxy; they do not predict an individual ticket. Prize targets use gross advertised awards, before tax. Store inventory is unknown.</aside>
+
+  <section aria-labelledby="picks-title">
+    <div class="lottery-section-heading"><h2 id="picks-title">{% if info.stale %}Dated comparisons{% else %}Today’s picks{% endif %}</h2><span class="lottery-badge {% if info.stale %}is-stale{% endif %}">{% if info.stale %}{{ 'Stale data' if info.snapshot else 'Awaiting first refresh' }}{% else %}Saved daily{% endif %}</span></div>
+    {% if info.snapshot %}<p class="lottery-meta">Source: {{ stamp(info.snapshot.source_at) }} · Last successful check: {{ stamp(info.checked) }}</p>{% endif %}
+    {% if info.stale and info.snapshot %}<p class="lottery-warning">The source data or last successful check is over 48 hours old. These dated results are retained for reference.</p>{% endif %}
+    {% if info.latest and info.latest.status=='failed' %}<p class="lottery-warning">Last refresh failed {{ stamp(info.latest.finished_at) }}: {{ info.latest.error }}</p>{% elif info.interrupted %}<p class="lottery-warning">The last refresh did not finish. The previous complete snapshot is still shown.</p>{% endif %}
+    <div class="lottery-picks">
+      {% for game in picks %}<article class="lottery-pick"><div class="lottery-pick-top"><span class="eyebrow">Choice {{ loop.index }}</span><strong>{{ money(game.price) }} ticket</strong></div><h3><a href="#game-{{ game.game_number }}">{{ game.name }}</a></h3><p class="lottery-meta">{{ state|upper }} · Game #{{ game.game_number }}</p><p class="lottery-odds">{{ odds(game.probability) }}</p><p>Estimated chance of {{ money(target) }}+ on one ticket</p><p class="lottery-meta">At launch: {{ odds(game.launch_probability) }} · {{ '{:,}'.format(game.qualifying_remaining) }} qualifying prizes unclaimed</p>{% if basis=='dollar' %}<p class="lottery-meta">Per dollar: {{ odds(game.per_dollar) }}</p>{% endif %}</article>{% else %}<p class="lottery-empty">No verified games with qualifying prizes match these prices and target.</p>{% endfor %}
+    </div>
+  </section>
+
+  <section aria-labelledby="games-title"><h2 id="games-title">Compare games <span class="lottery-count">{{ games|length }}</span></h2>
+    <p class="lottery-meta">Sorted by estimated {{ 'chance per dollar' if basis=='dollar' else 'chance on one ticket' }}. Match both the name and game number at the store.</p>
+    {% for game in games %}<details class="lottery-game" id="game-{{ game.game_number }}"><summary><div><span class="lottery-meta">#{{ game.game_number }} · {{ money(game.price) }} ticket</span><h3>{{ game.name }}</h3></div><div class="lottery-game-chance"><strong>{{ odds(game.probability) }}</strong><span>{{ 'Needs review' if game.reason and game.probability is none else 'estimated / ticket' }}</span></div></summary>
+      <div class="lottery-game-body">
+        {% if game.reason %}<p class="lottery-warning">{{ game.reason }}. Excluded from recommendations.</p>{% endif %}
+        <dl class="lottery-facts"><div><dt>Original {{ money(target) }}+ chance</dt><dd>{{ odds(game.launch_probability) }}</dd></div><div><dt>Estimated chance / dollar</dt><dd>{{ odds(game.per_dollar) }}</dd></div><div><dt>Qualifying prizes unclaimed</dt><dd>{{ '{:,}'.format(game.qualifying_remaining) if not game.issue else 'Unverified' }}</dd></div><div><dt>Top prizes unclaimed</dt><dd>{{ game.top_remaining }}</dd></div></dl>
+        <p class="lottery-meta">Source date: {{ stamp(game.source_at) }}{% if game.start_date %} · Launched {{ game.start_date }}{% endif %}{% if game.verified_at %}<br>NY metadata/status verified {{ stamp(game.verified_at) }}{% endif %}</p>
+        <div class="lottery-table-wrap" tabindex="0" role="region" aria-label="Prize table for {{ game.name }}"><table><thead><tr><th scope="col">Prize / payment terms</th><th scope="col">Original count</th><th scope="col">Unclaimed</th><th scope="col">Original chance</th></tr></thead><tbody>{% for tier in game.tiers %}<tr><th scope="row">{{ tier.label }}</th><td>{{ '{:,}'.format(tier.original) }}</td><td>{{ '{:,}'.format(tier.remaining) }}</td><td>{{ odds(tier.launch_probability) }}</td></tr>{% endfor %}</tbody></table></div>
+        <p class="lottery-meta">{% if game.retention %}Lower-prize unclaimed fraction: {{ '%.0f'|format(game.retention*100) }}%. {% endif %}Estimate = sum of each qualifying tier’s launch probability × its unclaimed fraction, divided by the fraction of prizes below $1,000 still unclaimed. Claim delays and different claim rates can distort this estimate. Original probabilities use {{ 'published tier odds' if state=='ny' else 'original prize counts / original ticket count' }}.</p>
+        <a href="{{ game.url }}" target="_blank" rel="noopener noreferrer">Official game details ↗</a>
+      </div></details>{% else %}<p class="lottery-empty">No games match your search.</p>{% endfor %}
+  </section>
+  {% if pending %}<details class="lottery-pending"><summary>{{ pending|length }} NY games awaiting verified details</summary><p>These feed entries may be new, lower-priced, or ended games. Price, status and prize values must be verified before they can appear in the comparison.</p><ul>{% for g in pending %}<li>#{{ g.game_number }} · {{ g.name }}</li>{% endfor %}</ul></details>{% endif %}
+
+  <section class="lottery-draw" aria-labelledby="draw-title"><div class="lottery-section-heading"><h2 id="draw-title">Big-jackpot check</h2>{% if draw.stale %}<span class="lottery-badge is-stale">{{ 'Stale' if draw.snapshot else 'Awaiting refresh' }}</span>{% endif %}</div><p class="lottery-meta">Advertised jackpots change; a larger jackpot does not improve the published chance of winning.</p>
+    {% if draw.latest and draw.latest.status=='failed' %}<p class="lottery-warning">Last jackpot refresh failed: {{ draw.latest.error }}</p>{% endif %}
+    <div class="lottery-draw-grid">{% if draw.snapshot %}{% for g in draw.snapshot.data.games %}<article><h3>{{ g.name }}</h3><strong class="lottery-jackpot">{{ money(g.jackpot) }}</strong><p>Advertised annuity · {{ money(g.cash) }} cash option</p><p>{{ money(g.price) }} ticket · Jackpot odds 1 in {{ '{:,}'.format(g.odds) }}</p><p>Next drawing as reported: {{ stamp(g.next_draw) }}</p><a href="{{ g.url }}" target="_blank" rel="noopener noreferrer">Official details ↗</a></article>{% endfor %}{% else %}<p>Jackpot data will appear after the first successful refresh.</p>{% endif %}</div>
+    <p class="lottery-meta">Retrieved: {{ stamp(draw.checked) }} · Updates once daily; drawing times are shown in Eastern time.</p>
+  </section>
+  <details class="lottery-health"><summary>Refresh status & methodology</summary><p>Collection is scheduled for 13:00 UTC daily (9 a.m. Eastern during daylight saving time, 8 a.m. otherwise). This is our collection time; neither lottery’s publication time is assumed. Page visits only read saved data.</p><p>New York prize counts update automatically from the official Open Data feed. Game prices, tier odds, payment terms and status are manually verified; new games stay unranked until verified. Connecticut data comes from public game pages. Ended games and games without qualifying prizes are excluded from recommendations.</p><p>The comparison measures the chance of a prize at or above your target, not expected profit. A higher ticket price does not automatically mean a better chance per dollar. Annuities use advertised gross awards, not an annual installment.</p><p>{{ state|upper }} scheduled run: {% if info.scheduled %}{{ info.scheduled.status }} · {{ stamp(info.scheduled.started_at) }}{% else %}Not yet observed{% endif %}<br>Jackpot scheduled run: {% if draw.scheduled %}{{ draw.scheduled.status }} · {{ stamp(draw.scheduled.started_at) }}{% else %}Not yet observed{% endif %}</p><p>Snapshots are retained for 90 days, plus the last successful snapshot during outages. Ties use lower ticket price, then game number.</p><p><a href="https://data.ny.gov/d/nzqa-7unk" target="_blank" rel="noopener noreferrer">NY official prize feed ↗</a> · <a href="https://ctlottery.com/games/scratch-games" target="_blank" rel="noopener noreferrer">CT official catalog ↗</a></p></details>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/lottery.js') }}" defer></script>{% endblock %}
