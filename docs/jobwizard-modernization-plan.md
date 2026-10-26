@@ -128,3 +128,20 @@ Keep the detailed results and unchecked items in [mobile validation](mobile-ui-v
 - Retain production EAS environment configuration, Google External/Testing expiry/branding/publishing, credential-consumer inventory before retirement, and the November 5 dependency-exception review. This slice adds no scheduled monitoring or unrelated dependency refresh.
 
 Implementation is in progress. See the smoke-test evidence for completed checks and remaining acceptance. Production storage permission changes were explicitly approved on October 21; the additive policy was applied and verified. The existing ApiLeap endpoint returned HTTP 500, so live capture remains disabled until a successful readiness check.
+
+
+## Index layout refinement — October 25, 2026
+
+The user requested less vertical space for browsing controls and a simulator-first review cycle before another EAS preview. Earlier repository design notes specify shared Grocery/Wishlist components; they do not identify Things as the original design source.
+
+Official references reviewed:
+
+- [Things Quick Find](https://culturedcode.com/things/support/articles/2803584/): iPhone search is revealed by pulling down in a list. It is not specifically a persistent top-right search button.
+- [Things tag filtering](https://culturedcode.com/things/support/articles/2803581/): the iPhone More menu exposes Filter by Tag; an active filter has a visible bar and a clear action. The official iPhone example was inspected visually.
+- [Todoist sorting](https://www.todoist.com/help/todoist/features/sort-or-group-tasks-in-todoist-WFWD0hrb): a top-right view control opens grouping/sorting options, and applied options remain visible.
+- [Reminders list organization](https://support.apple.com/en-eg/guide/iphone/iph82596cb20/ios): Sort By lives in the More menu.
+- [Apple button guidance](https://developer.apple.com/design/human-interface-guidelines/buttons): compact icons still need a comfortable hit region (normally at least 44 points).
+
+The local iteration uses a search icon and Add plus beside the content title, a short count/privacy line, and adjacent native filter/sort menus. The menu triggers show an icon plus the selected value (Active, Newest saved, etc.) so the list's scope/order are visible without reopening menus. Search expands into a labelled field with Cancel, which clears the query and collapses it. Pull-to-refresh keeps its existing purpose. Defaults, search composition, stable sorting, account scoping, recovery/status alerts, and Add guards are unchanged. Controls can wrap on narrower layouts; icon actions have 48-point touch regions.
+
+This uses existing native modules and local development clients. No cloud build, new dependency, backend change, deployment, or paid provider request is needed for this iteration. Review the simulator screenshots before approving a new EAS preview. Full large-text, assistive-technology and physical-device acceptance remain separate follow-ups.

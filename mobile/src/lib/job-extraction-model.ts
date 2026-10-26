@@ -51,6 +51,28 @@ export interface ReviewedDetails {
   extraction_id: string;
   bullets: { index: number; text: string }[];
 }
+/** Empty selection may skip a new summary, but must never erase an existing one. */
+export function reviewSelectionError(
+  fields: { title?: string; company_name?: string },
+  bullets: ReviewedDetails['bullets'] | undefined,
+  hasExistingDetails: boolean,
+) {
+  if (
+    Object.values(fields).some(
+      (value) => !value.trim() || [...value].length > 200,
+    )
+  )
+    return 'Title and company need 1–200 characters.';
+  if (bullets && !bullets.length && hasExistingDetails)
+    return 'Select a detail or choose Keep current details.';
+  if (
+    bullets?.some(
+      (bullet) => !bullet.text.trim() || [...bullet.text].length > 300,
+    )
+  )
+    return 'Each selected detail needs 1–300 characters. Edit it or deselect it.';
+  return null;
+}
 export function reviewedDetailsError(
   source: { url: string; revision?: number },
   url: string,
@@ -71,8 +93,25 @@ export interface AcceptedDetails {
   bullets: (SuggestedBullet & { edited: boolean })[];
 }
 // Follow the current draft until the reviewer makes an explicit choice.
-export function useSuggestedField(choice: boolean | null, current: string) {
+export function suggestedFieldSelected(
+  choice: boolean | null,
+  current: string,
+) {
   return choice ?? !current.trim();
+}
+export interface ReviewFieldChoice {
+  selected: boolean;
+  compared: string;
+}
+/** An earlier choice must not replace text edited after leaving Review. */
+export function reviewFieldSelected(
+  choice: ReviewFieldChoice | null,
+  current: string,
+) {
+  return suggestedFieldSelected(
+    choice?.compared === current ? choice.selected : null,
+    current,
+  );
 }
 export function extractionMatches(
   extraction: Extraction,
@@ -93,9 +132,7 @@ export function validExtractionRequest(
   const request = value as ExtractionRequest;
   return (
     typeof request.request_id === 'string' &&
-    /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(
-      request.request_id,
-    ) &&
+    /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(request.request_id) &&
     typeof request.listing_url === 'string' &&
     request.listing_url.length <= 2048 &&
     (request.job_id === undefined ||
