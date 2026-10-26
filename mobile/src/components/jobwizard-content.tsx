@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { Card, InlineError, NativeAction } from './screen';
 import { ThemedText } from './themed-text';
+import { JobInfoButton } from './job-form-controls';
+import { JobHelpContent } from './job-help-content';
 import { useJobActivity, useJobCapture } from '@/hooks/use-jobwizard';
 import { confirmAction } from '@/lib/confirm-action';
 import {
@@ -123,6 +125,7 @@ export function JobScreenshot({
   const query = useJobCapture(job.id, true);
   const router = useRouter();
   const status = query.data?.capture;
+  const [showHelp, setShowHelp] = useState(false);
   const [failedUri, setFailedUri] = useState<string | null>(null),
     attemptedRenewal = useRef<string | null>(null),
     confirming = useRef(false);
@@ -150,12 +153,17 @@ export function JobScreenshot({
   const image = status?.image;
   return (
     <Card>
-      <ThemedText type="subtitle" accessibilityRole="header">
-        Screenshot
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Save a snapshot of the listing while it’s available.
-      </ThemedText>
+      <View style={styles.heading}>
+        <ThemedText type="subtitle" accessibilityRole="header">
+          Screenshot
+        </ThemedText>
+        <JobInfoButton
+          label="About screenshot capture"
+          expanded={showHelp}
+          onPress={() => setShowHelp(!showHelp)}
+        />
+      </View>
+      {showHelp ? <JobHelpContent topic="capture" /> : null}
       {query.isPending ? (
         <ThemedText>Loading screenshot status…</ThemedText>
       ) : null}
@@ -242,9 +250,7 @@ export function JobScreenshot({
         />
       ) : status?.supported === false ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Capture supports public Gem, Greenhouse, Lever, Ashby and Workday
-          listing links. This link is not supported yet; you can still save and
-          open it.
+          Capture isn’t supported for this link. You can still save and open it.
         </ThemedText>
       ) : status ? (
         <ThemedText type="small" themeColor="textSecondary">
@@ -252,11 +258,16 @@ export function JobScreenshot({
           still works.
         </ThemedText>
       ) : null}
-      <ThemedText type="small" themeColor="textSecondary">
-        Optional capture sends the public listing URL to Browserless. Embedded
-        videos are omitted. Check the preview against the original listing.
-      </ThemedText>
     </Card>
   );
 }
-const styles = StyleSheet.create({ gap: { gap: 8 } });
+const styles = StyleSheet.create({
+  gap: { gap: 8 },
+  heading: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+});

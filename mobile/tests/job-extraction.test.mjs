@@ -5,10 +5,31 @@ import { ExtractionSession } from '../src/lib/job-extraction-session.ts';
 import {
   extractionMatches,
   reviewedDetailsError,
-  useSuggestedField,
+  reviewSelectionError,
+  reviewFieldSelected,
+  suggestedFieldSelected,
   validExtractionRequest,
 } from '../src/lib/job-extraction-model.ts';
 const url = 'https://job-boards.greenhouse.io/acme/jobs/123';
+test('review choices survive Back but cannot replace a subsequent manual edit', () => {
+  const choice = { selected: true, compared: 'My title' };
+  assert.equal(reviewFieldSelected(choice, 'My title'), true);
+  assert.equal(reviewFieldSelected(choice, 'My revised title'), false);
+  assert.equal(reviewFieldSelected({ selected: false, compared: '' }, ''), false);
+  assert.equal(reviewFieldSelected(null, ''), true);
+});
+test('review can skip new bullets but cannot clear an existing summary by deselecting all', () => {
+  assert.equal(reviewSelectionError({ title: 'Manual title' }, [], false), null);
+  assert.match(reviewSelectionError({}, [], true), /Keep current details/);
+  assert.equal(reviewSelectionError({}, undefined, true), null);
+  assert.equal(reviewSelectionError({}, [{ index: 4, text: 'Keep this selected detail.' }], true), null);
+});
+test('review validates only selected values using the API Unicode limits', () => {
+  assert.equal(reviewSelectionError({ title: '𠮷'.repeat(200) }, [{ index: 0, text: '𠮷'.repeat(300) }], false), null);
+  assert.match(reviewSelectionError({ company_name: '𠮷'.repeat(201) }, undefined, false), /1–200/);
+  assert.match(reviewSelectionError({}, [{ index: 3, text: ' ' }], false), /Edit it or deselect/);
+  assert.match(reviewSelectionError({}, [{ index: 3, text: '𠮷'.repeat(301) }], false), /1–300/);
+});
 test('a definitive rejected read is not restored as an unknown paid operation', async () => {
   for (const status of [400, 404, 410]) {
     const h = harness({
@@ -117,10 +138,10 @@ test('reviewed bullets stay bound to their URL and revision after conflict recov
   assert.match(reviewedDetailsError({ url }, `${url}4`), /URL changed/);
 });
 test('late manual entry stays protected until replacement is explicitly selected', () => {
-  assert.equal(useSuggestedField(null, ''), true);
-  assert.equal(useSuggestedField(null, 'My saved title'), false);
-  assert.equal(useSuggestedField(true, 'My saved title'), true);
-  assert.equal(useSuggestedField(false, ''), false);
+  assert.equal(suggestedFieldSelected(null, ''), true);
+  assert.equal(suggestedFieldSelected(null, 'My saved title'), false);
+  assert.equal(suggestedFieldSelected(true, 'My saved title'), true);
+  assert.equal(suggestedFieldSelected(false, ''), false);
 });
 const deferred = () => {
   let resolve;
