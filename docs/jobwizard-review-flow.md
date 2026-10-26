@@ -44,6 +44,7 @@ Automated validation: TypeScript, ESLint, all 97 mobile tests (including selecti
 - [x] Verify visible extraction failure, dirty-draft cancellation, manual saving, revision conflict and lost-response recovery on the local iPhone fixture.
 - [x] Check a larger iPhone text setting and reach the bottom of Review without clipped actions.
 - [x] User approved an iPhone device preview after reviewing the simulator screenshots on October 26.
+- [x] User installed preview `2a14bf09`, confirmed it looks good on the physical iPhone, and explicitly approved merging on October 26. This records device/UI acceptance; the individual failure/accessibility/lifecycle scenarios below remain open unless separately verified.
 - [ ] Physical iPhone: paste the actual Justworks listing, Suggest details, review/edit/deselect, Apply and Save; also manually save after a definitive rejected extraction. Fixture use of the URL does not validate the production listing.
 - [ ] Complete Android hardware Back/gesture and text-entry checks. The integrated emulator did not forward host keyboard/back actions reliably; touch navigation, selection and save checks above succeeded.
 - [ ] Complete VoiceOver/TalkBack focus order/announcements, smallest supported devices, maximum accessibility text sizes, software keyboard and dark-mode combinations.
@@ -63,6 +64,6 @@ The [iPhone preview `2a14bf09`](https://expo.dev/accounts/kriordan/projects/pers
 4. Edit the saved job. Verify existing values/details default to Keep, keyboard controls remain reachable, and Cancel asks before discarding a changed draft. Inspect the detail actions and full screenshot viewer.
 5. Repeat the main form/review with a larger text setting; check visible failures/recovery rather than retrying an uncertain operation as a new request.
 
-Merge only after physical acceptance and successful checks. PR #122 is the parent and must merge first. Then retarget #127 to `main`, confirm its diff contains only this follow-up, rerun/check the full CI and CodeQL results, and mark it ready for merge. The three checks on the stacked PR alone do not establish the post-retarget security-check result. These mobile changes do not require a Flask deployment. Broader unchecked validation and security follow-ups above remain open.
+On October 26, the user confirmed the preview looks good on the physical device and authorized merging. PR #122 merged as `152a0a74cb1df5b501465ca7d91651be9cb4b495`; #127 was then retargeted to `main`, with its diff verified to contain only this follow-up. Merge #127 after its full CI and CodeQL checks pass. The three checks on the earlier stacked PR alone do not establish the post-retarget security-check result. These mobile changes do not require a Flask deployment. Broader unchecked validation and security follow-ups above remain open.
 
 Related: [Jobwizard smoke test](jobwizard-smoke-test.md), [extraction checklist](jobwizard-extraction.md), [mobile UI validation](mobile-ui-validation.md).
