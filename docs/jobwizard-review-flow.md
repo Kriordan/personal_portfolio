@@ -43,12 +43,26 @@ Automated validation: TypeScript, ESLint, all 97 mobile tests (including selecti
 - [x] Verify selected bullets persist only after Apply followed by Save; keeping an existing summary does not replace it.
 - [x] Verify visible extraction failure, dirty-draft cancellation, manual saving, revision conflict and lost-response recovery on the local iPhone fixture.
 - [x] Check a larger iPhone text setting and reach the bottom of Review without clipped actions.
-- [ ] User approval of these simulator screenshots before any new EAS preview.
+- [x] User approved an iPhone device preview after reviewing the simulator screenshots on October 26.
 - [ ] Physical iPhone: paste the actual Justworks listing, Suggest details, review/edit/deselect, Apply and Save; also manually save after a definitive rejected extraction. Fixture use of the URL does not validate the production listing.
 - [ ] Complete Android hardware Back/gesture and text-entry checks. The integrated emulator did not forward host keyboard/back actions reliably; touch navigation, selection and save checks above succeeded.
 - [ ] Complete VoiceOver/TalkBack focus order/announcements, smallest supported devices, maximum accessibility text sizes, software keyboard and dark-mode combinations.
 - [ ] Preserve prior offline/background/relaunch/account-switch and signed-image expiry checks in the linked checklists; this change does not close them.
 
-No new EAS/cloud build, deployment, OTA update or signing change was performed. The earlier preview `6424dc30-5b56-4de8-bef7-9c1c58abd1d4` predates the index and this form cleanup. Apple certificate D6D52 revocation remains user-operated after replacement installation. Sentry remains separate PR #123. Dependency exceptions and their November 5 review are unchanged.
+At the local-review stage, no new EAS/cloud build, deployment, OTA update or signing change was performed. The earlier preview `6424dc30-5b56-4de8-bef7-9c1c58abd1d4` predates the index and this form cleanup. Apple certificate D6D52 revocation remains user-operated after replacement installation. Sentry remains separate PR #123. Dependency exceptions and their November 5 review are unchanged.
+
+## Physical-iPhone acceptance and merge order
+
+The user approved a preview build on October 26. It includes both PR #122 and this follow-up, PR #127, and uses the deployed Heroku API. Use a clearly labelled test job because saves affect the live account.
+
+The [iPhone preview `2a14bf09`](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2a14bf09-edcd-4690-b810-c322f1b5b9c3) finished October 26 at **17:21:26 UTC** from application commit `fd4d990e56747d6b8e17146ab7c208db7897edf3` (version 1.0.0/build 1). The downloaded IPA passes strict/deep signature verification, uses replacement certificate `FBC7A` in both its signature and embedded profile, includes the registered iPhone, and disables debugging. Its JavaScript bundle contains the production API URL and excludes the local fixture URL. IPA SHA-256: `bb70ea406ef27c22febcf8dbc2c525d9da0e459ac62c3a5a342ef5357bcf44fd`. The inspected upload matches the intended source and excludes local environment/credential files, dependencies, databases and generated native projects. EAS used frozen existing credentials without Apple sign-in or signing changes. Successful build and signature checks do not establish physical-device acceptance.
+
+1. Verify the compact index: expand/cancel search, select filter and sort, and open Add job.
+2. Paste the reported Justworks listing. Confirm Suggest details starts, opens Review when ready, and shows a useful error if extraction fails. Manual saving must remain possible after a definitive rejection.
+3. Enter a manual title before Review. Check Keep mine, Source, editing/deselecting a bullet, Back/reopen, and Apply to draft. Save and reopen the job to verify the selected values/details persisted.
+4. Edit the saved job. Verify existing values/details default to Keep, keyboard controls remain reachable, and Cancel asks before discarding a changed draft. Inspect the detail actions and full screenshot viewer.
+5. Repeat the main form/review with a larger text setting; check visible failures/recovery rather than retrying an uncertain operation as a new request.
+
+Merge only after physical acceptance and successful checks. PR #122 is the parent and must merge first. Then retarget #127 to `main`, confirm its diff contains only this follow-up, rerun/check the full CI and CodeQL results, and mark it ready for merge. The three checks on the stacked PR alone do not establish the post-retarget security-check result. These mobile changes do not require a Flask deployment. Broader unchecked validation and security follow-ups above remain open.
 
 Related: [Jobwizard smoke test](jobwizard-smoke-test.md), [extraction checklist](jobwizard-extraction.md), [mobile UI validation](mobile-ui-validation.md).
