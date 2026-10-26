@@ -1,16 +1,20 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
 
-export function SourceLink({ expanded, onPress, detail }: {
+export function SourceLink({
+  expanded,
+  onPress,
+  detail,
+}: {
   expanded: boolean;
   onPress(): void;
-  detail: number;
+  detail: number | string;
 }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${expanded ? 'Hide' : 'Show'} source for detail ${detail}`}
+      accessibilityLabel={`${expanded ? 'Hide' : 'Show'} source for ${typeof detail === 'number' ? `detail ${detail}` : detail}`}
       accessibilityState={{ expanded }}
       style={styles.link}
     >
@@ -21,6 +25,11 @@ export function SourceLink({ expanded, onPress, detail }: {
   );
 }
 const styles = StyleSheet.create({
-  link: { alignSelf: 'flex-start', minWidth: 48, minHeight: 44, justifyContent: 'center' },
+  link: {
+    alignSelf: 'flex-start',
+    minWidth: 48,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   text: { textDecorationLine: 'underline' },
 });

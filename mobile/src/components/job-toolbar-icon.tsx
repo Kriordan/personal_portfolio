@@ -7,10 +7,19 @@ const paths = {
   add: '<path d="M12 4v16M4 12h16"/>',
   filter: '<path d="M3 6h18M6 12h12M10 18h4"/>',
   sort: '<path d="M8 20V4L4 8m4-4 4 4M16 4v16l4-4m-4 4-4-4"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/>',
+  selected: '<circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/>',
+  unselected: '<circle cx="12" cy="12" r="9"/>',
 } as const;
 
 export function JobToolbarIcon({ name }: { name: keyof typeof paths }) {
   const theme = useTheme();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${theme.accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`;
-  return <Image accessible={false} source={{ uri: `data:image/svg+xml;base64,${btoa(svg)}` }} style={{ width: 22, height: 22 }} />;
+  return (
+    <Image
+      accessible={false}
+      source={{ uri: `data:image/svg+xml;base64,${btoa(svg)}` }}
+      style={{ width: 22, height: 22 }}
+    />
+  );
 }

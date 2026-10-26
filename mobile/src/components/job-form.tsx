@@ -1,11 +1,26 @@
-import { Button, FieldGroup, Host, RNHostView, Text } from '@expo/ui';
-import { useNavigation } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeField } from './native-form';
-import { InlineError, PageHeading, ScreenState } from './screen';
+import { Card, InlineError, ScreenState } from './screen';
+import {
+  JobFormField,
+  JobInfoButton,
+  JobTextAction,
+  jobFormStyles as styles,
+} from './job-form-controls';
+import { JobHelpContent } from './job-help-content';
+import { JobImportantDetails } from './job-important-details';
 import { ThemedText } from './themed-text';
 import { ExtractionReview } from './job-extraction-review';
 import { useJobExtraction } from '@/hooks/use-job-extraction';
@@ -13,6 +28,7 @@ import {
   extractionMatches,
   reviewedDetailsError,
   type ReviewedDetails,
+  type Extraction,
 } from '@/lib/job-extraction-model';
 import { JobActivityStatus } from './jobwizard-content';
 import { useJobActivity } from '@/hooks/use-jobwizard';
@@ -90,11 +106,33 @@ function ReadyJobForm({
     [latest, setLatest] = useState<Job | null>(null),
     [error, setError] = useState<string | null>(null);
   const [finished, setFinished] = useState<Job | 'close' | null>(null),
-    [sheetVersion, setSheetVersion] = useState(0),
-    [width, setWidth] = useState(320);
-  const ownRequest = useRef<string | null>(
-      restoring?.input.request_id ?? null,
-    ),
+    [sheetVersion, setSheetVersion] = useState(0);
+  const [page, setPage] = useState<'form' | 'review' | 'help' | 'details'>(
+    'form',
+  );
+  const helpReturn = useRef<'form' | 'review'>('form');
+  const formScroll = useRef<ScrollView>(null);
+  const [reviewContext, setReviewContext] = useState<{
+    extraction: Extraction;
+    current: JobInput;
+    summary: { text: string }[];
+  } | null>(null);
+  const navigate = (next: typeof page) => {
+    Keyboard.dismiss();
+    setPage(next);
+    AccessibilityInfo.announceForAccessibility(
+      next === 'review'
+        ? 'Review suggestions'
+        : next === 'help'
+          ? 'About suggestions'
+          : next === 'details'
+            ? 'Important details'
+            : job
+              ? 'Edit job'
+              : 'Add job',
+    );
+  };
+  const ownRequest = useRef<string | null>(restoring?.input.request_id ?? null),
     submitting = useRef(false),
     notified = useRef(false),
     mounted = useRef(true);
@@ -112,15 +150,6 @@ function ReadyJobForm({
     extraction.result.status !== 'accepted' &&
     usedId !== extraction.result.id &&
     extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
-  const suggestionNotice = extraction.working
-    ? extraction.stage === 'read'
-      ? 'Reading the listing. You can keep this form open while it finishes.'
-      : 'Preparing the bullet summary. Your draft is unchanged.'
-    : reviewing && extraction.result?.status === 'complete'
-      ? 'Suggestions are ready. Scroll down to review them, then choose Use selected suggestions.'
-      : reviewing && extraction.result?.can_summarize
-        ? 'The listing has been read. Continue preparing details to finish the summary.'
-        : null;
   const dirty =
     title.text !== initial.title ||
     company.text !== initial.company_name ||
@@ -147,8 +176,16 @@ function ReadyJobForm({
       );
     else setFinished('close');
   };
+  const back = () => {
+    if (page === 'form') close();
+    else navigate(page === 'help' ? helpReturn.current : 'form');
+  };
   usePreventRemove(isAuthenticated === true && !finished, ({ data }) => {
     if (submitting.current || activity.phase === 'saving') return;
+    if (page !== 'form') {
+      back();
+      return;
+    }
     if (changed())
       confirmAction(
         'Discard draft?',
@@ -191,10 +228,12 @@ function ReadyJobForm({
   }, [dirty, busy, finished]);
   const save = async () => {
     if (submitting.current || busy) return;
+    Keyboard.dismiss();
     const values = input(),
       problem = jobValidation(values, job);
     if (problem) {
       setError(problem);
+      formScroll.current?.scrollTo({ y: 0, animated: true });
       return;
     }
     submitting.current = true;
@@ -204,6 +243,7 @@ function ReadyJobForm({
       : null;
     if (reviewError) {
       setError(reviewError);
+      formScroll.current?.scrollTo({ y: 0, animated: true });
       submitting.current = false;
       return;
     }
@@ -231,51 +271,197 @@ function ReadyJobForm({
         setError('Couldn’t load the latest job. Your draft is unchanged.');
     }
   };
+  const matches =
+    !!extraction.result &&
+    extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
+  const canReview =
+    reviewing &&
+    extraction.result?.status !== 'running' &&
+    !!(
+      extraction.result?.fields.title ||
+      extraction.result?.fields.company_name ||
+      extraction.result?.result?.bullets.length
+    );
+  const canContinue = matches && extraction.result?.can_summarize;
+  const retryable =
+    matches && ['failed', 'interrupted'].includes(extraction.result!.status);
+  const currentDetails =
+    review?.details.bullets ?? job?.accepted_details?.bullets ?? [];
+  const reviewProblem = review
+    ? reviewedDetailsError(review, url.text, revision)
+    : null;
+  const showHelp = () => {
+    helpReturn.current = page === 'review' ? 'review' : 'form';
+    navigate('help');
+  };
+  const openReview = () => {
+    const result = extraction.result;
+    if (
+      !result ||
+      !extractionMatches(result, url.read(), job?.id ?? null, revision)
+    ) {
+      setError('The URL or job version changed. Suggest details again.');
+      return;
+    }
+    // Snapshot live native values, not possibly delayed React change events.
+    setReviewContext({
+      extraction: result,
+      current: {
+        title: title.read(),
+        company_name: company.read(),
+        listing_url: url.read(),
+      },
+      summary: currentDetails,
+    });
+    navigate('review');
+  };
+  const suggest = () => {
+    if (busy || !extraction.ready || extraction.working || extraction.uncertain)
+      return;
+    Keyboard.dismiss();
+    const sourceUrl = url.read().trim();
+    // Native text may be newer than the React event used to render the button.
+    const liveMatch =
+      !!extraction.result &&
+      extractionMatches(
+        extraction.result,
+        sourceUrl,
+        job?.id ?? null,
+        revision,
+      );
+    if (liveMatch && extraction.result?.can_summarize) {
+      void extraction.session.continue();
+      return;
+    }
+    setUsedId(null);
+    void extraction.session.begin(
+      {
+        listing_url: sourceUrl,
+        ...(liveMatch &&
+        ['failed', 'interrupted'].includes(extraction.result!.status)
+          ? { retry_of: extraction.result!.id }
+          : {}),
+        ...(job ? { job_id: job.id, expected_revision: revision } : {}),
+      },
+      () => mounted.current && url.read().trim() === sourceUrl,
+    );
+  };
+  const applyReview = (
+    fields: Partial<JobInput>,
+    details: ReviewedDetails | undefined,
+    compared: JobInput,
+  ) => {
+    if (
+      !reviewContext ||
+      !extractionMatches(
+        reviewContext.extraction,
+        url.read(),
+        job?.id ?? null,
+        revision,
+      )
+    )
+      return 'The URL or job version changed. Return to the form and suggest details again.';
+    if (
+      (fields.title !== undefined && title.read() !== compared.title) ||
+      (fields.company_name !== undefined &&
+        company.read() !== compared.company_name)
+    )
+      return 'Your text changed while reviewing. Return to the form and review the current values before replacing them.';
+    if (fields.title !== undefined) title.set(fields.title);
+    if (fields.company_name !== undefined) company.set(fields.company_name);
+    if (details) setReview({ details, url: url.read().trim(), revision });
+    setUsedId(reviewContext.extraction.id);
+    setError(null);
+    navigate('form');
+    return null;
+  };
+  const discardDetails = () => {
+    setReview(null);
+    setUsedId(null);
+    setReviewContext(null);
+  };
+  const suggestLabel = extraction.working
+    ? extraction.stage === 'read'
+      ? 'Reading listing…'
+      : 'Preparing suggestions…'
+    : canContinue
+      ? 'Continue preparing details'
+      : retryable
+        ? extraction.result!.stage === 'summary'
+          ? 'Retry summary'
+          : 'Read listing again'
+        : canReview || usedId
+          ? 'Suggest again'
+          : 'Suggest details';
+  const titleLabel =
+    page === 'form'
+      ? job
+        ? 'Edit job'
+        : 'Add job'
+      : page === 'review'
+        ? 'Review suggestions'
+        : page === 'help'
+          ? 'About suggestions'
+          : 'Important details';
   const content = (
     <SafeAreaView
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-      edges={
-        job ? ['top', 'left', 'right', 'bottom'] : ['left', 'right', 'bottom']
-      }
-      style={{ flex: 1, backgroundColor: theme.background }}
+      edges={['top', 'left', 'right', 'bottom']}
+      style={[styles.fill, { backgroundColor: theme.background }]}
     >
+      {!job ? <Stack.Screen options={{ headerShown: false }} /> : null}
+      <View
+        style={[
+          localStyles.toolbar,
+          { borderBottomColor: theme.backgroundSelected },
+        ]}
+      >
+        <JobTextAction
+          label={page === 'form' ? 'Cancel' : 'Back'}
+          disabled={activity.phase === 'saving'}
+          onPress={back}
+        />
+        <ThemedText accessibilityRole="header" style={localStyles.toolbarTitle}>
+          {titleLabel}
+        </ThemedText>
+        {page === 'form' ? (
+          <JobTextAction
+            label={activity.phase === 'saving' ? 'Saving…' : 'Save'}
+            disabled={busy}
+            onPress={() => void save()}
+          />
+        ) : page === 'review' ? (
+          <JobInfoButton label="About suggestions" onPress={showHelp} />
+        ) : (
+          <View style={localStyles.toolbarSpacer} />
+        )}
+      </View>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.fill}
         behavior={Platform.OS === 'android' ? 'height' : undefined}
       >
-        <Host style={{ flex: 1 }} seedColor={theme.accent}>
-          <FieldGroup>
-            <FieldGroup.Section>
-              <RNHostView matchContents>
-                <View style={{ width: Math.max(1, width - 64) }}>
-                  <PageHeading
-                    title={job ? 'Edit job' : 'Add job'}
-                    subtitle="Paste a listing link, review optional suggestions, then save. Screenshot capture is available afterward."
-                  />
-                </View>
-              </RNHostView>
-              <NativeField
-                label="Listing URL"
-                {...url.input}
-                editable={!busy}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                returnKeyType="done"
-              />
-              <Text>
-                Optional: Browserless reads the public listing. OpenAI
-                summarizes its text. Your notes, profile and screenshots are
-                not sent.
-              </Text>
-              <Button
-                label={
-                  extraction.working
-                    ? extraction.stage === 'read'
-                      ? 'Reading listing…'
-                      : 'Preparing suggestions…'
-                    : 'Suggest details'
-                }
+        <ScrollView
+          ref={formScroll}
+          style={page !== 'form' && styles.hidden}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
+          {error ? <InlineError message={error} /> : null}
+          <JobActivityStatus activity={activity} />
+          <View style={styles.compact}>
+            <JobFormField
+              label="Listing URL"
+              {...url.input}
+              editable={!busy}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="done"
+            />
+            <View style={styles.spread}>
+              <JobTextAction
+                label={suggestLabel}
+                onPress={suggest}
                 disabled={
                   busy ||
                   !extraction.ready ||
@@ -283,64 +469,57 @@ function ReadyJobForm({
                   extraction.uncertain ||
                   !safeJobUrl(url.text.trim())
                 }
-                onPress={() => {
-                  const sourceUrl = url.read().trim();
-                  setUsedId(null);
-                  void extraction.session.begin(
-                    {
-                      listing_url: sourceUrl,
-                      ...(job
-                        ? { job_id: job.id, expected_revision: revision }
-                        : {}),
-                    },
-                    () => mounted.current && url.read().trim() === sourceUrl,
-                  );
-                }}
               />
-              {extraction.error || suggestionNotice ? (
-                <RNHostView matchContents>
-                  <View style={{ width: Math.max(1, width - 64) }}>
-                    {extraction.error ? (
-                      <InlineError message={extraction.error} />
-                    ) : (
-                      <ThemedText accessibilityLiveRegion="polite">
-                        {suggestionNotice}
-                      </ThemedText>
-                    )}
-                  </View>
-                </RNHostView>
-              ) : null}
+              <View style={styles.row}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  AI suggestions
+                </ThemedText>
+                <JobInfoButton label="About suggestions" onPress={showHelp} />
+              </View>
+            </View>
+            {extraction.working ? (
+              <ThemedText
+                type="small"
+                themeColor="textSecondary"
+                accessibilityLiveRegion="polite"
+              >
+                {extraction.stage === 'read'
+                  ? 'Reading the public listing…'
+                  : 'Preparing the bullet summary…'}
+              </ThemedText>
+            ) : null}
+            {extraction.error ? (
+              <InlineError message={extraction.error} />
+            ) : null}
+            {!extraction.ready ? (
+              <JobTextAction
+                label="Restore suggestion status"
+                onPress={() => void extraction.session.restore()}
+              />
+            ) : null}
+            {extraction.request &&
+            !url.text.trim() &&
+            (extraction.request.job_id ?? null) === (job?.id ?? null) ? (
+              <JobTextAction
+                label="Use previous listing URL"
+                disabled={busy}
+                onPress={() => url.set(extraction.request!.listing_url)}
+              />
+            ) : null}
+            <View style={styles.row}>
               {extraction.request &&
-              !url.text.trim() &&
-              (extraction.request.job_id ?? null) === (job?.id ?? null) ? (
-                <Button
-                  label="Use previous listing URL"
-                  variant="text"
-                  disabled={busy}
-                  onPress={() => url.set(extraction.request!.listing_url)}
-                />
-              ) : null}
-              {!extraction.ready ? (
-                <Button
-                  label="Restore suggestion status"
-                  variant="text"
-                  onPress={() => void extraction.session.restore()}
-                />
-              ) : null}
-              {extraction.request ? (
-                <Button
+              extraction.uncertain &&
+              !extraction.working ? (
+                <JobTextAction
                   label="Check suggestion status"
-                  variant="text"
-                  disabled={extraction.working}
                   onPress={() => void extraction.session.check()}
                 />
               ) : null}
               {extraction.request &&
               !extraction.result &&
               !extraction.working ? (
-                <Button
+                <JobTextAction
                   label="Retry same request"
-                  variant="outlined"
                   disabled={busy}
                   onPress={() => {
                     const request = extraction.request!;
@@ -354,230 +533,169 @@ function ReadyJobForm({
                   }}
                 />
               ) : null}
-              {extraction.result &&
-              extractionMatches(
-                extraction.result,
-                url.text,
-                job?.id ?? null,
-                revision,
-              ) &&
-              extraction.result.can_summarize ? (
-                <Button
-                  label="Continue preparing details"
-                  variant="outlined"
-                  disabled={extraction.working || busy}
-                  onPress={() => void extraction.session.continue()}
+            </View>
+            {canReview ? (
+              <Card>
+                <ThemedText type="smallBold" accessibilityLiveRegion="polite">
+                  {extraction.result?.status === 'complete'
+                    ? 'Suggestions ready'
+                    : 'Some details are ready'}
+                </ThemedText>
+                <JobTextAction
+                  label="Review suggestions"
+                  disabled={busy || extraction.working}
+                  onPress={openReview}
                 />
-              ) : null}
-              {extraction.result &&
-              extractionMatches(
-                extraction.result,
-                url.text,
-                job?.id ?? null,
-                revision,
-              ) &&
-              ['failed', 'interrupted'].includes(extraction.result.status) ? (
-                <Button
-                  label={
-                    extraction.result.stage === 'summary'
-                      ? 'Retry summary'
-                      : 'Read listing again'
-                  }
-                  variant="outlined"
-                  disabled={extraction.working || busy}
-                  onPress={() => {
-                    const sourceUrl = url.read().trim();
-                    setUsedId(null);
-                    void extraction.session.begin(
-                      {
-                        listing_url: sourceUrl,
-                        retry_of: extraction.result!.id,
-                        ...(job
-                          ? { job_id: job.id, expected_revision: revision }
-                          : {}),
-                      },
-                      () =>
-                        mounted.current && url.read().trim() === sourceUrl,
-                    );
-                  }}
-                />
-              ) : null}
-              {extraction.result &&
-              !extractionMatches(
-                extraction.result,
-                url.text,
-                job?.id ?? null,
-                revision,
-              ) ? (
-                <Text>
-                  Previous suggestions belong to a different URL or job
-                  version. Your draft is unchanged.
-                </Text>
-              ) : null}
-              <NativeField
-                label="Job title"
-                {...title.input}
-                editable={!busy}
-                returnKeyType="next"
-              />
-              <NativeField
-                label="Company"
-                {...company.input}
-                editable={!busy}
-                returnKeyType="next"
-              />
-              <Text>Title and company: up to 200 characters each.</Text>
-            </FieldGroup.Section>
-            {extraction.result &&
-            extractionMatches(
-              extraction.result,
-              url.text,
-              job?.id ?? null,
-              revision,
-            ) &&
-            extraction.result.status !== 'running' &&
-            extraction.result.status !== 'accepted' &&
-            usedId !== extraction.result.id &&
-            Object.keys(extraction.result.fields).length ? (
-              <ExtractionReview
-                key={`${extraction.result.id}:${extraction.result.status}`}
-                extraction={extraction.result}
-                current={{
-                  title: title.text,
-                  company_name: company.text,
-                  listing_url: url.text,
-                }}
-                hasSummary={!!job?.accepted_details || !!review}
-                currentSummary={
-                  review?.details.bullets ??
-                  job?.accepted_details?.bullets ??
-                  []
-                }
-                disabled={busy || extraction.working}
-                onUse={(fields, details, compared) => {
-                  if (
-                    !extractionMatches(
-                      extraction.result!,
-                      url.read(),
-                      job?.id ?? null,
-                      revision,
-                    )
-                  ) {
-                    setError(
-                      'The URL or job version changed. Suggest details again.',
-                    );
-                    return;
-                  }
-                  if (
-                    (fields.title !== undefined &&
-                      title.read() !== compared.title) ||
-                    (fields.company_name !== undefined &&
-                      company.read() !== compared.company_name)
-                  ) {
-                    setError(
-                      'Your text changed while reviewing. Review the current values before replacing them.',
-                    );
-                    return;
-                  }
-                  if (fields.title !== undefined) title.set(fields.title);
-                  if (fields.company_name !== undefined)
-                    company.set(fields.company_name);
-                  if (details)
-                    setReview({ details, url: url.read().trim(), revision });
-                  setUsedId(extraction.result!.id);
-                  setError(null);
-                }}
-              />
+              </Card>
             ) : null}
+            {extraction.result &&
+            !matches &&
+            (extraction.result.job_id ?? null) === (job?.id ?? null) &&
+            url.text.trim() ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                Previous suggestions belong to a different URL or job version.
+                Your draft is unchanged.
+              </ThemedText>
+            ) : null}
+          </View>
+          <JobFormField
+            label="Job title"
+            {...title.input}
+            editable={!busy}
+            returnKeyType="next"
+          />
+          <JobFormField
+            label="Company"
+            {...company.input}
+            editable={!busy}
+            returnKeyType="done"
+          />
+          {currentDetails.length ? (
+            <Card>
+              <View style={styles.spread}>
+                <ThemedText>Important details</ThemedText>
+                <JobTextAction
+                  label="View details"
+                  onPress={() => navigate('details')}
+                />
+              </View>
+              <ThemedText
+                type="small"
+                themeColor="textSecondary"
+              >{`${currentDetails.length} details · ${review ? 'Changes in draft' : 'Saved with this job'}`}</ThemedText>
+            </Card>
+          ) : null}
+          {reviewProblem ? (
+            <View style={styles.compact}>
+              <InlineError message={reviewProblem} />
+              <JobTextAction
+                label="Discard selected bullets"
+                disabled={busy}
+                onPress={discardDetails}
+              />
+            </View>
+          ) : null}
+          {job &&
+          activity.phase === 'rejected' &&
+          activity.attempt?.jobId === job.id ? (
+            <JobTextAction
+              label="Compare latest version"
+              onPress={() => void compare()}
+            />
+          ) : null}
+          {latest ? (
+            <Card>
+              <ThemedText type="smallBold">Latest saved version</ThemedText>
+              <ThemedText>{latest.title}</ThemedText>
+              <ThemedText>{latest.company_name}</ThemedText>
+              <ThemedText type="small" selectable>
+                {latest.listing_url}
+              </ThemedText>
+              <JobTextAction
+                label="Keep my draft with this version"
+                disabled={!!activity.attempt && activity.phase !== 'rejected'}
+                onPress={() => {
+                  void (async () => {
+                    if (
+                      activity.phase === 'rejected' &&
+                      !(await activity.session.clearRejection())
+                    )
+                      return;
+                    setRevision(latest.revision);
+                    setLatest(null);
+                    setError(
+                      (review &&
+                        reviewedDetailsError(
+                          review,
+                          url.read(),
+                          latest.revision,
+                        )) ||
+                        'Your draft is preserved. Review it, then save to update the latest version.',
+                    );
+                  })();
+                }}
+              />
+            </Card>
+          ) : null}
+        </ScrollView>
+        {reviewContext ? (
+          <ScrollView
+            style={page !== 'review' && styles.hidden}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets
+          >
+            <ExtractionReview
+              key={reviewContext.extraction.id}
+              extraction={reviewContext.extraction}
+              current={reviewContext.current}
+              currentSummary={reviewContext.summary}
+              disabled={busy || extraction.working}
+              onUse={applyReview}
+            />
+          </ScrollView>
+        ) : null}
+        {page === 'help' ? (
+          <ScrollView contentContainerStyle={styles.content}>
+            <JobHelpContent topic="suggestions" />
+          </ScrollView>
+        ) : null}
+        {page === 'details' ? (
+          <ScrollView contentContainerStyle={styles.content}>
             {review ? (
-              <FieldGroup.Section>
-                <Text>{`${review.details.bullets.length} reviewed details will be saved.`}</Text>
+              <View style={styles.group}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Selected for this draft
+                </ThemedText>
                 {review.details.bullets.map((bullet) => (
-                  <Text key={bullet.index}>{`• ${bullet.text}`}</Text>
+                  <ThemedText
+                    key={bullet.index}
+                    selectable
+                  >{`• ${bullet.text}`}</ThemedText>
                 ))}
-                <Button
+                {reviewProblem ? <InlineError message={reviewProblem} /> : null}
+                {matches &&
+                extraction.result?.id === review.details.extraction_id ? (
+                  <JobTextAction
+                    label="Review choices"
+                    disabled={busy}
+                    onPress={openReview}
+                  />
+                ) : null}
+                <JobTextAction
                   label="Discard selected bullets"
-                  variant="text"
                   disabled={busy}
                   onPress={() => {
-                    setReview(null);
-                    setUsedId(null);
+                    discardDetails();
+                    navigate('form');
                   }}
                 />
-              </FieldGroup.Section>
-            ) : null}
-            <FieldGroup.Section>
-              {error ||
-              activity.error ||
-              activity.attempt ||
-              !activity.ready ? (
-                <RNHostView matchContents>
-                  <View style={{ width: Math.max(1, width - 64) }}>
-                    {error ? <InlineError message={error} /> : null}
-                    <JobActivityStatus activity={activity} />
-                  </View>
-                </RNHostView>
-              ) : null}
-              {job ? (
-                <Button
-                  label="Compare latest version"
-                  variant="text"
-                  onPress={() => void compare()}
-                  disabled={activity.phase === 'saving'}
-                />
-              ) : null}
-              {latest ? (
-                <>
-                  <Text>{`Latest saved version: ${latest.title}\n${latest.company_name}\n${latest.listing_url}`}</Text>
-                  <Button
-                    label="Keep my draft with this version"
-                    variant="outlined"
-                    disabled={
-                      !!activity.attempt && activity.phase !== 'rejected'
-                    }
-                    onPress={() => {
-                      void (async () => {
-                        if (
-                          activity.phase === 'rejected' &&
-                          !(await activity.session.clearRejection())
-                        )
-                          return;
-                        setRevision(latest.revision);
-                        setLatest(null);
-                        setError(
-                          (review &&
-                            reviewedDetailsError(
-                              review,
-                              url.read(),
-                              latest.revision,
-                            )) ||
-                            'Your draft is preserved. Review it, then save to update the latest version.',
-                        );
-                      })();
-                    }}
-                  />
-                </>
-              ) : null}
-              <Button
-                label={
-                  activity.phase === 'saving'
-                    ? 'Saving…'
-                    : job
-                      ? 'Save changes'
-                      : 'Save job'
-                }
-                onPress={() => void save()}
-                disabled={busy}
-              />
-              <Button
-                label="Close"
-                variant="text"
-                onPress={() => close()}
-                disabled={activity.phase === 'saving'}
-              />
-            </FieldGroup.Section>
-          </FieldGroup>
-        </Host>
+              </View>
+            ) : (
+              <JobImportantDetails details={job?.accepted_details} />
+            )}
+          </ScrollView>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -587,8 +705,8 @@ function ReadyJobForm({
       visible={!finished}
       presentationStyle="pageSheet"
       animationType="slide"
-      allowSwipeDismissal={activity.phase !== 'saving'}
-      onRequestClose={() => close(true)}
+      allowSwipeDismissal={page === 'form' && activity.phase !== 'saving'}
+      onRequestClose={() => (page === 'form' ? close(true) : back())}
     >
       {content}
     </Modal>
@@ -596,3 +714,15 @@ function ReadyJobForm({
     content
   );
 }
+const localStyles = StyleSheet.create({
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  toolbarTitle: { flex: 1, fontWeight: '600', textAlign: 'center' },
+  toolbarSpacer: { width: 48 },
+});
