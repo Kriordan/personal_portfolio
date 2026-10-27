@@ -8,6 +8,18 @@
 
 ### Frontend
 
+Use the project's patched Node runtime before running npm commands:
+
+```sh
+nvm use
+# On a machine without the pinned version: nvm install
+```
+
+The repository selects Node 24.22.1 in `.nvmrc`; CI and Expo builds use the same
+version. Both npm projects require `>=24.22.1 <25`. Installation and the normal
+development, build, and test commands reject older runtimes. This does not change
+the shared nvm default used by other projects.
+
 Install dependencies
 `npm ci`
 
@@ -24,6 +36,11 @@ To run gulp:
 ### Backend
 
 The backend is a Flask app.
+Use Python 3.13.18 from `.python-version`, which includes the eMudhra certificate
+key blocklist. The lockfile already contains the patched certifi bundle, and
+`pyproject.toml` now preserves its minimum version. See
+[the runtime security verification](docs/security/runtime-security-2026-10-26.md)
+for deployment checks.
 Ensure the virtual environment is active, then run:
 `flask --app project run --port 5001 --debug`
 

@@ -2,6 +2,11 @@
 
 Expo client for the Flask API in the repo root. Uses [Expo Router](https://docs.expo.dev/router/introduction/) for navigation, [TanStack Query](https://tanstack.com/query) for server state, and `expo-secure-store` for token storage.
 
+Run `nvm use` before npm or Expo commands; nvm finds the repository's parent
+`.nvmrc` from this directory. Node 24.22.1 is selected locally and explicitly in
+every EAS build profile. Installs and npm scripts reject Node below 24.22.1 or
+outside the supported 24.x line. The shared machine default is unchanged.
+
 ## Prerequisites
 
 - Node 22.13+ (SDK 57 minimum; this change was verified with Node 24)
