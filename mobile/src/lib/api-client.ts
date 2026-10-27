@@ -40,6 +40,8 @@ interface RequestOptions {
   anonymous?: boolean;
   /** Stops waiting, not server execution. Omitted for existing callers. */
   timeoutMs?: number;
+  /** An opaque operation UUID, never a URL or account identifier. */
+  requestId?: string;
 }
 
 async function parseBody(response: Response): Promise<unknown> {
@@ -55,6 +57,8 @@ async function parseBody(response: Response): Promise<unknown> {
 async function rawRequest(path: string, options: RequestOptions, accessToken: string | null, signal?: AbortSignal): Promise<Response> {
   if (signal?.aborted) throw new Error('Request aborted');
   const headers: Record<string, string> = {};
+  if (options.requestId && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(options.requestId))
+    headers['X-Request-ID'] = options.requestId;
   const isFormData = options.body instanceof FormData;
   if (options.body !== undefined && !isFormData) {
     // For FormData, fetch sets multipart/form-data with the boundary itself.

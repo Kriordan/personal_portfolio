@@ -79,6 +79,22 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertTrue(changed.json['job']['accepted_details']['outdated'])
         self.assertEqual(changed.json['job']['accepted_details']['bullets'], details['bullets'])
 
+    def test_rejected_request_is_correlated_without_reporting_listing_content(self):
+        correlation = str(uuid4())
+        headers = {**self.headers, 'X-Request-ID': correlation}
+        with patch('project.monitoring.report_extraction_failure') as report:
+            response = self._post('/api/v1/jobwizard/extractions', headers=headers,
+                                  json={'request_id': 'invalid', 'listing_url': URL})
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.headers['X-Request-ID'], correlation)
+            report.assert_called_once_with('read', 'invalid_request_id')
+            report.reset_mock()
+            response = self._post('/api/v1/jobwizard/extractions', headers=headers,
+                                  json={'request_id': str(uuid4()), 'listing_url': 'https://example.com/job'})
+            self.assertEqual(response.status_code, 400)
+            report.assert_not_called()
+        self.assertEqual(self.calls, [])
+
     def test_summary_failure_keeps_metadata_explicit_retry_reuses_source(self):
         read, payload = self.start(); aid = read.json['extraction']['id']
         self.mock.side_effect = SuggestionError('timeout')
