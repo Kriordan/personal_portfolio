@@ -13,7 +13,7 @@ Updated October 27, 2026. This is the current index for mobile/Jobwizard/Sentry 
 | Mobile preview | Existing [iPhone build b12a71da](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/b12a71da-f214-4810-8f0f-2f210b93eb60), version 1.0.0/build 2, has preview reporting enabled. Exact artifact source maps and scrubbed artifact event were verified; user accepted it on a physical iPhone. [Detailed evidence](error-monitoring.md#enabled-iphone-preview--october-26). |
 | Mobile production | A production EAS reporting environment/build has not been enabled. Changing environment variables does not alter installed apps. Native crash collection remains intentionally disabled. |
 
-This recovery pass makes no deployment, credential, provider or monitoring-policy changes and consumes **zero cloud builds**. Production rollout artifacts are preserved in [Sentry rollout](assets/recovery-validation-2026-10-27/sentry-production-rollout.json) and [HTTP deployment](assets/recovery-validation-2026-10-27/html-error-status-deployment.json). The earlier rollout's HTTP 200 exception responses are historical evidence of the bug subsequently fixed in PR #130.
+The initial simulator/recovery pass made no deployment, credential, provider or monitoring-policy changes and consumed **zero cloud builds**. The separately approved PR #131 device preview below uses **one cloud build**, with the existing signing and monitoring configuration. Production rollout artifacts are preserved in [Sentry rollout](assets/recovery-validation-2026-10-27/sentry-production-rollout.json) and [HTTP deployment](assets/recovery-validation-2026-10-27/html-error-status-deployment.json). The earlier rollout's HTTP 200 exception responses are historical evidence of the bug subsequently fixed in PR #130.
 
 ## Physical iPhone acceptance completed October 27
 
@@ -21,6 +21,24 @@ This recovery pass makes no deployment, credential, provider or monitoring-polic
 - [x] After the unsupported `https://example.com` response, manually save title “Recovery check”, company “Test”, then reopen: user confirmed **“Manual save and reopen work.”** Archiving that test job is not confirmed.
 
 Both used the existing enabled preview against production. They close the original paste/feedback and manual-save follow-ups, but do not prove the cause of the original HTTP 400 or acceptance of the newer recovery fixes below.
+
+## PR #131 iPhone preview — October 27
+
+[Install build c1b66139](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/c1b66139-4de0-4196-8202-8d6556b08b8c): **1.0.0 (3)**, internal iPhone preview, built from app commit `d532de62c0c62bead610b3024a34e96bc47627d3`. Later documentation-only commits do not change this app. The build finished successfully; the downloaded IPA passes strict signature verification, includes the registered iPhone, uses replacement certificate ending `FBC7A`, and targets the production API. No credentials were changed.
+
+Sentry source-map upload completed without a bypass. Debug ID `e8cc8f0e-1ee7-4edd-a990-78222d4ef483` occurs in both the uploaded-map record and the IPA's Hermes bundle. The existing enabled preview configuration is retained. This build's upload/artifact match is verified; a new synthetic Sentry event was not sent. Prior symbolication, privacy and alert-delivery evidence remains above. [Artifact verification](assets/recovery-validation-2026-10-27/iphone-preview-build-3.json).
+
+**Device acceptance is pending.** Install this preview over the existing app, then use disposable jobs for the checks below. These requests use the live backend; reviewing facts and saving remain deliberate actions.
+
+- [ ] **Rejected request survives no longer than it should:** in Add job, paste `https://example.com` and tap **Suggest details**. Expect the readable unsupported-listing message. Force-quit and reopen the app without saving. Open Add job and paste a supported listing: **Suggest details** should work, with no stale **Retry same request** or unfinished-work state from `example.com`.
+- [ ] **Review, apply, save, reopen:** use `https://job-boards.greenhouse.io/justworks/jobs/8179751` (or another current supported public listing if it has been removed). Expect visible progress and suggestions, never only a flicker. Compare the title, company and accepted bullets with the source; edit one bullet and exclude another. Tap **Apply to draft**, save, and reopen. Selected facts and edits should persist; excluded facts should be absent.
+- [ ] **Offline recovery:** in a fresh Add form, paste the supported URL, enable Airplane Mode and turn Wi-Fi off, then tap **Suggest details**. Expect readable connection feedback and retained form text. Restore connectivity: a new extraction must wait for your tap. Tap **Suggest details** once to continue.
+- [ ] **Background recovery:** immediately after starting that request, go to the Home Screen for about 30 seconds, then return. Expect suggestions or a clear recovery action such as **Check suggestion status** / **Continue preparing details**. Use the offered action once. If the result finishes too quickly to interrupt, record that limitation; do not repeatedly restart requests. The app must remain usable, without a permanently disabled action or silent flicker.
+- [ ] **Manual fallback:** after an unsupported listing, manually enter a title/company, save and reopen. Archive disposable test jobs afterward. The earlier build passed this; this check confirms the new artifact keeps it working.
+
+Optional follow-ups: open an existing full screenshot and check pinch, drag and close; leave an unaccepted suggestion receipt for more than 24 hours, then reopen and confirm an expired message, fresh **Suggest details**, and no stale **Review**, **Continue**, or **Retry same request**. Expiry is already verified with the native fixture and regression tests, so an overnight wait is not required for the core acceptance pass. Do not change the phone clock or deliberately exhaust quotas. Server rejection, committed-response loss, account races and reporting outages remain covered by the controlled checks below, not inferred from this physical checklist.
+
+For failures, record the step, visible message and approximate time. Do not include credentials or personal notes. PR #131 remains unmerged until the user accepts the device result; no Flask deployment is required for these mobile fixes.
 
 ## Recovery fixes and local validation
 
@@ -65,7 +83,7 @@ Run `PYTHON_DOTENV_DISABLED=1 poetry run python scripts/jobwizard-preview-fixtur
 
 | Priority | Follow-up and completion evidence |
 | --- | --- |
-| Next device build | Review/merge the recovery fixes after CI; include them in the next approved iPhone preview, then repeat rejected-request reopen and expired-receipt reset. Existing physical preview cannot validate code added afterward. No extra cloud build was requested for this pass. |
+| PR #131 device acceptance | Approved preview **1.0.0 (3)** is ready; run the checklist above before merging. Earlier physical acceptance used build 2 and does not validate these fixes. Physical overnight expiry remains optional/unconfirmed; controlled native expiry validation has passed. |
 | Native breadth | Complete the remaining full combinations in [Jobwizard smoke tests](jobwizard-smoke-test.md): save/capture concurrency, lost writes, image-link expiry, account switch during unresolved save/capture, and terminated protected deep links. Current focused checks do not close those combined items. Repeat the full failure matrix in an Android Release build/on hardware. |
 | Accessibility | VoiceOver/TalkBack, largest text sizes, keyboard/small-phone layout, focus restoration and announcements across forms, review, menus and viewer remain open. |
 | Other features | Retain [Grocery/shell reconnect and sharing checks](mobile-ui-validation.md), [Wishlist signed-image/upload lifecycle](wishlist-smoke-test.md), [Library sync/pin/watched behavior](library-smoke-test.md), and [Learning uncertain review/account switching](learning-smoke-test.md). Earlier disabled-reporting fixture smokes do not prove every enabled-device scenario or live YouTube sync. |

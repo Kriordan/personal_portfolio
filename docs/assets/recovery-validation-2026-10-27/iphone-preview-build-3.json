@@ -1,0 +1,33 @@
+{
+  "build_id": "c1b66139-4de0-4196-8202-8d6556b08b8c",
+  "source_commit": "d532de62c0c62bead610b3024a34e96bc47627d3",
+  "bundle_id": "com.kriordan.personalportfolio",
+  "version": "1.0.0",
+  "build_number": "3",
+  "codesign_valid": true,
+  "certificate_suffixes": [
+    "FBC7A"
+  ],
+  "registered_device_count": 1,
+  "development_debugging_enabled": false,
+  "production_api_origin_present": true,
+  "source_commit_embedded": true,
+  "sentry_build_plugin_present": true,
+  "matching_uploaded_debug_ids": [
+    "e8cc8f0e-1ee7-4edd-a990-78222d4ef483"
+  ],
+  "archive_bytes": 16943793,
+  "configuration_files": [
+    "Expo.plist",
+    "app.config"
+  ],
+  "verified_at": "2026-10-27",
+  "status": "FINISHED",
+  "build_url": "https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/c1b66139-4de0-4196-8202-8d6556b08b8c",
+  "sentry_source_map_upload_complete": true,
+  "sentry_artifact_bundle_id": "087c8c72-ff70-53c4-8fbe-bd96fbd999df",
+  "sentry_upload_bypass_used": false,
+  "new_synthetic_event_sent": false,
+  "physical_device_acceptance": "pending",
+  "credentials_changed": false
+}
