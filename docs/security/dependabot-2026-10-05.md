@@ -132,3 +132,17 @@ Only Certifi and Pillow changed versions in `poetry.lock`. Local verification pa
 ### October 22: DOMPurify patch during Jobwizard extraction
 
 The current root audit found three new DOMPurify advisories: [GHSA-cg2g-xh64-v4q7](https://github.com/advisories/GHSA-cg2g-xh64-v4q7), [GHSA-mrv2-3pqr-j5jr](https://github.com/advisories/GHSA-mrv2-3pqr-j5jr), and [GHSA-c6gr-qvv4-5v3f](https://github.com/advisories/GHSA-c6gr-qvv4-5v3f). Updated the exact root dependency/lock from **3.4.16 to 3.4.17**, plus Learning note/review CDN references and matching SHA384 integrity. The patch passes root audit-policy/CDN tests and all 18 browser security checks; no exception was added. Python pip-audit reports no known vulnerabilities. Root/mobile audit gates retain only the three previously documented npm exceptions and their November 5 review deadline. Default-branch alert closure still depends on merge/rescan.
+
+### October 23: withdrawn braces advisory
+
+GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) at **2026-10-23T12:53:02Z**, stating that it is not a practically exploitable vulnerability. Fresh npm audit data no longer includes it. The strict CI gate correctly rejected the now-stale exception, so its root and mobile entries were removed without changing packages or weakening the gate.
+
+The root has no remaining audit exceptions. Mobile still retains `node-forge` and `decode-uri-component`, including their **November 5** review deadline and existing mitigation/release follow-ups. This withdrawal is not a new patched `braces` release. Local npm advisory caches can briefly retain the withdrawn finding; when comparing fresh CI results, use a new temporary `npm_config_cache` directory. Historical validation counts above describe their original dates.
+
+## October 25: Zod tooling exposure review
+
+The mobile audit now reports high-severity [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) against `zod@3.25.76`. Oversized collections can exhaust validation memory. The [upstream fix](https://github.com/colinhacks/zod/commit/a0ebf97) changes v4 collection validation; the advisory names **4.6.6** as fixed. The registry still has no newer 3.x release.
+
+Installed `@expo/cli@57.0.27` requires `^3.25.76`. Its schemas validate development plugin configuration and CLI/MCP plugin output, including arrays without upper bounds. `eslint-plugin-react-hooks@7.1.1` imports `zod/v4` for lint/compiler configuration. No application source imports Zod. This is a developer/build tooling availability risk, especially with untrusted plugins or oversized input; absence from application source does not make the tooling harmless.
+
+Keep development tools restricted to trusted projects/plugins and private development networks; do not expose Metro or its plugin endpoints publicly. Retain this exact advisory/package/version/severity as a bounded exception until **November 5, 2026**, matching the existing review deadline. Recheck a Zod 3 backport or an Expo 57 CLI update with compatible Zod support, and validate CLI/plugin schemas plus lint before removing the exception. Do not force Zod 4 into Expo's Zod 3 dependency, downgrade Expo, or dismiss the alert. Existing `node-forge`, decoder, device-validation, and credential follow-ups remain open.

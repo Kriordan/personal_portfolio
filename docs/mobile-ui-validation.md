@@ -426,3 +426,8 @@ The approved provider replacement and readiness checks are documented in [the ro
 ## October 22: Jobwizard reviewed listing details
 
 Backend persistence and mobile review/save are implemented; [the extraction validation record](jobwizard-extraction.md) contains scope, native evidence, the real-provider readiness check, configuration and rollout checklist. iPhone new-job review/edit/remove/save and Android existing-job replacement/save passed on native development clients against disposable fixtures. Cross-device revision conflict kept the iPhone draft. These checks do not close the earlier physical-device/accessibility/background matrix. No production deployment is included.
+
+
+### Jobwizard compact index — October 25
+
+Local iPhone/Android evidence and exact checks are in the [Jobwizard smoke checklist](jobwizard-smoke-test.md#october-25-compact-index-review-local-development-clients). Search is revealed on demand; filter and sort share a row with their selections visible. Existing development clients were reused, with no new native dependency or EAS build. The user must review simulator screenshots before the next cloud preview. Existing physical-device, accessibility, lifecycle, certificate and security follow-ups remain open unless individually verified.

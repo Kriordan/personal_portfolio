@@ -1,6 +1,6 @@
-import { Host } from '@expo/ui';
+import { Host, type TextInputRef } from '@expo/ui';
 import { useRouter } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -9,12 +9,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeChoice } from '@/components/native-choice';
+import { JobBrowseChoice } from '@/components/job-browse-choice';
+import { JobToolbarIcon } from '@/components/job-toolbar-icon';
 import { NativeField } from '@/components/native-form';
 import { JobActivityStatus } from '@/components/jobwizard-content';
 import {
   InlineError,
-  NativeAction,
   PageHeading,
   ScreenState,
   screenStyles,
@@ -99,7 +99,9 @@ function Organizer() {
     search = useNativeText();
   const [view, setView] = useState<JobView>('active'),
     [sort, setSort] = useState<JobSort>('newest'),
+    [searchOpen, setSearchOpen] = useState(false),
     [refreshing, setRefreshing] = useState(false);
+  const searchRef = useRef<TextInputRef>(null);
   const jobs = useMemo(
     () => browseJobs(query.data?.jobs ?? [], search.text, view, sort),
     [query.data?.jobs, search.text, view, sort],
@@ -149,56 +151,95 @@ function Organizer() {
           <RefreshControl refreshing={refreshing} onRefresh={refresh} />
         }
         ListHeaderComponent={
-          <View style={screenStyles.gap}>
-            <PageHeading
-              title="Jobwizard"
-              subtitle="Your private collection of opportunities, ready when you are."
-            />
-            <NativeAction
-              label="Add job"
-              onPress={() => router.push('/jobwizard/new')}
-              disabled={!activity.ready || !!activity.attempt}
-            />
+          <View style={styles.header}>
+            <View style={styles.headingRow}>
+              <View style={styles.headingTitle}>
+                <PageHeading title="Jobwizard" />
+              </View>
+              <View style={styles.actions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Search jobs"
+                  accessibilityState={{ expanded: searchOpen }}
+                  onPress={() => {
+                    setSearchOpen(true);
+                    searchRef.current?.focus();
+                  }}
+                  style={styles.iconButton}
+                >
+                  <JobToolbarIcon name="search" />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Add job"
+                  disabled={!activity.ready || !!activity.attempt}
+                  accessibilityState={{ disabled: !activity.ready || !!activity.attempt }}
+                  onPress={() => router.push('/jobwizard/new')}
+                  style={[
+                    styles.iconButton,
+                    { backgroundColor: theme.accentSoft },
+                    (!activity.ready || !!activity.attempt) && { opacity: 0.4 },
+                  ]}
+                >
+                  <JobToolbarIcon name="add" />
+                </Pressable>
+              </View>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              {jobs.length} {view === 'all' ? '' : `${view} `}
+              {jobs.length === 1 ? 'job' : 'jobs'} · Private
+            </ThemedText>
+            {searchOpen ? (
+              <View style={styles.searchRow}>
+                <Host matchContents={{ vertical: true }} style={styles.searchField}>
+                  <NativeField
+                    ref={searchRef}
+                    label="Search jobs"
+                    placeholder="Title, company or website"
+                    {...search.input}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    autoFocus
+                    returnKeyType="search"
+                    onSubmitEditing={() => searchRef.current?.blur()}
+                  />
+                </Host>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel search"
+                  onPress={() => {
+                    searchRef.current?.blur();
+                    search.clear();
+                    setSearchOpen(false);
+                  }}
+                  style={styles.cancelSearch}
+                >
+                  <ThemedText themeColor="accent">Cancel</ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
+            <View style={styles.browseRow}>
+              <JobBrowseChoice
+                label="Filter jobs"
+                icon="filter"
+                value={view}
+                options={jobViews}
+                onChange={setView}
+              />
+              <JobBrowseChoice
+                label="Sort jobs"
+                icon="sort"
+                value={sort}
+                options={jobSorts}
+                onChange={setSort}
+              />
+            </View>
             <JobActivityStatus activity={activity} />
             {activity.confirmed && 'job' in activity.confirmed.result ? (
               <ThemedText type="small" accessibilityLiveRegion="polite">
                 Job saved: {activity.confirmed.result.job.title}
               </ThemedText>
             ) : null}
-            <Host matchContents={{ vertical: true }}>
-              <NativeField
-                label="Search jobs"
-                placeholder="Title, company or website"
-                {...search.input}
-                autoCorrect={false}
-              />
-            </Host>
-            {search.text ? (
-              <NativeAction
-                label="Clear search"
-                secondary
-                onPress={search.clear}
-              />
-            ) : null}
-            <NativeChoice
-              label="Show"
-              value={view}
-              options={jobViews}
-              onChange={setView}
-            />
-            <NativeChoice
-              label="Sort"
-              value={sort}
-              options={jobSorts}
-              onChange={setSort}
-            />
-            <ThemedText
-              type="smallBold"
-              themeColor="textSecondary"
-              style={styles.count}
-            >
-              {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
-            </ThemedText>
             {query.isError ? (
               <InlineError
                 message="Couldn’t refresh. Showing the last loaded jobs."
@@ -245,6 +286,14 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1, gap: 5 },
   title: { fontWeight: '600' },
-  count: { marginVertical: 14 },
+  header: { gap: 8, paddingBottom: 12 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 8 },
+  headingTitle: { flexGrow: 1, flexShrink: 1, minWidth: 180 },
+  actions: { flexDirection: 'row', gap: 4 },
+  iconButton: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  browseRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 24 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchField: { flex: 1 },
+  cancelSearch: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 4 },
   empty: { paddingVertical: 30, gap: 12 },
 });
