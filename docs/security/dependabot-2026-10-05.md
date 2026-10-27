@@ -1,5 +1,9 @@
 # Dependency security review — October 5, 2026
 
+The three remaining mobile advisories are addressed by the
+[October 27 remediation](mobile-advisories-2026-10-27.md), which removes all
+remaining audit exceptions. The dated findings below are historical.
+
 Started from `origin/main` at `e4d94588a757cc1ea307422e03779845436d618b`, the merge of [PR #94](https://github.com/Kriordan/personal_portfolio/pull/94). The October 4 GitHub snapshot contained **27 open alerts**. This branch moves the locked packages outside the recorded affected ranges for **24**, with **3 remaining**. This is a lockfile/advisory comparison, not a claim that GitHub has closed alerts or that production has been updated. No alerts were dismissed; merging and deployment remain separate steps.
 
 ## Tested batches

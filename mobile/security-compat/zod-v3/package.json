@@ -1,0 +1,14 @@
+{
+  "name": "@portfolio/zod-v3-compat",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "exports": {
+    ".": "./index.cjs",
+    "./v3": "./index.cjs",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "zod-upstream": "npm:zod@4.6.7"
+  }
+}

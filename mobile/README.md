@@ -7,9 +7,14 @@ Run `nvm use` before npm or Expo commands; nvm finds the repository's parent
 every EAS build profile. Installs and npm scripts reject Node below 24.22.1 or
 outside the supported 24.x line. The shared machine default is unchanged.
 
+The [security compatibility packages](security-compat/README.md) retain Expo 57
+while using the patched URL decoder, bounded Zod 3 CLI validation, and fixed
+Zod 4 lint tooling. `npm test` exercises the actual consumer paths; clean
+installs need no lifecycle-script patching. The mobile audit has no exceptions.
+
 ## Prerequisites
 
-- Node 22.13+ (SDK 57 minimum; this change was verified with Node 24)
+- Node 24.22.1 or a later stable 24.x patch (`nvm use` selects the pinned version)
 - The Flask API running locally (see `docs/verification-runbook.md` in the repo root):
 
 ```bash
