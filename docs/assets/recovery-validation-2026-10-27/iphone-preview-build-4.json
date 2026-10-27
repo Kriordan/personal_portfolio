@@ -1,0 +1,39 @@
+{
+  "build_id": "115c0f31-27f1-448d-87cb-5954eb8f3e50",
+  "status": "FINISHED",
+  "source_commit": "be3f4548df97041ff6338fe4af5e3bd62b77aa80",
+  "build_url": "https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/115c0f31-27f1-448d-87cb-5954eb8f3e50",
+  "completed_at": "2026-10-27T16:32:55.346Z",
+  "version": "1.0.0",
+  "build_number": "4",
+  "bundle_id": "com.kriordan.personalportfolio",
+  "codesign_valid": true,
+  "certificate_suffixes": [
+    "FBC7A"
+  ],
+  "registered_device_count": 1,
+  "registered_iphone_included": true,
+  "development_debugging_enabled": false,
+  "production_api_origin_present": true,
+  "source_commit_embedded": true,
+  "sentry_build_plugin_present": true,
+  "sha256": "b170ba471ac2f444c38d46cf365820c9686488b2a2c6a71600699bde63a54402",
+  "archive_bytes": 16944693,
+  "configuration_files": [
+    "Expo.plist",
+    "app.config"
+  ],
+  "credentials_changed": false,
+  "new_synthetic_event_sent": false,
+  "physical_device_acceptance": "pending",
+  "verified_at": "2026-10-27",
+  "matching_uploaded_debug_ids": [
+    "b2ad07ac-75b7-4b1e-9294-b317b0c90900"
+  ],
+  "sentry_source_map_upload_complete": true,
+  "sentry_upload_verified_in_ui": true,
+  "sentry_artifact_bundle_id": "af11bc5d-0bfe-574d-ba56-b75691168601",
+  "sentry_release": "com.kriordan.personalportfolio@1.0.0+4",
+  "sentry_dist": "4",
+  "sentry_upload_url": "https://keith-riordan.sentry.io/settings/projects/personal-portfolio-mobile/source-maps/af11bc5d-0bfe-574d-ba56-b75691168601/"
+}

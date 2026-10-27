@@ -26,6 +26,7 @@ import { ExtractionReview } from './job-extraction-review';
 import { useJobExtraction } from '@/hooks/use-job-extraction';
 import {
   extractionMatches,
+  extractionErrorForDraft,
   reviewedDetailsError,
   type ReviewedDetails,
   type Extraction,
@@ -140,6 +141,7 @@ function ReadyJobForm({
     theme = useTheme(),
     { isAuthenticated } = useAuth();
   const busy = !!activity.attempt || !activity.ready;
+  const suggestionError = extractionErrorForDraft(extraction, url.text, job?.id ?? null);
   const input = () => ({
     title: title.read().trim(),
     company_name: company.read().trim(),
@@ -452,6 +454,10 @@ function ReadyJobForm({
             <JobFormField
               label="Listing URL"
               {...url.input}
+              onChangeText={(next) => {
+                if (next.trim() !== url.text.trim()) extraction.session.resetFormFeedback();
+                url.input.onChangeText(next);
+              }}
               editable={!busy}
               autoCapitalize="none"
               autoCorrect={false}
@@ -488,8 +494,8 @@ function ReadyJobForm({
                   : 'Preparing the bullet summary…'}
               </ThemedText>
             ) : null}
-            {extraction.error ? (
-              <InlineError message={extraction.error} />
+            {suggestionError ? (
+              <InlineError message={suggestionError} />
             ) : null}
             {!extraction.ready ? (
               <JobTextAction

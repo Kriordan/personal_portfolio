@@ -11,7 +11,8 @@ export function JobActionsMenu(props: JobActionsMenuProps) {
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel="More job actions"
-        accessibilityState={{ expanded: open }} onPress={() => setOpen(true)} style={styles.trigger}>
+        accessibilityState={{ expanded: open }} onPress={() => setOpen(true)}
+        style={[styles.trigger, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
         <ThemedText themeColor="accent" style={styles.dots}>⋯</ThemedText>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -38,7 +39,7 @@ export function JobActionsMenu(props: JobActionsMenuProps) {
   );
 }
 const styles = StyleSheet.create({
-  trigger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  trigger: { width: 48, height: 48, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dots: { fontSize: 28, lineHeight: 32, fontWeight: '600' },
   overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#0006' },
   menu: { width: '100%', maxWidth: 320, padding: 20, borderRadius: 16 },

@@ -344,6 +344,18 @@ class CaptureProviderTests(unittest.TestCase):
                 with self.assertRaises(CaptureError): capture_worker.capture_artifact(url, "j/" + "a" * 32 + ".png")
                 provider.assert_not_called()
 
+    def test_greenhouse_job_id_query_must_match_the_public_listing(self):
+        for host in ("boards.greenhouse.io", "job-boards.greenhouse.io", "job-boards.eu.greenhouse.io"):
+            base = f"https://{host}/justworks/jobs/8236798"
+            for suffix in ("?gh_jid=8236798", "/?gh_jid=8236798&gh_src=public&utm_source=board"):
+                self.assertEqual(target_profile(base + suffix), "greenhouse")
+            for suffix in ("?gh_jid=123", "?gh_jid=", "?gh_jid=abc", "?gh_jid=8236798&gh_jid=123",
+                           "?gh_jid=8236798&token=secret", "?gh_jid=8236798#application"):
+                self.assertIsNone(target_profile(base + suffix))
+        for url in ("https://job-boards.greenhouse.io.evil.test/justworks/jobs/8236798?gh_jid=8236798",
+                    "https://jobs.ashbyhq.com/acme/" + "b" * 36 + "?gh_jid=8236798"):
+            self.assertIsNone(target_profile(url))
+
     def test_gem_only_accepts_public_listing_routes_and_known_attribution(self):
         base = "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n"
         for suffix in ("?src=LinkedIn", "?gh_src=board&utm_campaign=jobs", "?source=company"):

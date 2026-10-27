@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-27",
+  "pull_request": "https://github.com/Kriordan/personal_portfolio/pull/130",
+  "merge_commit": "e2d97943d9b2742c2b088b58ec296b525c258a0f",
+  "deployed_commit": "5f1e8872fca486991f306679067194a83d2c9481",
+  "code_release": "v159",
+  "current_release": "v160",
+  "production_baseline_preserved": "8754d28a37a8ca52a82647f75ac97f74c8131ab8",
+  "local_combined_backend_suite": {
+    "tests_run": 290,
+    "skipped_postgresql_tests": 19,
+    "result": "passed"
+  },
+  "deployed_regression_checks": {
+    "python": "3.13.18",
+    "sentry_sdk": "2.73.0",
+    "sentry_enabled": true,
+    "sentry_environment": "production",
+    "sentry_release": "5f1e8872fca486991f306679067194a83d2c9481",
+    "html_error_tests": 6,
+    "result": "passed",
+    "data_scope": "in-memory test app; no production data changes or Sentry test events"
+  },
+  "live_health_checks": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "status": 401,
+      "expected": 401,
+      "json_and_request_id_verified": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/jobwizard/jobs",
+      "status": 401,
+      "expected": 401,
+      "json_and_request_id_verified": true
+    },
+    {
+      "method": "GET",
+      "path": "/__html_error_status_deployment_check__",
+      "status": 404,
+      "expected": 404,
+      "error_page_verified": true
+    },
+    {
+      "method": "HEAD",
+      "path": "/__html_error_status_deployment_check__",
+      "status": 404,
+      "expected": 404,
+      "error_page_verified": true
+    }
+  ],
+  "status": "complete"
+}
