@@ -1,8 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-
-const ACCESS_TOKEN_KEY = 'auth.access_token';
-const REFRESH_TOKEN_KEY = 'auth.refresh_token';
+import { createSessionTokens } from './session-tokens';
 
 // expo-secure-store is unavailable on web; fall back to localStorage there.
 // Web is a dev convenience target only, so the weaker storage is acceptable.
@@ -36,23 +34,6 @@ export interface StoredTokens {
   refreshToken: string;
 }
 
-export const tokenStorage = {
-  async getAccessToken(): Promise<string | null> {
-    return getItem(ACCESS_TOKEN_KEY);
-  },
-
-  async getRefreshToken(): Promise<string | null> {
-    return getItem(REFRESH_TOKEN_KEY);
-  },
-
-  async setTokens(tokens: { accessToken: string; refreshToken?: string }): Promise<void> {
-    await setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-    if (tokens.refreshToken !== undefined) {
-      await setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    }
-  },
-
-  async clear(): Promise<void> {
-    await Promise.all([deleteItem(ACCESS_TOKEN_KEY), deleteItem(REFRESH_TOKEN_KEY)]);
-  },
-};
+export const tokenStorage = createSessionTokens({
+  get: getItem, set: setItem, remove: deleteItem,
+});
