@@ -6,7 +6,7 @@
     "decode-uri-component": "file:./security-compat/decode-uri-component",
     "@expo/ui": "~57.0.20",
     "@sentry/react-native": "~7.11.0",
-    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-query": "^5.104.5",
     "expo": "~57.0.25",
     "expo-build-properties": "~57.0.22",
     "expo-clipboard": "~57.0.2",
