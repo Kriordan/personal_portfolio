@@ -56,6 +56,8 @@ For failures, record the step, visible message and approximate time. Do not incl
 
 Evidence: [real listing read](assets/recovery-validation-2026-10-27/greenhouse-shared-link.json), [iOS bordered control](assets/recovery-validation-2026-10-27/ios-bordered-actions.png), [iOS open menu](assets/recovery-validation-2026-10-27/ios-bordered-actions-open.png), [iOS clean reopened form](assets/recovery-validation-2026-10-27/ios-clean-reopened-form.png), [Android open menu](assets/recovery-validation-2026-10-27/android-bordered-actions-open.png), [Android clean reopened form](assets/recovery-validation-2026-10-27/android-clean-reopened-form.png).
 
+The CI rerun also surfaced an existing backend dependency vulnerability. Only dnspython changed from 2.8.0 to 2.9.0, with a minimum patched-version constraint. Full local backend discovery after that update ran **267 tests, 19 platform/database-gated skips, no failures**; lock and installed-dependency checks pass. See the [security record](security/dependabot-2026-10-05.md#october-27-dnspython-ci-blocker). This patch also needs the eventual Flask rollout; existing mobile exceptions and deadlines are preserved.
+
 ## Recovery fixes and local validation
 
 Four defects were reproduced and fixed in the mobile extraction session:
