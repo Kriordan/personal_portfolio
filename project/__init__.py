@@ -69,6 +69,9 @@ def create_app(test_config=None):
     else:
         app.config.from_mapping(test_config)
 
+    from .monitoring import configure_monitoring
+    configure_monitoring(app)
+
     # Flask runs app response hooks in reverse order. Apply OAuth privacy headers
     # after extensions (including Talisman's global referrer-policy header).
     app.after_request(private_connection_response)

@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from '@sentry/react-native';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
@@ -8,6 +9,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { queryClient } from '@/lib/query-client';
 import { QueryLifecycle } from '@/lib/query-lifecycle';
+import { initializeMonitoring } from '@/lib/monitoring';
+
+initializeMonitoring();
 
 // Cold deep links open above the shell, preserving an ordinary Back destination.
 export const unstable_settings = { anchor: '(tabs)' };
@@ -65,16 +69,26 @@ function AppNavigation() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
-    <QueryClientProvider client={queryClient}>
-      <QueryLifecycle />
-      <AuthProvider>
-        <ThemeProvider
-          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-        >
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <AppNavigation />
-        </ThemeProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary
+      fallback={({ resetError }) => (
+        <ScreenState
+          title="Something went wrong"
+          message="Your saved data is still available. Try opening this screen again."
+          onRetry={resetError}
+        />
+      )}
+    >
+      <QueryClientProvider client={queryClient}>
+        <QueryLifecycle />
+        <AuthProvider>
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <AppNavigation />
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

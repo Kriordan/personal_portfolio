@@ -191,6 +191,8 @@ Grocery uses `SectionList`, preserving category/item ordering and all three serv
 
 ## UI verification
 
+Optional errors-only Sentry setup, privacy limits, source maps and the activation checklist are documented in [error monitoring](../docs/error-monitoring.md). Reporting is off by default. Keep the Sentry native dependency in Expo 57's supported `~7.11.0` range.
+
 ```bash
 npm run typecheck
 npm run lint

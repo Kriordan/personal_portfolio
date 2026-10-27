@@ -215,6 +215,8 @@ def _execute(user_id, attempt_id, stage, fence):
             attempt.status, attempt.finished_at = "failed", now()
             attempt.error_code = error.code if isinstance(error, SuggestionError) else "failed"
             db.session.commit()
+            from project.monitoring import report_extraction_failure
+            report_extraction_failure(stage, attempt.error_code, attempt_id=attempt_id, exception=error)
 
 
 def accept(*, user_id, job, review, original_job_id):

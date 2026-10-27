@@ -43,6 +43,12 @@ def unauthorized(_error):
 
 @jobwizard_api_blueprint.errorhandler(service.ValidationError)
 def invalid(error):
+    if request.endpoint in {"api.api_jobwizard.api_extract", "api.api_jobwizard.api_summarize"}:
+        from project.monitoring import report_extraction_failure
+        report_extraction_failure(
+            "summary" if request.endpoint.endswith("api_summarize") else "read",
+            "invalid_request_id" if str(error) == "invalid request ID" else "invalid_request",
+        )
     # Only enum codes, never exception text, are returned as field metadata.
     fields = {key: value for key, value in error.fields.items()
               if key in {"title", "company_name", "listing_url"} and value in {"required", "too_long", "invalid_url"}}
