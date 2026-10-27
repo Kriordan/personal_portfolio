@@ -21,8 +21,9 @@ existing node_modules.
   at `0c177bd`. Its dependency additions, preview auto-increment, monitoring
   configuration, and application behavior are retained.
 - Python 3.13.18 was compiled from the official release with the checksum in
-  pyenv's published build definition, under /tmp for testing. Other projects'
-  Python environments were not modified.
+  pyenv's published build definition, under /tmp for testing, then installed
+  alongside the existing pyenv versions using the same verified source download.
+  Shared defaults and other projects' Python environments were not modified.
 
 ## Validation
 
@@ -59,6 +60,9 @@ The system SSL context, Requests, httplib2 (Google), and Botocore (AWS) each
 accepted the normal Python.org HTTPS control and rejected both compromised
 certificate test endpoints listed in Render's advisory: all 12 checks passed.
 This confirms those deployed trust paths, not the newer Python runtime update.
+
+The live homepage and login returned 200; anonymous requests to the protected
+current-user and lists APIs returned 401. No authenticated data was read.
 
 Python 3.13.18 still requires a rebuild/deployment. Heroku and GitHub Actions
 publish this version. After deployment, verify the release revision and run:

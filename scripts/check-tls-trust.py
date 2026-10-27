@@ -23,8 +23,10 @@ COMPROMISED = (
 
 
 def system_tls(host):
+    context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     with socket.create_connection((host, 443), timeout=8) as connection:
-        with ssl.create_default_context().wrap_socket(connection, server_hostname=host):
+        with context.wrap_socket(connection, server_hostname=host):
             pass
 
 
