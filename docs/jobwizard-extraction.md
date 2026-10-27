@@ -1,5 +1,7 @@
 # Jobwizard detail extraction — October 22, 2026
 
+**Current status:** see the [validation ledger](validation-status.md) for October 27 acceptance and remaining work. The production record below consolidates the documentation from PR #121; the October 27 scheduled cleanup is now verified; production concurrency measurements remain open.
+
 ## Delivered behavior
 
 Based on merged PR #119 (`9fae9dd`, production v149), this slice implements the approved [plan](jobwizard-extraction-plan.md) and [real-listing evaluation](evaluations/jobwizard-extraction-2026-10-22.md). Expo 57, Expo Router, @expo/ui, TanStack Query, Flask and PostgreSQL remain in place.
@@ -25,9 +27,9 @@ Read workers have an 18-second alarm/19-second parent timeout; summary workers u
 
 Normalized source is capped at 80,000 characters; excess input is rejected rather than truncated. Output is bounded to eight 300-character bullets. Strict schema, source IDs and numeric checks reject malformed or unsupported output; semantic correctness still needs review. Instructions in a listing are data, and the model receives no tools, user profile, notes, screenshot or credentials. Responses use `store: false`; this is not a promise of zero provider retention.
 
-Unaccepted source expires after 24 hours and becomes inaccessible. Run `flask --app run.py prune-job-extractions` daily through the deployment's maintenance scheduler. Expired receipts/source are deleted, while accepted excerpts and job mutation receipts remain durable. Extraction UUID replay protection lasts while the receipt exists; clients must use a fresh UUID for deliberate work after expiry. Acceptance immediately removes the full source/result from the extraction receipt. Logs/API errors contain fixed codes/messages rather than provider bodies or secrets.
+Unaccepted source expires after 24 hours and becomes inaccessible. Run `flask --app project prune-job-extractions` daily through the deployment's maintenance scheduler. Expired receipts/source are deleted, while accepted excerpts and job mutation receipts remain durable. Extraction UUID replay protection lasts while the receipt exists; clients must use a fresh UUID for deliberate work after expiry. Acceptance immediately removes the full source/result from the extraction receipt. Logs/API errors contain fixed codes/messages rather than provider bodies or secrets.
 
-Server configuration (not configured in production by this PR):
+Server configuration (enabled after merge; see the production rollout below):
 
 | Variable | Value/purpose |
 | --- | --- |
@@ -38,7 +40,7 @@ Server configuration (not configured in production by this PR):
 
 ## Validation evidence
 
-All automated providers are mocked except the explicitly recorded public-listing evaluation and the final Gem readiness check. Native checks use `scripts/jobwizard-preview-fixture.py`, disposable SQLite/accounts and fake providers. They do not write production jobs or incur provider charges.
+Automated providers are mocked except the explicitly recorded public-listing evaluation, final Gem readiness check and production rollout below. Native checks use `scripts/jobwizard-preview-fixture.py`, disposable SQLite/accounts and fake providers. Those fixture checks do not write production jobs or incur provider charges.
 
 | Check | Result |
 | --- | --- |
@@ -72,9 +74,31 @@ Evidence: [iPhone saved details](assets/jobwizard-extraction/iphone-saved.png), 
 
 [Internal iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ac514269-4280-4b73-8475-ccc3484208d3): EAS build `ac514269-4280-4b73-8475-ccc3484208d3`, finished October 22 at 20:25 UTC, from code commit `5d1ddcd`, profile `preview`, app 1.0.0/build 1. The archive is available for installation and uses the existing registered iPhone/provisioning profile. No signing credentials were changed. The upload archive was checked for local credentials before submission.
 
-This preview targets the existing production Flask API. Extraction cannot be exercised against production until the backend migration/code, provider configuration and feature flag are deployed after merge. The recorded native interaction checks instead used the disposable local fixture. The final revision-conflict prompt refinement passed mobile regression, type/lint/export and CI checks; physical-device confirmation remains part of acceptance.
+This preview targets the existing production Flask API. Extraction is now enabled there after merge; the installed preview needs no rebuild for this server rollout. The recorded native interaction checks used the disposable local fixture. The final revision-conflict prompt refinement passed mobile regression, type/lint/export and CI checks; physical-device confirmation remains part of acceptance.
 
 ## Smoke and rollout checklist
+
+### Production rollout — October 23, 2026 UTC
+
+PR #120 merged as `fcf02bf9cf0d51d3238a85d2dd0702db1d1ab787`. Database backup `b010` completed before deployment. Heroku code release v150 succeeded, and migration `f2a3b4c5d6e7` is installed. All four existing jobs retained the same pre-migration field fingerprint. Deployed extraction/parser/capture hashes match the merged source. Public home returns 200; unauthenticated jobs return 401; authenticated list/detail/capture-status reads return 200 with private responses.
+
+Config release v151 securely installed the existing OpenAI key and selected `gpt-6-luna`, initially with extraction disabled. Heroku Scheduler `scheduler-triangular-76540` now runs `flask --app project prune-job-extractions` daily at **04:30 UTC** on a Basic dyno, with the first scheduled run due October 24. The addon uses its free standard plan; scheduled dyno runtime is billed separately. A manual run of this deployed command exited successfully and removed zero receipts. Use the `project` factory, not `run.py`, whose import starts the web server. Source becomes inaccessible at its 24-hour expiry; physical deletion follows at the next successful cleanup, so a daily schedule does not promise deletion exactly at 24 hours.
+
+Release **v152** enabled `JOBWIZARD_EXTRACTION_ENABLED=1`; screenshot capture remains enabled. The web dyno is healthy. Authenticated requests through the public production API exercised the same `gem-function` listing used in the evaluation:
+
+| Production check | Result |
+| --- | --- |
+| Read public listing | 7.156s HTTP route; 5.649s provider worker; title/company and source persisted |
+| Summarize | 9.493s HTTP route; 8.042s worker; eight suggestions, 5,179 input / 358 output tokens using `gpt-6-luna` |
+| Recover/replay | GET returned the completed result; replaying both stages retained the same result and metrics without new provider work |
+| Review/save/reopen | Seven bullets saved with server excerpts; one edited bullet retained its edited label; save replay and mutation receipt returned the original result |
+| Acceptance and compatibility | Full source/result cleared from the accepted extraction receipt; collection omitted details; a legacy-shaped PATCH preserved accepted details |
+| Independent Gem capture | 14.441s; valid 1280 × 7692 PNG; signed fetch succeeded and unsigned access returned 403 |
+| Existing data | All four pre-existing jobs still match their original field fingerprint; only the new validation job was archived |
+
+This consumed one listing read, one summary and one independent screenshot capture. Title/company and all seven accepted bullets were checked against the fetched listing. The listing gives no numeric pay range, visa, travel or closing-date constraint; none was invented. One suggestion mentioned design systems, which appears in source block `s49` but was absent from that bullet's cited excerpts. That phrase was removed during review, and the generic hiring-fraud notice was deselected. This is evidence that semantic citation coverage still requires review, even when the validator reports no warning; it is not a claim of universal extraction accuracy.
+
+At the time of this October 23 rollout, physical extraction acceptance and the first scheduled cleanup were pending. On October 27 the user confirmed suggestions appear for the original Justworks URL and manual save/reopen works after an unsupported listing. Later on October 27, the user confirmed the query-bearing Greenhouse review/save/reopen/capture flow works, and scheduled cleanup execution was verified. See the dated reliability evidence in the validation ledger. Production concurrency measurements remain unconfirmed.
 
 Completed in automated/native fixture checks:
 
@@ -84,11 +108,13 @@ Completed in automated/native fixture checks:
 - [x] iPhone new-job review/edit/remove/save and existing defaults; Android existing-job comparison/apply/save.
 - [x] Cross-device revision conflict retains the draft.
 
-Before enabling production:
+Production rollout and physical acceptance:
 
-- [ ] Review and merge the PR, deploy the additive migration with extraction disabled, and confirm existing clients still read/save/capture.
-- [ ] Configure the approved OpenAI key securely on Heroku, select the evaluated model, configure daily pruning, then enable extraction.
+- [x] Review and merge the PR, deploy the additive migration with extraction disabled, and confirm compatible read/save/capture API behavior.
+- [x] Configure the approved OpenAI key securely on Heroku, select the evaluated model, configure daily pruning, then enable extraction.
+- [x] Record release, migration, model, stage latency/usage, replay/acceptance status and independent capture through the production API.
 - [ ] On the new iPhone preview, extract one real supported listing; check every accepted fact and omitted constraint against the source, then save and reopen. Confirm independent screenshot capture/viewing.
-- [ ] Record release, migration, model, stage latency/usage and receipt status. Check concurrent capture/extraction timing and provider budgets. Disable the feature flag to stop new work if acceptance fails; keep the additive migration/data.
+- [x] Confirm an actual scheduled cleanup completes successfully: October 27 `scheduler.5596` removed two expired receipts and exited 0. The original October 24 execution was not observed.
+- [ ] Check concurrent capture/extraction timing and provider budgets. Disable the feature flag to stop new work if acceptance fails; keep the additive migration/data.
 
-Follow-ups remain open: physical iPhone acceptance, physical Android gestures, smaller devices/largest text/light-dark/VoiceOver/TalkBack, full device background/expiry/offline/account-switch matrix, and all earlier unchecked [mobile](mobile-ui-validation.md), [Jobwizard](jobwizard-smoke-test.md), [Gem/viewer](jobwizard-gem-viewer.md), Grocery/Wishlist/Library/Learning items. Preserve the November 5 dependency exception review and Python 3.13 runtime patch follow-up.
+Follow-ups remain open: physical iPhone acceptance, physical Android gestures, smaller devices/largest text/light-dark/VoiceOver/TalkBack, full device background/expiry/offline/account-switch matrix, and all earlier unchecked [mobile](mobile-ui-validation.md), [Jobwizard](jobwizard-smoke-test.md), [Gem/viewer](jobwizard-gem-viewer.md), Grocery/Wishlist/Library/Learning items. Preserve the November 5 dependency exception review. Python 3.13.18 is now verified in the deployed v160 runtime; see the current ledger for the remaining runtime trust-probe evidence.

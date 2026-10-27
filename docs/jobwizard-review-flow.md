@@ -1,5 +1,7 @@
 # Jobwizard form and suggestion review — October 26, 2026
 
+**Current status:** the user accepted this form preview and it was merged before Sentry PR #123. The [validation ledger](validation-status.md) records October 27 recovery checks and remaining work; historical test counts below retain their original scope.
+
 This mobile-only follow-up builds on PR #122's recovery, detail actions and compact index. It keeps Expo 57, Expo Router, @expo/ui, TanStack Query and the existing Flask API. No migration, provider request format, production configuration or dependency changes are needed.
 
 ## Implemented flow

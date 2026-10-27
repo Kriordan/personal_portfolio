@@ -1,0 +1,204 @@
+{
+  "date": "2026-10-27",
+  "pull_request": "https://github.com/Kriordan/personal_portfolio/pull/131",
+  "merge_commit": "664e529c949c3663878bb38447e2e6362795c4e8",
+  "merged_at": "2026-10-27T16:48:41Z",
+  "deployed_commit": "96b909f3eee382d728d73610bca785d0707edfb1",
+  "code_release": "v161",
+  "current_release": "v162",
+  "production_baseline_preserved": "5f1e8872fca486991f306679067194a83d2c9481",
+  "older_lottery_baseline_preserved": "8754d28a37a8ca52a82647f75ac97f74c8131ab8",
+  "physical_device_acceptance": {
+    "build": "1.0.0 (4)",
+    "build_id": "115c0f31-27f1-448d-87cb-5954eb8f3e50",
+    "status": "accepted",
+    "user_confirmation": "I tested the preview and everything looks good.",
+    "scope": "Overall preview acceptance; individual optional/failure-matrix scenarios were not separately reported."
+  },
+  "combined_backend_tests": {
+    "tests_run": 292,
+    "skipped": 19,
+    "result": "passed"
+  },
+  "runtime": {
+    "python": "3.13.18",
+    "dnspython": "2.9.0",
+    "sentry_sdk": "2.73.0",
+    "sentry_enabled": true,
+    "sentry_environment": "production",
+    "sentry_release": "96b909f3eee382d728d73610bca785d0707edfb1",
+    "extraction_enabled": true,
+    "capture_enabled": true,
+    "capture_policy_sha256": "fcf28adc9c33226601566c52c9facda0d00c79ea9ca9017b1c988516e001fa91"
+  },
+  "deployed_html_tests": {
+    "tests_run": 6,
+    "result": "passed"
+  },
+  "live_health_checks": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "status": 401,
+      "expected": 401,
+      "json_response": true,
+      "request_id_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/jobwizard/jobs",
+      "status": 401,
+      "expected": 401,
+      "json_response": true,
+      "request_id_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/__pr131_deployment_check__",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "HEAD",
+      "path": "/__pr131_deployment_check__",
+      "status": 404,
+      "expected": 404
+    }
+  ],
+  "greenhouse": {
+    "url": "https://job-boards.greenhouse.io/justworks/jobs/8236798?gh_jid=8236798",
+    "read_http_status": 200,
+    "read_status": "ready",
+    "read_seconds": 4.328,
+    "error_code": null,
+    "source_url_preserved": true,
+    "scope": "Deployed Flask routes and real providers in a one-off dyno with an isolated in-memory database; not a public authenticated HTTP request.",
+    "production_job_saved": false,
+    "title": "Senior Software Engineer, Frontend",
+    "company": "Justworks",
+    "summary_seconds": 4.792,
+    "summary_http_status": 200,
+    "summary_status": "complete",
+    "summary_error": null,
+    "bullet_count": 5,
+    "read_replay": "passed",
+    "summary_replay": "passed",
+    "status_recovery": "passed",
+    "provider_metrics": {
+      "read": {
+        "seconds": 3.05
+      },
+      "parser": "job-text-2",
+      "prompt": "job-summary-3",
+      "validator": "job-evidence-2",
+      "summary": {
+        "seconds": 3.563,
+        "usage": {
+          "input_tokens": 3074,
+          "output_tokens": 258,
+          "total_tokens": 3332
+        },
+        "model": "gpt-6-luna"
+      }
+    }
+  },
+  "tls": {
+    "runtime": {
+      "python": "3.13.18",
+      "certifi": "2026.10.19",
+      "httplib2_uses_certifi": true,
+      "botocore_uses_certifi": true
+    },
+    "checks": [
+      {
+        "client": "system",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "system",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "system",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      }
+    ],
+    "result": "12 passed"
+  },
+  "new_cloud_builds": 0,
+  "credentials_changed": false,
+  "production_synthetic_sentry_events_sent": false,
+  "production_data_changes": false,
+  "status": "complete",
+  "limits": [
+    "Greenhouse routes used a disposable in-memory database on the deployed Heroku release with real providers; not an authenticated request across the public router.",
+    "No new production job or screenshot was created.",
+    "Remaining accessibility, Android hardware, concurrency, security exception and credential follow-ups are unchanged."
+  ]
+}

@@ -125,6 +125,21 @@ export function extractionMatches(
     (jobId === null || extraction.source_revision === revision)
   );
 }
+/** Keep transient rejection feedback attached to its draft, while recovery stays visible. */
+export function extractionErrorForDraft(
+  state: {
+    error: string | null;
+    ready: boolean;
+    request: ExtractionRequest | null;
+    feedbackContext: Pick<ExtractionRequest, 'listing_url' | 'job_id'> | null;
+  },
+  url: string,
+  jobId: number | null,
+) {
+  if (!state.ready || state.request) return state.error;
+  return state.feedbackContext?.listing_url === url.trim() &&
+    (state.feedbackContext.job_id ?? null) === jobId ? state.error : null;
+}
 export function validExtractionRequest(
   value: unknown,
 ): value is ExtractionRequest {

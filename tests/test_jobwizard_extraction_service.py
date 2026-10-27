@@ -56,6 +56,17 @@ class ExtractionServiceTests(unittest.TestCase):
     def review(self, attempt_id, text="Build reliable software for our customers."):
         return dict(extraction_id=attempt_id, bullets=[dict(index=0, text=text)])
 
+    def test_greenhouse_shared_link_is_read_and_keeps_its_original_receipt_url(self):
+        url = "https://job-boards.greenhouse.io/justworks/jobs/8236798?gh_jid=8236798"
+        payload = dict(request_id=str(uuid4()), listing_url=url)
+        response = self._post('/api/v1/jobwizard/extractions', headers=self.headers, json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['extraction']['status'], 'ready')
+        self.assertEqual(response.json['extraction']['source_url'], url)
+        self.mock.assert_called_once_with('read', url=url)
+        self.assertEqual(self._post('/api/v1/jobwizard/extractions', headers=self.headers, json=payload).json, response.json)
+        self.assertEqual(self.calls, ['read'])
+
     def test_two_stage_receipts_replay_and_atomic_save(self):
         read, payload = self.start(); self.assertEqual(read.status_code, 200)
         receipt = read.json['extraction']; aid = receipt['id']

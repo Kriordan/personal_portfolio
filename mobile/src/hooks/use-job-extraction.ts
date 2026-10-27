@@ -4,14 +4,16 @@ import { useAuth } from '@/lib/auth-context';
 import { extractionSession } from '@/lib/job-extraction-runtime';
 export function useJobExtraction() {
   const { user } = useAuth();
-  const session = extractionSession(user?.id ?? 0);
+  const userId = user?.id;
+  const session = extractionSession(userId ?? 0);
   const state = useSyncExternalStore(
     session.subscribe,
     session.snapshot,
     session.snapshot,
   );
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
+    session.resetFormFeedback();
     if (!session.snapshot().ready) void session.restore();
     const refresh = () => {
       if (focusManager.isFocused()) void session.check();
@@ -28,6 +30,6 @@ export function useJobExtraction() {
       offOnline();
       clearInterval(timer);
     };
-  }, [session, user]);
+  }, [session, userId]);
   return { ...state, session };
 }

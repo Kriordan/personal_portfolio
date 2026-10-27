@@ -50,6 +50,10 @@ existing node_modules.
 
 ## Deployment verification
 
+**October 27 update:** Heroku **v162**, source/release `96b909f`, reports Python **3.13.18**, certifi **2026.10.19**, dnspython **2.9.0** and enabled production Sentry. All **12 TLS trust checks** passed on that release: system SSL, Requests, httplib2 and Botocore each accepted the control and rejected both compromised-certificate endpoints. The [retained deployment record](../assets/recovery-validation-2026-10-27/pr131-deployment.json) includes every result and live HTTP smoke checks, closing the newer-runtime trust follow-up. The older v154 probe below remains historical evidence. See the [current validation ledger](../validation-status.md).
+
+### Initial coordinated rollout
+
 [PR #129](https://github.com/Kriordan/personal_portfolio/pull/129) merged as
 `12558b2f0074f02ebaa48c8b9ce5a588e911e812`. The user approved the merge and
 coordinated rollout. Production already included the separate lottery branch,
@@ -87,6 +91,8 @@ queued first-run verification remain with the lottery task.
 Earlier v154 and v155 probes already rejected the compromised certificates
 using certifi 2026.10.19, but still ran Python 3.13.11. The v156 probe verifies
 the additional Python runtime update is now deployed.
+
+### Repeating the verification
 
 To repeat the deployed trust check:
 

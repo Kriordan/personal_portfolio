@@ -1,5 +1,7 @@
 # Jobwizard smoke test
 
+**Current status:** see [Validation status and follow-ups](validation-status.md) for the October 27 recovery results and remaining work. This is the full regression checklist; a combined item stays unchecked when only a narrower scenario has passed.
+
 Checklist for the [Jobwizard modernization plan](jobwizard-modernization-plan.md), approved October 21 with immediate saving and optional screenshot capture afterward. Leave an item unchecked unless its entire stated behavior was exercised.
 
 Use the disposable two-account fixture for failures and concurrency. Live acceptance should use a clearly labelled **Jobwizard smoke test** record and a public nonpersonal listing. Do not send a private/tokenized listing to the screenshot provider merely to test the integration. Archive the test record afterward; permanent deletion is outside this slice.
@@ -167,3 +169,11 @@ The index now has search/Add icons beside its heading, a short count/privacy cap
 The approved cleanup is implemented separately from PR #122. See [flow, native screenshots and acceptance checklist](jobwizard-review-flow.md). Add/Edit keeps routine fields compact; Review separates comparisons and reversible bullet choices from saving. Optional explanation is disclosed, while real errors and recovery remain visible. Local iPhone and Android checks covered deliberate Apply/Save, retained values and summaries; iPhone checks additionally covered larger text, extraction failure, conflict with an Android edit and recovery of a committed save with a lost response. Production/physical-device and inherited accessibility/lifecycle checks remain open as explicitly listed there. No cloud preview was started.
 
 The user subsequently approved the [combined iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/2a14bf09-edcd-4690-b810-c322f1b5b9c3), which finished October 26 at 17:21:26 UTC from `fd4d990`. The downloaded IPA passed strict/deep signature verification with replacement certificate `FBC7A` and the registered-iPhone profile. Follow the [physical-device checklist and merge order](jobwizard-review-flow.md#physical-iphone-acceptance-and-merge-order): accept on the phone, merge #122 first, then retarget #127 to `main` and confirm its full checks before merging. No backend deployment or certificate change was performed.
+
+## October 27 reliability follow-up
+
+See the [current reliability evidence](validation-status.md#jobwizard-reliability-pass--october-27) for physical Greenhouse acceptance, scheduled cleanup, user-confirmed Apple certificate revocation, iOS lost-save/capture restart recovery, image-access expiry, unresolved-capture account isolation, Android concurrent URL edit, and malformed-URL guidance on both hosts. These scoped checks supersede the corresponding pending notes above; they do not close every combined checklist item. The later [protected-link and account-session pass](validation-status.md#protected-links-and-account-sessions--october-27) records the exact iOS cold-link, delayed refresh/save/capture and Android warm-link cases, plus a fixed cross-account token race. Combined checklist items remain open for untested permutations, committed-save account switching, Android Release/hardware, accessibility and live provider concurrency. Android cold links require a Release artifact because the development launcher failed before routing.
+
+## PR #133 physical preview
+
+[Version 1.0.0 (5)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/59802c2d-c886-4ac8-aef8-3dae4ae487ad) includes #132 and #133. The user accepted this preview on the physical iPhone on October 27 and authorized merging #133. The [focused device checklist](validation-status.md#pr-133-iphone-preview--october-27) is retained for repeat testing; this overall acceptance does not close optional, unreported or remaining full-matrix items above.

@@ -26,6 +26,7 @@ import { ExtractionReview } from './job-extraction-review';
 import { useJobExtraction } from '@/hooks/use-job-extraction';
 import {
   extractionMatches,
+  extractionErrorForDraft,
   reviewedDetailsError,
   type ReviewedDetails,
   type Extraction,
@@ -140,6 +141,7 @@ function ReadyJobForm({
     theme = useTheme(),
     { isAuthenticated } = useAuth();
   const busy = !!activity.attempt || !activity.ready;
+  const suggestionError = extractionErrorForDraft(extraction, url.text, job?.id ?? null);
   const input = () => ({
     title: title.read().trim(),
     company_name: company.read().trim(),
@@ -274,6 +276,7 @@ function ReadyJobForm({
   const matches =
     !!extraction.result &&
     extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
+  const invalidListingUrl = !!url.text.trim() && !safeJobUrl(url.text.trim());
   const canReview =
     reviewing &&
     extraction.result?.status !== 'running' &&
@@ -320,6 +323,11 @@ function ReadyJobForm({
       return;
     Keyboard.dismiss();
     const sourceUrl = url.read().trim();
+    if (!safeJobUrl(sourceUrl)) {
+      // Keep validation in sync with the live native field before any request.
+      url.input.onChangeText(sourceUrl);
+      return;
+    }
     // Native text may be newer than the React event used to render the button.
     const liveMatch =
       !!extraction.result &&
@@ -452,12 +460,19 @@ function ReadyJobForm({
             <JobFormField
               label="Listing URL"
               {...url.input}
+              onChangeText={(next) => {
+                if (next.trim() !== url.text.trim()) extraction.session.resetFormFeedback();
+                url.input.onChangeText(next);
+              }}
               editable={!busy}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               returnKeyType="done"
             />
+            {invalidListingUrl ? (
+              <InlineError message="Enter a complete listing link starting with https:// or http://, without spaces." />
+            ) : null}
             <View style={styles.spread}>
               <JobTextAction
                 label={suggestLabel}
@@ -488,8 +503,8 @@ function ReadyJobForm({
                   : 'Preparing the bullet summary…'}
               </ThemedText>
             ) : null}
-            {extraction.error ? (
-              <InlineError message={extraction.error} />
+            {suggestionError ? (
+              <InlineError message={suggestionError} />
             ) : null}
             {!extraction.ready ? (
               <JobTextAction
@@ -550,6 +565,7 @@ function ReadyJobForm({
             ) : null}
             {extraction.result &&
             !matches &&
+            !invalidListingUrl &&
             (extraction.result.job_id ?? null) === (job?.id ?? null) &&
             url.text.trim() ? (
               <ThemedText type="small" themeColor="textSecondary">

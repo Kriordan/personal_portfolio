@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { ExtractionSession } from '../src/lib/job-extraction-session.ts';
 import {
   extractionMatches,
+  extractionErrorForDraft,
   reviewedDetailsError,
   reviewSelectionError,
   reviewFieldSelected,
@@ -53,6 +54,59 @@ test('a definitive rejected read is not restored as an unknown paid operation', 
   }
 });
 
+test('a rejected form clears its feedback without a restart or another request', async () => {
+  const h = harness({ api: { start: async () => {
+    throw Object.assign(new Error('Unsupported listing.'), { status: 400 });
+  } } });
+  await h.session.restore();
+  await h.session.begin({ listing_url: url, job_id: 7, expected_revision: 0 });
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, 7), 'Unsupported listing.');
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), '', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, 8), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url + '4', 7), null);
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot().error, null);
+  assert.equal(h.stored, null);
+  assert.deepEqual(h.calls, []);
+});
+
+test('form reset clears offline feedback but preserves unresolved recovery', async () => {
+  const h = harness({ api: { start: async () => { throw new Error('Lost response'); } } });
+  await h.session.restore();
+  h.setOnline(false);
+  await h.session.begin({ listing_url: url });
+  assert.match(extractionErrorForDraft(h.session.snapshot(), url, null), /Reconnect/);
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot().error, null);
+  h.setOnline(true);
+  await h.session.begin({ listing_url: url });
+  const pending = h.session.snapshot();
+  const stored = h.stored;
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot(), pending);
+  assert.equal(h.stored, stored);
+  assert.match(extractionErrorForDraft(h.session.snapshot(), '', null), /No saved result/);
+});
+
+test('a late rejection cannot attach its feedback to a new blank or different draft', async () => {
+  const wait = deferred();
+  const h = harness({ api: { start: async () => {
+    await wait.promise;
+    throw Object.assign(new Error('Unsupported listing.'), { status: 400 });
+  } } });
+  await h.session.restore();
+  const sending = h.session.begin({ listing_url: url });
+  await new Promise((resolve) => setImmediate(resolve));
+  const frozen = h.stored;
+  h.session.resetFormFeedback();
+  assert.equal(h.stored, frozen);
+  wait.resolve();
+  await sending;
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), '', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url + '4', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, null), 'Unsupported listing.');
+});
+
 test('missing receipt preserves its UUID for deliberate retry and exposes a polling stop', async () => {
   const h = harness();
   await h.session.restore();
@@ -73,6 +127,85 @@ test('missing receipt preserves its UUID for deliberate retry and exposes a poll
   assert.equal(restored.snapshot().uncertain, false);
   assert.equal(restored.snapshot().result.status, 'complete');
   assert.deepEqual(h.calls.slice(count), ['read', 'summary']);
+});
+
+test('rate-limited and unavailable reads do not become phantom work after restart', async () => {
+  for (const [status, code] of [[429, 'rate_limit'], [409, 'job_conflict'], [503, 'unavailable']]) {
+    const h = harness({ api: { start: async () => {
+      throw Object.assign(new Error('Try again later.'), { status, body: { code } });
+    } } });
+    await h.session.restore();
+    await h.session.begin({ listing_url: url });
+    assert.equal(h.stored, null);
+    const reopened = new ExtractionSession(1, h.deps);
+    await reopened.restore();
+    assert.equal(reopened.snapshot().uncertain, false);
+    assert.equal(reopened.snapshot().request, null);
+    assert.deepEqual(h.calls, []);
+  }
+});
+
+test('an unclassified 503 keeps the original request and recovers committed work', async () => {
+  const h = harness();
+  const start = h.api.start;
+  h.api.start = async (request) => {
+    await start(request);
+    throw Object.assign(new Error('Gateway unavailable after commit'), { status: 503 });
+  };
+  await h.session.restore();
+  await h.session.begin({ listing_url: url });
+  assert.equal(h.session.snapshot().result?.status, 'ready');
+  assert.deepEqual(h.calls, ['read', 'get']);
+  assert.ok(h.stored);
+});
+
+test('late rejection from a signed-out account cannot erase the next account recovery record', async () => {
+  const waiting = deferred();
+  const h = harness({ api: { start: async () => {
+    await waiting.promise;
+    throw Object.assign(new Error('Rejected old request'), { status: 400 });
+  } } });
+  await h.session.restore();
+  const pending = h.session.begin({ listing_url: url });
+  await new Promise((resolve) => setImmediate(resolve));
+  h.session.dispose();
+  const nextAccount = JSON.stringify({ userId: 2, request: { request_id: randomUUID(), listing_url: url } });
+  await h.storage.write(nextAccount);
+  waiting.resolve();
+  await pending;
+  assert.equal(h.stored, nextAccount);
+});
+
+test('expired status or summary clears stale actions and permits a fresh read', async () => {
+  for (const stage of ['get', 'summarize']) {
+    const h = harness();
+    await h.session.restore();
+    await h.session.begin({ listing_url: url });
+    const previous = h.session.snapshot().request.request_id;
+    h.api[stage] = async () => { throw Object.assign(new Error('Suggestions expired.'), { status: 410 }); };
+    await (stage === 'get' ? h.session.check() : h.session.continue());
+    assert.equal(h.session.snapshot().result, null);
+    assert.equal(h.session.snapshot().request, null);
+    assert.equal(h.stored, null);
+    assert.equal(h.session.snapshot().uncertain, false);
+    await h.session.begin({ listing_url: url });
+    assert.notEqual(h.session.snapshot().request.request_id, previous);
+    assert.equal(h.session.snapshot().result.status, 'ready');
+  }
+});
+
+test('a rejected summary retains its existing source for deliberate continuation', async () => {
+  const h = harness({ api: { summarize: async () => {
+    throw Object.assign(new Error('Try again later.'), { status: 429, body: { code: 'rate_limit' } });
+  } } });
+  await h.session.restore();
+  await h.session.begin({ listing_url: url });
+  const saved = h.stored;
+  await h.session.continue();
+  assert.equal(h.stored, saved);
+  assert.equal(h.session.snapshot().result.status, 'ready');
+  assert.equal(h.session.snapshot().uncertain, false);
+  assert.deepEqual(h.calls, ['read']);
 });
 
 test('unconfirmed failures keep the frozen request across restart; no paid automatic retry', async () => {

@@ -5,8 +5,23 @@ POST /fixture/state controls reads/writes/receipts/capture/images (success|failu
 write mode lost drops the response after commit; delay controls write latency.
 GET /fixture/results includes provider/status/image counters. Optional artifact
 JSON entries may include image_path for a local PNG; no provider is called.
+
+Recovery controls: extraction_http/code reject before work; extraction_response
+lost returns 503 after commit; expire_extractions expires stored receipts;
+auth expired rejects refresh too; telemetry failure rejects local envelopes.
+Capture controls: capture_delay pauses the fake provider (up to 40 seconds);
+capture_response lost drops the committed response; capture_status failure
+blocks status reads. image_ttl (1–900 seconds) issues genuinely expiring local
+image links. Counters distinguish HTTP attempts from actual provider work.
+Account-switch controls: hold_write_response, hold_refresh_response and
+hold_capture pause that work until released (maximum 120 seconds). Results
+include held counts. /fixture/links supplies simulator-only deep-link anchors.
+Native test DSN: http://public@127.0.0.1:5058/1. Both Flask and mobile telemetry
+stay local; /fixture/events exposes only disposable test payloads. Never deploy
+this script or point a production app at these unauthenticated test controls.
 """
 import io
+import gzip
 import json
 import os
 import sys
@@ -28,6 +43,9 @@ from project import create_app
 from project.database import db
 from project.extensions import talisman
 from project.models import Gift, Job, JobCapture, JobMutationReceipt, Playlist, User
+from project.models import JobExtraction
+from project.monitoring import configure_monitoring
+from sentry_sdk.transport import Transport
 from project.services import jobwizard_capture, jobwizard_extraction
 from project.jobwizard.extraction import normalize_source, validate_summary
 from project.jobwizard.extraction_errors import SuggestionError
@@ -36,14 +54,43 @@ from project.jobwizard.capture_policy import CaptureError
 
 def main():
     email_validator.TEST_ENVIRONMENT = True
+    mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0, extraction="success", summary="success", extraction_delay=2,
+                extraction_http=0, extraction_code="failed", extraction_status_http=0,
+                extraction_response="success", auth="success", telemetry="success",
+                capture_delay=2, capture_response="success", capture_status="success", image_ttl=900,
+                hold_write_response=False, hold_refresh_response=False, hold_capture=False)
+    held = dict(write=0, refresh=0, capture=0)
+    def hold(kind, control):
+        if not mode[control]: return
+        held[kind] += 1
+        deadline = time.monotonic() + 120
+        try:
+            while mode[control] and time.monotonic() < deadline:
+                time.sleep(0.05)
+        finally:
+            held[kind] -= 1
+    events = {"flask": [], "mobile": []}
+    counters = dict(image_reads=0, image_signs=0, write_posts=0, capture_posts=0, capture_calls=0, status_reads=0, extraction_reads=0, extraction_summaries=0, extraction_posts=0, summary_posts=0, telemetry_attempts=0)
+
+    class FixtureTransport(Transport):
+        def capture_envelope(self, envelope):
+            event = envelope.get_event()
+            if event:
+                if mode["telemetry"] == "failure":
+                    raise RuntimeError("Disposable monitoring transport unavailable")
+                events["flask"].append(event)
+
     with tempfile.TemporaryDirectory(prefix="jobwizard-preview-") as directory:
-        app = create_app(dict(TESTING=True, SECRET_KEY="fixture", JWT_SECRET_KEY="disposable-jobwizard-jwt-secret-only",
-            SQLALCHEMY_DATABASE_URI=f"sqlite:///{Path(directory) / 'jobs.sqlite'}", SQLALCHEMY_TRACK_MODIFICATIONS=False,
-            JWT_ACCESS_TOKEN_EXPIRES=timedelta(seconds=20), JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=1),
-            WTF_CSRF_ENABLED=False, SESSION_COOKIE_SECURE=False, RATELIMIT_ENABLED=False))
+        # Always isolate telemetry too: never inherit a production DSN or send
+        # synthetic failures to a real account. No Sentry key is required.
+        with patch("project.monitoring.configure_monitoring", side_effect=lambda app: configure_monitoring(app, transport=FixtureTransport())):
+            app = create_app(dict(TESTING=True, PROPAGATE_EXCEPTIONS=False,
+                SENTRY_ENABLED=True, SENTRY_DSN="https://public@example.invalid/1", SENTRY_ENVIRONMENT="local-recovery-validation",
+                SECRET_KEY="fixture", JWT_SECRET_KEY="disposable-jobwizard-jwt-secret-only",
+                SQLALCHEMY_DATABASE_URI=f"sqlite:///{Path(directory) / 'jobs.sqlite'}", SQLALCHEMY_TRACK_MODIFICATIONS=False,
+                JWT_ACCESS_TOKEN_EXPIRES=timedelta(seconds=20), JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=1),
+                WTF_CSRF_ENABLED=False, SESSION_COOKIE_SECURE=False, RATELIMIT_ENABLED=False))
         talisman.force_https = False
-        mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0, extraction="success", summary="success", extraction_delay=2)
-        counters = dict(image_reads=0, capture_calls=0, status_reads=0, extraction_reads=0, extraction_summaries=0)
         # Optional real readiness artifacts: signed URLs stay outside Git. This
         # fixture reads existing images; it never calls a paid capture provider.
         artifacts_path = os.getenv("JOBWIZARD_PREVIEW_CAPTURE_RESULTS")
@@ -77,10 +124,50 @@ def main():
             db.session.commit()
         @app.post("/fixture/state")
         def state():
-            payload = request.get_json(); mode.update({key: payload[key] for key in mode if key in payload}); return jsonify(mode)
+            payload = request.get_json()
+            mode.update({key: payload[key] for key in mode if key in payload})
+            jobwizard_capture.TTL = max(1, min(900, int(mode['image_ttl'])))
+            if payload.get("expire_extractions"):
+                JobExtraction.query.update({"expires_at": datetime.now(timezone.utc) - timedelta(seconds=1)})
+                db.session.commit()
+            return jsonify(mode)
         @app.get("/fixture/results")
         def results():
-            return jsonify(jobs=Job.query.count(), receipts=JobMutationReceipt.query.count(), captures=JobCapture.query.count(), **counters)
+            return jsonify(jobs=Job.query.count(), receipts=JobMutationReceipt.query.count(), captures=JobCapture.query.count(), extractions=JobExtraction.query.count(),
+                           accounts={str(account): dict(jobs=Job.query.filter_by(user_id=account).count(),
+                               receipts=JobMutationReceipt.query.filter_by(user_id=account).count(),
+                               captures=JobCapture.query.filter_by(user_id=account).count()) for account in (1, 2)},
+                           held=held, events={key: len(value) for key, value in events.items()}, **counters)
+        @app.get("/fixture/links")
+        def links():
+            paths = [("Account 1 job", "jobwizard/2"), ("Account 2 job", "jobwizard/322"),
+                     ("Missing job", "jobwizard/999999"), ("Malformed job", "jobwizard/not-a-job"),
+                     ("Account 1 image", "jobwizard/2/screenshot"), ("Account 2 image", "jobwizard/322/screenshot"),
+                     ("Missing image", "jobwizard/999999/screenshot"), ("Malformed image", "jobwizard/not-a-job/screenshot"),
+                     ("New job", "jobwizard/new"), ("My account", "me")]
+            return '<meta name="viewport" content="width=device-width,initial-scale=1"><h1>Local deep-link checks</h1>' + ''.join(
+                f'<p style="padding:10px"><a href="personal-portfolio:///{path}">{label}</a></p>' for label, path in paths)
+        @app.get("/fixture/events")
+        def fixture_events():
+            return jsonify(events)
+        @app.post("/api/1/envelope/")
+        def mobile_envelope():
+            counters["telemetry_attempts"] += 1
+            if mode["telemetry"] == "failure":
+                return "Fixture transport unavailable", 503
+            data = request.get_data()
+            if request.headers.get("Content-Encoding") == "gzip":
+                data = gzip.decompress(data)
+            stream = io.BytesIO(data)
+            json.loads(stream.readline())  # envelope header
+            while header := stream.readline():
+                item = json.loads(header)
+                body = stream.read(item["length"]) if "length" in item else stream.readline()
+                if "length" in item:
+                    stream.read(1)
+                if item.get("type") == "event":
+                    events["mobile"].append(json.loads(body))
+            return jsonify(id="local-only")
         @app.get("/fixture/artifacts/<name>")
         def local_image(name):
             counters["image_reads"] += 1
@@ -90,33 +177,60 @@ def main():
             return send_file(path, mimetype="image/png", max_age=0)
         @app.get("/fixture/screenshot.png")
         def screenshot():
-            return send_file(io.BytesIO(image_bytes.getvalue()), mimetype="image/png", max_age=0)
+            counters["image_reads"] += 1
+            if mode["images"] == "failure" or float(request.args.get('expires', 'inf')) <= time.time():
+                return "Unavailable", 403
+            response = send_file(io.BytesIO(image_bytes.getvalue()), mimetype="image/png", max_age=0)
+            response.headers['Cache-Control'] = 'private, no-store'
+            return response
         @app.before_request
         def fail():
+            if mode["auth"] == "expired" and (request.path == "/api/v1/auth/refresh" or request.path.startswith("/api/v1/jobwizard")):
+                return jsonify(error="Sign in to continue.", code="unauthorized"), 401
             if not request.path.startswith("/api/v1/jobwizard"):
                 return None
+            if request.path.startswith('/api/v1/jobwizard/jobs') and request.method in {'POST', 'PATCH'}:
+                counters['capture_posts' if request.path.endswith('/capture') else 'write_posts'] += 1
+            if "/extractions" in request.path:
+                if request.method == "POST":
+                    counters["summary_posts" if request.path.endswith("/summary") else "extraction_posts"] += 1
+                    if mode["extraction_http"]:
+                        return jsonify(error="Disposable fixture rejection. Manual saving is available.", code=mode["extraction_code"]), int(mode["extraction_http"])
+                elif mode["extraction_status_http"]:
+                    return jsonify(error="Disposable fixture status unavailable.", code="expired"), int(mode["extraction_status_http"])
             if request.method in {"POST", "PATCH"} and not request.path.endswith("/capture"):
                 time.sleep(min(20, max(0, float(mode["delay"]))))
                 if mode["writes"] == "failure": return jsonify(error="Fixture save unavailable"), 503
             if request.method == "GET":
-                if request.path.endswith("/capture"): counters["status_reads"] += 1
+                if request.path.endswith("/capture"):
+                    counters["status_reads"] += 1
+                    if mode['capture_status'] == 'failure': return jsonify(error='Fixture capture status unavailable'), 503
                 if "/receipts/" in request.path:
                     if mode["receipts"] == "failure": return jsonify(error="Fixture receipt unavailable"), 503
                 elif mode["reads"] == "failure": return jsonify(error="Fixture read unavailable"), 503
         @app.after_request
         def lose(response):
+            if request.path == '/api/v1/auth/refresh':
+                hold('refresh', 'hold_refresh_response')
+            if request.path.startswith('/api/v1/jobwizard/jobs') and request.method in {'POST', 'PATCH'} and not request.path.endswith('/capture'):
+                hold('write', 'hold_write_response')
+            if request.path.endswith('/capture') and request.method == 'POST' and response.status_code == 200 and mode['capture_response'] == 'lost':
+                return app.make_response((jsonify(error='Fixture capture response lost after commit'), 503))
+            if "/extractions" in request.path and request.method == "POST" and response.status_code == 200 and mode["extraction_response"] == "lost":
+                return app.make_response((jsonify(error="Fixture response lost after commit"), 503))
             if request.path.startswith("/api/v1/jobwizard/jobs") and request.method in {"POST", "PATCH"} and not request.path.endswith("/capture") and response.status_code in {200, 201} and mode["writes"] == "lost":
-                return jsonify(error="Fixture response lost after commit"), 503
+                return app.make_response((jsonify(error="Fixture response lost after commit"), 503))
             return response
         def artifact(url, key):
             counters["capture_calls"] += 1
-            time.sleep(2)
+            hold('capture', 'hold_capture')
+            time.sleep(min(40, max(0, float(mode['capture_delay']))))
             if mode["capture"] == "failure": raise RuntimeError("Fixture capture unavailable")
             if mode["capture"] not in {"success", "failure"}: raise CaptureError(mode["capture"])
             return dict(object_key=key, width=320, height=1600)
         def suggestions(stage, **payload):
             counters['extraction_reads' if stage == 'read' else 'extraction_summaries'] += 1
-            time.sleep(min(20, max(0, float(mode['extraction_delay']))))
+            time.sleep(min(40, max(0, float(mode['extraction_delay']))))
             if mode['extraction' if stage == 'read' else 'summary'] != 'success':
                 raise SuggestionError('timeout')
             if stage == 'read':
@@ -133,11 +247,12 @@ def main():
             return dict(result=validate_summary(dict(bullets=bullets, more_details=True, conflicts=[]), source), seconds=2, model='fixture')
         storage = Mock()
         def signed_image(*args, **kwargs):
+            counters['image_signs'] += 1
             key = kwargs["Params"]["Key"]
             url = signed_images.get(key)
             if key.split("/")[-1] in local_images:
                 return f"{url}?version={uuid4()}"
-            return url or f"http://127.0.0.1:5058/fixture/screenshot.png?version={uuid4()}"
+            return url or f"{request.host_url.rstrip('/')}/fixture/screenshot.png?version={uuid4()}&expires={time.time() + jobwizard_capture.TTL}"
         storage.generate_presigned_url.side_effect = signed_image
         with patch.dict(os.environ, JOBWIZARD_EXTRACTION_ENABLED="1", BROWSERLESS_API_TOKEN="fixture", OPENAI_API_KEY="fixture"), patch.object(jobwizard_extraction, "_run", side_effect=suggestions), patch.object(jobwizard_capture, "configured", return_value=True), patch.object(jobwizard_capture, "bucket", return_value="fixture-private"), patch.object(jobwizard_capture, "s3_client", return_value=storage), patch.object(jobwizard_capture, "_run_capture", side_effect=artifact):
             app.run(host="127.0.0.1", port=5058, use_reloader=False, threaded=True)
