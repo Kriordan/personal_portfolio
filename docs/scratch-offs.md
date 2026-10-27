@@ -87,6 +87,24 @@ iPhone 18 Pro/iOS 27 simulator checks exercised NY/CT prices, $1k/$100k targets,
 
 Heroku **v155** runs application source `072c0cc`, including the latest merged mobile and monitoring work. Backend, mobile, web and CodeQL CI passed on that source. Production read-only checks verified migration `a4b5c6d7e8f9`, authenticated game lists/details, the private Home card, and unauthenticated API 401 responses. With all HTTP disabled inside the check, NY returned 32 active games and CT returned 22; both retained their saved rankings. The [live homepage](assets/lottery/live-home.png) was also verified in the existing signed-in browser.
 
-Heroku Scheduler remains configured for 13:00 UTC daily. Its first actual scheduled run, October 27, is still awaiting the separately queued verification. This release did not re-fetch lottery data.
+At this release, Heroku Scheduler was configured for 13:00 UTC daily, with the first actual run awaiting the October 27 verification recorded below. This release did not re-fetch lottery data.
 
-The new installable iPhone preview has **not** been created. Automatic approval review rejected the Expo cloud-build action pending explicit approval to upload the private source and use the existing signing credentials. The current installed physical-phone preview predates these lottery screens; local native screenshots and passing bundles are available for review.
+The initial Expo build attempt was blocked pending explicit approval to upload private source and use the existing signing credentials. The user authorized proceeding on October 27; the subsequent preview is recorded below.
+
+## October 27 integration and scheduled refresh
+
+The first actual 13:00 UTC Scheduler execution succeeded for all three sources. Scheduled receipts 4 (NY), 5 (CT), and 6 (draws) finished between 13:00:26 and 13:01:16 UTC. NY saved 115 feed games, 32 active eligible games and 25 rankable at $1,000+, with an October 27 source date. CT saved 22 games, 19 rankable, with its published October 26 source date. Both draw summaries were saved. All snapshots were non-stale, and authenticated NY/CT pages exposed the state and draw scheduled-run success. Read-only verification made zero upstream requests; anonymous page access redirected to login. The one-time verification automation was removed. The daily Heroku schedule is unchanged.
+
+Heroku v162 retains the lottery implementation alongside the newer security, monitoring and HTTP error-status fixes (deployed application commit `96b909f`). The merged lottery branch's backend, migration and Python dependency files match that deployed application, so this native delivery requires no additional backend deployment.
+
+Application source `d6a9e13300784262b1b0497b3efddd05c791f5bb` merges main through PR #133 (`05e0c6b`), including the accepted Jobwizard improvements and delayed-request account isolation. The only merge conflict was in historical runtime-verification documentation; both verification records were preserved. All seven repository checks passed on this exact source, including all 292 backend tests with PostgreSQL and no skips. Local validation passed 292 backend tests (273 passed, 19 environment-dependent skips), all 122 mobile tests, TypeScript, lint, dependency compatibility and iOS/Android/web exports using Python 3.13.18 and Node 24.22.1. The npm audit gate passes with the same three documented mobile exceptions due for review November 5; those advisories remain open.
+
+The approved internal iPhone preview is version **1.0.0 (6)**, built from that exact application source with frozen existing credentials. [Install/build page](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/5995faaa-b592-490e-8da7-e0b1707b7be9). Expo completed the build at 18:52:46 UTC. The downloaded IPA passed strict/deep code-signature verification, uses certificate suffix FBC7A, and has the same registered device as accepted preview 5. The production API origin, exact source commit and lottery routes are present in the artifact. The Xcode log confirms a successful Sentry source-map upload with debug ID `2a0a595b-a0d0-475d-8a06-3eb2a9a8ca0b`, matching the downloaded Hermes bundle; the Sentry browser UI was not independently checked. No credentials were changed and no synthetic monitoring events were sent. [Artifact verification receipt](assets/lottery/iphone-preview-build-6.json). PR #128 remains a draft pending physical-phone acceptance.
+
+### Physical iPhone acceptance
+
+1. Install preview 6 and confirm Home shows the lottery quick reference with the existing modernized layout.
+2. Open Scratch-offs, switch NY/CT, change prices and the prize target, compare per-ticket/per-dollar ordering, then search for a game and open its prize table.
+3. Reopen the app and confirm the chosen filters persist for the signed-in account.
+4. Open the draw planner and check the weekly advance-play and three-stop routines. Confirm dates and cutoffs are readable.
+5. Check the existing Jobwizard flow still behaves as it did in accepted preview 5. Report any layout, navigation or sign-in issues before merging.
