@@ -1,5 +1,11 @@
 # October 2026 runtime security update
 
+**Closed October 27, 2026:** the deployed runtime/TLS verification below is
+complete, and the three separate mobile dependency advisories are resolved by
+merged PR #134. The user installed iPhone preview 7 and confirmed it works.
+Both npm audit-exception lists are empty. See the
+[mobile security closeout](mobile-advisories-2026-10-27.md#closeout--october-27-2026).
+
 The portfolio now selects Node 24.22.1 for local work, CI, and every Expo EAS
 build profile, and Python 3.13.18 for the backend and CI. The existing
 certifi 2026.10.19 fix is retained with an explicit minimum requirement.

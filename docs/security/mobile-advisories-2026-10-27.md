@@ -80,7 +80,19 @@ or other project modification was performed for this mobile release. The
 previous Python, Node, certifi, lottery, account-isolation, and recovery fixes
 remain preserved.
 
-Install preview 7 on the registered iPhone to receive the decoder fix; the
-existing installed preview does not update automatically. Physical-device
-acceptance of this new build remains pending and is not inferred from successful
-build or download verification.
+## Closeout — October 27, 2026
+
+The user installed preview 7 on the physical iPhone and confirmed:
+“I’ve installed preview 7 and it looks good.” This records overall device
+acceptance of the signed security build. Individual adversarial, accessibility,
+Android, and concurrency scenarios were not separately reported.
+
+The requested runtime and three mobile dependency security updates are closed:
+PR #129's deployed runtime/TLS evidence is retained in the
+[runtime security record](runtime-security-2026-10-26.md), PR #134 is merged,
+and preview 7 is installed and accepted. GitHub was rechecked at closeout:
+alerts #186, #245, and #251 remain fixed, with zero open dependency alerts.
+Both audit-exception lists are empty, so their November 5 review follow-up is
+complete. No advisory was dismissed or suppressed. Ongoing adapter maintenance
+and unrelated feature, accessibility, credential, and platform follow-ups retain
+their existing scope in the [validation ledger](../validation-status.md).

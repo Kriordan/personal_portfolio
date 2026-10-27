@@ -53,6 +53,12 @@
   "backend_deployment_performed": false,
   "ota_published": false,
   "new_synthetic_event_sent": false,
-  "physical_device_acceptance": "pending",
-  "verified_at": "2026-10-27"
+  "physical_device_acceptance": "accepted",
+  "verified_at": "2026-10-27",
+  "physical_device_accepted_at": "2026-10-27",
+  "physical_device_acceptance_evidence": "User: “I’ve installed preview 7 and it looks good.”",
+  "physical_device_acceptance_scope": "Overall physical iPhone acceptance of preview 7; individual adversarial, accessibility, Android, and concurrency scenarios were not separately reported.",
+  "security_update_closeout": "complete",
+  "security_update_closed_at": "2026-10-27",
+  "dependency_alerts_rechecked_at": "2026-10-27T21:40:01Z"
 }

@@ -6,14 +6,25 @@ Updated October 27, 2026. This is the current index for mobile/Jobwizard/Sentry 
 
 | Area | Current evidence |
 | --- | --- |
-| Main | PR #132 merged as `d7114bc` after all seven checks passed, following #131 (`664e529`), #130 (`e2d9794`), Sentry #123 and runtime security #129. Expo 57, Expo Router, @expo/ui, TanStack Query and Flask are retained. |
+| Main | Security PR #134 merged as `977c9d1`, following lottery #128 (`ab8a02e`), account isolation #133 (`05e0c6b`), recovery #132/#131/#130, Sentry #123, and runtime security #129. All post-merge backend, mobile, web, and CodeQL checks passed. Expo 57 and the existing application stack are retained. |
 | Flask production | PR #131 deployed October 27 as Heroku **v162**, source/release `96b909f3eee382d728d73610bca785d0707edfb1`, Python **3.13.18**, dnspython **2.9.0**, Sentry SDK **2.73.0**, reporting enabled in `production`. The integration preserves v160 (`5f1e887`) and its newer lottery work from `8754d28`; do not overwrite that production baseline with older main. [Deployment evidence](assets/recovery-validation-2026-10-27/pr131-deployment.json). |
 | HTTP errors | PR #130 deployed: six deployed HTML error regression checks passed. Live homepage returned 200; protected APIs 401; unknown HTML GET/HEAD 404. |
 | Sentry alerts | New-issue and resolved-issue-regression rules configured for both projects, with email test delivery verified. A real controlled Flask regression email arrived October 27 at 13:23 UTC. Scrubbed stored events and request correlation were inspected; synthetic issues resolved. |
-| Mobile preview | [PR #133 build 5](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/59802c2d-c886-4ac8-aef8-3dae4ae487ad) includes #132 and was accepted on the physical iPhone on October 27. The user confirmed “I tested the preview and everything looks good” and authorized merging #133. User previously accepted [build 115c0f31](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/115c0f31-27f1-448d-87cb-5954eb8f3e50), **1.0.0 (4)**, on October 27. Signature and exact artifact source maps are verified; preview reporting remains enabled. Earlier build 2 supplies the scrubbed artifact event evidence in [monitoring validation](error-monitoring.md#enabled-iphone-preview--october-26); no new event was sent for build 4. |
+| Mobile preview | [Preview 7, version 1.0.0 (7)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/d1f95c3f-6cbe-4763-bd3d-2ff4925359a0), built from security merge `977c9d1`, was installed and accepted on the physical iPhone on October 27: “I’ve installed preview 7 and it looks good.” Signature, production API origin, source commit, and matching source-map upload are verified. It retains preview 6’s application screens and settings, including prior lottery, account-isolation, and recovery fixes. Existing signing and monitoring settings are preserved. [Acceptance and verification receipt](assets/security/iphone-preview-build-7.json). Earlier builds retain their separately scoped evidence below. |
 | Mobile production | A production EAS reporting environment/build has not been enabled. Changing environment variables does not alter installed apps. Native crash collection remains intentionally disabled. |
 
 The initial simulator/recovery pass made no deployment, credential, provider or monitoring-policy changes and consumed **zero cloud builds**. The two separately approved PR #131 device previews (builds 3 and 4) use **two cloud builds**, with the existing signing and monitoring configuration. Production rollout artifacts are preserved in [Sentry rollout](assets/recovery-validation-2026-10-27/sentry-production-rollout.json) and [HTTP deployment](assets/recovery-validation-2026-10-27/html-error-status-deployment.json). The earlier rollout's HTTP 200 exception responses are historical evidence of the bug subsequently fixed in PR #130.
+
+## Security updates closed October 27
+
+Runtime PR #129 and mobile dependency PR #134 are complete, including the
+[deployed runtime/TLS checks](security/runtime-security-2026-10-26.md) and the
+user's acceptance of preview 7 above. All three remaining mobile advisories
+are fixed, GitHub reports zero open dependency alerts, and both npm audit
+exception lists are empty. The November 5 exception-review follow-up is closed.
+See the [security closeout](security/mobile-advisories-2026-10-27.md#closeout--october-27-2026).
+General iPhone acceptance does not close unreported feature, adversarial,
+accessibility, Android, or timing scenarios listed below.
 
 ## Physical iPhone acceptance completed October 27
 
@@ -58,7 +69,7 @@ PR #131 merged October 27 at 16:48 UTC after all seven checks passed. The combin
 
 Evidence: [real listing read](assets/recovery-validation-2026-10-27/greenhouse-shared-link.json), [iOS bordered control](assets/recovery-validation-2026-10-27/ios-bordered-actions.png), [iOS open menu](assets/recovery-validation-2026-10-27/ios-bordered-actions-open.png), [iOS clean reopened form](assets/recovery-validation-2026-10-27/ios-clean-reopened-form.png), [Android open menu](assets/recovery-validation-2026-10-27/android-bordered-actions-open.png), [Android clean reopened form](assets/recovery-validation-2026-10-27/android-clean-reopened-form.png).
 
-The CI rerun also surfaced an existing backend dependency vulnerability. Only dnspython changed from 2.8.0 to 2.9.0, with a minimum patched-version constraint. Full local backend discovery after that update ran **267 tests, 19 platform/database-gated skips, no failures**; lock and installed-dependency checks pass. See the [security record](security/dependabot-2026-10-05.md#october-27-dnspython-ci-blocker). The patch is now verified in the v162 Flask rollout; existing mobile exceptions and deadlines are preserved.
+The CI rerun also surfaced an existing backend dependency vulnerability. Only dnspython changed from 2.8.0 to 2.9.0, with a minimum patched-version constraint. Full local backend discovery after that update ran **267 tests, 19 platform/database-gated skips, no failures**; lock and installed-dependency checks pass. See the [security record](security/dependabot-2026-10-05.md#october-27-dnspython-ci-blocker). The patch is now verified in the v162 Flask rollout. The mobile exceptions preserved during that earlier pass were subsequently resolved by PR #134; see the security closeout above.
 
 ## Recovery fixes and local validation
 
@@ -174,7 +185,6 @@ Physical device acceptance is complete. Remaining checks retain their stated sco
 | Accessibility | VoiceOver/TalkBack, largest text sizes, keyboard/small-phone layout, focus restoration and announcements across forms, review, menus and viewer remain open. |
 | Other features | Retain [Grocery/shell reconnect and sharing checks](mobile-ui-validation.md), [Wishlist signed-image/upload lifecycle](wishlist-smoke-test.md), [Library sync/pin/watched behavior](library-smoke-test.md), and [Learning uncertain review/account switching](learning-smoke-test.md). Earlier disabled-reporting fixture smokes do not prove every enabled-device scenario or live YouTube sync. |
 | Extraction operations | Scheduled cleanup execution is now verified above. Concurrent capture/extraction timing and live provider budgets remain open; local fake-provider checks do not close them. See [extraction rollout](jobwizard-extraction.md). |
-| Security — November 5 | Re-review the exact mobile `decode-uri-component`, `node-forge` and Expo CLI/Zod 3 exceptions by **November 5, 2026**. No deadline, advisory dismissal or mitigation changed. [Security record](security/dependabot-2026-10-05.md). |
 | Credential ownership | Old Apple certificate `D6D52` revocation is confirmed above; keep replacement `FBC7A`. The old AWS administrator credential consumer-inventory/retirement follow-up remains open. |
 | OAuth durability | Last recorded Google OAuth External/Testing seven-day authorization follow-up remains open; current console state was not inspected in this pass. |
 | Monitoring expansion | Native crashes stay disabled until native payload/memory privacy, symbolication and next-launch delivery are inspected on both platforms. Mobile production reporting needs its own authorized configured native build. |
