@@ -189,7 +189,9 @@ def register_errorhandlers(app):
     """Register error handlers with the Flask application."""
 
     def render_error(e):
-        return render_template(f"{e.code}.html")
+        response = e.get_response()
+        response.set_data(render_template(f"{e.code}.html"))
+        return response
 
     for e in [
         HTTPStatus.INTERNAL_SERVER_ERROR,
