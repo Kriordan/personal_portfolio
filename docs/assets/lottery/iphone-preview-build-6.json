@@ -23,7 +23,10 @@
   "archive_bytes": 16966233,
   "credentials_changed": false,
   "new_synthetic_event_sent": false,
-  "physical_device_acceptance": "pending",
+  "physical_device_acceptance": "accepted",
+  "physical_device_accepted_at": "2026-10-27",
+  "physical_device_acceptance_evidence": "User: The preview looks good, please merge.",
+  "physical_device_acceptance_scope": "Overall physical iPhone acceptance of preview 6; individual checklist scenarios were not separately reported.",
   "verified_at": "2026-10-27",
   "matching_uploaded_debug_ids": [
     "2a0a595b-a0d0-475d-8a06-3eb2a9a8ca0b"
