@@ -50,6 +50,8 @@ existing node_modules.
 
 ## Deployed release check
 
+**October 27 update:** the runtime update is deployed. Heroku v160, source/release `5f1e887`, reports Python **3.13.18** and retains enabled production Sentry. The [deployment record](../assets/recovery-validation-2026-10-27/html-error-status-deployment.json) verifies that version and live HTTP smoke checks. The older v154 probe below remains evidence for its original release; a retained result of all 12 TLS trust checks on the newer runtime is still needed before closing that narrower follow-up. See the [current validation ledger](../validation-status.md).
+
 A short-lived Heroku dyno using the current deployed release (v154, application
 source `d12dccca`) reported Python 3.13.11 and certifi 2026.10.19 on October 26.
 The app has only the Python buildpack; it does not serve requests through Node.
@@ -64,8 +66,8 @@ This confirms those deployed trust paths, not the newer Python runtime update.
 The live homepage and login returned 200; anonymous requests to the protected
 current-user and lists APIs returned 401. No authenticated data was read.
 
-Python 3.13.18 still requires a rebuild/deployment. Heroku and GitHub Actions
-publish this version. After deployment, verify the release revision and run:
+Python 3.13.18 deployment/version verification is now complete. To record the
+remaining deployed trust-path check on that runtime, verify the release and run:
 
 ```sh
 heroku run --app keithriordan --no-tty --exit-code -- \
@@ -73,9 +75,8 @@ heroku run --app keithriordan --no-tty --exit-code -- \
 ```
 
 Require Python 3.13.18, certifi >=2026.10.19, and all 12 passes. Inconclusive
-network errors fail the probe. Then perform the existing read-only site/API
-smoke checks. A redeployment and its resulting runtime have not yet been
-verified by this change.
+network errors fail the probe. The read-only site/API smoke checks passed on
+v160; do not treat the earlier v154 TLS results as a new-runtime rerun.
 
 For local development, select Node with `nvm use`. Install/select Python 3.13.18
 with the local Python manager, point Poetry at that interpreter, and run

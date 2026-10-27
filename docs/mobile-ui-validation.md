@@ -1,5 +1,7 @@
 # Mobile UI first slice — updated October 1, 2026
 
+**Current status:** see [Validation status and follow-ups](validation-status.md) for the October 27 reconciliation. The dated evidence below describes its original slice, not the current roadmap. Later feature modernizations are complete; remaining checks stay open unless explicitly closed in the ledger.
+
 ## Delivered
 
 The SDK 57 compatibility update and the Home / Tools / Me shell plus Grocery slice are implemented. The architecture remains Expo Router, TanStack Query, the existing typed API clients, and Flask domain services. Website item/category form handlers now broadcast the existing Socket.IO events after saving. Endpoint URLs, response schemas, database schema, and Socket.IO payloads are unchanged.
