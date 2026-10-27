@@ -75,6 +75,85 @@ test('missing receipt preserves its UUID for deliberate retry and exposes a poll
   assert.deepEqual(h.calls.slice(count), ['read', 'summary']);
 });
 
+test('rate-limited and unavailable reads do not become phantom work after restart', async () => {
+  for (const [status, code] of [[429, 'rate_limit'], [409, 'job_conflict'], [503, 'unavailable']]) {
+    const h = harness({ api: { start: async () => {
+      throw Object.assign(new Error('Try again later.'), { status, body: { code } });
+    } } });
+    await h.session.restore();
+    await h.session.begin({ listing_url: url });
+    assert.equal(h.stored, null);
+    const reopened = new ExtractionSession(1, h.deps);
+    await reopened.restore();
+    assert.equal(reopened.snapshot().uncertain, false);
+    assert.equal(reopened.snapshot().request, null);
+    assert.deepEqual(h.calls, []);
+  }
+});
+
+test('an unclassified 503 keeps the original request and recovers committed work', async () => {
+  const h = harness();
+  const start = h.api.start;
+  h.api.start = async (request) => {
+    await start(request);
+    throw Object.assign(new Error('Gateway unavailable after commit'), { status: 503 });
+  };
+  await h.session.restore();
+  await h.session.begin({ listing_url: url });
+  assert.equal(h.session.snapshot().result?.status, 'ready');
+  assert.deepEqual(h.calls, ['read', 'get']);
+  assert.ok(h.stored);
+});
+
+test('late rejection from a signed-out account cannot erase the next account recovery record', async () => {
+  const waiting = deferred();
+  const h = harness({ api: { start: async () => {
+    await waiting.promise;
+    throw Object.assign(new Error('Rejected old request'), { status: 400 });
+  } } });
+  await h.session.restore();
+  const pending = h.session.begin({ listing_url: url });
+  await new Promise((resolve) => setImmediate(resolve));
+  h.session.dispose();
+  const nextAccount = JSON.stringify({ userId: 2, request: { request_id: randomUUID(), listing_url: url } });
+  await h.storage.write(nextAccount);
+  waiting.resolve();
+  await pending;
+  assert.equal(h.stored, nextAccount);
+});
+
+test('expired status or summary clears stale actions and permits a fresh read', async () => {
+  for (const stage of ['get', 'summarize']) {
+    const h = harness();
+    await h.session.restore();
+    await h.session.begin({ listing_url: url });
+    const previous = h.session.snapshot().request.request_id;
+    h.api[stage] = async () => { throw Object.assign(new Error('Suggestions expired.'), { status: 410 }); };
+    await (stage === 'get' ? h.session.check() : h.session.continue());
+    assert.equal(h.session.snapshot().result, null);
+    assert.equal(h.session.snapshot().request, null);
+    assert.equal(h.stored, null);
+    assert.equal(h.session.snapshot().uncertain, false);
+    await h.session.begin({ listing_url: url });
+    assert.notEqual(h.session.snapshot().request.request_id, previous);
+    assert.equal(h.session.snapshot().result.status, 'ready');
+  }
+});
+
+test('a rejected summary retains its existing source for deliberate continuation', async () => {
+  const h = harness({ api: { summarize: async () => {
+    throw Object.assign(new Error('Try again later.'), { status: 429, body: { code: 'rate_limit' } });
+  } } });
+  await h.session.restore();
+  await h.session.begin({ listing_url: url });
+  const saved = h.stored;
+  await h.session.continue();
+  assert.equal(h.stored, saved);
+  assert.equal(h.session.snapshot().result.status, 'ready');
+  assert.equal(h.session.snapshot().uncertain, false);
+  assert.deepEqual(h.calls, ['read']);
+});
+
 test('unconfirmed failures keep the frozen request across restart; no paid automatic retry', async () => {
   const h = harness({
     api: {

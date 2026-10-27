@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-27",
+  "application": "keithriordan",
+  "heroku_release": "v158",
+  "git_commit": "8754d28a37a8ca52a82647f75ac97f74c8131ab8",
+  "deployment_note": "Existing v156 already contained merged PR 123 and security PR 129 plus newer lottery work. v157 configured Sentry disabled for privacy validation; v158 enabled reporting on the same verified code.",
+  "production_reporting_enabled": true,
+  "environment": "production",
+  "new_and_regressed_alerts": {
+    "flask": "https://keith-riordan.sentry.io/monitors/alerts/6219149/",
+    "mobile": "https://keith-riordan.sentry.io/monitors/alerts/6219141/",
+    "recipient": "existing project owner",
+    "scope": "all environments",
+    "notification_condition": "new issue or resolved issue regression"
+  },
+  "email_delivery": {
+    "flask_test": "2026-10-27T13:13:24Z",
+    "mobile_test": "2026-10-27T13:14:58Z",
+    "live_event": {
+      "type": "regressed issue",
+      "received_at": "2026-10-27T13:23:19Z",
+      "rule_id": "6219149",
+      "enhanced_privacy_verified": true
+    }
+  },
+  "controlled_issue": "https://keith-riordan.sentry.io/issues/7814791465/",
+  "controlled_events": [
+    {
+      "event_id": "5538af2c4440451d87bc76137c69c5e7",
+      "request_id": "7b09f1eb-6932-4046-b17c-83a50dda115d",
+      "release": "8754d28a37a8ca52a82647f75ac97f74c8131ab8",
+      "environment": "production",
+      "http_status": 200,
+      "sanitized_before_transport": true
+    },
+    {
+      "event_id": "f00f3d484a1f456cb835a5bbb01676ef",
+      "request_id": "0deca721-60ec-4e73-ad9f-0ec5805b161c",
+      "release": "8754d28a37a8ca52a82647f75ac97f74c8131ab8",
+      "environment": "production",
+      "http_status": 200,
+      "sanitized_before_transport": true
+    }
+  ],
+  "stored_event_privacy": "passed for both events: synthetic private content, requests, breadcrumbs, extra, attachments, local variables and IP absent; stack and opaque correlation retained",
+  "alert_history": "new issue and regression both triggered the Flask rule",
+  "health_checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "path": "/api/v1/auth/me",
+      "status": 401,
+      "expected": 401,
+      "request_id_matches": true
+    },
+    {
+      "path": "/api/v1/jobwizard/jobs",
+      "status": 401,
+      "expected": 401,
+      "request_id_matches": true
+    }
+  ],
+  "rollback": "Set SENTRY_ENABLED=0 and allow Heroku to restart; retain the current code release.",
+  "follow_ups": [
+    "Native crash privacy and crash-delivery validation remains deferred; native crashes stay disabled.",
+    "Existing native quiet-error, transport-failure, accessibility and Android validation remain open.",
+    "Existing dependency-security November 5 review deadline is unchanged."
+  ],
+  "mobile_production_changed": false,
+  "new_cloud_builds": 0,
+  "repo_changes": false,
+  "controlled_issue_resolved": true,
+  "completed": true,
+  "html_error_status_follow_up": {
+    "status": "fixed and deployed",
+    "pull_request": 130,
+    "heroku_release": "v160",
+    "deployed_commit": "5f1e8872fca486991f306679067194a83d2c9481"
+  }
+}

@@ -112,6 +112,14 @@ export class ExtractionSession {
       error: result.error_message,
     });
   }
+  private async forgetRequest() {
+    try {
+      await this.deps.storage.clear();
+      this.update({ request: null });
+    } catch {
+      // Keep the frozen UUID when durable cleanup fails; replay remains safe.
+    }
+  }
   check = async () => {
     const request = this.state.request;
     if (!this.active || this.lock || !request || !this.deps.online()) return;
@@ -119,7 +127,9 @@ export class ExtractionSession {
     try {
       this.receive((await this.deps.api.get(request.request_id)).extraction);
     } catch (error) {
+      if (!this.active) return;
       const status = (error as { status?: number }).status;
+      if (status === 410) await this.forgetRequest();
       this.update({
         ...([404, 410].includes(status ?? 0) ? { result: null } : {}),
         uncertain: status !== 410,
@@ -213,24 +223,20 @@ export class ExtractionSession {
         ).extraction,
       );
     } catch (error) {
+      // A late response from an old account must never clear the new account's
+      // durable recovery record or start another stage.
+      if (!this.active) return;
       const status = (error as { status?: number }).status;
+      const code = (error as { body?: { code?: unknown } }).body?.code;
       const definitive =
-        status && [400, 401, 403, 404, 409, 410, 429, 503].includes(status);
+        (status && [400, 401, 403, 404, 409, 410, 429].includes(status)) ||
+        (status === 503 && code === 'unavailable');
       // These read-stage rejections occur before provider work. Do not restore
       // them as an uncertain paid operation after returning to the form.
-      if (
-        stage === 'read' &&
-        [400, 404, 410].includes(status ?? 0) &&
-        !this.state.result
-      ) {
-        try {
-          await this.deps.storage.clear();
-          this.update({ request: null });
-        } catch {
-          // Keep the frozen UUID if durable cleanup failed; replay is still safe.
-        }
-      }
+      if (status === 410 || (stage === 'read' && definitive && !this.state.result))
+        await this.forgetRequest();
       this.update({
+        ...(status === 410 ? { result: null } : {}),
         uncertain: !definitive,
         missing: false,
         error: definitive
