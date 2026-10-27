@@ -1,6 +1,6 @@
 # Jobwizard smoke test
 
-**Current status:** see [Validation status and follow-ups](validation-status.md) for the October 27 recovery results and remaining work. This is the full regression checklist; a combined item stays unchecked when only a narrower scenario has passed.
+**Current status:** see [Validation status and follow-ups](validation-status.md) for the October 27 recovery, Android Release deep-link and scoped accessibility results, plus remaining work. This is the full regression checklist; a combined item stays unchecked when only a narrower scenario has passed.
 
 Checklist for the [Jobwizard modernization plan](jobwizard-modernization-plan.md), approved October 21 with immediate saving and optional screenshot capture afterward. Leave an item unchecked unless its entire stated behavior was exercised.
 
