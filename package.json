@@ -10,13 +10,14 @@
     "sass": "^1.97.2"
   },
   "scripts": {
-    "test": "node --test tests/check-npm-audit.test.cjs tests/jobwizard-browserless.test.mjs && node scripts/check-browser-dependencies.cjs",
-    "gulp": "gulp",
-    "sass": "gulp sass",
-    "watch": "gulp watch",
-    "dev": "gulp",
-    "test:browser": "node tests/browser/run-security-check.cjs && node tests/browser/run-extraction-check.mjs",
-    "audit:security": "node scripts/check-npm-audit.cjs"
+    "test": "node scripts/check-node-runtime.cjs && node --test tests/check-node-runtime.test.cjs tests/check-npm-audit.test.cjs tests/jobwizard-browserless.test.mjs && node scripts/check-browser-dependencies.cjs",
+    "gulp": "node scripts/check-node-runtime.cjs && gulp",
+    "sass": "node scripts/check-node-runtime.cjs && gulp sass",
+    "watch": "node scripts/check-node-runtime.cjs && gulp watch",
+    "dev": "node scripts/check-node-runtime.cjs && gulp",
+    "test:browser": "node scripts/check-node-runtime.cjs && node tests/browser/run-security-check.cjs && node tests/browser/run-extraction-check.mjs",
+    "audit:security": "node scripts/check-node-runtime.cjs && node scripts/check-npm-audit.cjs",
+    "check:runtime": "node scripts/check-node-runtime.cjs"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,9 @@
     "url": "https://github.com/Kriordan/personal_portfolio/issues"
   },
   "homepage": "https://github.com/Kriordan/personal_portfolio",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
   "dependencies": {
     "dompurify": "3.4.17",
     "marked": "^17.0.1"
