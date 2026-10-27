@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-27",
+  "scope": "Disposable local native checks; no real provider calls or cloud builds",
+  "lost_save_before_fixture_restart": {
+    "capture_calls": 0,
+    "captures": 0,
+    "events": {
+      "flask": 0,
+      "mobile": 0
+    },
+    "extraction_posts": 0,
+    "extraction_reads": 0,
+    "extraction_summaries": 0,
+    "extractions": 0,
+    "image_reads": 0,
+    "jobs": 324,
+    "receipts": 1,
+    "status_reads": 0,
+    "summary_posts": 0,
+    "telemetry_attempts": 0
+  },
+  "lost_capture_before_relaunch": {
+    "accounts": {
+      "1": {
+        "captures": 0,
+        "jobs": 320,
+        "receipts": 0
+      },
+      "2": {
+        "captures": 1,
+        "jobs": 3,
+        "receipts": 0
+      }
+    },
+    "capture_calls": 1,
+    "capture_posts": 1,
+    "captures": 1,
+    "events": {
+      "flask": 0,
+      "mobile": 0
+    },
+    "extraction_posts": 0,
+    "extraction_reads": 0,
+    "extraction_summaries": 0,
+    "extractions": 0,
+    "image_reads": 0,
+    "image_signs": 1,
+    "jobs": 323,
+    "receipts": 0,
+    "status_reads": 11,
+    "summary_posts": 0,
+    "telemetry_attempts": 0,
+    "write_posts": 0
+  },
+  "lost_capture_after_recovery": {
+    "accounts": {
+      "1": {
+        "captures": 0,
+        "jobs": 320,
+        "receipts": 0
+      },
+      "2": {
+        "captures": 1,
+        "jobs": 3,
+        "receipts": 0
+      }
+    },
+    "capture_calls": 1,
+    "capture_posts": 1,
+    "captures": 1,
+    "events": {
+      "flask": 0,
+      "mobile": 0
+    },
+    "extraction_posts": 0,
+    "extraction_reads": 0,
+    "extraction_summaries": 0,
+    "extractions": 0,
+    "image_reads": 5,
+    "image_signs": 6,
+    "jobs": 323,
+    "receipts": 0,
+    "status_reads": 19,
+    "summary_posts": 0,
+    "telemetry_attempts": 0,
+    "write_posts": 0
+  },
+  "account_switch": {
+    "accounts": {
+      "1": {
+        "captures": 0,
+        "jobs": 320,
+        "receipts": 0
+      },
+      "2": {
+        "captures": 2,
+        "jobs": 3,
+        "receipts": 0
+      }
+    },
+    "capture_calls": 2,
+    "capture_posts": 3,
+    "captures": 2,
+    "events": {
+      "flask": 0,
+      "mobile": 0
+    },
+    "extraction_posts": 0,
+    "extraction_reads": 0,
+    "extraction_summaries": 0,
+    "extractions": 0,
+    "image_reads": 8,
+    "image_signs": 9,
+    "jobs": 323,
+    "receipts": 0,
+    "status_reads": 26,
+    "summary_posts": 0,
+    "telemetry_attempts": 0,
+    "write_posts": 0
+  },
+  "physical_iphone": {
+    "preview": "115c0f31-27f1-448d-87cb-5954eb8f3e50",
+    "url": "https://job-boards.greenhouse.io/justworks/jobs/8236798?gh_jid=8236798",
+    "user_report": "everything works",
+    "checked": "Suggest details, review, save, reopen, capture and open screenshot",
+    "initial_disabled_reason": "User confirmed pasted URL began ttps://; fixed the missing h"
+  },
+  "cleanup": {
+    "schedule": "Daily 04:30 UTC",
+    "last_run": "2026-10-27",
+    "next_run": "2026-10-28",
+    "dyno": "scheduler.5596",
+    "expired_receipts_removed": 2,
+    "exit_code": 0
+  },
+  "certificate": {
+    "old_suffix": "D6D52",
+    "replacement_suffix": "FBC7A",
+    "user_confirmed_revocation": true,
+    "console_confirmed_old_entry_absent": true
+  },
+  "automated": {
+    "mobile_passed": 112,
+    "typecheck": "passed",
+    "lint": "passed",
+    "backend_ran": 44,
+    "backend_skipped": 9,
+    "backend_failures": 0,
+    "skip_scope": "Eight PostgreSQL database-dependent checks; one Linux parent-death check"
+  },
+  "concurrent_url_edit": {
+    "capture_running_when_edited": true,
+    "original_url": "https://job-boards.greenhouse.io/fixture/jobs/2001",
+    "new_url": "https://job-boards.greenhouse.io/fixture/jobs/2222",
+    "new_revision": 1,
+    "final_revision": 1,
+    "final_url": "https://job-boards.greenhouse.io/fixture/jobs/2222",
+    "capture_status": "succeeded",
+    "image_outdated": true
+  },
+  "final_counters": {
+    "accounts": {
+      "1": {
+        "captures": 0,
+        "jobs": 320,
+        "receipts": 0
+      },
+      "2": {
+        "captures": 3,
+        "jobs": 3,
+        "receipts": 1
+      }
+    },
+    "capture_calls": 3,
+    "capture_posts": 5,
+    "captures": 3,
+    "events": {
+      "flask": 0,
+      "mobile": 0
+    },
+    "extraction_posts": 0,
+    "extraction_reads": 0,
+    "extraction_summaries": 0,
+    "extractions": 0,
+    "image_reads": 13,
+    "image_signs": 17,
+    "jobs": 323,
+    "receipts": 1,
+    "status_reads": 36,
+    "summary_posts": 0,
+    "telemetry_attempts": 0,
+    "write_posts": 1
+  }
+}

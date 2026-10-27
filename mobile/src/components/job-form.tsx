@@ -276,6 +276,7 @@ function ReadyJobForm({
   const matches =
     !!extraction.result &&
     extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
+  const invalidListingUrl = !!url.text.trim() && !safeJobUrl(url.text.trim());
   const canReview =
     reviewing &&
     extraction.result?.status !== 'running' &&
@@ -322,6 +323,11 @@ function ReadyJobForm({
       return;
     Keyboard.dismiss();
     const sourceUrl = url.read().trim();
+    if (!safeJobUrl(sourceUrl)) {
+      // Keep validation in sync with the live native field before any request.
+      url.input.onChangeText(sourceUrl);
+      return;
+    }
     // Native text may be newer than the React event used to render the button.
     const liveMatch =
       !!extraction.result &&
@@ -464,6 +470,9 @@ function ReadyJobForm({
               keyboardType="url"
               returnKeyType="done"
             />
+            {invalidListingUrl ? (
+              <InlineError message="Enter a complete listing link starting with https:// or http://, without spaces." />
+            ) : null}
             <View style={styles.spread}>
               <JobTextAction
                 label={suggestLabel}
@@ -556,6 +565,7 @@ function ReadyJobForm({
             ) : null}
             {extraction.result &&
             !matches &&
+            !invalidListingUrl &&
             (extraction.result.job_id ?? null) === (job?.id ?? null) &&
             url.text.trim() ? (
               <ThemedText type="small" themeColor="textSecondary">

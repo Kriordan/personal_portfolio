@@ -1,6 +1,6 @@
 # Jobwizard detail extraction — October 22, 2026
 
-**Current status:** see the [validation ledger](validation-status.md) for October 27 acceptance and remaining work. The production record below consolidates the documentation from PR #121; its original first-cleanup/concurrency follow-ups remain open unless explicitly verified.
+**Current status:** see the [validation ledger](validation-status.md) for October 27 acceptance and remaining work. The production record below consolidates the documentation from PR #121; the October 27 scheduled cleanup is now verified; production concurrency measurements remain open.
 
 ## Delivered behavior
 
@@ -98,7 +98,7 @@ Release **v152** enabled `JOBWIZARD_EXTRACTION_ENABLED=1`; screenshot capture re
 
 This consumed one listing read, one summary and one independent screenshot capture. Title/company and all seven accepted bullets were checked against the fetched listing. The listing gives no numeric pay range, visa, travel or closing-date constraint; none was invented. One suggestion mentioned design systems, which appears in source block `s49` but was absent from that bullet's cited excerpts. That phrase was removed during review, and the generic hiring-fraud notice was deselected. This is evidence that semantic citation coverage still requires review, even when the validator reports no warning; it is not a claim of universal extraction accuracy.
 
-At the time of this October 23 rollout, physical extraction acceptance and the first scheduled cleanup were pending. On October 27 the user confirmed suggestions appear for the original Justworks URL and manual save/reopen works after an unsupported listing. Full fact-by-fact acceptance, scheduled cleanup execution evidence and production concurrency measurements remain unconfirmed.
+At the time of this October 23 rollout, physical extraction acceptance and the first scheduled cleanup were pending. On October 27 the user confirmed suggestions appear for the original Justworks URL and manual save/reopen works after an unsupported listing. Later on October 27, the user confirmed the query-bearing Greenhouse review/save/reopen/capture flow works, and scheduled cleanup execution was verified. See the dated reliability evidence in the validation ledger. Production concurrency measurements remain unconfirmed.
 
 Completed in automated/native fixture checks:
 
@@ -114,7 +114,7 @@ Production rollout and physical acceptance:
 - [x] Configure the approved OpenAI key securely on Heroku, select the evaluated model, configure daily pruning, then enable extraction.
 - [x] Record release, migration, model, stage latency/usage, replay/acceptance status and independent capture through the production API.
 - [ ] On the new iPhone preview, extract one real supported listing; check every accepted fact and omitted constraint against the source, then save and reopen. Confirm independent screenshot capture/viewing.
-- [ ] Confirm the first scheduled cleanup completes successfully.
+- [x] Confirm an actual scheduled cleanup completes successfully: October 27 `scheduler.5596` removed two expired receipts and exited 0. The original October 24 execution was not observed.
 - [ ] Check concurrent capture/extraction timing and provider budgets. Disable the feature flag to stop new work if acceptance fails; keep the additive migration/data.
 
 Follow-ups remain open: physical iPhone acceptance, physical Android gestures, smaller devices/largest text/light-dark/VoiceOver/TalkBack, full device background/expiry/offline/account-switch matrix, and all earlier unchecked [mobile](mobile-ui-validation.md), [Jobwizard](jobwizard-smoke-test.md), [Gem/viewer](jobwizard-gem-viewer.md), Grocery/Wishlist/Library/Learning items. Preserve the November 5 dependency exception review. Python 3.13.18 is now verified in the deployed v160 runtime; see the current ledger for the remaining runtime trust-probe evidence.
