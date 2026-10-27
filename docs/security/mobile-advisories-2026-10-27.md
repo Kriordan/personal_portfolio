@@ -27,8 +27,9 @@ package versions stay unchanged. Maintenance/removal conditions are in
 [the adapter README](../../mobile/security-compat/README.md).
 
 All three audit exceptions were removed. The audit gate is unchanged; no
-advisory was dismissed or suppressed. GitHub alert closure requires merging
-the fix and a default-branch rescan.
+advisory was dismissed or suppressed. After the merge, GitHub marked alerts
+#186, #245, and #251 fixed at 21:22 UTC on October 27. The subsequent
+default-branch check reports zero open dependency alerts.
 
 ## Validation
 
@@ -52,8 +53,46 @@ the fix and a default-branch rescan.
 
 ## Delivery status
 
-These are source and build-tooling fixes. The installed iPhone preview predates
-the decoder change and needs a new app build to receive it. No Expo upload,
-signing, OTA publication, backend deployment, production data change, or other
-project modification is part of this validation. Native device acceptance of
-the updated decoder remains to be performed on the new build.
+[PR #134](https://github.com/Kriordan/personal_portfolio/pull/134) was merged as
+`977c9d122d1a5ff22b8a9ca05e24ba3e75e99b67`. All post-merge backend, mobile,
+web, and CodeQL checks passed.
+
+The authorized [iPhone preview 7](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/d1f95c3f-6cbe-4763-bd3d-2ff4925359a0)
+finished at **5:31 p.m. EDT on October 27, 2026**, directly from that merged
+commit. The downloaded app passes macOS signature verification, identifies
+itself as version 1.0.0 (7), contains the expected source commit and production
+API origin, and uses the existing signing certificate and registered iPhone.
+Its application screens, source, and settings match accepted preview 6;
+changes are confined to dependency security, regression tests, and documentation.
+The cloud dependency install reports zero vulnerabilities. Sentry's successful
+source-map upload report has the same debug ID as the signed app.
+
+Cloud Expo Doctor passed 20 of 21 checks. Its latest-SDK-patch check reports
+exactly the same ten older patch versions as accepted preview 6; no new
+mismatch or suppression was introduced. The build succeeded with the existing
+Expo 57 dependency set. This cloud check is distinct from the passing repository
+SDK compatibility checks.
+
+The [verification receipt](../assets/security/iphone-preview-build-7.json)
+records the app checksum, signing and source-map evidence, and build identifiers.
+No backend deployment, credential change, OTA publication, production data write,
+or other project modification was performed for this mobile release. The
+previous Python, Node, certifi, lottery, account-isolation, and recovery fixes
+remain preserved.
+
+## Closeout — October 27, 2026
+
+The user installed preview 7 on the physical iPhone and confirmed:
+“I’ve installed preview 7 and it looks good.” This records overall device
+acceptance of the signed security build. Individual adversarial, accessibility,
+Android, and concurrency scenarios were not separately reported.
+
+The requested runtime and three mobile dependency security updates are closed:
+PR #129's deployed runtime/TLS evidence is retained in the
+[runtime security record](runtime-security-2026-10-26.md), PR #134 is merged,
+and preview 7 is installed and accepted. GitHub was rechecked at closeout:
+alerts #186, #245, and #251 remain fixed, with zero open dependency alerts.
+Both audit-exception lists are empty, so their November 5 review follow-up is
+complete. No advisory was dismissed or suppressed. Ongoing adapter maintenance
+and unrelated feature, accessibility, credential, and platform follow-ups retain
+their existing scope in the [validation ledger](../validation-status.md).
