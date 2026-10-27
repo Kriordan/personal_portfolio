@@ -48,35 +48,62 @@ existing node_modules.
   Requests, httplib2, and Botocore for the removed emSign G3 root fingerprint.
 - All 12 anonymous TLS checks pass on the isolated Python 3.13.18 environment.
 
-## Deployed release check
+## Deployment verification
 
 **October 27 update:** Heroku **v162**, source/release `96b909f`, reports Python **3.13.18**, certifi **2026.10.19**, dnspython **2.9.0** and enabled production Sentry. All **12 TLS trust checks** passed on that release: system SSL, Requests, httplib2 and Botocore each accepted the control and rejected both compromised-certificate endpoints. The [retained deployment record](../assets/recovery-validation-2026-10-27/pr131-deployment.json) includes every result and live HTTP smoke checks, closing the newer-runtime trust follow-up. The older v154 probe below remains historical evidence. See the [current validation ledger](../validation-status.md).
 
-An earlier short-lived Heroku dyno using release v154 (application
-source `d12dccca`) reported Python 3.13.11 and certifi 2026.10.19 on October 26.
-The app has only the Python buildpack; it does not serve requests through Node.
-The probe did not load the application, access its database, send email, or
-change configuration.
+### Initial coordinated rollout
 
-The system SSL context, Requests, httplib2 (Google), and Botocore (AWS) each
-accepted the normal Python.org HTTPS control and rejected both compromised
-certificate test endpoints listed in Render's advisory: all 12 checks passed.
-This confirms those deployed trust paths, not the newer Python runtime update.
+[PR #129](https://github.com/Kriordan/personal_portfolio/pull/129) merged as
+`12558b2f0074f02ebaa48c8b9ce5a588e911e812`. The user approved the merge and
+coordinated rollout. Production already included the separate lottery branch,
+so the security merge was integrated onto its tip `19ccf7b`, retaining its
+release notes and every application, migration, and native source file.
+The combined commit is `8754d28a37a8ca52a82647f75ac97f74c8131ab8` and is retained
+on `feature/scratch-off-picks` for future work. Its draft PR #128 remains open.
 
-The live homepage and login returned 200; anonymous requests to the protected
-current-user and lists APIs returned 401. No authenticated data was read.
+The combined source passed 284 backend tests (283 passed and one Linux-only
+skip on macOS), including the isolated PostgreSQL suite, 107 mobile tests,
+TypeScript, lint, and the root web checks. All seven GitHub checks passed on
+that exact commit, including mobile exports and CodeQL; its open code-scanning
+alert list was empty.
 
-Python 3.13.18 deployment/version and trust-path verification are complete. To repeat
-the check after a future runtime or certificate change, verify the release and run:
+Heroku **v156**, released **2026-10-27 at 03:28:02 UTC** (October 26 at 11:28 p.m.
+EDT), runs that combined commit. The build discarded the old Python cache and
+installed **Python 3.13.18** with the existing locked **certifi 2026.10.19**.
+The app still has only the Python buildpack; it does not serve requests through
+Node. A fresh dyno running the deployed probe confirmed both package versions
+and that httplib2 and Botocore use certifi's bundle.
+
+All **12 deployed TLS checks passed**: the system SSL context, Requests,
+httplib2 (Google), and Botocore (AWS) each accepted the Python.org HTTPS control
+and rejected both compromised certificate test endpoints in Render's advisory.
+The TLS probe did not import the application or access its database.
+
+Live homepage/login checks returned 200, and anonymous current-user, lists,
+scratch-offs, and draw APIs returned 401. A separate read-only check confirmed
+the authenticated private Home card, saved rankings and details for 32 NY and
+22 CT games, draw responses, and existing migration `a4b5c6d7e8f9`. It made zero
+lottery-source HTTP requests. No data import, configuration change, or Scheduler
+change was performed. The existing 13:00 UTC schedule and its separately
+queued first-run verification remain with the lottery task.
+
+Earlier v154 and v155 probes already rejected the compromised certificates
+using certifi 2026.10.19, but still ran Python 3.13.11. The v156 probe verifies
+the additional Python runtime update is now deployed.
+
+### Repeating the verification
+
+To repeat the deployed trust check:
 
 ```sh
 heroku run --app keithriordan --no-tty --exit-code -- \
   python -B scripts/check-tls-trust.py
 ```
 
-Require Python 3.13.18, certifi >=2026.10.19, and all 12 passes. Inconclusive
-network errors fail the probe. The read-only site/API smoke checks passed on
-v162; the current 12-check result is retained separately from the earlier v154 probe.
+Require Python 3.13.18 or a later supported security patch,
+certifi >=2026.10.19, and all 12 passes. Inconclusive network errors fail the
+probe. Then perform the existing read-only site/API smoke checks.
 
 For local development, select Node with `nvm use`. Install/select Python 3.13.18
 with the local Python manager, point Poetry at that interpreter, and run

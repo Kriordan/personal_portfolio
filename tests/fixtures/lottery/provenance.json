@@ -1,0 +1,9 @@
+{
+  "retrieved": "2026-10-26",
+  "ct_catalog": "https://ctlottery.com/games/scratch-games",
+  "ct_1850": "https://ctlottery.com/games/scratch-games/1850",
+  "ct_powerball": "https://ctlottery.com/games/draw-games/powerball",
+  "ct_mega": "https://ctlottery.com/games/draw-games/mega-millions",
+  "ny_prizes": "https://data.ny.gov/resource/nzqa-7unk.json",
+  "note": "Minimal public server data extracted from saved official responses. No private data."
+}

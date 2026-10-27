@@ -1,0 +1,32 @@
+<section class="lottery-home" aria-labelledby="lottery-home-title">
+  <p class="lottery-home-eyebrow">LOTTERY QUICK REFERENCE · {{ lottery.plan.date_label }} · Eastern time</p>
+  <h2 id="lottery-home-title">At your next stop</h2>
+  <p>Next drawing only. Skip any drawing you already have a ticket for.</p>
+  <nav aria-label="Lottery state"><a href="?lottery_state=ny" {% if lottery.plan.state == 'ny' %}aria-current="true"{% endif %}>New York</a><a href="?lottery_state=ct" {% if lottery.plan.state == 'ct' %}aria-current="true"{% endif %}>Connecticut</a></nav>
+  <div class="lottery-home-games" data-draw-reference data-as-of="{{ lottery.plan.as_of }}">
+  {% for game in lottery.plan.games %}
+    <article data-cutoff="{{ game.next_draw.cutoff_at }}">
+      <h3>{{ game.name }} · ${{ game.price }}</h3>
+      <p><strong>{{ game.next_draw.label }}</strong></p>
+      <p>{% if game.jackpot %}${{ '{:,.0f}'.format(game.jackpot) }} estimated jackpot{% else %}Awaiting updated jackpot{% endif %}</p>
+      {% if game.cash %}<p>Cash option: ${{ '{:,.0f}'.format(game.cash) }}</p>{% endif %}
+      <p>{% if game.sales_closed %}Tonight’s sales are closed. Confirm when future-draw sales reopen.{% else %}Draw-day sales close at {{ game.cutoff }}.{% endif %}</p>
+      <a href="{{ game.url }}" target="_blank" rel="noopener noreferrer">Official details ↗</a>
+    </article>
+  {% endfor %}
+  </div>
+  <p data-draw-expired hidden>Refresh this page for the next drawings; the dates above have expired.</p>
+  <p class="lottery-home-note">Last successful check: {{ lottery.status.checked }}. Jackpots apply only to the listed drawing and can change between daily checks.</p>
+  {% if lottery.status.failure %}<p>Latest refresh failed; previous data retained.</p>{% endif %}
+  <details><summary>Plan fewer stops</summary>
+    <h3>One stop a week · $16</h3>
+    <p>Sunday, or Monday before 10 p.m. Eastern: ask for one Powerball play for 3 consecutive draws ($6) and one Mega Millions play for 2 consecutive draws ($10). Covers Powerball Monday/Wednesday/Saturday and Mega Millions Tuesday/Friday.</p>
+    <h3>Next drawing only · three stops</h3>
+    <ul>{% for stop in lottery.plan.next_draw_stops %}<li><strong>{{ stop.day }}:</strong> {{ stop.tickets }}</li>{% endfor %}</ul>
+    <p>Go before 10 p.m. Eastern. This is the fewest weekly trips if you buy only the next drawing.</p>
+    <p>Both states allow up to 39 Powerball and 26 Mega Millions draws: about 13 weeks in one stop for $208. Advance play continues if the jackpot resets. Costs exclude optional Powerball add-ons. Confirm the dates printed on your tickets.</p>
+    <p class="lottery-home-note">Schedule and advance-draw rules checked October 26, 2026.</p>
+  </details>
+  <a class="lottery-home-link" href="{{ url_for('lottery.index', state=lottery.plan.state) }}">Compare scratch-offs →</a>
+</section>
+<script src="{{ url_for('static', filename='js/lottery-home.js') }}" defer></script>

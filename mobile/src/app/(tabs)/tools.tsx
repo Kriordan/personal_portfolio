@@ -46,7 +46,7 @@ export default function ToolsScreen() {
       {tools.length === 0 ? (
         <ThemedText themeColor="textSecondary">
           No tools match “{filter}”. Try Grocery, Wishlist, Library, Learning,
-          or Jobwizard.
+          Jobwizard, Scratch-offs, or Draw planner.
         </ThemedText>
       ) : null}
     </Screen>

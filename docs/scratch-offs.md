@@ -1,0 +1,112 @@
+# Scratch-off comparison
+
+`/scratch-offs` requires the existing Flask login. It reads only SQLAlchemy snapshots. Forms, search, sorting and expandable prize tables make no lottery-site requests. State, target, comparison basis and each state's selected prices are remembered in local storage. The native app exposes the same comparisons and a draw planner; neither client buys tickets or sends lottery notifications.
+
+## Native app and homepage reference
+
+Home and Tools link to native `/scratch-offs` and `/draw-games`. The scratch list uses the modernized Jobwizard toolbar, a virtualized list, saved state/price/target/sort preferences per account, game-number/name search, and a full prize-table detail screen. The app reads these authenticated endpoints, which reject deleted users and return `Cache-Control: private, no-store`:
+
+* `GET /api/v1/lottery/scratch-offs`: same selection, ranking and calculation functions as the Flask page.
+* `GET /api/v1/lottery/scratch-offs/<state>/<number>`: individual saved game, including an explanation when unrankable.
+* `GET /api/v1/lottery/draws?state=ny|ct`: cached jackpot summary and Eastern-time retail calendar.
+
+The private website homepage and native Home screen show the next available drawing for both games. Pull-to-refresh only reads the application API. Cutoffs and midnight invalidate the displayed dates even while offline. A jackpot is shown only when the saved drawing exactly matches the calculated next drawing and the source is fresh; an old jackpot is never reassigned to a future draw.
+
+Retail rules were verified October 26, 2026 against the official [CT Powerball](https://ctlottery.com/games/draw-games/powerball), [CT Mega Millions](https://ctlottery.com/games/draw-games/mega-millions), and [NY draw-game pages](https://nylottery.ny.gov/draw-games/). Powerball is Monday/Wednesday/Saturday at $2; Mega Millions is Tuesday/Friday at $5. NY closes sales at 10 p.m. Eastern for both; CT closes Powerball at 10 p.m. and Mega Millions at 10:45 p.m. Retail schedules and advance-play limits are verified constants in `project/lottery/planner.py`, separate from daily jackpot data.
+
+One Sunday/Monday stop can cover a week: three consecutive Powerball draws ($6) plus two Mega Millions draws ($10). With next-draw-only purchases, the minimum is Monday (both), Wednesday (Powerball), Friday (both), before 10 p.m. Eastern. Both states allow up to 39 Powerball and 26 Mega Millions consecutive draws: approximately 13 weeks for $208. Advance play continues through jackpot resets. The app cannot know which tickets the user already holds; it explicitly says to skip covered drawings and confirm printed dates.
+
+## Operations
+
+```sh
+flask --app project db upgrade
+flask --app project import-ny-lottery-metadata --dry-run
+flask --app project import-ny-lottery-metadata
+flask --app project refresh-lottery --state all --dry-run
+flask --app project refresh-lottery --state all
+```
+
+Heroku Scheduler command: `flask --app project refresh-lottery --state all --scheduled`
+
+Run daily at **13:00 UTC** (09:00 Eastern during daylight saving time, 08:00 otherwise). This is a collection time, not a source publication guarantee. The existing Scheduler add-on is reused. The command runs outside the web process; there is no refresh endpoint or APScheduler registration. `--state ny` refreshes NY only; `--state ct` refreshes CT and the draw panel. `--dry-run` fetches and validates but writes no metadata, snapshots, run receipts or retention cleanup.
+
+PostgreSQL session advisory lock namespace 741938210, key 0 serializes imports and refreshes across dynos. The existing lock helper checks ownership before publication; SQLite locking is only suitable for single-process tests. State and draw publications commit independently. Complete immutable JSON snapshots have unique source/content hashes; a duplicate source version reuses its snapshot. Draw summaries deduplicate unchanged summaries within a UTC day. Last successful check comes from run receipts, separate from source date. Failure receipts never replace a last-good snapshot.
+
+CT requests are sequential and separated by at least two seconds, including retries and the draw panel. Current catalog: 1 listing + 22 eligible details + 2 draw pages. NY uses four requests: metadata version, rows, row count, metadata version. A version change or incomplete result fails the NY publication. HTTP connect/read timeouts are 10/30 seconds, with at most three attempts for connection errors and selected 5xx responses. 403, 429 and challenges stop that host immediately. Retry-After is honored, including a persisted cooldown across subsequent runs. Long delays stop the command instead of sleeping indefinitely. Redirects fail closed.
+
+Source dates or last-success times older than 48 hours remove “Today's picks” and show dated comparisons. The UI separately shows failures, interrupted runs and the most recent Scheduler receipt. Snapshots and receipts are pruned after 90 days, with the latest successful snapshot/receipt kept through prolonged outages.
+
+## Sources and verified NY seed
+
+* NY daily counts: https://data.ny.gov/d/nzqa-7unk (official Socrata resource `nzqa-7unk`). `rowsUpdatedAt` is the source version time. All tier labels, paid/unpaid counts and original totals are checked.
+* NY metadata: `project/lottery/data/ny_metadata.json`, schema version 1. Forty $10/$20/$30 games were captured from official browser-rendered game tables on 2026-10-26. Each tier's original count equals its official paid + unpaid count and matches the daily dataset. Published tier odds are retained, not reverse-engineered from rounded overall odds. Provenance links and verification times accompany every game.
+* NY end dates: official **Scratch-Off Game Reports as of 10.26.2026.pdf**, linked in every seed record. Eight of the forty still-listed games had announced end dates and are excluded: 1489, 1603, 1609, 1612, 1629, 1646, 1667, 1674. Launch dates absent from the verified sources remain null.
+* NY verification holds: 1639 and 1686 have lifetime awards without a verified total award in the captured pages. Game 1688 advertises $3m and a $250K annual installment, while the prize feed says $150K/year for 20 years. These three games are unranked pending verification; no payment term is invented.
+* Unknown NY feed entries (including zero-count unreleased placeholders and lower-priced/ended games) remain visible in a separate “awaiting details” list. A feed entry alone does not establish an eligible ticket price or active status.
+* CT catalog: https://ctlottery.com/games/scratch-games. Details: `/games/scratch-games/{gameNo}`. Only public HTML is requested, never `/api/` or `/_next/` URLs. The parser decodes embedded Flight JSON and referenced text records without executing scripts. CT `asOf` is a calendar date interpreted at midnight Eastern, conservatively measuring source age.
+* CT annuity tables can expose cash-option values in embedded prize data while advertising a larger gross award. Use the advertised award only when both amounts and annuity/cash-option terms occur in the official payment text. The displayed label preserves the payment terms. Unresolved values are unrankable. CT 2099 dates are open-ended sentinels, not actual end dates.
+* Powerball and Mega Millions: official CT draw pages. Published odds, base prices, next drawing, annuity and cash estimates are parsed separately. Naive draw times are Eastern; display times use the timezone database.
+
+NY website requests were blocked outside the interactive browser during source research. Daily jobs therefore use Open Data only. **NY status, price, odds and payment terms require occasional browser verification**, including status changes to existing games. Their verification date is displayed with each game; prize data freshness does not imply fresh manual metadata. Automatic imports never guess missing facts.
+
+## Updating metadata
+
+Copy the bundled JSON format, verify facts against the official game page and current end-of-game report, and retain provenance. An import can contain just the changed/new games; other records are preserved. Required fields: numeric-string `game_number`, `name`, eligible integer `price`, `status` (`active`/`ended`), ISO `verified_at`, official HTTPS `url` and `provenance`, optional ISO start/end dates, and nonempty `tiers`. Each tier needs a unique exact daily-feed `source_label`, human-readable `label`, gross integer `amount`, positive `original` count and published `odds_denominator`. An unresolved amount must be null with an explicit game `issue` and remains unranked.
+
+```sh
+flask --app project import-ny-lottery-metadata /path/to/reviewed.json --dry-run
+flask --app project import-ny-lottery-metadata /path/to/reviewed.json
+flask --app project refresh-lottery --state ny
+```
+
+All records validate before any write. Refresh joins on game number and exact tier label, and requires the original structure/counts to match. Changed CT original structures are held across runs until reviewed; a maintainer must verify the new official table and clear `structure_hold` in a deliberate reviewed data repair before publication. Do not clear holds merely to restore recommendations.
+
+## Probability model
+
+For tier i, launch probability `p_i` is CT original prize count / original ticket count, or NY 1 / published tier odds. Let `r_i` be unclaimed/original prizes. Let `q` be total unclaimed prizes below $1,000 / total original prizes below $1,000.
+
+`P_est(target) = sum(p_i * r_i for awards >= target) / q`
+
+Original chance is `sum(p_i)` for qualifying tiers. Chance per dollar is `P_est / ticket price`. Ties use lower price, then numerical game number. Amounts are gross advertised awards; annual payments are never used as the full prize. Missing inputs, nonpositive denominators, impossible probabilities, ended games and no qualifying unclaimed prizes do not produce recommendations. Two significant digits are used for odds display; ordering uses unrounded values. This estimates a target-prize chance, not expected profit.
+
+Neither source verifies unsold-ticket counts. Unclaimed prizes may be in already-purchased tickets; claim delays and claim-rate differences can bias the proxy, particularly in older games. The tool has no retailer inventory information.
+
+## Validation
+
+`PYTHONPATH=tests:. PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true python -m unittest test_lottery test_lottery_planner test_api_lottery -v`
+
+Saved official fixtures test catalog extraction across split Flight chunks, annuity gross/cash distinctions, referenced payment text, missing fields, ended games, NY exact joins, metadata validation, draw odds and Eastern dates. Hand-worked examples cover $1k/$100k targets, per-ticket/per-dollar ordering, ties, exhausted prizes and invalid inputs. Integration tests cover dry runs, idempotence, locking, source-version changes, truncation, structure changes, partial failure, persistent Retry-After, authentication, stale presentation and page/filter requests with all HTTP disabled.
+
+Implementation validation used the full saved 2026-10-26 NY feed (1,253 tiers / 115 games) and all 22 eligible CT pages. Representative CT #1850: 2,067,660 original tickets, 5 original top prizes, 1 unclaimed, $1m 20-year annuity / $750k cash option. NY #1713: 4 original/unclaimed top prizes, $3m advertised award, published top-tier odds 1 in 3,645,937.50. Calculations use the daily feed's unclaimed counts, not the browser seed's claim counts.
+
+The native follow-up passed 25 focused backend tests. After incorporating the latest main branch, the full 283-test backend run passed (264 passed, 19 environment-dependent skips), along with 107 mobile tests, TypeScript, lint, and iOS/Android Hermes exports. Tests cover authenticated/no-upstream reads, rank parity, preserved snapshots on refresh failure, empty price selection, corrupt stored preferences, expired offline dates, exact sales cutoffs, daylight saving transitions, and old-jackpot suppression.
+
+iPhone 18 Pro/iOS 27 simulator checks exercised NY/CT prices, $1k/$100k targets, changed ordering per dollar, search by game number, full prize details, preference persistence after reload, and the Home/planner navigation. Light and dark layouts were inspected; the website homepage was checked at 390px. [Home screenshot](assets/lottery/mobile-home.png), [comparison screenshot](assets/lottery/mobile-comparison.png), [dark planner screenshot](assets/lottery/mobile-plan-dark.png). These use isolated accounts and saved official fixtures. Physical-iPhone acceptance is recorded below. Android native interaction, full screen-reader and large-text testing remain unverified.
+
+## October 26 rollout
+
+Heroku **v155** runs application source `072c0cc`, including the latest merged mobile and monitoring work. Backend, mobile, web and CodeQL CI passed on that source. Production read-only checks verified migration `a4b5c6d7e8f9`, authenticated game lists/details, the private Home card, and unauthenticated API 401 responses. With all HTTP disabled inside the check, NY returned 32 active games and CT returned 22; both retained their saved rankings. The [live homepage](assets/lottery/live-home.png) was also verified in the existing signed-in browser.
+
+At this release, Heroku Scheduler was configured for 13:00 UTC daily, with the first actual run awaiting the October 27 verification recorded below. This release did not re-fetch lottery data.
+
+The initial Expo build attempt was blocked pending explicit approval to upload private source and use the existing signing credentials. The user authorized proceeding on October 27; the subsequent preview is recorded below.
+
+## October 27 integration and scheduled refresh
+
+The first actual 13:00 UTC Scheduler execution succeeded for all three sources. Scheduled receipts 4 (NY), 5 (CT), and 6 (draws) finished between 13:00:26 and 13:01:16 UTC. NY saved 115 feed games, 32 active eligible games and 25 rankable at $1,000+, with an October 27 source date. CT saved 22 games, 19 rankable, with its published October 26 source date. Both draw summaries were saved. All snapshots were non-stale, and authenticated NY/CT pages exposed the state and draw scheduled-run success. Read-only verification made zero upstream requests; anonymous page access redirected to login. The one-time verification automation was removed. The daily Heroku schedule is unchanged.
+
+Heroku v162 retains the lottery implementation alongside the newer security, monitoring and HTTP error-status fixes (deployed application commit `96b909f`). The merged lottery branch's backend, migration and Python dependency files match that deployed application, so this native delivery requires no additional backend deployment.
+
+Application source `d6a9e13300784262b1b0497b3efddd05c791f5bb` merges main through PR #133 (`05e0c6b`), including the accepted Jobwizard improvements and delayed-request account isolation. The only merge conflict was in historical runtime-verification documentation; both verification records were preserved. All seven repository checks passed on this exact source, including all 292 backend tests with PostgreSQL and no skips. Local validation passed 292 backend tests (273 passed, 19 environment-dependent skips), all 122 mobile tests, TypeScript, lint, dependency compatibility and iOS/Android/web exports using Python 3.13.18 and Node 24.22.1. The npm audit gate passes with the same three documented mobile exceptions due for review November 5; those advisories remain open.
+
+The approved internal iPhone preview is version **1.0.0 (6)**, built from that exact application source with frozen existing credentials. [Install/build page](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/5995faaa-b592-490e-8da7-e0b1707b7be9). Expo completed the build at 18:52:46 UTC. The downloaded IPA passed strict/deep code-signature verification, uses certificate suffix FBC7A, and has the same registered device as accepted preview 5. The production API origin, exact source commit and lottery routes are present in the artifact. The Xcode log confirms a successful Sentry source-map upload with debug ID `2a0a595b-a0d0-475d-8a06-3eb2a9a8ca0b`, matching the downloaded Hermes bundle; the Sentry browser UI was not independently checked. No credentials were changed and no synthetic monitoring events were sent. [Artifact verification receipt](assets/lottery/iphone-preview-build-6.json). The user accepted preview 6 on October 27 and authorized merging PR #128: “The preview looks good, please merge.”
+
+### Physical iPhone acceptance
+
+The user accepted the overall preview. Individual checklist scenarios were not separately reported; the supplied review checklist was:
+
+1. Install preview 6 and confirm Home shows the lottery quick reference with the existing modernized layout.
+2. Open Scratch-offs, switch NY/CT, change prices and the prize target, compare per-ticket/per-dollar ordering, then search for a game and open its prize table.
+3. Reopen the app and confirm the chosen filters persist for the signed-in account.
+4. Open the draw planner and check the weekly advance-play and three-stop routines. Confirm dates and cutoffs are readable.
+5. Check the existing Jobwizard flow still behaves as it did in accepted preview 5. Report any layout, navigation or sign-in issues before merging.

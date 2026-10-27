@@ -151,8 +151,12 @@ References: [Expo iPhone builds](https://docs.expo.dev/tutorial/eas/ios-developm
 | `src/app/wishlist/` | Wishlist gift list, create/edit forms (optional image upload), detail |
 | `src/app/library/` | Library playlist browsing, playlist detail with videos, sync trigger |
 | `src/app/jobwizard/` | Job list, create form, and job detail |
+| `src/app/scratch-offs/` | Private NY/CT comparison, saved filters, prize-table detail |
+| `src/app/draw-games.tsx` | Drawing dates, state sales cutoffs, and fewer-trip reference |
 | `src/lib/config.ts` | Environment/API URL configuration |
 | `src/lib/api-client.ts` | Fetch wrapper with JWT attachment, 401 refresh-and-retry, auth endpoints |
+
+The lottery Home card and screens read the deployed application's saved daily snapshots; no screen refresh contacts a lottery site. See [scratch-off operations, probability assumptions, and draw rules](../docs/scratch-offs.md). Lottery preferences are stored separately per account.
 | `src/lib/lists-api.ts` | Typed list endpoints (`/api/v1/lists/...`) and TanStack Query keys |
 | `src/hooks/use-lists.ts` | Grocery queries, authoritative mutations, and focused-screen room subscription |
 | `src/lib/lists-cache.ts` | Shared cache updates, reconnect invalidation, and completed-item sections |

@@ -27,6 +27,7 @@ from project.jobwizard.views import jobwizard_blueprint
 from project.learning import learning_blueprint
 from project.library.views import library_blueprint
 from project.lists.views import lists_blueprint
+from project.lottery.views import lottery_blueprint
 from project.oauth.views import oauth_blueprint, private_connection_response
 from project.wishlist.views import wishlist_blueprint
 
@@ -133,6 +134,7 @@ def register_blueprints(app):
     app.register_blueprint(oauth_blueprint)
     app.register_blueprint(wishlist_blueprint)
     app.register_blueprint(lists_blueprint)
+    app.register_blueprint(lottery_blueprint)
     app.register_blueprint(api_blueprint)
 
 
@@ -154,6 +156,9 @@ def register_commands(app):
     app.cli.add_command(purge_attempts)
     from project.services.jobwizard_extraction import prune_extractions
     app.cli.add_command(prune_extractions)
+    from project.lottery.commands import import_ny_metadata, refresh_lottery
+    app.cli.add_command(import_ny_metadata)
+    app.cli.add_command(refresh_lottery)
 
 
 def register_jinja_env(app):

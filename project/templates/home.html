@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
+{% block metadata %}{% if lottery %}<link rel="stylesheet" href="{{ url_for('static', filename='css/lottery-home.css') }}">{% endif %}{% endblock %}
 
 {% block body %}
+    {% if lottery %}{% include 'lottery/_home.html' %}{% endif %}
     <section class="Home-social">
       <a class="Home-social-link" href="http://github.com/kriordan" target="_blank">
         <img class="Home-social-img" src="{{ url_for('static', filename='img/logos/github-logo-64.png') }}" />
