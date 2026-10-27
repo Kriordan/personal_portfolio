@@ -42,17 +42,18 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "test:dependencies": "node scripts/check-dependency-compat.cjs"
+    "start": "node ../scripts/check-node-runtime.cjs && expo start",
+    "android": "node ../scripts/check-node-runtime.cjs && expo run:android",
+    "ios": "node ../scripts/check-node-runtime.cjs && expo run:ios",
+    "web": "node ../scripts/check-node-runtime.cjs && expo start --web",
+    "lint": "node ../scripts/check-node-runtime.cjs && expo lint",
+    "typecheck": "node ../scripts/check-node-runtime.cjs && tsc --noEmit",
+    "test": "node ../scripts/check-node-runtime.cjs && node --experimental-strip-types --test tests/*.test.mjs",
+    "test:dependencies": "node ../scripts/check-node-runtime.cjs && node scripts/check-dependency-compat.cjs",
+    "check:runtime": "node ../scripts/check-node-runtime.cjs"
   },
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=24.22.1 <25"
   },
   "private": true,
   "overrides": {

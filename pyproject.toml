@@ -13,6 +13,8 @@ dependencies = [
     "boto3 (>=1.36.18,<2.0.0)",
     "python-dotenv (>=1.2.2,<2.0.0)",
     "requests (>=2.33.0,<3.0.0)",
+    # eMudhra certificate incident: preserve the already-patched CA bundle.
+    "certifi (>=2026.10.19)",
     "pyyaml (>=6.0.2,<7.0.0)",
     "flask-wtf (>=1.2.2,<2.0.0)",
     "email-validator (>=2.2.0,<3.0.0)",
