@@ -164,3 +164,25 @@ test('account changes during token reads or response parsing discard the request
   body.resolve('{"private":"account-a"}');
   await readingRejected;
 });
+
+test('a failed token deletion still waits for its sibling before the next login', async () => {
+  const values = new Map(), removal = deferred();
+  const tokens = createSessionTokens({
+    get: async (key) => values.get(key) ?? null,
+    set: async (key, value) => { values.set(key, value); },
+    remove: async (key) => {
+      if (key === 'auth.access_token') throw new Error('storage unavailable');
+      await removal.promise;
+      values.delete(key);
+    },
+  });
+  await tokens.setTokens({ accessToken: 'a', refreshToken: 'refresh-a' });
+  const cleanup = assert.rejects(tokens.clear(), /storage unavailable/);
+  const login = tokens.setTokens({ accessToken: 'b', refreshToken: 'refresh-b' });
+  await tick();
+  assert.equal(values.get('auth.access_token'), 'a', 'new writes wait for all old deletes');
+  removal.resolve();
+  await Promise.all([cleanup, login]);
+  assert.equal(await tokens.getAccessToken(), 'b');
+  assert.equal(await tokens.getRefreshToken(), 'refresh-b');
+});

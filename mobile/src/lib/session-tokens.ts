@@ -34,7 +34,12 @@ export function createSessionTokens(store: TokenStore) {
     clear() {
       ++version;
       return serial(async () => {
-        await Promise.all([store.remove(accessKey), store.remove(refreshKey)]);
+        // A rejected deletion must not release the queue while its sibling
+        // can still delete a token written by the next login.
+        const results = await Promise.allSettled([store.remove(accessKey), store.remove(refreshKey)]);
+        for (const result of results) {
+          if (result.status === 'rejected') throw result.reason;
+        }
       });
     },
   };
