@@ -34,17 +34,26 @@ def target_profile(url):
     if parsed.scheme != "https" or parsed.port not in (None, 443) or parsed.fragment:
         return None
     host, path = parsed.hostname, parsed.path
+    greenhouse = (re.fullmatch(r"/[^/]+/jobs/([0-9]+)/?", path)
+                  if host in {"boards.greenhouse.io", "job-boards.greenhouse.io", "job-boards.eu.greenhouse.io"}
+                  else None)
     # Gem uses src for public job-board attribution. Do not broaden other hosts
     # or forward arbitrary query credentials/private invitation links.
     allowed_query = {"gh_src", "source", "lever-source"}
     if host == "jobs.gem.com":
         allowed_query.add("src")
-    if any(key not in allowed_query and not key.startswith("utm_")
-           for key, _ in parse_qsl(parsed.query, keep_blank_values=True)):
+    query = parse_qsl(parsed.query, keep_blank_values=True)
+    # Greenhouse share links repeat the public path's job ID. Do not let a
+    # mismatched ID select a different job or permit this parameter elsewhere.
+    if greenhouse:
+        allowed_query.add("gh_jid")
+        if any(key == "gh_jid" and value != greenhouse.group(1) for key, value in query):
+            return None
+    if any(key not in allowed_query and not key.startswith("utm_") for key, _ in query):
         return None
     if host == "jobs.gem.com" and re.fullmatch(r"/[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}/am9icG9zdD[a-zA-Z0-9_-]{22}/?", path):
         return "gem"
-    if host in {"boards.greenhouse.io", "job-boards.greenhouse.io", "job-boards.eu.greenhouse.io"} and re.fullmatch(r"/[^/]+/jobs/[0-9]+/?", path):
+    if greenhouse:
         return "greenhouse"
     if host in {"jobs.lever.co", "jobs.eu.lever.co"} and re.fullmatch(r"/[^/]+/[a-fA-F0-9-]{36}/?", path):
         return "lever"

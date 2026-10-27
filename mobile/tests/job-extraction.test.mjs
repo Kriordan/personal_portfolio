@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { ExtractionSession } from '../src/lib/job-extraction-session.ts';
 import {
   extractionMatches,
+  extractionErrorForDraft,
   reviewedDetailsError,
   reviewSelectionError,
   reviewFieldSelected,
@@ -51,6 +52,59 @@ test('a definitive rejected read is not restored as an unknown paid operation', 
     assert.equal(reopened.snapshot().uncertain, false);
     assert.equal(reopened.snapshot().request, null);
   }
+});
+
+test('a rejected form clears its feedback without a restart or another request', async () => {
+  const h = harness({ api: { start: async () => {
+    throw Object.assign(new Error('Unsupported listing.'), { status: 400 });
+  } } });
+  await h.session.restore();
+  await h.session.begin({ listing_url: url, job_id: 7, expected_revision: 0 });
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, 7), 'Unsupported listing.');
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), '', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, 8), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url + '4', 7), null);
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot().error, null);
+  assert.equal(h.stored, null);
+  assert.deepEqual(h.calls, []);
+});
+
+test('form reset clears offline feedback but preserves unresolved recovery', async () => {
+  const h = harness({ api: { start: async () => { throw new Error('Lost response'); } } });
+  await h.session.restore();
+  h.setOnline(false);
+  await h.session.begin({ listing_url: url });
+  assert.match(extractionErrorForDraft(h.session.snapshot(), url, null), /Reconnect/);
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot().error, null);
+  h.setOnline(true);
+  await h.session.begin({ listing_url: url });
+  const pending = h.session.snapshot();
+  const stored = h.stored;
+  h.session.resetFormFeedback();
+  assert.equal(h.session.snapshot(), pending);
+  assert.equal(h.stored, stored);
+  assert.match(extractionErrorForDraft(h.session.snapshot(), '', null), /No saved result/);
+});
+
+test('a late rejection cannot attach its feedback to a new blank or different draft', async () => {
+  const wait = deferred();
+  const h = harness({ api: { start: async () => {
+    await wait.promise;
+    throw Object.assign(new Error('Unsupported listing.'), { status: 400 });
+  } } });
+  await h.session.restore();
+  const sending = h.session.begin({ listing_url: url });
+  await new Promise((resolve) => setImmediate(resolve));
+  const frozen = h.stored;
+  h.session.resetFormFeedback();
+  assert.equal(h.stored, frozen);
+  wait.resolve();
+  await sending;
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), '', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url + '4', null), null);
+  assert.equal(extractionErrorForDraft(h.session.snapshot(), url, null), 'Unsupported listing.');
 });
 
 test('missing receipt preserves its UUID for deliberate retry and exposes a polling stop', async () => {

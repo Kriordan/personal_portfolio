@@ -3,9 +3,11 @@ import { useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { jobActions, type JobActionsMenuProps } from './job-actions-menu.types';
+import { useTheme } from '@/hooks/use-theme';
 
 export function JobActionsMenu(props: JobActionsMenuProps) {
   const ref = useRef<MenuComponentRef>(null);
+  const theme = useTheme();
   const actions = jobActions(props);
   return (
     <MenuView
@@ -21,7 +23,7 @@ export function JobActionsMenu(props: JobActionsMenuProps) {
       }}
     >
       <View
-        style={styles.trigger}
+        style={[styles.trigger, styles.outline, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
         accessible
         accessibilityRole="button"
         accessibilityLabel="More job actions"
@@ -35,6 +37,7 @@ export function JobActionsMenu(props: JobActionsMenuProps) {
   );
 }
 const styles = StyleSheet.create({
-  trigger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  trigger: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  outline: { borderWidth: 1, borderRadius: 12 },
   dots: { fontSize: 28, lineHeight: 32, fontWeight: '600' },
 });

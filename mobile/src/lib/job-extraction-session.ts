@@ -26,6 +26,7 @@ interface State {
   request: ExtractionRequest | null;
   result: Extraction | null;
   error: string | null;
+  feedbackContext: Pick<ExtractionRequest, 'listing_url' | 'job_id'> | null;
   stage: 'read' | 'summary';
 }
 /** Persist only the account and frozen request. Recovery is always a status read. */
@@ -38,6 +39,7 @@ export class ExtractionSession {
     request: null,
     result: null,
     error: null,
+    feedbackContext: null,
     stage: 'read',
   };
   private listeners = new Set<() => void>();
@@ -51,6 +53,12 @@ export class ExtractionSession {
     this.deps = deps;
   }
   snapshot = () => this.state;
+  resetFormFeedback = () => {
+    if (this.state.ready && this.state.error && !this.lock &&
+        !this.state.request && !this.state.working && !this.state.uncertain) {
+      this.update({ error: null, feedbackContext: null });
+    }
+  };
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => {
@@ -134,6 +142,7 @@ export class ExtractionSession {
         ...([404, 410].includes(status ?? 0) ? { result: null } : {}),
         uncertain: status !== 410,
         missing: status === 404,
+        feedbackContext: request,
         error:
           status === 410
             ? 'Suggestions expired after 24 hours. Read the listing again.'
@@ -159,6 +168,7 @@ export class ExtractionSession {
     if (!this.deps.online()) {
       this.update({
         error: 'Reconnect to suggest details. Manual saving is available.',
+        feedbackContext: input,
       });
       return;
     }
@@ -180,6 +190,7 @@ export class ExtractionSession {
     } catch {
       this.update({
         error: 'Couldn’t store recovery information. Nothing was sent.',
+        feedbackContext: input,
       });
       return;
     } finally {
@@ -239,6 +250,7 @@ export class ExtractionSession {
         ...(status === 410 ? { result: null } : {}),
         uncertain: !definitive,
         missing: false,
+        feedbackContext: request,
         error: definitive
           ? (error as Error).message ||
             'The suggestion request was rejected. Check the listing URL and try again.'
