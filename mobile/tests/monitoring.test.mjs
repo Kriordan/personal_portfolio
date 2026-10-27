@@ -9,7 +9,7 @@ test('operation correlation survives auth refresh and rejects content-bearing ID
   const ts = (await import('typescript')).default;
   const source = readFileSync(new URL('../src/lib/api-client.ts', import.meta.url), 'utf8')
     .replace("import { API_BASE_URL, API_PREFIX } from '@/lib/config';", "const API_BASE_URL = 'https://fixture.test'; const API_PREFIX = '/api/v1';")
-    .replace("import { tokenStorage } from '@/lib/token-storage';", "const tokenStorage = { getAccessToken: async () => 'access', getRefreshToken: async () => 'refresh', setTokens: async () => {} };")
+    .replace("import { tokenStorage } from '@/lib/token-storage';", "const tokenStorage = { getSessionVersion: () => 0, getAccessToken: async () => 'access', getRefreshToken: async () => 'refresh', setTokens: async () => {} };")
     .replace("'@/lib/request-timeout'", JSON.stringify(new URL('../src/lib/request-timeout.ts', import.meta.url).href));
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
   const { apiRequest } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);

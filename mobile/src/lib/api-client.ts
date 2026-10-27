@@ -80,28 +80,40 @@ async function rawRequest(path: string, options: RequestOptions, accessToken: st
   });
 }
 
-// Deduplicate concurrent refresh attempts so parallel 401s trigger one refresh.
-let refreshPromise: Promise<string | null> | null = null;
+function requireSession(version: number): void {
+  if (version !== tokenStorage.getSessionVersion())
+    throw new Error('Session changed. Discarding the previous request.');
+}
+
+// Deduplicate within one session only. A late refresh must never restore a
+// signed-out account or share its token with a newly signed-in account.
+let refresh: { version: number; promise: Promise<string | null> } | null = null;
 
 /** Exported for the Socket.IO client, which needs a fresh token after a rejected connect. */
-export async function refreshAccessToken(): Promise<string | null> {
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
+export async function refreshAccessToken(version = tokenStorage.getSessionVersion()): Promise<string | null> {
+  requireSession(version);
+  if (!refresh || refresh.version !== version) {
+    const promise = (async () => {
       const refreshToken = await tokenStorage.getRefreshToken();
+      requireSession(version);
       if (!refreshToken) return null;
       const response = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${refreshToken}` },
       });
+      requireSession(version);
       if (!response.ok) return null;
       const data = (await response.json()) as { access_token: string };
-      await tokenStorage.setTokens({ accessToken: data.access_token });
+      requireSession(version);
+      await tokenStorage.setTokens({ accessToken: data.access_token }, version);
+      requireSession(version);
       return data.access_token;
     })().finally(() => {
-      refreshPromise = null;
+      if (refresh?.promise === promise) refresh = null;
     });
+    refresh = { version, promise };
   }
-  return refreshPromise;
+  return refresh.promise;
 }
 
 type UnauthorizedListener = () => void;
@@ -121,20 +133,26 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 }
 
 async function performRequest<T>(path: string, options: RequestOptions, signal?: AbortSignal): Promise<T> {
+  const version = tokenStorage.getSessionVersion();
   const accessToken = options.anonymous ? null : await tokenStorage.getAccessToken();
+  requireSession(version);
   let response = await rawRequest(path, options, accessToken, signal);
+  requireSession(version);
 
   if (response.status === 401 && !options.anonymous) {
-    const newToken = await refreshAccessToken();
+    const newToken = await refreshAccessToken(version);
+    requireSession(version);
     if (newToken) {
       response = await rawRequest(path, options, newToken, signal);
     }
+    requireSession(version);
     if (response.status === 401) {
       onUnauthorized?.();
     }
   }
 
   const body = await parseBody(response);
+  requireSession(version);
   if (!response.ok) {
     throw new ApiError(response.status, body);
   }

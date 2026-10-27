@@ -13,6 +13,9 @@ Capture controls: capture_delay pauses the fake provider (up to 40 seconds);
 capture_response lost drops the committed response; capture_status failure
 blocks status reads. image_ttl (1–900 seconds) issues genuinely expiring local
 image links. Counters distinguish HTTP attempts from actual provider work.
+Account-switch controls: hold_write_response, hold_refresh_response and
+hold_capture pause that work until released (maximum 120 seconds). Results
+include held counts. /fixture/links supplies simulator-only deep-link anchors.
 Native test DSN: http://public@127.0.0.1:5058/1. Both Flask and mobile telemetry
 stay local; /fixture/events exposes only disposable test payloads. Never deploy
 this script or point a production app at these unauthenticated test controls.
@@ -54,7 +57,18 @@ def main():
     mode = dict(reads="success", writes="success", receipts="success", capture="success", images="success", delay=0, extraction="success", summary="success", extraction_delay=2,
                 extraction_http=0, extraction_code="failed", extraction_status_http=0,
                 extraction_response="success", auth="success", telemetry="success",
-                capture_delay=2, capture_response="success", capture_status="success", image_ttl=900)
+                capture_delay=2, capture_response="success", capture_status="success", image_ttl=900,
+                hold_write_response=False, hold_refresh_response=False, hold_capture=False)
+    held = dict(write=0, refresh=0, capture=0)
+    def hold(kind, control):
+        if not mode[control]: return
+        held[kind] += 1
+        deadline = time.monotonic() + 120
+        try:
+            while mode[control] and time.monotonic() < deadline:
+                time.sleep(0.05)
+        finally:
+            held[kind] -= 1
     events = {"flask": [], "mobile": []}
     counters = dict(image_reads=0, image_signs=0, write_posts=0, capture_posts=0, capture_calls=0, status_reads=0, extraction_reads=0, extraction_summaries=0, extraction_posts=0, summary_posts=0, telemetry_attempts=0)
 
@@ -123,7 +137,16 @@ def main():
                            accounts={str(account): dict(jobs=Job.query.filter_by(user_id=account).count(),
                                receipts=JobMutationReceipt.query.filter_by(user_id=account).count(),
                                captures=JobCapture.query.filter_by(user_id=account).count()) for account in (1, 2)},
-                           events={key: len(value) for key, value in events.items()}, **counters)
+                           held=held, events={key: len(value) for key, value in events.items()}, **counters)
+        @app.get("/fixture/links")
+        def links():
+            paths = [("Account 1 job", "jobwizard/2"), ("Account 2 job", "jobwizard/322"),
+                     ("Missing job", "jobwizard/999999"), ("Malformed job", "jobwizard/not-a-job"),
+                     ("Account 1 image", "jobwizard/2/screenshot"), ("Account 2 image", "jobwizard/322/screenshot"),
+                     ("Missing image", "jobwizard/999999/screenshot"), ("Malformed image", "jobwizard/not-a-job/screenshot"),
+                     ("New job", "jobwizard/new"), ("My account", "me")]
+            return '<meta name="viewport" content="width=device-width,initial-scale=1"><h1>Local deep-link checks</h1>' + ''.join(
+                f'<p style="padding:10px"><a href="personal-portfolio:///{path}">{label}</a></p>' for label, path in paths)
         @app.get("/fixture/events")
         def fixture_events():
             return jsonify(events)
@@ -187,6 +210,10 @@ def main():
                 elif mode["reads"] == "failure": return jsonify(error="Fixture read unavailable"), 503
         @app.after_request
         def lose(response):
+            if request.path == '/api/v1/auth/refresh':
+                hold('refresh', 'hold_refresh_response')
+            if request.path.startswith('/api/v1/jobwizard/jobs') and request.method in {'POST', 'PATCH'} and not request.path.endswith('/capture'):
+                hold('write', 'hold_write_response')
             if request.path.endswith('/capture') and request.method == 'POST' and response.status_code == 200 and mode['capture_response'] == 'lost':
                 return app.make_response((jsonify(error='Fixture capture response lost after commit'), 503))
             if "/extractions" in request.path and request.method == "POST" and response.status_code == 200 and mode["extraction_response"] == "lost":
@@ -196,6 +223,7 @@ def main():
             return response
         def artifact(url, key):
             counters["capture_calls"] += 1
+            hold('capture', 'hold_capture')
             time.sleep(min(40, max(0, float(mode['capture_delay']))))
             if mode["capture"] == "failure": raise RuntimeError("Fixture capture unavailable")
             if mode["capture"] not in {"success", "failure"}: raise CaptureError(mode["capture"])
