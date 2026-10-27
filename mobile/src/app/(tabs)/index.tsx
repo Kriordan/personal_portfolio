@@ -9,6 +9,8 @@ import {
   Screen,
   SectionHeading,
 } from '@/components/screen';
+import { DrawQuickReference } from '@/components/lottery-content';
+import { useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { mobileTools } from '@/constants/tools';
 import { useListsOverview } from '@/hooks/use-lists';
@@ -16,6 +18,7 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const lists = useListsOverview();
   const router = useRouter();
   const hour = new Date().getHours();
@@ -27,7 +30,12 @@ export default function HomeScreen() {
       refreshControl={
         <RefreshControl
           refreshing={lists.isRefetching}
-          onRefresh={() => void lists.refetch()}
+          onRefresh={() => {
+            void lists.refetch();
+            void queryClient.invalidateQueries({
+              queryKey: ['lottery', 'draws'],
+            });
+          }}
         />
       }
     >
@@ -36,6 +44,7 @@ export default function HomeScreen() {
         title={user ? `${greeting}, ${user.username}.` : `${greeting}.`}
         subtitle="A little less to keep in your head."
       />
+      <DrawQuickReference />
       <Card>
         <ThemedText type="subtitle" accessibilityRole="header">
           Ready for your next shop

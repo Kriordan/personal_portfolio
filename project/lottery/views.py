@@ -35,32 +35,38 @@ def status(source):
     return dict(snapshot=snapshot, checked=checked, latest=latest, scheduled=scheduled, stale=stale, interrupted=interrupted)
 
 
-@lottery_blueprint.get("/scratch-offs")
-@login_required
-def index():
-    state = request.args.get("state", "ny")
+def comparison(args):
+    """Shared, read-only selection and ranking for the website and native app."""
+    state = args.get("state", "ny")
     if state not in ("ny", "ct"):
         state = "ny"
-    target = request.args.get("preset", type=int) or request.args.get("target", 1000, type=int)
+    target = args.get("preset", type=int) or args.get("target", 1000, type=int)
     if target not in TARGETS:
         target = 1000
-    basis = "dollar" if request.args.get("basis") == "dollar" else "ticket"
+    basis = "dollar" if args.get("basis") == "dollar" else "ticket"
     info, draw = status(state), status("draw")
     games = info["snapshot"].data["games"] if info["snapshot"] else []
     available = sorted({g["price"] for g in games if g.get("price") in PRICES and g.get("status") == "active"})
-    prices = [p for p in request.args.getlist("price", type=int) if p in available]
-    if not prices and "prices_set" not in request.args:
+    prices = [p for p in args.getlist("price", type=int) if p in available]
+    if not prices and "prices_set" not in args:
         prices = available
-    query = request.args.get("q", "").strip()[:100]
+    query = args.get("q", "").strip()[:100]
     ranked = rank([g for g in games if g.get("price") in prices and g.get("status") == "active"], target, basis)
     visible = [g for g in ranked if query.casefold() in (g["name"] + " " + g["game_number"]).casefold()]
     picks = [g for g in visible if not g["reason"]][:3]
-    pending = [g for g in games if g.get("price") is None]
-    response = make_response(render_template("lottery/index.html", state=state, target=target, basis=basis,
+    pending = [g for g in games if g.get("price") is None and query.casefold() in (g["name"] + " " + g["game_number"]).casefold()]
+    return dict(state=state, target=target, basis=basis,
                                             prices=prices, available=available, targets=TARGETS, query=query,
-                                            games=visible, picks=picks, pending=pending, info=info, draw=draw,
+                                            games=visible, picks=picks, pending=pending, info=info, draw=draw)
+
+
+@lottery_blueprint.get("/scratch-offs")
+@login_required
+def index():
+    context = comparison(request.args)
+    response = make_response(render_template("lottery/index.html", **context,
                                             money=money, odds=odds, stamp=stamp,
-                                            source_stamp=lambda value: source_stamp(value, state)))
+                                            source_stamp=lambda value: source_stamp(value, context["state"])))
     response.headers["Cache-Control"] = "private, no-store"
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response

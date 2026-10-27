@@ -5,8 +5,8 @@ from pathlib import Path
 
 import requests
 import yaml
-from flask import Blueprint, current_app, render_template, request
-from flask_login import login_required
+from flask import Blueprint, current_app, make_response, render_template, request
+from flask_login import current_user, login_required
 from mailersend import EmailBuilder, MailerSendClient
 
 from project.extensions import limiter
@@ -27,7 +27,14 @@ def home():
     )
     with open(path, encoding="utf-8") as f:
         projects = yaml.safe_load(f)
-    return render_template("home.html", projects=projects)
+    lottery = None
+    if current_user.is_authenticated:
+        from project.api.lottery import draw_payload
+        lottery = draw_payload(request.args.get("lottery_state", "ny"))
+    response = make_response(render_template("home.html", projects=projects, lottery=lottery))
+    if lottery:
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @foyer_blueprint.route("/resume")

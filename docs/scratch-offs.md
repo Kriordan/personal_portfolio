@@ -1,6 +1,20 @@
 # Scratch-off comparison
 
-`/scratch-offs` requires the existing Flask login. It reads only SQLAlchemy snapshots. Forms, search, sorting and expandable prize tables make no lottery-site requests. State, target, comparison basis and each state's selected prices are remembered in local storage. No ticket purchases, alerts or mobile-native changes are included.
+`/scratch-offs` requires the existing Flask login. It reads only SQLAlchemy snapshots. Forms, search, sorting and expandable prize tables make no lottery-site requests. State, target, comparison basis and each state's selected prices are remembered in local storage. The native app exposes the same comparisons and a draw planner; neither client buys tickets or sends lottery notifications.
+
+## Native app and homepage reference
+
+Home and Tools link to native `/scratch-offs` and `/draw-games`. The scratch list uses the modernized Jobwizard toolbar, a virtualized list, saved state/price/target/sort preferences per account, game-number/name search, and a full prize-table detail screen. The app reads these authenticated endpoints, which reject deleted users and return `Cache-Control: private, no-store`:
+
+* `GET /api/v1/lottery/scratch-offs`: same selection, ranking and calculation functions as the Flask page.
+* `GET /api/v1/lottery/scratch-offs/<state>/<number>`: individual saved game, including an explanation when unrankable.
+* `GET /api/v1/lottery/draws?state=ny|ct`: cached jackpot summary and Eastern-time retail calendar.
+
+The private website homepage and native Home screen show the next available drawing for both games. Pull-to-refresh only reads the application API. Cutoffs and midnight invalidate the displayed dates even while offline. A jackpot is shown only when the saved drawing exactly matches the calculated next drawing and the source is fresh; an old jackpot is never reassigned to a future draw.
+
+Retail rules were verified October 26, 2026 against the official [CT Powerball](https://ctlottery.com/games/draw-games/powerball), [CT Mega Millions](https://ctlottery.com/games/draw-games/mega-millions), and [NY draw-game pages](https://nylottery.ny.gov/draw-games/). Powerball is Monday/Wednesday/Saturday at $2; Mega Millions is Tuesday/Friday at $5. NY closes sales at 10 p.m. Eastern for both; CT closes Powerball at 10 p.m. and Mega Millions at 10:45 p.m. Retail schedules and advance-play limits are verified constants in `project/lottery/planner.py`, separate from daily jackpot data.
+
+One Sunday/Monday stop can cover a week: three consecutive Powerball draws ($6) plus two Mega Millions draws ($10). With next-draw-only purchases, the minimum is Monday (both), Wednesday (Powerball), Friday (both), before 10 p.m. Eastern. Both states allow up to 39 Powerball and 26 Mega Millions consecutive draws: approximately 13 weeks for $208. Advance play continues through jackpot resets. The app cannot know which tickets the user already holds; it explicitly says to skip covered drawings and confirm printed dates.
 
 ## Operations
 
@@ -59,8 +73,12 @@ Neither source verifies unsold-ticket counts. Unclaimed prizes may be in already
 
 ## Validation
 
-`PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true python -m unittest tests.test_lottery -v`
+`PYTHONPATH=tests:. PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true python -m unittest test_lottery test_lottery_planner test_api_lottery -v`
 
 Saved official fixtures test catalog extraction across split Flight chunks, annuity gross/cash distinctions, referenced payment text, missing fields, ended games, NY exact joins, metadata validation, draw odds and Eastern dates. Hand-worked examples cover $1k/$100k targets, per-ticket/per-dollar ordering, ties, exhausted prizes and invalid inputs. Integration tests cover dry runs, idempotence, locking, source-version changes, truncation, structure changes, partial failure, persistent Retry-After, authentication, stale presentation and page/filter requests with all HTTP disabled.
 
 Implementation validation used the full saved 2026-10-26 NY feed (1,253 tiers / 115 games) and all 22 eligible CT pages. Representative CT #1850: 2,067,660 original tickets, 5 original top prizes, 1 unclaimed, $1m 20-year annuity / $750k cash option. NY #1713: 4 original/unclaimed top prizes, $3m advertised award, published top-tier odds 1 in 3,645,937.50. Calculations use the daily feed's unclaimed counts, not the browser seed's claim counts.
+
+The native follow-up passed 25 focused backend tests, the full 276-test backend run (257 passed, 19 environment-dependent skips), 100 mobile tests, TypeScript, lint, and iOS/Android Hermes exports. Tests cover authenticated/no-upstream reads, rank parity, preserved snapshots on refresh failure, empty price selection, corrupt stored preferences, expired offline dates, exact sales cutoffs, daylight saving transitions, and old-jackpot suppression.
+
+iPhone 18 Pro/iOS 27 simulator checks exercised NY/CT prices, $1k/$100k targets, changed ordering per dollar, search by game number, full prize details, preference persistence after reload, and the Home/planner navigation. Light and dark layouts were inspected; the website homepage was checked at 390px. [Home screenshot](assets/lottery/mobile-home.png), [comparison screenshot](assets/lottery/mobile-comparison.png), [dark planner screenshot](assets/lottery/mobile-plan-dark.png). These use isolated accounts and saved official fixtures. Physical-iPhone acceptance, Android native interaction, full screen-reader and large-text testing remain unverified.
