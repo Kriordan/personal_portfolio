@@ -67,12 +67,12 @@ October 26 fixture evidence: [iOS saved job and completed capture](assets/monito
 
 ## Merge and rollout status — October 26
 
-The code remains safe to review as a disabled-by-default integration. The initial branch refresh did not enable reporting, change credentials, deploy Flask, or consume a cloud build. The subsequent user-approved enabled iPhone preview below consumed one cloud build and enabled only preview reporting; production remains inactive. Local iOS/Android builds, exports, automated tests, and the refreshed branch's CI/security checks are the merge evidence; device acceptance is a separate remaining gate for the new native dependency.
+The code remains safe to review as a disabled-by-default integration. The initial branch refresh did not enable reporting, change credentials, deploy Flask, or consume a cloud build. The subsequent user-approved enabled iPhone preview below consumed one cloud build and enabled only preview reporting; production remains inactive. Local iOS/Android builds, exports, automated tests, and the refreshed branch's CI/security checks are the merge evidence; the user has now accepted the enabled preview on a physical iPhone. Explicit failure-mode and production rollout follow-ups remain below.
 
 Recommended sequence:
 
 1. Completed: build the reporting-enabled iPhone preview and verify its exact bundle/source map and a scrubbed synthetic artifact event, as recorded below. No test button, automatic canary, or temporary validation code is present in the app. The artifact-based event does not replace physical-device runtime acceptance.
-2. Have the user smoke-test normal Jobwizard and cross-feature flows on that preview, including the remaining quiet-error cases above. Keep PR #123 draft until this acceptance is complete, then merge with CI still green.
+2. Completed: the user tested the enabled preview on their iPhone, reported that everything looks good, and approved merging PR #123. Merge with CI green. This normal-use acceptance does not claim completion of every explicit quiet-error, transport-failure, accessibility or Android follow-up above.
 3. Before production activation, finish new/regressed notification rules and delivery verification. After merge, deploy Flask and configure its DSN, environment and exact release SHA, inspect a controlled scrubbed event, and enable only the approved environment. Mobile production reporting requires its own configured native build; EAS environment changes do not alter installed apps.
 4. Keep native crash capture disabled. The separate native privacy/crash checklist, existing mobile accessibility/device checks, and dependency-security review deadline remain open.
 
@@ -85,7 +85,7 @@ Recommended sequence:
 - [x] [Synthetic event 5e2402a4f0ec4cb9b86ee6cba921cd08](https://keith-riordan.sentry.io/issues/7813962818/events/5e2402a4f0ec4cb9b86ee6cba921cd08/) in `preview-validation` resolves the actual artifact's generated location `1:1412517` to `src/lib/monitoring.ts:61:5` using that debug ID. The test used the unchanged app scrubber, confirmed identical to the source embedded in the uploaded map. This was an artifact-based ingestion check, not an event emitted by a physical iPhone. Prior enabled native simulator evidence remains recorded above.
 - [x] Inspected the stored event JSON through the signed-in Sentry UI. It contains no injected synthetic private marker, request data, breadcrumbs, attachments, arbitrary extra data, email, local variables or IP address. The static exception text remains. Sentry adds source context from the uploaded map, as expected. The synthetic issue was resolved after inspection.
 - [x] The upload token remains upload-only; artifact/event reads used the signed-in UI. No credential scope was expanded. [Verification screenshot](assets/monitoring/iphone-preview-sentry-2026-10-26.png).
-- [ ] User installs this enabled preview and verifies normal app behavior. Keep PR #123 draft until that acceptance; no additional cloud build is needed unless app code changes.
+- [x] The user installed this enabled preview, tested it on their physical iPhone, reported that everything looks good, and explicitly approved merging PR #123. No additional cloud build is needed for this documentation-only acceptance update.
 
 Device checklist:
 
