@@ -176,4 +176,4 @@ See the [current reliability evidence](validation-status.md#jobwizard-reliabilit
 
 ## PR #133 physical preview
 
-[Version 1.0.0 (5)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/59802c2d-c886-4ac8-aef8-3dae4ae487ad) includes #132 and #133. Follow the [focused device checklist](validation-status.md#pr-133-iphone-preview--october-27); physical acceptance is pending. It does not close the remaining full-matrix items above.
+[Version 1.0.0 (5)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/59802c2d-c886-4ac8-aef8-3dae4ae487ad) includes #132 and #133. The user accepted this preview on the physical iPhone on October 27 and authorized merging #133. The [focused device checklist](validation-status.md#pr-133-iphone-preview--october-27) is retained for repeat testing; this overall acceptance does not close optional, unreported or remaining full-matrix items above.

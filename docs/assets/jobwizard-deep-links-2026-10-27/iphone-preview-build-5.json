@@ -22,7 +22,7 @@
   "archive_bytes": 16945725,
   "credentials_changed": false,
   "new_synthetic_event_sent": false,
-  "physical_device_acceptance": "pending",
+  "physical_device_acceptance": "accepted",
   "verified_at": "2026-10-27",
   "matching_uploaded_debug_ids": [
     "51d57228-0d05-44c7-9f0d-45ab5adf027a"
@@ -34,5 +34,8 @@
   "sentry_release": "com.kriordan.personalportfolio@1.0.0+5",
   "sentry_dist": "5",
   "sentry_upload_url": "https://keith-riordan.sentry.io/settings/projects/personal-portfolio-mobile/source-maps/7db1a680-4746-52cd-a4e6-f6213f70d4dc/",
-  "source_map_browser_followup": "Browser extension UI blocked Sentry inspection; no new event/symbolication test performed"
+  "source_map_browser_followup": "Browser extension UI blocked Sentry inspection; no new event/symbolication test performed",
+  "physical_device_accepted_at": "2026-10-27",
+  "physical_device_acceptance_evidence": "User: I tested the preview and everything looks good. Please merge PR #133.",
+  "physical_device_acceptance_scope": "Overall physical iPhone acceptance; optional and individual failure-matrix scenarios were not separately reported."
 }
