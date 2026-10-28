@@ -107,6 +107,7 @@ class ApiAuthTests(unittest.TestCase):
             "https:evil.test", "https:/evil.test", "https:///evil.test",
             "javascript:alert(1)", "data:text/html,unsafe",
             "/\\evil.test", "\\\\evil.test", " /\\evil.test",
+            "/learning\\review", "/learning?next=\\evil.test", "/learning#\\evil.test",
             "/\t/evil.test", "/\n/evil.test", "\x00//evil.test",
             "//[invalid", "https://[invalid", "",
         ):
@@ -124,7 +125,8 @@ class ApiAuthTests(unittest.TestCase):
 
         self._create_user(email="local@example.com", username="local")
         for target in ("/learning/review?note_id=example#card", "lib/", "?tab=notes", "#notes",
-                       "/learning?search=two%20words", "/learning?source=https://example.com"):
+                       "/learning?search=two%20words", "/learning?source=https://example.com",
+                       "/learning;view=cards?tab=notes#review", "/learning?search=%E2%9C%93"):
             with self.subTest(target=target):
                 response = self.app.test_client().post(
                     "/login", base_url="https://localhost", query_string={"next": target},

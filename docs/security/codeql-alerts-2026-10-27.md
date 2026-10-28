@@ -75,7 +75,18 @@ the PR description records verification of the final documentation head too.
 
 ## Rollout and limits
 
-This task prepares a PR; it does not merge or deploy. After review, deploy the
+PR #139 was merged as `35bd78c` on October 28. The full `main` scan
+[40671597616](https://github.com/Kriordan/personal_portfolio/actions/runs/40671597616)
+closed alerts 37, 34, 9 and 8, but Python analysis **2044004982** still reported
+alert 3 through the redirect helper. The PR scan above did not establish closure.
+The follow-up returns a backslash-free value only if it exactly matches the
+input, then checks its scheme and authority with `urlparse`. This preserves the
+rejection behavior while making both validation steps visible to CodeQL's
+standard-library model. Regression cases also cover backslashes in path, query
+and fragment, and accepted local semicolon parameters and encoded Unicode.
+Deployment remains gated on a full main scan closing all five alerts.
+
+After that verification, deploy the
 Flask application and its templates/static JavaScript together, preserving the
 documented production baseline. Then check login return paths and invitations,
 Library error/status display and receipt recovery, flashcard completion/Done,
