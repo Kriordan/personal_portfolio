@@ -154,6 +154,9 @@ def register_commands(app):
     app.cli.add_command(sync_yt_subs)
     app.cli.add_command(eval_scheduler)
     app.cli.add_command(purge_attempts)
+    from project.services.curriculum_service import import_curriculum, validate_curriculum
+    app.cli.add_command(import_curriculum)
+    app.cli.add_command(validate_curriculum)
     from project.services.jobwizard_extraction import prune_extractions
     app.cli.add_command(prune_extractions)
     from project.lottery.commands import import_ny_metadata, refresh_lottery

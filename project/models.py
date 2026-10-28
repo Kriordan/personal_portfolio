@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from flask_login import UserMixin
@@ -500,6 +500,43 @@ class ReviewProgress(db.Model):
     )
 
     user: Mapped["User"] = relationship("User")
+
+
+class CurriculumItem(db.Model):
+    """Stable identity, independent of content revisions and learner progress."""
+
+    __tablename__ = "curriculum_item"
+    __table_args__ = (db.CheckConstraint(
+        "kind IN ('concept', 'question', 'exercise')", name="ck_curriculum_item_kind"
+    ),)
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16))
+
+
+class ContentRevision(db.Model):
+    """Immutable content snapshot; publication metadata is recorded separately."""
+
+    __tablename__ = "content_revision"
+    __table_args__ = (
+        db.CheckConstraint("version > 0", name="ck_content_revision_version"),
+        db.CheckConstraint("schema_version > 0", name="ck_content_revision_schema_version"),
+        db.CheckConstraint(
+            "(published_at IS NULL AND reviewed_by IS NULL AND reviewed_on IS NULL) OR "
+            "(published_at IS NOT NULL AND reviewed_by IS NOT NULL AND reviewed_on IS NOT NULL)",
+            name="ck_content_revision_review",
+        ),
+    )
+
+    item_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer)
+    checksum: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(db.JSON)
+    imported_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    published_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(120))
+    reviewed_on: Mapped[Optional[date]] = mapped_column(db.Date)
 
 
 class ReviewReceipt(db.Model):
