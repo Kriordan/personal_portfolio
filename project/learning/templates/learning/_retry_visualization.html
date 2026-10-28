@@ -1,0 +1,17 @@
+<section class="retry-lab" data-retry-lab aria-labelledby="retry-heading">
+  <h2 id="retry-heading">Where did the request fail?</h2>
+  <p>A simulation of one operation, one database transaction, and a retry within the retention window.</p>
+  <label for="retry-failure">First attempt</label>
+  <select id="retry-failure" disabled>
+    <option value="after">Commits, then the response is lost</option>
+    <option value="before">Crashes before commit</option>
+    <option value="success">Commits and the response arrives</option>
+  </select>
+  <label for="retry-key"><input id="retry-key" type="checkbox" checked disabled> Reuse the same key when retrying</label>
+  <div class="retry-lanes" aria-hidden="true"><span>Client</span><span>API service</span><span>Database</span></div>
+  <ol id="retry-steps"><li>Client sends key A.</li><li>Service commits one order and its receipt.</li><li>The response is lost: the client cannot tell whether the order exists.</li><li>Retrying key A recovers the recorded result.</li></ol>
+  <p id="retry-status" role="status" aria-live="polite">One committed order; repeated requests can recover its result.</p>
+  <p><strong>Committed orders: <output id="retry-count">1</output></strong></p>
+  <div class="concept-controls"><button class="button" id="retry-next" type="button" disabled>Next step</button><button class="button button--secondary" id="retry-reset" type="button" disabled>Start again</button></div>
+  <noscript><p>The sequence above shows a lost response followed by a retry with the same key. Enable JavaScript to move the failure point.</p></noscript>
+</section>

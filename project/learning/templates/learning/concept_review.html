@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Review · {{ concept.title }}{% endblock %}
+{% block body %}
+<main class="concept-study">
+  <a href="{{ url_for('learning.concept', concept_id=concept.id) }}">← Back to lesson</a>
+  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable progress · draft content for review</p>{% endif %}
+  <p class="learning-eyebrow">Review</p><h1>{{ concept.title }}</h1>
+  {% for message in get_flashed_messages(category_filter=['concept-review']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+  {% if error %}<p class="concept-notice" role="alert">{{ error }}</p>{% endif %}
+  {% if stale %}
+    <a class="button" href="{{ url_for('learning.concept_review', concept_id=concept.id) }}">Load current questions</a>
+  {% elif card %}
+    <section class="concept-question" aria-labelledby="question-heading">
+      <h2 id="question-heading">{{ card.note_title }}</h2>
+      <div class="concept-markdown" data-concept-markdown>{{ card.prompt }}</div>
+      {% if revealed %}
+        <h3>Compare your answer</h3>
+        <div class="concept-markdown" id="concept-answer" data-concept-markdown>{{ card.answer }}</div>
+        <p>{{ card.explanation }}</p>
+        <a href="{{ url_for('learning.concept', concept_id=concept.id) }}#{{ card.remediation_section_id }}">Revisit the explanation</a>
+        <form method="post" action="{{ url_for('learning.concept_review', concept_id=concept.id) }}">
+          {{ form.csrf_token }}{{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
+          <fieldset><legend>How well did you recall it?</legend><div class="concept-ratings">
+          {% if retry_same %}<button class="button" name="rating" value="{{ form.rating.data }}">Retry the same rating</button>
+          {% else %}
+            <button class="button button--secondary" name="rating" value="0">Again<span>I couldn't recall it</span></button>
+            <button class="button button--secondary" name="rating" value="3">Hard<span>With difficulty</span></button>
+            <button class="button" name="rating" value="4">Good<span>Correctly recalled</span></button>
+            <button class="button button--secondary" name="rating" value="5">Easy<span>Readily explained</span></button>
+          {% endif %}</div></fieldset>
+        </form>
+      {% else %}
+        <p>Explain your reasoning before revealing the answer.</p>
+        <form method="get" action="{{ url_for('learning.concept_review', concept_id=concept.id) }}">
+          {{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
+          <button class="button">Show answer</button>
+        </form>
+      {% endif %}
+    </section>
+  {% else %}
+    <h2>No questions due right now</h2>
+    <p>Your saved ratings determine when these questions return. Completing reviews is practice, not a measurement of mastery.</p>
+    <a class="button" href="{{ url_for('learning.index') }}">Back to Learning</a>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

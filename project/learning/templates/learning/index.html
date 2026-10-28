@@ -39,6 +39,22 @@
   </section>
 
   {% if current_user.is_authenticated %}
+    <section class="learning-study" aria-labelledby="concepts-heading">
+      <h2 id="concepts-heading">Engineering concepts</h2>
+      <p>Build understanding, then practise recalling and applying it.</p>
+      {% for concept in concepts %}
+        <article class="learning-reference-card">
+          <div>
+            <h3><a href="{{ url_for('learning.concept', concept_id=concept.id) }}">{{ concept.title }}</a></h3>
+            <p>{{ concept.content.summary }}</p>
+            <p>{{ concept.due_count }} question{{ 's' if concept.due_count != 1 }} due for review</p>
+          </div>
+          <a class="button" href="{{ url_for('learning.concept', concept_id=concept.id) }}">Learn</a>
+        </article>
+      {% else %}
+        <p>No concepts published yet.</p>
+      {% endfor %}
+    </section>
     <section class="learning-study" aria-labelledby="study-notes-heading">
       <div class="learning-study-heading">
         <div>

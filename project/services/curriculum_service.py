@@ -4,6 +4,7 @@ import hashlib
 import json
 
 import click
+from flask import current_app
 from flask.cli import with_appcontext
 from marshmallow import ValidationError
 from sqlalchemy import select, text
@@ -32,6 +33,11 @@ def import_catalog(document, *, dry_run=True, publish=False, reviewed_by=None, r
     Payloads are insert-only. Omitting an item never deletes it or its history.
     """
     catalog = validate_catalog(document)
+    from project.services import learning_service
+    notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    for item in catalog["items"]:
+        if item["kind"] == "concept" and learning_service.load_note(notes_dir, item["id"]) is not None:
+            raise ValidationError(f"Concept ID is reserved by a legacy note: {item['id']}.")
     if publish:
         if not isinstance(reviewed_by, str) or not reviewed_by.strip() or len(reviewed_by) > 120:
             raise ValidationError("Publication requires the human reviewer's name (up to 120 characters).")
@@ -94,6 +100,45 @@ def published_learner_item(item_id, *, version=None, reveal_answer=False):
     result = learner_view(revision.payload, reveal_answer=reveal_answer)
     result["schema_version"] = revision.schema_version
     return result
+
+
+def published_concepts():
+    """Latest published concepts, with no private exercise snapshots in the result."""
+    revisions = db.session.scalars(select(ContentRevision).join(CurriculumItem).where(
+        CurriculumItem.kind == "concept", ContentRevision.published_at.is_not(None)
+    ).order_by(ContentRevision.item_id, ContentRevision.version.desc()))
+    latest = {}
+    for revision in revisions:
+        if revision.item_id not in latest:
+            latest[revision.item_id] = learner_view(revision.payload)
+    return list(latest.values())
+
+
+def published_review_question(concept_id, question_id, *, version=None, notes_dir=None, reveal_answer=False):
+    """Adapt a public question to the shared scheduler; never load an exercise."""
+    from project.services import learning_service
+    if notes_dir is None:
+        notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    if learning_service.load_note(notes_dir, concept_id) is not None:
+        raise learning_service.ConflictError("Concept ID conflicts with a legacy note.")
+    question = published_learner_item(question_id, version=version, reveal_answer=reveal_answer)
+    if (question is None or question["kind"] != "question"
+            or question["content"]["concept_id"] != concept_id):
+        raise learning_service.NotFoundError("question not found")
+    body = question["content"]
+    result = dict(card_id=question["id"], note_id=concept_id, note_title=question["title"],
+        prompt=body["prompt"], tags=[], content_version=question["version"],
+        remediation_section_id=body["remediation_section_id"])
+    if reveal_answer:
+        result.update(answer=body["answer"], explanation=body["explanation"])
+    return result
+
+
+def concept_review_queue(concept, *, user_id):
+    from project.services.learning_service import due_cards_for_user
+    cards = [published_review_question(concept["id"], question_id)
+             for question_id in concept["content"]["review_question_ids"]]
+    return due_cards_for_user(cards, user_id=user_id)
 
 
 @click.command("validate-curriculum")

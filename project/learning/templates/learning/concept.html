@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ concept.title }}{% endblock %}
+{% block body %}
+<main class="concept-study">
+  <a href="{{ url_for('learning.index') }}">← Learning</a>
+  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable progress · draft content for review</p>{% endif %}
+  <p class="learning-eyebrow">Learn · Version {{ concept.version }}</p>
+  <h1>{{ concept.title }}</h1>
+  <p class="concept-lead">{{ concept.content.summary }}</p>
+  <section aria-labelledby="objectives"><h2 id="objectives">What you'll be able to explain</h2>
+    <ul>{% for objective in concept.content.learning_objectives %}<li>{{ objective }}</li>{% endfor %}</ul>
+  </section>
+  <details><summary>Before you start</summary>
+    <ul>{% for prerequisite in concept.content.prerequisite_knowledge %}<li>{{ prerequisite }}</li>{% endfor %}</ul>
+  </details>
+  {% for section in concept.content.sections %}
+    {% if loop.first %}
+      <section id="{{ section.id }}"><h2>{{ section.title }}</h2><div class="concept-markdown" data-concept-markdown>{{ section.markdown }}</div></section>
+    {% else %}
+      <details id="{{ section.id }}"><summary>{{ section.title }}</summary><div class="concept-markdown" data-concept-markdown>{{ section.markdown }}</div></details>
+    {% endif %}
+  {% endfor %}
+  {% if concept.id == 'idempotency' %}{% include 'learning/_retry_visualization.html' %}{% endif %}
+  <section class="concept-next" aria-labelledby="review-heading">
+    <h2 id="review-heading">Try recalling it</h2>
+    <p>{{ due_count }} question{{ 's' if due_count != 1 }} due. Reading this lesson does not change your review schedule.</p>
+    <a class="button" href="{{ url_for('learning.concept_review', concept_id=concept.id) }}">{{ 'Review due questions' if due_count else 'Check review schedule' }}</a>
+  </section>
+  <details><summary>References</summary><ul>{% for reference in concept.content.references %}<li><a href="{{ reference.url }}" rel="noreferrer">{{ reference.title }}</a></li>{% endfor %}</ul></details>
+</main>
+{% endblock %}
+{% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

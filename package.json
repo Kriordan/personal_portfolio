@@ -15,7 +15,7 @@
     "sass": "node scripts/check-node-runtime.cjs && gulp sass",
     "watch": "node scripts/check-node-runtime.cjs && gulp watch",
     "dev": "node scripts/check-node-runtime.cjs && gulp",
-    "test:browser": "node scripts/check-node-runtime.cjs && node tests/browser/run-security-check.cjs && node tests/browser/run-extraction-check.mjs",
+    "test:browser": "node scripts/check-node-runtime.cjs && node tests/browser/run-security-check.cjs && node tests/browser/run-extraction-check.mjs && node tests/browser/run-concept-check.cjs",
     "audit:security": "node scripts/check-node-runtime.cjs && node scripts/check-npm-audit.cjs",
     "check:runtime": "node scripts/check-node-runtime.cjs"
   },

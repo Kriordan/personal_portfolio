@@ -27,6 +27,7 @@
       rel="stylesheet"
     />
     <!-- Google tag (gtag.js) -->
+    {% if not (request.blueprint == 'learning' and current_user.is_authenticated) %}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZHE36BSYDX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -48,8 +49,9 @@
           a.appendChild(r);
       })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
     </script>
+    {% endif %}
   </head>
-  <body>
+  <body{% if request.blueprint == 'learning' and current_user.is_authenticated %} class="learning-private"{% endif %}>
     {% block header %}{% include "_header.html" %}{% endblock header %}
     
     <div class="container">{% block body %}{% endblock body %}</div>

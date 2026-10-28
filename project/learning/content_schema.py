@@ -204,6 +204,8 @@ def validate_catalog(document):
             if item["id"] not in parent[membership]:
                 raise ValidationError(f"Parent concept must link {item['id']}.")
             if item["kind"] == "question":
+                if not item["id"].startswith(body["concept_id"] + ":"):
+                    raise ValidationError("Question IDs must use concept-id:question-id.")
                 section(body["concept_id"], body["remediation_section_id"])
                 continue
             brief, facilitator, assessment = body["brief"], body["facilitator"], body["assessment"]

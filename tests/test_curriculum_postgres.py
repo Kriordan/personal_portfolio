@@ -196,7 +196,7 @@ with create_app({self.config!r}).app_context():
             model.__table__.select()).mappings()] for model in (ReviewProgress, ReviewLog, ReviewReceipt)}
         db.session.remove()
         directory = str(ROOT / "migrations")
-        stamp(directory=directory, revision="b5c6d7e8f9a0")
+        stamp(directory=directory, revision="head")
         downgrade(directory=directory, revision="a4b5c6d7e8f9")
         upgrade(directory=directory, revision="head")
         for model in (ReviewProgress, ReviewLog, ReviewReceipt):
@@ -207,5 +207,7 @@ with create_app({self.config!r}).app_context():
             self.assertEqual(changes, [])
         db.session.remove()
         downgrade(directory=directory, revision="a4b5c6d7e8f9")
-        self.assertEqual(ReviewLog.query.count(), 1)
+        # The current ORM contains columns absent in this historical schema.
+        with db.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM review_log")).scalar(), 1)
         upgrade(directory=directory, revision="head")

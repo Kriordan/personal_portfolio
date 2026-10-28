@@ -552,10 +552,15 @@ class ReviewReceipt(db.Model):
 
 class ReviewLog(db.Model):
     __tablename__ = "review_log"
+    __table_args__ = (db.ForeignKeyConstraint(
+        ["card_id", "content_version"], ["content_revision.item_id", "content_revision.version"],
+        name="fk_review_log_content_revision",
+    ),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
     card_id: Mapped[str] = mapped_column(String(128), index=True)
+    content_version: Mapped[Optional[int]] = mapped_column(Integer)
     reviewed_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), index=True
     )

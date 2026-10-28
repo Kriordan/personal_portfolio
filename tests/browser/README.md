@@ -25,3 +25,9 @@ Chrome Canary on macOS); Linux CI uses `google-chrome`. `npm test` also checks t
 the locked DOMPurify version, both CDN references, and SHA-384 integrity match the
 installed browser bundle. The [October dependency review](../../docs/security/dependabot-2026-10-05.md)
 documents the audit exceptions and remaining exposure.
+
+The same command now runs `run-concept-check.cjs`: 27 checks against the actual
+lesson renderer and retry simulation. It verifies the Markdown allowlist, unsafe
+links, remote-media removal, missing-sanitizer fallback, all six combinations of
+failure position/key reuse, and reset/end states. Dependencies load locally; no
+AI service or external website is contacted by these fixtures.

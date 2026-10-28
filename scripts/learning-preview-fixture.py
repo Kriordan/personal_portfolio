@@ -6,6 +6,7 @@ The 10-second access token also exercises the real refresh flow. All notes and
 database files live in a temporary directory and are removed when stopped.
 """
 import json
+import argparse
 import os
 import shutil
 import sys
@@ -25,10 +26,15 @@ from flask import jsonify, make_response, request  # noqa: E402
 from project import create_app  # noqa: E402
 from project.database import db  # noqa: E402
 from project.extensions import talisman  # noqa: E402
-from project.models import Gift, Playlist, ReviewLog, ReviewProgress, ReviewReceipt, User  # noqa: E402
+from project.models import ContentRevision, CurriculumItem, Gift, Playlist, ReviewLog, ReviewProgress, ReviewReceipt, User  # noqa: E402
+from project.learning.content_schema import load_catalog  # noqa: E402
+from project.services.curriculum_service import content_checksum  # noqa: E402
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--concept', action='store_true', help='Include the idempotency web demo with CSRF enabled.')
+    args = parser.parse_args()
     email_validator.TEST_ENVIRONMENT = True
     with tempfile.TemporaryDirectory(prefix="learning-preview-") as directory:
         notes_dir = Path(directory) / "notes"
@@ -58,13 +64,25 @@ def main():
             "SQLALCHEMY_DATABASE_URI": f"sqlite:///{Path(directory) / 'preview.sqlite'}",
             "SQLALCHEMY_TRACK_MODIFICATIONS": False,
             "JWT_ACCESS_TOKEN_EXPIRES": timedelta(seconds=10), "JWT_REFRESH_TOKEN_EXPIRES": timedelta(days=1),
-            "WTF_CSRF_ENABLED": False, "SESSION_COOKIE_SECURE": False, "RATELIMIT_ENABLED": False,
+            "WTF_CSRF_ENABLED": args.concept, "SESSION_COOKIE_SECURE": False, "RATELIMIT_ENABLED": False,
+            "LEARNING_PREVIEW_FIXTURE": args.concept,
         })
         talisman.force_https = False
         mode = {"reads": "success", "rating": "success", "receipts": "success", "delay": 0}
         now = datetime.now(timezone.utc)
         with app.app_context():
             db.create_all()
+            if args.concept:
+                # Fixture-only publication: not a human review attestation and
+                # never the configured application database or importer.
+                catalog = load_catalog(ROOT / 'curriculum/idempotency/catalog.json')
+                for item in catalog['items']:
+                    db.session.add(CurriculumItem(id=item['id'], kind=item['kind']))
+                db.session.flush()
+                for item in catalog['items']:
+                    db.session.add(ContentRevision(item_id=item['id'], version=item['version'], schema_version=1,
+                        payload=item, checksum=content_checksum(item), imported_at=now, published_at=now,
+                        reviewed_by='Disposable demo fixture', reviewed_on=now.date()))
             for number in (1, 2):
                 user = User(email=f"learning{number}@example.test", username=f"Learning Preview {number}", email_verified=True)
                 user.set_password("LearningPreview123!")
