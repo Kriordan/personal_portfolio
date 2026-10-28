@@ -26,11 +26,27 @@ class NotFoundError(LibraryServiceError):
 
 
 class SyncError(LibraryServiceError):
-    """Safe response details for web and API callers; never includes provider text."""
+    """A stable code selects public text; exception details never become a response."""
 
-    def __init__(self, message: str, status: int):
-        super().__init__(message)
-        self.status = status
+    RESPONSES = {
+        "busy": ("A shared Library sync is already running. Check its status before trying again.", 409),
+        "interrupted": ("The import was interrupted. Check its status before trying again.", 409),
+        "connection": ("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503),
+        "provider": ("YouTube could not complete the import. Try again later.", 502),
+        "failed": ("Library sync failed. Try again later.", 500),
+    }
+
+    def __init__(self, code="failed"):
+        super().__init__(code)
+        self.code = code
+
+    @property
+    def public_message(self):
+        return self.RESPONSES.get(self.code, self.RESPONSES["failed"])[0]
+
+    @property
+    def status(self):
+        return self.RESPONSES.get(self.code, self.RESPONSES["failed"])[1]
 
 
 def serialize_playlist(playlist: Playlist) -> dict[str, Any]:
@@ -94,7 +110,7 @@ def sync_library(request_id=None):
     request_id = request_id or str(uuid4())
     with import_lock() as acquired:
         if not acquired:
-            raise SyncError("A shared Library sync is already running. Check its status before trying again.", 409)
+            raise SyncError("busy")
         recover_interrupted_runs()
         existing = db.session.get(LibrarySyncRun, request_id)
         if existing:
@@ -112,7 +128,7 @@ def sync_library(request_id=None):
                 "summary": summary if isinstance(summary, dict) else None,
             }, synchronize_session=False)
             if changed != 1:
-                raise SyncError("The import was interrupted. Check its status before trying again.", 409)
+                raise SyncError("interrupted")
             db.session.commit()
             db.session.expire_all()
             current_app.logger.info("Library sync completed: %s", request_id)
@@ -125,13 +141,13 @@ def sync_library(request_id=None):
             elif isinstance(error, (YouTubeConfigurationError, RefreshError)) or (
                 isinstance(error, HttpError) and error.resp.status == 401
             ):
-                safe = SyncError("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503)
+                safe = SyncError("connection")
             elif isinstance(error, (HttpError, TransportError, HttpLib2Error, OSError)):
-                safe = SyncError("YouTube could not complete the import. Try again later.", 502)
+                safe = SyncError("provider")
             else:
-                safe = SyncError("Library sync failed. Try again later.", 500)
+                safe = SyncError("failed")
             LibrarySyncRun.query.filter_by(id=request_id, status="running").update({
-                "status": "failed", "finished_at": datetime.now(timezone.utc), "error": str(safe),
+                "status": "failed", "finished_at": datetime.now(timezone.utc), "error": safe.public_message,
             }, synchronize_session=False)
             db.session.commit()
             raise safe from error

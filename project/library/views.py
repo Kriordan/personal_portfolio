@@ -48,7 +48,7 @@ def sync_playlists():
     try:
         library_service.sync_library()
     except library_service.SyncError as error:
-        flash(str(error), "error")
+        flash(error.public_message, "error")
 
     return redirect(url_for("foyer.utilities"))
 

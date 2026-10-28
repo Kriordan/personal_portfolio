@@ -318,6 +318,40 @@ class ApiLibraryTests(unittest.TestCase):
         response = self._get("/api/v1/library/playlists/pl-1", headers=self._auth_headers(user_id))
         self.assertEqual(response.get_json()["playlist"]["title"], "Updated playlist")
 
+    def test_sync_codes_keep_exception_details_out_of_api_flash_and_receipts(self):
+        from uuid import uuid4
+        from project.services.library_service import SyncError
+
+        user_id = self._create_user(email="codes@example.com", username="codes")
+        headers = self._auth_headers(user_id)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["_user_id"] = str(user_id)
+            session["_fresh"] = True
+        secret = "private-provider-token-and-database-path"
+        expected = {
+            "busy": ("A shared Library sync is already running. Check its status before trying again.", 409),
+            "interrupted": ("The import was interrupted. Check its status before trying again.", 409),
+            "connection": ("YouTube sync is unavailable. Ask the library maintainer to check its connection.", 503),
+            "provider": ("YouTube could not complete the import. Try again later.", 502),
+            "failed": ("Library sync failed. Try again later.", 500),
+            secret: ("Library sync failed. Try again later.", 500),
+        }
+        for code, (message, status) in expected.items():
+            with self.subTest(code=code):
+                error = SyncError(code)
+                error.args = (secret,)
+                request_id = str(uuid4())
+                with patch("project.services.library_service.sync_playlists_and_videos", side_effect=error):
+                    response = self._post("/api/v1/library/sync", headers=headers, json={"request_id": request_id})
+                    self.assertEqual(response.status_code, status)
+                    self.assertEqual(response.get_json(), {"error": message})
+                    self._post("/lib/sync_playlists")
+                report = self._get(f"/api/v1/library/sync-status?request_id={request_id}", headers=headers)
+                self.assertEqual(report.get_json()["requested"]["error"], message)
+                self.assertNotIn(secret, report.get_data(as_text=True))
+                with self.client.session_transaction(base_url="https://localhost") as session:
+                    self.assertEqual(session.pop("_flashes"), [("error", message)])
+
     def test_website_sync_failure_uses_safe_flash(self):
         user_id = self._create_user(email="viewer@example.com", username="viewer")
         with self.client.session_transaction(base_url="https://localhost") as session:

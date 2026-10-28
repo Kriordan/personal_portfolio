@@ -60,9 +60,11 @@
     const review = document.createElement("section");
     review.innerHTML = `<div data-review-card data-flip-card><div id="card-question"></div><div id="card-answer"></div><div id="card-note-title"></div></div>
       <div id="review-progress"></div><div id="flashcard-actions"><button data-rating="4">Good</button></div>
-      <p id="review-save-error" hidden></p><button id="review-save-retry" hidden>Retry</button><a id="review-reload" hidden>Reload</a>`;
+      <p id="review-save-error" hidden></p><button id="review-save-retry" hidden>Retry</button><a id="review-reload" hidden>Reload</a>
+      <div id="review-summary" hidden><p id="review-summary-text"></p><p id="review-summary-stats"></p>
+      <a id="review-summary-done" href="#notes">Done</a></div>`;
     fixtures.append(review);
-    for (const [id, value] of [["review-cards-data", [1, 2].map(n => ({ card_id: `note:${n}`, prompt: `Question ${n}`, response: "Answer", progress_revision: 0 }))], ["review-config-data", { rateUrl: "/rate", receiptUrl: "/ratings/REQUEST_ID" }]]) {
+    for (const [id, value] of [["review-cards-data", [1, 2].map(n => ({ card_id: `note:${n}`, prompt: `Question ${n}`, response: "Answer", progress_revision: 0 }))], ["review-config-data", { rateUrl: "/rate", receiptUrl: "/ratings/REQUEST_ID", doneUrl: "javascript:window.__doneXss=true" }]]) {
       const script = document.createElement("script");
       script.type = "application/json"; script.id = id; script.textContent = JSON.stringify(value); review.append(script);
     }
@@ -71,10 +73,14 @@
     window.fetch = async (url, options) => {
       if (options?.method === "POST") {
         posts.push(JSON.parse(options.body));
+        if (behavior === "complete") return { ok: true, json: async () => ({ rating: 4, next_review_display: "Due tomorrow" }) };
         return { ok: false, status: behavior === "stale" ? 409 : 503 };
       }
       return { ok: true, json: async () => ({ receipt: behavior === "saved" ? { ...posts[0], next_review_display: "Due tomorrow" } : null }) };
     };
+    const generatedIds = [];
+    const randomUUID = crypto.randomUUID.bind(crypto);
+    crypto.randomUUID = () => { const id = randomUUID(); generatedIds.push(id); return id; };
     await loadRenderer();
     const flip = review.querySelector("[data-review-card]");
     const good = review.querySelector("[data-rating]");
@@ -92,6 +98,32 @@
     flip.click(); good.click();
     await settle();
     outcomes.push(["stale review requires fresh queue", document.getElementById("review-progress").textContent === "Card 2 of 2" && !document.getElementById("review-reload").hidden && document.getElementById("review-save-retry").hidden]);
+    const firstSession = posts[0].session_id;
+    outcomes.push(["session ID comes from Web Crypto", generatedIds.includes(firstSession) && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(firstSession)]);
+    outcomes.push(["one session across cards with distinct requests", posts[2].session_id === firstSession && posts[2].request_id !== posts[0].request_id]);
+
+    // A fresh page session finishes normally; malicious legacy configuration
+    // must not replace the server-rendered navigation destination.
+    const freshReview = review.cloneNode(true);
+    review.replaceWith(freshReview);
+    behavior = "complete";
+    await loadRenderer();
+    for (let i = 0; i < 2; i += 1) {
+      freshReview.querySelector("[data-review-card]").click();
+      freshReview.querySelector("[data-rating]").click();
+      await settle();
+    }
+    outcomes.push(["fresh session has a fresh secure ID", posts[3].session_id !== firstSession && generatedIds.includes(posts[3].session_id)]);
+    outcomes.push(["completed reviews retain summary", !document.getElementById("review-summary").hidden && document.getElementById("review-summary-text").textContent === "You reviewed 2 cards."]);
+    window.__doneXss = false;
+    const done = document.getElementById("review-summary-done");
+    // Prevent native navigation in this harness only. This would not prevent
+    // the old JavaScript handler from assigning a javascript: location.
+    done.addEventListener("click", event => event.preventDefault());
+    done.click();
+    await settle();
+    outcomes.push(["Done ignores executable JSON navigation", window.__doneXss === false && done.getAttribute("href") === "#notes"]);
+    crypto.randomUUID = randomUUID;
     const failed = outcomes.filter(([, passed]) => !passed);
     document.getElementById("results").textContent = `${failed.length ? "FAIL" : "PASS"}: ${outcomes.length} checks; DOMPurify ${version}\n` + outcomes.map(([name, passed]) => `${passed ? "PASS" : "FAIL"} ${name}`).join("\n");
     document.documentElement.dataset.testResult = failed.length ? "fail" : "pass";
