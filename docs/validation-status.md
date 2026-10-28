@@ -8,9 +8,9 @@ The user approved merging [PR #137](https://github.com/Kriordan/personal_portfol
 
 The Jobwizard/Sentry recovery and scoped native-validation work is ready for handoff. No Flask deployment is needed for #137, and no new cloud build, monitoring expansion or recurring task is requested. Remaining feature/accessibility checks below are backlog items. When choosing the next operational task, prioritize confirming durable YouTube OAuth authorization and inventorying consumers before retiring the old AWS administrator credential. Preserve the existing production baseline, accepted preview and exact validation limits below; do not restart completed setup or credential rotation.
 
-**Merge gate discovered during closeout:** the fresh mobile audit on `41a32c0` fails on [deepmerge GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4), rated low. The advisory was reviewed/updated October 27; GitHub lists no patched version and npm still publishes 4.3.1 as latest. The installed path is `expo@57.0.25 → @expo/config@57.0.9 → deepmerge@4.3.1`. Inspected call sites merge project configuration and config-plugin options; application sources do not import it. This is a build-tool exposure assessment, not a vulnerability fix or proof of every upstream execution path. All other six PR checks passed. PR #137 remains unmerged pending resolution of this gate.
+**Reviewed dependency finding during closeout:** the fresh mobile audit on `41a32c0` failed on [deepmerge GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4), rated low. At the October 27 review, GitHub listed no patched version and npm still published 4.3.1 as latest. The installed path is `expo@57.0.25 → @expo/config@57.0.9 → deepmerge@4.3.1`. Inspected call sites merge project configuration and config-plugin options; application sources do not import it. This is a build-tool exposure assessment, not a vulnerability fix or proof of every upstream execution path. All other six PR checks passed on that source.
 
-Proposed decision: a reviewed exception limited to this advisory, low severity, package `deepmerge`, exact version `4.3.1`, expiring **November 10, 2026**. Re-review sooner if a patch, changed severity or new call path appears. The existing audit gate already rejects mismatched versions/severity, expired and stale exceptions, and other advisories. Keep the GitHub alert open. No exception has been applied and no check bypass requested. The earlier three-advisory security closeout below remains historical evidence; this newly surfaced advisory is separate.
+**Approved and applied:** the user authorized the [reviewed audit exception](security/npm-audit-exceptions.json), limited to this advisory, low severity, package `deepmerge`, exact version `4.3.1`, valid through **November 10, 2026**, and merging #137 once checks pass. The unchanged audit gate rejects this exception from November 11 (UTC date), mismatched versions/severity, stale exceptions, and other advisories. Re-review sooner if a patch, changed severity or new call path appears. Keep the GitHub alert open; no check bypass or advisory dismissal is authorized. The earlier three-advisory security closeout below remains historical evidence; this new advisory is separate. No reminder automation was requested.
 
 ## Verified baseline and rollout
 
@@ -29,9 +29,10 @@ The initial simulator/recovery pass made no deployment, credential, provider or 
 
 Runtime PR #129 and mobile dependency PR #134 are complete, including the
 [deployed runtime/TLS checks](security/runtime-security-2026-10-26.md) and the
-user's acceptance of preview 7 above. All three remaining mobile advisories
-are fixed, GitHub reports zero open dependency alerts, and both npm audit
-exception lists are empty. The November 5 exception-review follow-up is closed.
+user's acceptance of preview 7 above. Those three mobile advisories
+are fixed. At that closeout GitHub reported zero open dependency alerts and both
+npm audit exception lists were empty. The November 5 exception-review follow-up
+is closed. The separate deepmerge finding and November 10 exception are recorded above.
 See the [security closeout](security/mobile-advisories-2026-10-27.md#closeout--october-27-2026).
 General iPhone acceptance does not close unreported feature, adversarial,
 accessibility, Android, or timing scenarios listed below.
@@ -213,6 +214,7 @@ Evidence: [precise results and limits](assets/jobwizard-accessibility-2026-10-27
 
 | Priority | Follow-up and completion evidence |
 | --- | --- |
+| Dependency exception — November 10 | Re-review low-severity deepmerge `GHSA-gcqx-w48m-w2h4` by November 10, 2026, or sooner if a patch, severity change or new use appears. The approved exact-version exception is not a fix; retain the open alert and remove the exception when remediation passes validation. The gate rejects it starting November 11 UTC. |
 | Native breadth | PR #133 build 5, including #132, has overall physical iPhone acceptance. Android Release terminated-link checks above now pass on the emulator. Complete deleted-ID and other untested warm/cold, signed-in/out permutations; do not repeat the development-launcher investigation. Remaining timing coverage includes a committed save response arriving after an account switch and Android delayed refresh/save/capture switches. The precise iOS and Android cases above are closed only for their stated hosts; retain [Jobwizard smoke tests](jobwizard-smoke-test.md) and physical Android acceptance. |
 | Accessibility — deferred | The specific physical VoiceOver and emulator TalkBack flows above are closed at their stated scope. The user deferred the full spoken-label/announcement and sequential-focus audit, smaller-phone/software-keyboard and dark-mode combinations, maximum-text iOS scroll reachability, and physical acceptance of the new large-text layout. Review, source and viewer permutations remain open where untested. These are not blockers for #137; revisit with a future device build or reported issue. |
 | Other features | Retain [Grocery/shell reconnect and sharing checks](mobile-ui-validation.md), [Wishlist signed-image/upload lifecycle](wishlist-smoke-test.md), [Library sync/pin/watched behavior](library-smoke-test.md), and [Learning uncertain review/account switching](learning-smoke-test.md). Earlier disabled-reporting fixture smokes do not prove every enabled-device scenario or live YouTube sync. |
