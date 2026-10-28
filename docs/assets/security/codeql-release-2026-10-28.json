@@ -1,0 +1,621 @@
+{
+  "observed_at_utc": "2026-10-28T10:39:54.523794+00:00",
+  "pull_requests": {
+    "original": "https://github.com/Kriordan/personal_portfolio/pull/139",
+    "redirect_followup": "https://github.com/Kriordan/personal_portfolio/pull/140"
+  },
+  "codeql": {
+    "observed_at_utc": "2026-10-28T10:34:27.395553+00:00",
+    "commit": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+    "workflow": {
+      "id": 40672895792,
+      "html_url": "https://github.com/Kriordan/personal_portfolio/actions/runs/40672895792",
+      "event": "dynamic",
+      "head_sha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "full_scan": {
+      "pr_diff_range_extension_present": false,
+      "target_queries_interpreted": [
+        "Analyze (javascript-typescript)\tPerform CodeQL Analysis\t2026-10-28T10:33:19.9417982Z Interpreted pathproblem query \"DOM text reinterpreted as HTML\" (js/xss-through-dom) at path /home/runner/work/_temp/codeql_databases/javascript/results/codeql/javascript-queries/Security/CWE-079/XssThroughDom.bqrs.",
+        "Analyze (javascript-typescript)\tPerform CodeQL Analysis\t2026-10-28T10:33:19.9628326Z Interpreted pathproblem query \"Insecure randomness\" (js/insecure-randomness) at path /home/runner/work/_temp/codeql_databases/javascript/results/codeql/javascript-queries/Security/CWE-338/InsecureRandomness.bqrs.",
+        "Analyze (python)\tPerform CodeQL Analysis\t2026-10-28T10:33:10.2429160Z Interpreted pathproblem query \"Information exposure through an exception\" (py/stack-trace-exposure) at path /home/runner/work/_temp/codeql_databases/python/results/codeql/python-queries/Security/CWE-209/StackTraceExposure.bqrs.",
+        "Analyze (python)\tPerform CodeQL Analysis\t2026-10-28T10:33:10.2534139Z Interpreted pathproblem query \"Polynomial regular expression used on uncontrolled data\" (py/polynomial-redos) at path /home/runner/work/_temp/codeql_databases/python/results/codeql/python-queries/Security/CWE-730/PolynomialReDoS.bqrs.",
+        "Analyze (python)\tPerform CodeQL Analysis\t2026-10-28T10:33:10.2561249Z Interpreted pathproblem query \"URL redirection from remote source\" (py/url-redirection) at path /home/runner/work/_temp/codeql_databases/python/results/codeql/python-queries/Security/CWE-601/UrlRedirect.bqrs."
+      ],
+      "log_sha256": "70f2a7012262cce3f4c99733526e0800dfb98ad4b2da00afb5a81989b629973b"
+    },
+    "analyses": [
+      {
+        "id": 2044066453,
+        "commit_sha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+        "ref": "refs/heads/main",
+        "category": "/language:javascript-typescript",
+        "created_at": "2026-10-28T10:33:21Z",
+        "results_count": 0,
+        "rules_count": 87,
+        "error": "",
+        "warning": "",
+        "tool": {
+          "name": "CodeQL",
+          "guid": null,
+          "version": "2.27.3"
+        },
+        "downloaded_sarif_result_count": 0,
+        "version_control_provenance": [
+          {
+            "branch": "refs/heads/main",
+            "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+            "revisionId": "6e13c3476c539027f6ea68f5070d273b28f70b3a"
+          }
+        ]
+      },
+      {
+        "id": 2044065646,
+        "commit_sha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+        "ref": "refs/heads/main",
+        "category": "/language:python",
+        "created_at": "2026-10-28T10:33:13Z",
+        "results_count": 0,
+        "rules_count": 43,
+        "error": "",
+        "warning": "",
+        "tool": {
+          "name": "CodeQL",
+          "guid": null,
+          "version": "2.27.3"
+        },
+        "downloaded_sarif_result_count": 0,
+        "version_control_provenance": [
+          {
+            "branch": "refs/heads/main",
+            "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+            "revisionId": "6e13c3476c539027f6ea68f5070d273b28f70b3a"
+          }
+        ]
+      },
+      {
+        "id": 2044063128,
+        "commit_sha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+        "ref": "refs/heads/main",
+        "category": "/language:actions",
+        "created_at": "2026-10-28T10:32:49Z",
+        "results_count": 0,
+        "rules_count": 17,
+        "error": "",
+        "warning": "",
+        "tool": {
+          "name": "CodeQL",
+          "guid": null,
+          "version": "2.27.3"
+        },
+        "downloaded_sarif_result_count": 0,
+        "version_control_provenance": [
+          {
+            "branch": "refs/heads/main",
+            "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+            "revisionId": "6e13c3476c539027f6ea68f5070d273b28f70b3a"
+          }
+        ]
+      }
+    ],
+    "alerts": [
+      {
+        "number": 37,
+        "state": "fixed",
+        "fixed_at": "2026-10-28T10:23:24Z",
+        "dismissed_at": null,
+        "html_url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/37",
+        "most_recent_instance": {
+          "ref": "refs/heads/main",
+          "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+          "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+          "category": "/language:python",
+          "state": "fixed",
+          "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+          "message": {
+            "text": "This regular expression that depends on a user-provided value may run slow on strings with many repetitions of '-'.",
+            "markdown": "This [regular expression](project/jobwizard/capture_policy.py#L62C23-L62C33) that depends on a [user-provided value](project/api/jobwizard.py#L2C39-L2C46) may run slow on strings with many repetitions of '-'."
+          },
+          "location": {
+            "path": "project/jobwizard/capture_policy.py",
+            "start_line": 62,
+            "end_line": 62,
+            "start_column": 66,
+            "end_column": 70
+          },
+          "classifications": []
+        },
+        "rule_id": "py/polynomial-redos"
+      },
+      {
+        "number": 34,
+        "state": "fixed",
+        "fixed_at": "2026-10-28T10:23:24Z",
+        "dismissed_at": null,
+        "html_url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/34",
+        "most_recent_instance": {
+          "ref": "refs/heads/main",
+          "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+          "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+          "category": "/language:python",
+          "state": "fixed",
+          "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+          "message": {
+            "text": "Stack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.",
+            "markdown": "[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user."
+          },
+          "location": {
+            "path": "project/api/library.py",
+            "start_line": 196,
+            "end_line": 196,
+            "start_column": 24,
+            "end_column": 45
+          },
+          "classifications": []
+        },
+        "rule_id": "py/stack-trace-exposure"
+      },
+      {
+        "number": 9,
+        "state": "fixed",
+        "fixed_at": "2026-10-28T10:23:19Z",
+        "dismissed_at": null,
+        "html_url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/9",
+        "most_recent_instance": {
+          "ref": "refs/heads/main",
+          "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+          "environment": "{\"build-mode\":\"none\",\"category\":\"/language:javascript-typescript\",\"language\":\"javascript-typescript\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+          "category": "/language:javascript-typescript",
+          "state": "fixed",
+          "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+          "message": {
+            "text": "DOM text is reinterpreted as HTML without escaping meta-characters.",
+            "markdown": "[DOM text](project/static/js/flashcards.js#L6C25-L6C43) is reinterpreted as HTML without escaping meta-characters."
+          },
+          "location": {
+            "path": "project/static/js/flashcards.js",
+            "start_line": 466,
+            "end_line": 466,
+            "start_column": 30,
+            "end_column": 37
+          },
+          "classifications": []
+        },
+        "rule_id": "js/xss-through-dom"
+      },
+      {
+        "number": 8,
+        "state": "fixed",
+        "fixed_at": "2026-10-28T10:23:19Z",
+        "dismissed_at": null,
+        "html_url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/8",
+        "most_recent_instance": {
+          "ref": "refs/heads/main",
+          "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+          "environment": "{\"build-mode\":\"none\",\"category\":\"/language:javascript-typescript\",\"language\":\"javascript-typescript\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+          "category": "/language:javascript-typescript",
+          "state": "fixed",
+          "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+          "message": {
+            "text": "This uses a cryptographically insecure random number generated at Math.random() in a security context.",
+            "markdown": "This uses a cryptographically insecure random number generated at [Math.random()](project/static/js/flashcards.js#L241C48-L241C61) in a security context."
+          },
+          "location": {
+            "path": "project/static/js/flashcards.js",
+            "start_line": 241,
+            "end_line": 241,
+            "start_column": 23,
+            "end_column": 88
+          },
+          "classifications": []
+        },
+        "rule_id": "js/insecure-randomness"
+      },
+      {
+        "number": 3,
+        "state": "fixed",
+        "fixed_at": "2026-10-28T10:33:13Z",
+        "dismissed_at": null,
+        "html_url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/3",
+        "most_recent_instance": {
+          "ref": "refs/heads/main",
+          "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+          "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+          "category": "/language:python",
+          "state": "fixed",
+          "commit_sha": "35bd78c64d0a61932c3446bfeb60cc2bfe0405e9",
+          "message": {
+            "text": "Untrusted URL redirection depends on a user-provided value.",
+            "markdown": "Untrusted URL redirection depends on a [user-provided value](project/account/views.py#L11C5-L11C12)."
+          },
+          "location": {
+            "path": "project/account/views.py",
+            "start_line": 87,
+            "end_line": 87,
+            "start_column": 25,
+            "end_column": 34
+          },
+          "classifications": []
+        },
+        "rule_id": "py/url-redirection"
+      }
+    ],
+    "open_main_alerts": 0
+  },
+  "main_ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 40672896028,
+      "headSha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+      "name": "Web dependencies",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 40672895792,
+      "headSha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+      "name": "Push on main",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 40672896009,
+      "headSha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+      "name": "Backend",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 40672896015,
+      "headSha": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+      "name": "Expo 57",
+      "status": "completed"
+    }
+  ],
+  "baseline": {
+    "version": 162,
+    "commit": "96b909f3eee382d728d73610bca785d0707edfb1",
+    "slug_id": "5997ac80-bf1f-4c6b-90b4-1795c8c0388b",
+    "release_id": "458ebc1e-5785-4104-aa48-061f0fa06d8b",
+    "sentry_release": "96b909f3eee382d728d73610bca785d0707edfb1",
+    "config_except_sentry_release_sha256": "5800837b1f20f913159dfd5bcbe00b5e47731141c225b0ac1e7ae91937073cf8",
+    "web_dynos": [
+      {
+        "name": "web.1",
+        "state": "up"
+      }
+    ]
+  },
+  "production": {
+    "version": 164,
+    "commit": "c5edc1b2eca127c51da80c754331c24134eb9711",
+    "slug_id": "338bd010-7fdf-4ee3-8fee-be85ece506b5",
+    "release_id": "973651cc-6bfc-4c4d-85d7-0637305efb70",
+    "sentry_release": "c5edc1b2eca127c51da80c754331c24134eb9711",
+    "config_except_sentry_release_sha256": "5800837b1f20f913159dfd5bcbe00b5e47731141c225b0ac1e7ae91937073cf8",
+    "web_dynos": [
+      {
+        "name": "web.1",
+        "state": "up"
+      }
+    ]
+  },
+  "integration": {
+    "commit": "c5edc1b2eca127c51da80c754331c24134eb9711",
+    "branch": "feature/codeql-production-rollout",
+    "preserves_v162_ancestry": true,
+    "entire_tree_identical_to_scanned_main": "6e13c3476c539027f6ea68f5070d273b28f70b3a",
+    "changed_application_files": [
+      "project/account/views.py",
+      "project/api/library.py",
+      "project/jobwizard/capture_policy.py",
+      "project/learning/templates/learning/review.html",
+      "project/library/views.py",
+      "project/services/library_service.py",
+      "project/static/js/flashcards.js"
+    ],
+    "migrations_dependencies_runtime_monitoring_lottery_unchanged": true,
+    "only_config_change": "SENTRY_RELEASE"
+  },
+  "runtime": {
+    "python": "3.13.18",
+    "dnspython": "2.9.0",
+    "sentry_sdk": "2.73.0",
+    "certifi": "2026.10.19",
+    "sentry_enabled": true,
+    "sentry_environment": "production",
+    "sentry_release": "c5edc1b2eca127c51da80c754331c24134eb9711",
+    "extraction_enabled": true,
+    "capture_enabled": true,
+    "capture_policy_sha256": "2f7ecef73c1389c7e5485866e77f0def8bc19d3696b0638c06a0e397f982fe0a"
+  },
+  "production_schema": {
+    "migration": "a4b5c6d7e8f9",
+    "transaction": "read-only"
+  },
+  "local_postgres_suite": {
+    "tests_run": 297,
+    "passed": 296,
+    "skipped": 1,
+    "skip_reason": "Linux-only parent-death test on macOS"
+  },
+  "deployed_regression": {
+    "tests_run": 297,
+    "skipped": 18,
+    "result": "passed",
+    "scope": "Deployed slug; isolated databases and mocked providers."
+  },
+  "public_http": {
+    "base_url": "https://keithriordan.herokuapp.com",
+    "checks": [
+      {
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "request_id_present": false,
+        "cache_control": null
+      },
+      {
+        "method": "GET",
+        "path": "/login",
+        "status": 200,
+        "request_id_present": false,
+        "cache_control": null
+      },
+      {
+        "method": "GET",
+        "path": "/learning",
+        "status": 200,
+        "request_id_present": false,
+        "cache_control": null
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/auth/me",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": null
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/lists/",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": null
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/learning/notes",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": "private, no-store"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/learning/review",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": "private, no-store"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/wishlist/gifts",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": "private, no-store"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/library/playlists",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": "private, no-store"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/jobwizard/jobs",
+        "status": 401,
+        "request_id_present": true,
+        "cache_control": "private, no-store"
+      },
+      {
+        "method": "GET",
+        "path": "/codeql-release-smoke-nonexistent",
+        "status": 404,
+        "request_id_present": false,
+        "cache_control": null
+      },
+      {
+        "method": "HEAD",
+        "path": "/codeql-release-smoke-nonexistent",
+        "status": 404,
+        "request_id_present": false,
+        "cache_control": null
+      }
+    ],
+    "flashcards_js_sha256": "569d0e41bbffb0c5b6c2e791ba8958132f727252f9a72c8ebc6483a50807720a",
+    "deployed_asset_matches_reviewed_source": true
+  },
+  "browser": {
+    "checks": 23,
+    "result": "passed",
+    "dompurify": "3.4.17",
+    "scope": "Headless Chrome harness using exact flashcards.js downloaded from production; disposable browser profile."
+  },
+  "tls": {
+    "runtime": {
+      "python": "3.13.18",
+      "certifi": "2026.10.19",
+      "httplib2_uses_certifi": true,
+      "botocore_uses_certifi": true
+    },
+    "checks": [
+      {
+        "client": "system",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "system",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "system",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "requests",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "httplib2",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "www.python.org",
+        "result": "accepted",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "dv-g3b-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      },
+      {
+        "client": "botocore",
+        "host": "dv-g3b-aaa-emudhra.we-have-a-problem.com",
+        "result": "certificate_rejected",
+        "pass": true
+      }
+    ]
+  },
+  "provider_checks": [
+    {
+      "url": "https://job-boards.greenhouse.io/justworks/jobs/8236798?gh_jid=8236798",
+      "read_http_status": 200,
+      "read_status": "failed",
+      "read_seconds": 2.664,
+      "error_code": "page_blocked",
+      "source_url_preserved": true,
+      "scope": "Deployed Flask routes and real providers in a one-off dyno with an isolated in-memory database; not a public authenticated HTTP request.",
+      "production_job_saved": false
+    },
+    {
+      "url": "https://mastercard.wd1.myworkdayjobs.com/en-US/CorporateCareers/job/Pune-India/Software-Engineer-I---Java-Full-Stack-React-Angular_R-294544",
+      "read_http_status": 200,
+      "read_status": "failed",
+      "read_seconds": 9.293,
+      "error_code": "page_not_ready",
+      "source_url_preserved": true,
+      "scope": "Deployed Flask routes and real providers in a one-off dyno with an isolated in-memory database; not a public authenticated HTTP request.",
+      "production_job_saved": false
+    },
+    {
+      "url": "https://jobs.ashbyhq.com/openai/5ebd5f66-75db-4a96-8d39-babc14f1c582",
+      "read_http_status": 200,
+      "read_status": "ready",
+      "read_seconds": 7.007,
+      "error_code": null,
+      "source_url_preserved": true,
+      "scope": "Deployed Flask routes and real providers in a one-off dyno with an isolated in-memory database; not a public authenticated HTTP request.",
+      "production_job_saved": false,
+      "title": "Full Stack Software Engineer, Codex",
+      "company": "OpenAI",
+      "summary_seconds": 6.459,
+      "summary_http_status": 200,
+      "summary_status": "complete",
+      "summary_error": null,
+      "bullet_count": 8,
+      "read_replay": "passed",
+      "summary_replay": "passed",
+      "status_recovery": "passed",
+      "provider_metrics": {
+        "read": {
+          "seconds": 5.643
+        },
+        "parser": "job-text-2",
+        "prompt": "job-summary-3",
+        "validator": "job-evidence-2",
+        "summary": {
+          "seconds": 5.144,
+          "usage": {
+            "input_tokens": 3296,
+            "output_tokens": 402,
+            "total_tokens": 3698
+          },
+          "model": "gpt-6-luna"
+        }
+      },
+      "summary_validation": {
+        "coverage_warning": true,
+        "detailed_pay_scales": false,
+        "has_conflicts": true,
+        "more_details": true,
+        "rejected": [],
+        "uncited_constraint_blocks": [
+          "s5"
+        ],
+        "validator_version": "job-evidence-2",
+        "evidence_cited_for_every_bullet": true
+      }
+    }
+  ],
+  "provider_profiles": [
+    {
+      "url": "https://job-boards.greenhouse.io/justworks/jobs/8236798?gh_jid=8236798",
+      "profile_unchanged_from_v162": true
+    },
+    {
+      "url": "https://mastercard.wd1.myworkdayjobs.com/en-US/CorporateCareers/job/Pune-India/Software-Engineer-I---Java-Full-Stack-React-Angular_R-294544",
+      "profile_unchanged_from_v162": true
+    },
+    {
+      "url": "https://jobs.ashbyhq.com/openai/5ebd5f66-75db-4a96-8d39-babc14f1c582",
+      "profile_unchanged_from_v162": true
+    }
+  ],
+  "limits": [
+    "Greenhouse page_blocked and Workday page_not_ready are failed live happy-path checks; not counted as passes.",
+    "Ashby uses deployed routes with real providers in an isolated one-off dyno, not authenticated public-router or physical-device coverage.",
+    "No production jobs, screenshots, Library imports/moves or Learning reviews were created.",
+    "Eighteen PostgreSQL integration tests were skipped in the deployed disposable SQLite suite; covered by local isolated PostgreSQL and passing CI.",
+    "Existing physical-device, native accessibility and deepmerge exception follow-ups remain unchanged."
+  ]
+}
