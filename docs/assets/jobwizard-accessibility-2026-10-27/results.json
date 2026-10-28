@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-27",
+  "baseline": "d7ec89d",
+  "branch": "feature/jobwizard-native-accessibility",
+  "cloud_builds": 0,
+  "production_changes": false,
+  "android": {
+    "device": "Pixel 10 emulator",
+    "os": "Android 16 / API 36.1",
+    "variant": "Release, arm64-v8a, local test signing, non-debuggable",
+    "apk_sha256": "fffd8bb21cdf20da36112b79a4d699b0012d844a75eecc8a89a5fdd1b1c589e9",
+    "api": "Disposable localhost fixture via port forwarding",
+    "network_scope": "Ignored generated Android files allow cleartext only for 127.0.0.1; production configuration unchanged; temporary files restored after validation.",
+    "sentry_enabled": false,
+    "metro_required": false,
+    "cold_link_results": [
+      {
+        "state": "signed out",
+        "target": "owned job 322",
+        "result": "Sign-in; signing in as account 2 reached Home."
+      },
+      {
+        "state": "account 2",
+        "target": "owned job 322",
+        "result": "Owned detail; Back reached account 2 Home."
+      },
+      {
+        "state": "account 2",
+        "target": "owned image 322",
+        "result": "Full screenshot; Close reached account 2 Home."
+      },
+      {
+        "state": "account 2",
+        "target": "foreign image 2",
+        "result": "Screenshot unavailable; no foreign image. Close was tapped, but resulting screen was not separately captured."
+      },
+      {
+        "state": "account 2",
+        "target": "foreign job 2",
+        "result": "Job unavailable; Back to Jobwizard reached account 2 list."
+      },
+      {
+        "state": "account 2",
+        "target": "missing job 999999",
+        "result": "Job unavailable."
+      },
+      {
+        "state": "account 2",
+        "target": "malformed job not-a-job",
+        "result": "Job unavailable."
+      },
+      {
+        "state": "account 2",
+        "target": "missing image 999999",
+        "result": "Screenshot unavailable; Close reached account 2 Home."
+      },
+      {
+        "state": "account 2",
+        "target": "malformed image not-a-job",
+        "result": "Screenshot unavailable; Close reached account 2 Home."
+      },
+      {
+        "state": "signed out",
+        "target": "owned image 322",
+        "result": "Sign-in; no image."
+      }
+    ],
+    "large_text": "200% (font_scale 2.0): index, Add job and help visually readable; Add header actions and title remain separate. Restored to 1.0.",
+    "talkback": "Enabled: visually observed focus and activation for screenshot Close, Tools tab, search input, Jobwizard result, saved row, More actions, Edit, About suggestions, Back and Cancel. Back from help focused Cancel; closing Edit focused detail Back. Spoken labels, announcements and exhaustive sequential navigation not audited. Disabled afterward."
+  },
+  "ios": {
+    "device": "iPhone 18 Pro / iOS 27 simulator",
+    "host": "Existing local Release host with replaced production-mode Hermes bundle",
+    "sentry_enabled": false,
+    "large_text": "Device Hub Text Size 11: reproduced letter-by-letter Add job header. Fixed header places title below actions. Opened help and review, inspected named controls and selected checkbox states, and applied fixture suggestions to draft via accessibility actions. Restored Text Size 3 and confirmed standard layout; discarded local draft.",
+    "limitation": "Simulator scroll/drag automation did not move long iOS help/review content, so visual reachability of the entire maximum-text page is not closed. No smaller-phone or full keyboard matrix."
+  },
+  "physical_iphone": {
+    "artifact": "Existing installed preview; no new build requested",
+    "question_scope": "VoiceOver: saved job More actions \u2192 Edit \u2192 suggestions info \u2192 return \u2192 close; check unlabeled/unreachable controls or unexpected focus",
+    "user_response": "everything works",
+    "limit": "Does not accept the new large-text layout or establish all accessibility scenarios."
+  },
+  "automated": {
+    "mobile_tests": 129,
+    "failed": 0,
+    "typecheck": "passed after regenerating stale ignored Expo route declarations for the latest main",
+    "lint": "passed",
+    "all_platform_export": "passed",
+    "android_assembleRelease": "passed"
+  },
+  "remaining": [
+    "Physical Android release acceptance",
+    "Deleted-ID and untested warm/cold signed-in/out permutations",
+    "Complete spoken-label, announcement and sequential screen-reader audit",
+    "Small-phone/software-keyboard/dark-mode combinations",
+    "Maximum-text iOS scroll reachability",
+    "Committed-save late response and Android account-switch race matrix"
+  ]
+}

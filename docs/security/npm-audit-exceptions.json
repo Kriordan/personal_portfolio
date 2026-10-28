@@ -1,4 +1,13 @@
 {
   ".": [],
-  "mobile": []
+  "mobile": [
+    {
+      "id": "GHSA-gcqx-w48m-w2h4",
+      "package": "deepmerge",
+      "version": "4.3.1",
+      "severity": "low",
+      "reviewBy": "2026-11-10",
+      "reason": "User-approved temporary exception for Expo configuration tooling; no patched release available at review. Inspected uses merge project configuration and plugin options, not application listing data. Keep the advisory open and re-review by November 10 or sooner if a fix, severity change, or new call path appears. See docs/validation-status.md."
+    }
+  ]
 }
