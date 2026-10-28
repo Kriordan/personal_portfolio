@@ -1,0 +1,296 @@
+{
+  "observed_at_utc": "2026-10-28T01:58:19.525326+00:00",
+  "pull_request": "https://github.com/Kriordan/personal_portfolio/pull/139",
+  "head_sha": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c",
+  "base_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+  "checks": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:56:09Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617829818/job/122584367460",
+      "name": "backend",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "Backend"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:55:33Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617826998/job/122584362343",
+      "name": "Analyze (actions)",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CodeQL"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:57:32Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617829785/job/122584367458",
+      "name": "mobile",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "Expo 57"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:55:22Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617829819/job/122584367469",
+      "name": "web",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "Web dependencies"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:55:43Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617826998/job/122584362655",
+      "name": "Analyze (javascript-typescript)",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CodeQL"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:55:53Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/actions/runs/40617826998/job/122584362583",
+      "name": "Analyze (python)",
+      "startedAt": "2026-10-28T01:54:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CodeQL"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-28T01:55:26Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/Kriordan/personal_portfolio/runs/122584546155",
+      "name": "CodeQL",
+      "startedAt": "2026-10-28T01:55:24Z",
+      "status": "COMPLETED",
+      "workflowName": ""
+    }
+  ],
+  "analyses": [
+    {
+      "id": 2041638694,
+      "commit_sha": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c",
+      "ref": "refs/pull/139/head",
+      "category": "/language:python",
+      "created_at": "2026-10-28T01:55:43Z",
+      "results_count": 0,
+      "rules_count": 43,
+      "error": "",
+      "warning": "",
+      "tool": {
+        "name": "CodeQL",
+        "guid": null,
+        "version": "2.27.3"
+      },
+      "downloaded_sarif_result_count": 0,
+      "version_control_provenance": [
+        {
+          "branch": "refs/pull/139/head",
+          "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+          "revisionId": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c"
+        }
+      ]
+    },
+    {
+      "id": 2041638068,
+      "commit_sha": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c",
+      "ref": "refs/pull/139/head",
+      "category": "/language:javascript-typescript",
+      "created_at": "2026-10-28T01:55:34Z",
+      "results_count": 0,
+      "rules_count": 87,
+      "error": "",
+      "warning": "",
+      "tool": {
+        "name": "CodeQL",
+        "guid": null,
+        "version": "2.27.3"
+      },
+      "downloaded_sarif_result_count": 0,
+      "version_control_provenance": [
+        {
+          "branch": "refs/pull/139/head",
+          "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+          "revisionId": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c"
+        }
+      ]
+    },
+    {
+      "id": 2041637469,
+      "commit_sha": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c",
+      "ref": "refs/pull/139/head",
+      "category": "/language:actions",
+      "created_at": "2026-10-28T01:55:24Z",
+      "results_count": 0,
+      "rules_count": 17,
+      "error": "",
+      "warning": "",
+      "tool": {
+        "name": "CodeQL",
+        "guid": null,
+        "version": "2.27.3"
+      },
+      "downloaded_sarif_result_count": 0,
+      "version_control_provenance": [
+        {
+          "branch": "refs/pull/139/head",
+          "repositoryUri": "https://github.com/Kriordan/personal_portfolio",
+          "revisionId": "57504ccc4e0d005ee873cdb2e4bccd4db45ea44c"
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "number": 37,
+      "rule_id": "py/polynomial-redos",
+      "url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/37",
+      "global_state": "open",
+      "most_recent_instance": {
+        "ref": "refs/heads/main",
+        "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+        "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+        "category": "/language:python",
+        "state": "open",
+        "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+        "message": {
+          "text": "This regular expression that depends on a user-provided value may run slow on strings with many repetitions of '-'.",
+          "markdown": "This [regular expression](project/jobwizard/capture_policy.py#L62C23-L62C33) that depends on a [user-provided value](project/api/jobwizard.py#L2C39-L2C46) may run slow on strings with many repetitions of '-'."
+        },
+        "location": {
+          "path": "project/jobwizard/capture_policy.py",
+          "start_line": 62,
+          "end_line": 62,
+          "start_column": 66,
+          "end_column": 70
+        },
+        "classifications": []
+      },
+      "pr_instances": [],
+      "dismissed_at": null
+    },
+    {
+      "number": 34,
+      "rule_id": "py/stack-trace-exposure",
+      "url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/34",
+      "global_state": "open",
+      "most_recent_instance": {
+        "ref": "refs/heads/main",
+        "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+        "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+        "category": "/language:python",
+        "state": "open",
+        "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+        "message": {
+          "text": "Stack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.\nStack trace information flows to this location and may be exposed to an external user.",
+          "markdown": "[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user.\n[Stack trace information](project/api/library.py#L195C41-L195C46) flows to this location and may be exposed to an external user."
+        },
+        "location": {
+          "path": "project/api/library.py",
+          "start_line": 196,
+          "end_line": 196,
+          "start_column": 24,
+          "end_column": 45
+        },
+        "classifications": []
+      },
+      "pr_instances": [],
+      "dismissed_at": null
+    },
+    {
+      "number": 9,
+      "rule_id": "js/xss-through-dom",
+      "url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/9",
+      "global_state": "open",
+      "most_recent_instance": {
+        "ref": "refs/heads/main",
+        "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+        "environment": "{\"build-mode\":\"none\",\"category\":\"/language:javascript-typescript\",\"language\":\"javascript-typescript\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+        "category": "/language:javascript-typescript",
+        "state": "open",
+        "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+        "message": {
+          "text": "DOM text is reinterpreted as HTML without escaping meta-characters.",
+          "markdown": "[DOM text](project/static/js/flashcards.js#L6C25-L6C43) is reinterpreted as HTML without escaping meta-characters."
+        },
+        "location": {
+          "path": "project/static/js/flashcards.js",
+          "start_line": 466,
+          "end_line": 466,
+          "start_column": 30,
+          "end_column": 37
+        },
+        "classifications": []
+      },
+      "pr_instances": [],
+      "dismissed_at": null
+    },
+    {
+      "number": 8,
+      "rule_id": "js/insecure-randomness",
+      "url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/8",
+      "global_state": "open",
+      "most_recent_instance": {
+        "ref": "refs/heads/main",
+        "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+        "environment": "{\"build-mode\":\"none\",\"category\":\"/language:javascript-typescript\",\"language\":\"javascript-typescript\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+        "category": "/language:javascript-typescript",
+        "state": "open",
+        "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+        "message": {
+          "text": "This uses a cryptographically insecure random number generated at Math.random() in a security context.",
+          "markdown": "This uses a cryptographically insecure random number generated at [Math.random()](project/static/js/flashcards.js#L241C48-L241C61) in a security context."
+        },
+        "location": {
+          "path": "project/static/js/flashcards.js",
+          "start_line": 241,
+          "end_line": 241,
+          "start_column": 23,
+          "end_column": 88
+        },
+        "classifications": []
+      },
+      "pr_instances": [],
+      "dismissed_at": null
+    },
+    {
+      "number": 3,
+      "rule_id": "py/url-redirection",
+      "url": "https://github.com/Kriordan/personal_portfolio/security/code-scanning/3",
+      "global_state": "open",
+      "most_recent_instance": {
+        "ref": "refs/heads/main",
+        "analysis_key": "dynamic/github-code-scanning/codeql:analyze",
+        "environment": "{\"build-mode\":\"none\",\"category\":\"/language:python\",\"language\":\"python\",\"runner\":\"[\\\"ubuntu-latest\\\"]\"}",
+        "category": "/language:python",
+        "state": "open",
+        "commit_sha": "bec8d80216eba8b12483c5e7cf97821bd3fec463",
+        "message": {
+          "text": "Untrusted URL redirection depends on a user-provided value.",
+          "markdown": "Untrusted URL redirection depends on a [user-provided value](project/account/views.py#L11C5-L11C12)."
+        },
+        "location": {
+          "path": "project/account/views.py",
+          "start_line": 74,
+          "end_line": 74,
+          "start_column": 25,
+          "end_column": 34
+        },
+        "classifications": []
+      },
+      "pr_instances": [],
+      "dismissed_at": null
+    }
+  ],
+  "scope": "Default-setup PR analysis uses codeql-action/pr-diff-range; zero results and absent PR occurrences do not establish repository-wide default-branch closure. All five target queries were interpreted in run 40617826998.",
+  "status": "PR checks and actual PR analysis records verified; merge, default-branch rescan and deployment remain pending."
+}

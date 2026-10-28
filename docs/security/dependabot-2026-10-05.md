@@ -1,5 +1,9 @@
 # Dependency security review — October 5, 2026
 
+The three remaining mobile advisories are addressed by the
+[October 27 remediation](mobile-advisories-2026-10-27.md), which removes all
+remaining audit exceptions. The dated findings below are historical.
+
 Started from `origin/main` at `e4d94588a757cc1ea307422e03779845436d618b`, the merge of [PR #94](https://github.com/Kriordan/personal_portfolio/pull/94). The October 4 GitHub snapshot contained **27 open alerts**. This branch moves the locked packages outside the recorded affected ranges for **24**, with **3 remaining**. This is a lockfile/advisory comparison, not a claim that GitHub has closed alerts or that production has been updated. No alerts were dismissed; merging and deployment remain separate steps.
 
 ## Tested batches
@@ -154,3 +158,5 @@ PR #131's [backend audit run](https://github.com/Kriordan/personal_portfolio/act
 Updated only dnspython to **2.9.0** and added a `>=2.9.0,<3` security floor so future resolution cannot return to the affected version. The [patched release](https://www.dnspython.org/news/2.9.0/) requires Python 3.11+, compatible with the application's Python 3.13 runtime. No advisory exception or audit rule changed. Poetry lock validation and installed dependency consistency pass; local full backend discovery ran 267 tests with 19 platform/database-gated skips and no failures. CI covers the Linux/PostgreSQL cases separately.
 
 A fresh `pip-audit 2.10.1` against the patched application's site-packages reports **no known vulnerabilities**. This fix is awaiting merge and production deployment; the successful earlier runtime rollout does not imply it is already installed there. The three existing mobile exceptions and **November 5, 2026** review deadline remain unchanged.
+
+October 27 deployment: PR #131 is merged; Heroku **v162**, source `96b909f`, reports installed dnspython **2.9.0** on Python **3.13.18**. The combined production baseline passed 292 backend tests with 19 environment-dependent skips. All 12 deployed TLS checks also passed. [Retained rollout evidence](../assets/recovery-validation-2026-10-27/pr131-deployment.json). Existing mobile exceptions and November 5 review dates remain unchanged.

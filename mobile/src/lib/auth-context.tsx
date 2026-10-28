@@ -87,11 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     let cancelled = false;
     async function clearMissingAccount() {
+      // Invalidate before asynchronous runtime cleanup, as for explicit logout.
+      // A late cleanup must not clear credentials belonging to the next login.
+      const tokenCleanup = tokenStorage.clear();
+      const version = tokenStorage.getSessionVersion();
       await clearLearningSession().catch(() => {});
       await clearJobSession().catch(() => {});
+      await tokenCleanup;
+      if (cancelled || version !== tokenStorage.getSessionVersion()) return;
       disconnectListSocket();
-      await tokenStorage.clear();
-      if (cancelled) return;
       queryClient.clear();
       setIsAuthenticated(false);
     }
@@ -104,12 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     // Unmount account screens before any asynchronous cleanup can rerender them.
     setIsAuthenticated(null);
+    // Flask logout is stateless. Invalidate local requests immediately rather
+    // than waiting for a network response before clearing this session.
+    const tokenCleanup = tokenStorage.clear();
     const learningCleanup = clearLearningSession().catch(() => {});
     const jobCleanup = clearJobSession().catch(() => {});
     disconnectListSocket();
     queryClient.clear();
-    await authApi.logout();
-    await tokenStorage.clear();
+    await tokenCleanup;
     await learningCleanup;
     await jobCleanup;
     setIsAuthenticated(false);

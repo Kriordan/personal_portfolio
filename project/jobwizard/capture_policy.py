@@ -59,6 +59,12 @@ def target_profile(url):
         return "lever"
     if host == "jobs.ashbyhq.com" and re.fullmatch(r"/[^/]+/[a-fA-F0-9-]{36}/?", path):
         return "ashby"
-    if re.fullmatch(r"[a-z0-9-]+\.wd[0-9]+\.myworkdayjobs\.com", host) and "/job/" in path:
+    # safe_listing_url already bounds DNS labels. Compare separate labels so
+    # hostname matching does not depend on a backtracking regular expression.
+    labels = host.split(".")
+    if (len(labels) == 4 and labels[2:] == ["myworkdayjobs", "com"]
+            and all(char in "abcdefghijklmnopqrstuvwxyz0123456789-" for char in labels[0])
+            and labels[1].startswith("wd") and labels[1][2:].isascii()
+            and labels[1][2:].isdigit() and "/job/" in path):
         return "workday"
     return None

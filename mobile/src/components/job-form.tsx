@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -140,6 +141,8 @@ function ReadyJobForm({
   const navigation = useNavigation(),
     theme = useTheme(),
     { isAuthenticated } = useAuth();
+  const { fontScale, width } = useWindowDimensions();
+  const stackedToolbar = fontScale > 1.35 || width < 360;
   const busy = !!activity.attempt || !activity.ready;
   const suggestionError = extractionErrorForDraft(extraction, url.text, job?.id ?? null);
   const input = () => ({
@@ -276,6 +279,7 @@ function ReadyJobForm({
   const matches =
     !!extraction.result &&
     extractionMatches(extraction.result, url.text, job?.id ?? null, revision);
+  const invalidListingUrl = !!url.text.trim() && !safeJobUrl(url.text.trim());
   const canReview =
     reviewing &&
     extraction.result?.status !== 'running' &&
@@ -322,6 +326,11 @@ function ReadyJobForm({
       return;
     Keyboard.dismiss();
     const sourceUrl = url.read().trim();
+    if (!safeJobUrl(sourceUrl)) {
+      // Keep validation in sync with the live native field before any request.
+      url.input.onChangeText(sourceUrl);
+      return;
+    }
     // Native text may be newer than the React event used to render the button.
     const liveMatch =
       !!extraction.result &&
@@ -413,29 +422,40 @@ function ReadyJobForm({
       {!job ? <Stack.Screen options={{ headerShown: false }} /> : null}
       <View
         style={[
-          localStyles.toolbar,
+          localStyles.header,
           { borderBottomColor: theme.backgroundSelected },
         ]}
       >
-        <JobTextAction
-          label={page === 'form' ? 'Cancel' : 'Back'}
-          disabled={activity.phase === 'saving'}
-          onPress={back}
-        />
-        <ThemedText accessibilityRole="header" style={localStyles.toolbarTitle}>
-          {titleLabel}
-        </ThemedText>
-        {page === 'form' ? (
+        <View style={localStyles.toolbar}>
           <JobTextAction
-            label={activity.phase === 'saving' ? 'Saving…' : 'Save'}
-            disabled={busy}
-            onPress={() => void save()}
+            label={page === 'form' ? 'Cancel' : 'Back'}
+            disabled={activity.phase === 'saving'}
+            onPress={back}
           />
-        ) : page === 'review' ? (
-          <JobInfoButton label="About suggestions" onPress={showHelp} />
-        ) : (
-          <View style={localStyles.toolbarSpacer} />
-        )}
+          {stackedToolbar ? (
+            <View style={styles.grow} />
+          ) : (
+            <ThemedText accessibilityRole="header" style={localStyles.toolbarTitle}>
+              {titleLabel}
+            </ThemedText>
+          )}
+          {page === 'form' ? (
+            <JobTextAction
+              label={activity.phase === 'saving' ? 'Saving…' : 'Save'}
+              disabled={busy}
+              onPress={() => void save()}
+            />
+          ) : page === 'review' ? (
+            <JobInfoButton label="About suggestions" onPress={showHelp} />
+          ) : (
+            <View style={localStyles.toolbarSpacer} />
+          )}
+        </View>
+        {stackedToolbar ? (
+          <ThemedText accessibilityRole="header" style={localStyles.stackedTitle}>
+            {titleLabel}
+          </ThemedText>
+        ) : null}
       </View>
       <KeyboardAvoidingView
         style={styles.fill}
@@ -464,6 +484,9 @@ function ReadyJobForm({
               keyboardType="url"
               returnKeyType="done"
             />
+            {invalidListingUrl ? (
+              <InlineError message="Enter a complete listing link starting with https:// or http://, without spaces." />
+            ) : null}
             <View style={styles.spread}>
               <JobTextAction
                 label={suggestLabel}
@@ -556,6 +579,7 @@ function ReadyJobForm({
             ) : null}
             {extraction.result &&
             !matches &&
+            !invalidListingUrl &&
             (extraction.result.job_id ?? null) === (job?.id ?? null) &&
             url.text.trim() ? (
               <ThemedText type="small" themeColor="textSecondary">
@@ -721,14 +745,17 @@ function ReadyJobForm({
   );
 }
 const localStyles = StyleSheet.create({
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  header: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stackedTitle: { fontWeight: '600', paddingTop: 4 },
   toolbarTitle: { flex: 1, fontWeight: '600', textAlign: 'center' },
   toolbarSpacer: { width: 48 },
 });

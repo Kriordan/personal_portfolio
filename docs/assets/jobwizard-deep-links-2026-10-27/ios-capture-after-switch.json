@@ -1,0 +1,38 @@
+{
+  "accounts": {
+    "1": {
+      "captures": 1,
+      "jobs": 320,
+      "receipts": 0
+    },
+    "2": {
+      "captures": 1,
+      "jobs": 3,
+      "receipts": 0
+    }
+  },
+  "capture_calls": 2,
+  "capture_posts": 3,
+  "captures": 2,
+  "events": {
+    "flask": 0,
+    "mobile": 0
+  },
+  "extraction_posts": 0,
+  "extraction_reads": 0,
+  "extraction_summaries": 0,
+  "extractions": 0,
+  "held": {
+    "capture": 0,
+    "refresh": 0,
+    "write": 0
+  },
+  "image_reads": 1,
+  "image_signs": 3,
+  "jobs": 323,
+  "receipts": 0,
+  "status_reads": 7,
+  "summary_posts": 0,
+  "telemetry_attempts": 0,
+  "write_posts": 0
+}

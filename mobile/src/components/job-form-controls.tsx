@@ -177,6 +177,8 @@ const styles = StyleSheet.create({
   action: {
     minHeight: 48,
     minWidth: 48,
+    maxWidth: '100%',
+    flexShrink: 1,
     justifyContent: 'center',
     paddingHorizontal: 4,
     alignSelf: 'flex-start',

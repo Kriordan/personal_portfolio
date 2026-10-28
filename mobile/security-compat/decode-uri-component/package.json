@@ -1,0 +1,12 @@
+{
+  "name": "@portfolio/decode-uri-component-compat",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "dependencies": {
+    "decode-uri-component-upstream": "npm:decode-uri-component@0.5.1"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
+  }
+}

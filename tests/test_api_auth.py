@@ -100,6 +100,45 @@ class ApiAuthTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             self.assertNotIn("_user_id", session)
 
+    def test_website_login_rejects_ambiguous_or_external_next_urls(self):
+        self._create_user(email="redirect@example.com", username="redirect")
+        for target in (
+            "https://evil.test/path", "//evil.test", "///evil.test",
+            "https:evil.test", "https:/evil.test", "https:///evil.test",
+            "javascript:alert(1)", "data:text/html,unsafe",
+            "/\\evil.test", "\\\\evil.test", " /\\evil.test",
+            "/\t/evil.test", "/\n/evil.test", "\x00//evil.test",
+            "//[invalid", "https://[invalid", "",
+        ):
+            with self.subTest(target=target):
+                client = self.app.test_client()
+                response = client.post(
+                    "/login", base_url="https://localhost", query_string={"next": target},
+                    data={"email": "redirect@example.com", "password": "password123"},
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.headers["Location"], "/")
+
+    def test_website_login_preserves_local_paths_queries_and_invitation_priority(self):
+        from flask import url_for
+
+        self._create_user(email="local@example.com", username="local")
+        for target in ("/learning/review?note_id=example#card", "lib/", "?tab=notes", "#notes",
+                       "/learning?search=two%20words", "/learning?source=https://example.com"):
+            with self.subTest(target=target):
+                response = self.app.test_client().post(
+                    "/login", base_url="https://localhost", query_string={"next": target},
+                    data={"email": "local@example.com", "password": "password123"},
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.headers["Location"], target)
+        with self.client.session_transaction(base_url="https://localhost") as session:
+            session["pending_invitation_token"] = "fixture-invitation"
+        response = self._post("/login?next=/learning", data={"email": "local@example.com", "password": "password123"})
+        with self.app.test_request_context():
+            expected = url_for("lists.accept_invitation", token="fixture-invitation")
+        self.assertEqual(response.headers["Location"], expected)
+
     def test_login_rejects_unverified_user(self):
         self._create_user(
             email="unverified@example.com",

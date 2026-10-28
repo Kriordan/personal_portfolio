@@ -43,7 +43,9 @@ export function ScreenshotControls({
             },
           ]}
         >
-          <ThemedText style={styles.symbol}>{text}</ThemedText>
+          <ThemedText allowFontScaling={false} style={styles.symbol}>
+            {text}
+          </ThemedText>
         </Pressable>
       ))}
     </View>
@@ -52,8 +54,8 @@ export function ScreenshotControls({
 const styles = StyleSheet.create({
   controls: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 10 },
   button: {
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 48,
+    minHeight: 48,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

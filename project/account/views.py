@@ -36,6 +36,21 @@ from project.services import auth_service
 
 account_blueprint = Blueprint("account", __name__, template_folder="templates")
 
+
+def local_redirect_target(target):
+    """Accept local paths without browser/parser scheme or authority ambiguity."""
+    if (not target or target != target.strip() or target.startswith("//")
+            or "\\" in target or any(ord(char) < 32 or ord(char) == 127 for char in target)):
+        return None
+    try:
+        parsed = urlsplit(target)
+    except ValueError:
+        return None
+    if parsed.scheme or parsed.netloc:
+        return None
+    return target
+
+
 @account_blueprint.route("/login", methods=["GET", "POST"])
 def login():
     """
@@ -68,9 +83,7 @@ def login():
         if pending_token:
             return redirect(url_for("lists.accept_invitation", token=pending_token))
 
-        next_page = request.args.get("next")
-        if not next_page or urlsplit(next_page).netloc != "":
-            next_page = url_for("foyer.home")
+        next_page = local_redirect_target(request.args.get("next")) or url_for("foyer.home")
         return redirect(next_page)
     return render_template(
         "login.html", title="Sign In", form=form, resend_form=resend_form

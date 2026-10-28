@@ -5,9 +5,13 @@ After installing the reviewed root lockfile with `npm ci --ignore-scripts`, open
 DOMPurify, and the application's actual flashcard renderer. No server, login,
 external CDN, or extra test dependency is needed.
 
-The page must show `PASS: 13 checks`. It covers ordinary Markdown, code blocks,
+The page must show `PASS: 23 checks`. It covers ordinary Markdown, code blocks,
 unsafe links, script/event-handler removal, mutation payloads, and plain-text
 fallback when DOMPurify is unavailable (including an integrity-check failure).
+It also exercises save retries, receipt recovery, stale queues, completion,
+Web Crypto session IDs, and a malicious legacy `doneUrl` that must not override
+the server-rendered Done link. The malicious configuration is fixture-only;
+the production template never accepts a client-supplied Done destination.
 
 For headless Chrome, use a temporary profile with `--headless --dump-dom
 --virtual-time-budget=3000` and a file URL for this page. Verify that the output
