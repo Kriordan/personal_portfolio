@@ -22,7 +22,8 @@ mobile compatibility adapters, and the approved deepmerge exception are retained
 ## Verification
 
 - Fresh disposable Python **3.13.18** environment installed from the unchanged
-  Poetry lock; `poetry check --lock` and `pip check` pass.
+  Poetry lock; `poetry check --lock` and `pip check` pass. `pip-audit 2.10.1`
+  reports no known vulnerabilities in that environment.
 - Full backend suite against isolated UTF-8 PostgreSQL **18**: **297 tests**,
   **296 passed**, one Linux-only parent-death test skipped on macOS. The cluster
   was stopped and removed. Dotenv loading, real providers and Sentry reporting
@@ -39,10 +40,38 @@ mobile compatibility adapters, and the approved deepmerge exception are retained
   JSON navigation. The baseline secret-bearing `SyncError` probe exposes its
   synthetic detail. The Workday bound tests pass on both versions, as expected.
 
-PR CI and exact-commit CodeQL verification will be recorded after the pushed
-commit is analyzed. Require actual analysis result counts/SARIF plus the five
-alert occurrence records for the PR ref, not only green workflow conclusions.
-Default-branch alerts remain open until a merged commit is analyzed on `main`.
+### PR verification
+
+[PR #139](https://github.com/Kriordan/personal_portfolio/pull/139), application
+commit **`57504ccc4e0d005ee873cdb2e4bccd4db45ea44c`**, passed all **seven**
+GitHub checks: backend, mobile, web, the three CodeQL language jobs and the
+CodeQL result check. This includes clean locked CI installs and the audit gates.
+
+The [retained API receipt](../assets/security/codeql-pr139-57504cc.json) records
+the actual analyses for **`refs/pull/139/head`**, not just workflow conclusions:
+
+| Language | Analysis ID | API result count | Downloaded SARIF result count |
+| --- | --- | --- | --- |
+| Python | 2041638694 | 0 | 0 |
+| JavaScript/TypeScript | 2041638068 | 0 | 0 |
+| Actions | 2041637469 | 0 | 0 |
+
+Every SARIF provenance record names that exact commit. Each of alerts **37,
+34, 9, 8 and 3** returns an empty occurrence list when queried with `pr=139`;
+the PR alert list is also empty. Their global states are still **open**, with
+the latest occurrence on `main` at `bec8d80`; none was dismissed.
+
+**Scope matters:** [CodeQL run 40617826998](https://github.com/Kriordan/personal_portfolio/actions/runs/40617826998)
+uses `codeql-action/pr-diff-range`. Its logs confirm all five target queries
+were interpreted, but this is analysis informed by the PR diff, not evidence
+of a repository-wide zero-finding scan. The
+[SARIF REST endpoint](https://docs.github.com/en/rest/code-scanning/code-scanning#get-a-code-scanning-analysis-for-a-repository)
+also returns a processed subset of uploaded SARIF. The evidence establishes
+no reported findings/occurrences for this PR commit and supports the fixes
+alongside the behavioral tests; it does not mark default-branch alerts closed.
+After merge, require a full `main` analysis and inspect all five states again.
+Subsequent documentation-only commits retain this tested application code;
+the PR description records verification of the final documentation head too.
 
 ## Rollout and limits
 
