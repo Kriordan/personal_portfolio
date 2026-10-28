@@ -2,6 +2,12 @@
 
 Updated October 27, 2026. This is the current index for mobile/Jobwizard/Sentry acceptance. Feature smoke-test files retain their detailed scenarios and dated evidence. Only an explicitly tested scenario is closed; general device approval does not imply every failure, accessibility or concurrency case passed.
 
+## Chat closeout — October 27
+
+The user approved merging [PR #137](https://github.com/Kriordan/personal_portfolio/pull/137) on the recorded simulator evidence and chose to defer further accessibility work. A new iPhone preview is **not required for this merge**. This is acceptance of the merge scope, not a claim that untested physical-device or accessibility scenarios passed. Include the layout changes in the next otherwise-needed device build; the currently installed preview does not gain them from a Git merge.
+
+The Jobwizard/Sentry recovery and scoped native-validation work is ready for handoff. No Flask deployment is needed for #137, and no new cloud build, monitoring expansion or recurring task is requested. Remaining checks below are backlog items, not blockers for closing this chat. When choosing the next operational task, prioritize confirming durable YouTube OAuth authorization and inventorying consumers before retiring the old AWS administrator credential. Preserve the existing production baseline, accepted preview and exact validation limits below; do not restart completed setup or credential rotation.
+
 ## Verified baseline and rollout
 
 | Area | Current evidence |
@@ -204,7 +210,7 @@ Evidence: [precise results and limits](assets/jobwizard-accessibility-2026-10-27
 | Priority | Follow-up and completion evidence |
 | --- | --- |
 | Native breadth | PR #133 build 5, including #132, has overall physical iPhone acceptance. Android Release terminated-link checks above now pass on the emulator. Complete deleted-ID and other untested warm/cold, signed-in/out permutations; do not repeat the development-launcher investigation. Remaining timing coverage includes a committed save response arriving after an account switch and Android delayed refresh/save/capture switches. The precise iOS and Android cases above are closed only for their stated hosts; retain [Jobwizard smoke tests](jobwizard-smoke-test.md) and physical Android acceptance. |
-| Accessibility | The specific physical VoiceOver and emulator TalkBack flows above are closed at their stated scope. Next: full spoken-label/announcement and sequential-focus audit, smaller-phone/software-keyboard and dark-mode combinations, maximum-text iOS scroll reachability, and physical acceptance of the new large-text layout. Review, source and viewer permutations remain open where untested. |
+| Accessibility — deferred | The specific physical VoiceOver and emulator TalkBack flows above are closed at their stated scope. The user deferred the full spoken-label/announcement and sequential-focus audit, smaller-phone/software-keyboard and dark-mode combinations, maximum-text iOS scroll reachability, and physical acceptance of the new large-text layout. Review, source and viewer permutations remain open where untested. These are not blockers for #137; revisit with a future device build or reported issue. |
 | Other features | Retain [Grocery/shell reconnect and sharing checks](mobile-ui-validation.md), [Wishlist signed-image/upload lifecycle](wishlist-smoke-test.md), [Library sync/pin/watched behavior](library-smoke-test.md), and [Learning uncertain review/account switching](learning-smoke-test.md). Earlier disabled-reporting fixture smokes do not prove every enabled-device scenario or live YouTube sync. |
 | Extraction operations | Scheduled cleanup execution is now verified above. Concurrent capture/extraction timing and live provider budgets remain open; local fake-provider checks do not close them. See [extraction rollout](jobwizard-extraction.md). |
 | Credential ownership | Old Apple certificate `D6D52` revocation is confirmed above; keep replacement `FBC7A`. The old AWS administrator credential consumer-inventory/retirement follow-up remains open. |
