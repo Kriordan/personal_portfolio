@@ -1,6 +1,6 @@
 """This file defines the routes for the account blueprint."""
 
-from urllib.parse import urlsplit
+from urllib.parse import urlparse
 
 from flask import (
     Blueprint,
@@ -40,15 +40,18 @@ account_blueprint = Blueprint("account", __name__, template_folder="templates")
 def local_redirect_target(target):
     """Accept local paths without browser/parser scheme or authority ambiguity."""
     if (not target or target != target.strip() or target.startswith("//")
-            or "\\" in target or any(ord(char) < 32 or ord(char) == 127 for char in target)):
+            or any(ord(char) < 32 or ord(char) == 127 for char in target)):
+        return None
+    local_target = target.replace("\\", "")
+    if local_target != target:
         return None
     try:
-        parsed = urlsplit(target)
+        parsed = urlparse(local_target)
     except ValueError:
         return None
     if parsed.scheme or parsed.netloc:
         return None
-    return target
+    return local_target
 
 
 @account_blueprint.route("/login", methods=["GET", "POST"])
