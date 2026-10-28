@@ -44,6 +44,21 @@ class LearningWebTests(unittest.TestCase):
         self.assertIn(b"Last reviewed:</span> August 7, 2026", response.data)
         self.assertIn(b'<meta property="og:type" content="article"', response.data)
 
+    def test_review_done_link_is_generated_by_server_not_json_navigation(self):
+        from flask import render_template, url_for
+
+        # Render the real template with isolated adversarial card text. No
+        # filesystem note mutation or authenticated production account.
+        with self.app.test_request_context():
+            html = render_template("learning/review.html", cards=[{
+                "card_id": "fixture:1", "prompt": "</script><script>alert(1)</script>",
+                "response": "javascript:alert(1)", "progress_revision": 0,
+            }])
+            expected = url_for("learning.index")
+        self.assertIn(f'id="review-summary-done" href="{expected}">Done</a>', html)
+        self.assertNotIn('"doneUrl"', html)
+        self.assertNotIn("</script><script>alert(1)</script>", html)
+
 
 if __name__ == "__main__":
     unittest.main()

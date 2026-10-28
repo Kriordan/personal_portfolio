@@ -36,7 +36,7 @@
         <p id="review-summary-text"></p>
         <div class="review-stats" id="review-summary-stats"></div>
         <div class="review-weak-areas" id="review-summary-weak"></div>
-        <button class="button" id="review-summary-done" type="button">Done</button>
+        <a class="button" id="review-summary-done" href="{{ url_for('learning.index') }}">Done</a>
       </div>
     {% else %}
       <p>You're all caught up. No cards due right now.</p>
@@ -47,7 +47,7 @@
 {% block scripts %}
   <script type="application/json" id="review-cards-data">{{ cards|tojson }}</script>
   <script type="application/json" id="review-config-data">
-    {{ {"rateUrl": url_for('learning.rate_card'), "receiptUrl": url_for('learning.rating_receipt', request_id='REQUEST_ID'), "doneUrl": url_for('learning.index')}|tojson }}
+    {{ {"rateUrl": url_for('learning.rate_card'), "receiptUrl": url_for('learning.rating_receipt', request_id='REQUEST_ID')}|tojson }}
   </script>
   <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js" integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx" crossorigin="anonymous"></script>

@@ -356,6 +356,27 @@ class CaptureProviderTests(unittest.TestCase):
                     "https://jobs.ashbyhq.com/acme/" + "b" * 36 + "?gh_jid=8236798"):
             self.assertIsNone(target_profile(url))
 
+    def test_workday_hostname_labels_and_adversarial_length(self):
+        for host in ("acme.wd5.myworkdayjobs.com", "ACME-2.WD12.MYWORKDAYJOBS.COM",
+                     "a" + "-" * 61 + "z.wd" + "9" * 61 + ".myworkdayjobs.com"):
+            with self.subTest(host=host):
+                self.assertEqual(target_profile(f"https://{host}/en-US/Jobs/job/Role_123?source=public"), "workday")
+        for host in ("a" + "-" * 62 + "z.wd5.myworkdayjobs.com",
+                     "a" + "-" * 100_000 + "!.wd5.myworkdayjobs.com",
+                     "acme.wd.myworkdayjobs.com", "acme.wd5x.myworkdayjobs.com",
+                     "acme.wd٥.myworkdayjobs.com", "équipe.wd5.myworkdayjobs.com",
+                     "acme.wd5.myworkdayjobs.com.evil.test", "extra.acme.wd5.myworkdayjobs.com",
+                     "-acme.wd5.myworkdayjobs.com", "acme.wd5.myworkdayjobs.com."):
+            with self.subTest(host=host[:100]):
+                self.assertIsNone(target_profile(f"https://{host}/Jobs/job/Role_123"))
+        # Both the saved-job capture worker and extraction call this policy
+        # before provider work. Rejection must not involve network access.
+        with patch.object(capture_worker, "validate_public_target") as dns, patch.object(capture_worker, "browserless_image") as provider:
+            with self.assertRaises(CaptureError):
+                capture_worker.capture_artifact("https://a" + "-" * 100_000 + "z.wd5.myworkdayjobs.com/Jobs/job/Role", "j/" + "a" * 32 + ".png")
+            dns.assert_not_called()
+            provider.assert_not_called()
+
     def test_gem_only_accepts_public_listing_routes_and_known_attribution(self):
         base = "https://jobs.gem.com/function-health/am9icG9zdDpyJtbQYuSC0l_lOd7kZ9-n"
         for suffix in ("?src=LinkedIn", "?gh_src=board&utm_campaign=jobs", "?source=company"):

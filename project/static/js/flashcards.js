@@ -218,11 +218,9 @@
     const progressEl = document.getElementById("review-progress");
     const actionsEl = document.getElementById("flashcard-actions");
     const rateUrl = config.rateUrl;
-    const doneUrl = config.doneUrl || "/learning/";
     const toastEl = document.getElementById("flashcard-toast");
     const summaryEl = document.getElementById("review-summary");
     const summaryTextEl = document.getElementById("review-summary-text");
-    const summaryDoneEl = document.getElementById("review-summary-done");
     const summaryStatsEl = document.getElementById("review-summary-stats");
     const summaryWeakEl = document.getElementById("review-summary-weak");
 
@@ -238,7 +236,7 @@
     const saveError = document.getElementById("review-save-error");
     const saveRetry = document.getElementById("review-save-retry");
     const reloadLink = document.getElementById("review-reload");
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const sessionId = crypto.randomUUID();
 
     const updateProgress = () => {
       if (progressEl) {
@@ -460,10 +458,6 @@
       ) {
         submitRating(ratingMap[event.code]);
       }
-    });
-
-    summaryDoneEl?.addEventListener("click", () => {
-      window.location.href = doneUrl;
     });
 
     renderCard();

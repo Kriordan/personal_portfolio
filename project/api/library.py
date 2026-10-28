@@ -193,7 +193,7 @@ def api_sync_library():
     try:
         run = library_service.sync_library(request_id=request_id)
     except library_service.SyncError as error:
-        return jsonify({"error": str(error)}), error.status
+        return jsonify({"error": error.public_message}), error.status
     if request_id:
         return jsonify({"run": run}), 200
     return jsonify({"message": "Library sync completed."}), 200
