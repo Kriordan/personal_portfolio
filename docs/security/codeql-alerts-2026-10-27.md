@@ -58,7 +58,7 @@ the actual analyses for **`refs/pull/139/head`**, not just workflow conclusions:
 
 Every SARIF provenance record names that exact commit. Each of alerts **37,
 34, 9, 8 and 3** returns an empty occurrence list when queried with `pr=139`;
-the PR alert list is also empty. Their global states are still **open**, with
+the PR alert list was also empty. At that verification, their global states were still **open**, with
 the latest occurrence on `main` at `bec8d80`; none was dismissed.
 
 **Scope matters:** [CodeQL run 40617826998](https://github.com/Kriordan/personal_portfolio/actions/runs/40617826998)
@@ -84,16 +84,61 @@ input, then checks its scheme and authority with `urlparse`. This preserves the
 rejection behavior while making both validation steps visible to CodeQL's
 standard-library model. Regression cases also cover backslashes in path, query
 and fragment, and accepted local semicolon parameters and encoded Unicode.
-Deployment remains gated on a full main scan closing all five alerts.
+The follow-up [PR #140](https://github.com/Kriordan/personal_portfolio/pull/140)
+passed all seven checks and merged as **`6e13c34`**.
 
-After that verification, deploy the
-Flask application and its templates/static JavaScript together, preserving the
-documented production baseline. Then check login return paths and invitations,
-Library error/status display and receipt recovery, flashcard completion/Done,
-and a supported Jobwizard URL. Do not inject adversarial failures into production.
+### Full main closure — October 28
+
+[Full main run 40672895792](https://github.com/Kriordan/personal_portfolio/actions/runs/40672895792)
+completed successfully at `6e13c3476c539027f6ea68f5070d273b28f70b3a`.
+Its logs contain no PR diff-range extension and confirm all five target queries
+were interpreted. Python analysis **2044065646**, JavaScript/TypeScript
+**2044066453**, and Actions **2044063128** each have zero API and downloaded
+SARIF results, with provenance matching that exact commit. All five alert
+records are **fixed**, none dismissed, and the open-main alert list is empty.
+The other post-merge backend, mobile and web workflows also passed.
+
+### Production rollout and smoke results — October 28
+
+The Flask application, templates and static assets deployed together as
+**Heroku v163**, followed by **v164** updating only `SENTRY_RELEASE` to
+**`c5edc1b2eca127c51da80c754331c24134eb9711`**. This integration commit preserves
+the v162 `96b909f` ancestry and has an identical complete tree to scanned main
+`6e13c34`. Only the seven intended application files differ from v162;
+migrations, runtime/dependency pins, lottery and monitoring code are unchanged.
+The configuration fingerprint excluding `SENTRY_RELEASE` is identical before
+and after rollout. The web dyno is up, reporting remains enabled in production,
+and both Jobwizard gates remain enabled. A read-only query confirmed migration
+**`a4b5c6d7e8f9`**. [Retained release evidence](../assets/security/codeql-release-2026-10-28.json).
+
+- Local isolated PostgreSQL: **297 tests**, 296 passed and one Linux-only skip.
+  The deployed slug: **297 tests**, 279 passed and 18 PostgreSQL-dependent skips.
+  These cover actual login POSTs/return paths/invitation priority, fixed Library
+  error/status/receipt boundaries, Learning rendering/recovery, and Jobwizard
+  policy/replay behavior. Deployed failure tests used disposable SQLite and
+  mocked providers; local PostgreSQL and CI cover the skipped integration tests.
+- Live public smoke: home/login/Learning **200**, seven protected APIs **401**,
+  unknown HTML GET/HEAD **404**, API request correlation and existing per-feature
+  privacy headers verified. The production flashcard JavaScript exactly matches
+  the reviewed source and passes all **23** Chrome checks, including secure
+  session IDs, completion/Done, sanitization and receipt recovery.
+- Deployed Python **3.13.18**, dnspython **2.9.0**, Certifi **2026.10.19**, and
+  Sentry **2.73.0** verified; all **12 TLS trust checks** pass.
+- Real-provider Ashby extraction of the public OpenAI Full Stack Software
+  Engineer, Codex listing returned **200/ready in 7.007s**, then **200/complete
+  in 6.459s**. Read replay, summary replay and status recovery passed. Its eight
+  bullets cite source evidence; coverage/conflict warnings remain available for
+  deliberate user review. This used deployed Flask routes in an isolated dyno,
+  without saving a production job or accepting suggestions automatically.
+- Two live happy-path checks **did not pass**: the earlier Justworks Greenhouse
+  link returned `page_blocked`, and a public Mastercard Workday listing returned
+  `page_not_ready`. They were retained as safe failed receipts, not counted as
+  successful extractions. All three tested URLs produce exactly the same target
+  profiles as v162; provider-reading code is unchanged. No allowlist or provider
+  protection was relaxed, and the failed sources were not repeatedly retried.
 
 No migration, native source change, cloud build or new iPhone preview is needed.
-The existing mobile app consumes the same Library messages/status codes. A normal
-mobile Library/Jobwizard smoke against the deployed backend is useful; this pass
-does not claim physical-device testing, live-provider coverage or close any of
-the separately deferred accessibility/device follow-ups in the validation ledger.
+The existing mobile app consumes the same Library messages/status codes. This
+pass does not claim authenticated public-router or physical-device testing, or
+close the separately deferred accessibility/device follow-ups. No production
+Library sync/move, Learning rating, job save or screenshot was performed.
