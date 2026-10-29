@@ -4,6 +4,8 @@ As of October 28, 2026, **Milestone 1 is partially implemented: Learn and Review
 
 This handoff records the approved architecture and refinements, the implementation at `0c2848a`, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
+The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
+
 ## Goal and scope
 
 Keith wants to rebuild fundamentals and develop senior/staff engineering judgment through explanations, retrieval practice, implementation, and realistic technical conversations. Success means better unaided explanations and solutions, including the ability to defend trade-offs. Reading completion and AI scores are not measures of mastery.

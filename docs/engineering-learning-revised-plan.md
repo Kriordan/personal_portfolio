@@ -2,6 +2,8 @@
 
 > Approved planning snapshot, preserved from the revision discussion before implementation began. Statements about implementation being unstarted describe that point in time. For current progress, see the [engineering handoff](engineering-learning-handoff.md) and [Milestone 1 checkpoint log](engineering-learning-milestone-1.md). Only Milestone 1 is currently authorized.
 
+Background: [the original project vision](engineering-learning-original-vision.md), preserved verbatim from Keith's opening request.
+
 The accepted architecture remains: Flask, PostgreSQL, Expo, versioned curriculum content, the existing review engine, one AI worker, owner-only paid AI access, a $50 monthly AI cap, and saved work retained until deletion. The curriculum, content-quality requirements, later roadmap, and Codex/ChatGPT Work division remain unchanged.
 
 The substantive updates concern these four areas:
