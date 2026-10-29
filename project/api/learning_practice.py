@@ -67,6 +67,8 @@ def _call(operation):
         return _error(STALE_MESSAGES[exc.code], 409, exc.code, **exc.details())
     except practice.RequestConflictError:
         return _error("This request ID was already used for a different change.", 409, "request_conflict")
+    except practice.ReplyPendingError:
+        return _error("The interviewer is still replying. Try again once the reply arrives.", 409, "reply_pending")
     except OperationalError as exc:
         db.session.rollback()
         current_app.logger.error("Practice API request could not be confirmed: %s", practice.describe_failure(exc))
@@ -155,10 +157,48 @@ def send_turn(session_id):
     if set(payload) != TURN_FIELDS:
         return _error("Send request_id, body, expected_sequence, artifact_revisions, and brief_revision.", 400,
                       "invalid_request")
-    return _call(lambda: (jsonify(practice.send_turn(
-        user, session_id, body=payload["body"], expected_sequence=payload["expected_sequence"],
-        artifact_revisions=payload["artifact_revisions"], brief_revision=payload["brief_revision"],
-        request_id=payload["request_id"])), 201))
+    def send():
+        result = practice.send_turn(
+            user, session_id, body=payload["body"], expected_sequence=payload["expected_sequence"],
+            artifact_revisions=payload["artifact_revisions"], brief_revision=payload["brief_revision"],
+            request_id=payload["request_id"])
+        # 202 when a reply is on its way (poll GET .../reply), 201 when the turn was saved without one.
+        # A replayed receipt from before replies existed has no "reply".
+        return jsonify(result), 202 if result.get("reply", {}).get("status") == "pending" else 201
+    return _call(send)
+
+
+@practice_api_blueprint.get("/sessions/<session_id>/reply")
+@jwt_required()
+def reply_status(session_id):
+    """The latest learner turn's reply, and every turn after ?after=<sequence>."""
+    user, _, failure = _user_and_payload(body=False)
+    if failure:
+        return failure
+    raw = request.args.get("after", "0")
+    if not (raw.isascii() and raw.isdigit()):
+        return _error("after must be a whole number.", 400, "invalid_request", field="after")
+    return _call(lambda: (jsonify(practice.reply_updates(user.id, session_id, after=int(raw))), 200))
+
+
+@practice_api_blueprint.post("/sessions/<session_id>/reply")
+@jwt_required()
+def ask_for_reply(session_id):
+    """Retry a reply, or ask for one to a turn saved while AI was unavailable.
+
+    202 when a reply is queued. 200 when none is: the turn already has a reply ("answered"),
+    or AI can't reply now ("unavailable", with a reason).
+    """
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != {"request_id"}:
+        return _error("Send request_id.", 400, "invalid_request")
+
+    def ask():
+        result = practice.request_reply(user, session_id, request_id=payload["request_id"])
+        return jsonify(result), 202 if result["reply"]["status"] == "pending" else 200
+    return _call(ask)
 
 
 def _set_status(session_id, status):

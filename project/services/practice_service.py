@@ -995,7 +995,9 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=N
     """Ask for a reply to the latest learner turn: a retry, or a turn saved while AI was unavailable.
 
     The website also saves the page's artifacts and brief in the same transaction, so asking
-    never discards typing. Only the latest learner turn, without a reply, qualifies.
+    never discards typing. Only the latest learner turn qualifies. If a reply reached it
+    meanwhile (seen from another tab, or arriving late), asking still saves, and the reply's
+    status is "answered".
     """
     validate_request_id(request_id)
     _check_session_id(session_id)
@@ -1032,8 +1034,9 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=N
         if turn is None:
             raise PracticeValidationError("Send a message first.", part="turn")
         if _latest_turn(session.id) != turn.sequence:
-            raise PracticeValidationError("Your latest message already has a reply.", part="turn")
-        reply = _queue_reply(session, turn, now)
+            reply = _reply_dto(status="answered")  # what was asked for has happened
+        else:
+            reply = _queue_reply(session, turn, now)
         if session.status == "paused":
             changed = _set_status(session, "active") or changed
         if changed or reply["status"] == "pending":

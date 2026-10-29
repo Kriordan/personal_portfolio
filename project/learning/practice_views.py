@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 from uuid import uuid4
 
-from flask import abort, current_app, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
@@ -23,7 +23,8 @@ from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, Pract
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
 STATUS_LABELS = {"active": "In progress", "paused": "Paused", "completed": "Completed"}
-ACTIONS = ("save", "send", "pause", "resume")
+ACTIONS = ("save", "send", "pause", "resume", "reply")
+LIVE = ("pending", "running")
 BLANK_BRIEF_ROWS = 3
 
 
@@ -125,11 +126,17 @@ def _workspace_form(detail, *, artifacts=None, brief=None, message="", expected_
     return form
 
 
+def _money(microusd):
+    return f"${microusd / 1_000_000:,.2f}"
+
+
 def _render(detail, form, *, status=200, alert=None, notice=None, errors=None, stale=None, refreshed=(),
             brief_refreshed=False, new_after=None, unsaved=False):
     return render_template(
         "learning/practice.html", detail=detail, form=form, alert=alert, notice=notice, errors=errors or {},
         artifacts={artifact["artifact_id"]: artifact for artifact in detail["artifacts"]},
+        titles={artifact["artifact_id"]: artifact["title"] for artifact in detail["artifacts"]},
+        reply_live=detail["reply"]["status"] in LIVE, money=_money,
         conflicts={conflict["artifact_id"]: conflict for conflict in (stale.conflicts if stale else [])},
         refreshed=set(refreshed) | {current["artifact_id"] for current in (stale.refresh if stale else [])},
         brief_conflict=stale.brief_conflict if stale else None,
@@ -281,6 +288,10 @@ def _summary(result, action):
     brief = result.get("brief", {}).get("changed", False)
     noun = f"{changed} artifact{'s' if changed != 1 else ''}"
     parts = ["Message sent."] if action == "send" else []
+    if action == "reply":
+        parts.append({"pending": "Asked the interviewer for a reply.",
+                      "answered": "The interviewer has already replied."}.get(
+            result["reply"]["status"], "The interviewer can't reply right now."))
     if changed and brief:
         parts.append(f"Saved {noun} and your brief.")
     elif changed:
@@ -311,6 +322,9 @@ def _post(session_id):
             result = practice.save_and_send(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                             body=submitted["message"], expected_sequence=submitted["expected_sequence"],
                                             request_id=request_id)
+        elif action == "reply":
+            result = practice.request_reply(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
+                                            request_id=request_id)
         else:
             result = practice.save_work(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                         request_id=request_id, status="paused" if action == "pause" else "active")
@@ -325,6 +339,10 @@ def _post(session_id):
         return _rerender(session_id, submitted, action=action, status=409,
                          alert="An earlier attempt from this page may already have saved. "
                                "Check the saved work, then try again.")
+    except practice.ReplyPendingError:
+        return _rerender(session_id, submitted, action=action, status=409,
+                         alert="The interviewer is still replying. Your work is still here: "
+                               "try again once the reply arrives.")
     except learning_service.ValidationError:
         return _rerender(session_id, submitted, action=action, status=400, alert=f"Nothing was {verb}: {again}.")
     except OperationalError as exc:
@@ -347,7 +365,7 @@ def _post(session_id):
             # The message was written against an older view. Say so, as an out-of-date Send would,
             # before the page moves on to the latest state.
             saved = (any(outcome["changed"] for outcome in result.get("artifacts", {}).values())
-                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume"))
+                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume", "reply"))
             return _render(detail, form, alert=(f"{summary} " if saved else "") + "Newer work arrived while you were "
                            "writing and is marked below. Your message hasn't been sent.",
                            refreshed=refreshed, brief_refreshed=brief_refreshed, new_after=new_after)
@@ -366,6 +384,38 @@ def practice_workspace(session_id):
     except learning_service.NotFoundError:
         abort(404)
     return _render(detail, _workspace_form(detail))
+
+
+@learning_blueprint.get("/practice/<session_id>/reply")
+@login_required
+def practice_reply(session_id):
+    """Polled by the workspace while a reply is on its way: the reply's state and every newer turn."""
+    raw = request.args.get("after", "")
+    if not (raw.isascii() and raw.isdigit()):
+        return jsonify(error="Send after=<sequence>."), 400
+    try:
+        updates = practice.reply_updates(current_user.id, session_id, after=int(raw))
+        titles = ({artifact["artifact_id"]: artifact["title"]
+                   for artifact in practice.session_detail(current_user.id, session_id)["artifacts"]}
+                  if updates["turns"] else {})
+    except learning_service.NotFoundError:
+        return jsonify(error="Not found."), 404
+    except learning_service.ValidationError:
+        return jsonify(error="Send after=<sequence>."), 400
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Practice reply status unavailable: %s", practice.describe_failure(exc))
+        return jsonify(error="Unavailable."), 503
+    reply = updates["reply"]
+    return jsonify(
+        reply={"status": reply["status"], "live": reply["status"] in LIVE},
+        # Only a page waiting for a reply polls, so an answered turn means the reply has arrived.
+        status_html=render_template("learning/_practice_reply_status.html", reply=reply, polled=True),
+        turns=[{"sequence": turn["sequence"],
+                "html": render_template("learning/_practice_turn.html", message=turn, titles=titles,
+                                        session_id=session_id, is_new=True)}
+               for turn in updates["turns"]],
+        latest_sequence=updates["latest_sequence"])
 
 
 def _delete_page(session_id, *, status=200, alert=None):

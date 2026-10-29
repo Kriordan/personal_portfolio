@@ -9,8 +9,10 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 1. Content foundation | Versioned catalog, draft lesson/four questions/one structured interview; audience projections; atomic import; additive migration verified on PostgreSQL; legacy Learning regression checks. | Committed as `1f344a5`; [REPL guide](learning-checkpoint-1-test-guide.md). |
 | 2. Learn and Review on web | Published lesson, retry visualization, safe Markdown, explicit answer reveal, four questions through the existing scheduler; unchanged old API behavior and progress. Human content review precedes publication. | Committed as `3b108bf`; [hands-on guide](learning-checkpoint-2-test-guide.md), refined in `0c2848a`. Production publication remains pending human content review. |
 | 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) and `709658b` (web workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part A. |
-| 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) plus the following workspace/API commit; [practice guide](learning-checkpoint-3-test-guide.md), part B. |
-| 4. Interview and continuity | PostgreSQL-backed worker (a thread in the web process), owner-only AI use through Learning's own OpenAI key, approved disclosure, idempotent requests, budgets/reservations, configurable soft turn check-in, a context allowance with a specific stop (compaction deferred), durable recovery. | Not started; decisions made October 29. |
+| 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) and `bcb0f40` (workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part B. |
+| 4a. Durable replies | Replies as tracked PostgreSQL requests, run by a worker thread in the web process against a scripted fake provider: owner-only access, fencing, budgets and reservations, interruption and explicit retry, polling on the website and API. | Committed as `81312c8` (service and worker) plus the following website/API commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part A. |
+| 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Not started. |
+| 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Needs Keith. |
 | 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
@@ -197,4 +199,91 @@ Keith decided the open questions before checkpoint 4; the handoff's decisions ta
 - **Misconceptions:** content schema 2 and exercise version 2 at the start of checkpoint 5, before the human content review. Accepted findings offer their linked questions as an extra, labelled review.
 - **Deterministic checks:** JSON/YAML parse errors in API definitions are reported as confirmed findings before AI judgment.
 
-The other three vision-review proposals (milestone order, progress model, richer lesson schema) wait for Milestone 1's completion. Checkpoint 4 needs a detailed plan and approval before implementation.
+The other three vision-review proposals (milestone order, progress model, richer lesson schema) wait for Milestone 1's completion.
+
+## Checkpoint 4 plan (October 29)
+
+Keith approved the checkpoint 4 plan the same day, choosing:
+
+- three parts: 4a (durable replies against a scripted fake provider), 4b (the interviewer), then activation;
+- revealed requirements as a separate read-only list beside the scenario, not entries in the learner's brief;
+- no model "interpretation" entries, deferred along with compaction;
+- **Continue with recent messages** when a transcript outgrows the context allowance.
+
+Choices in the plan approved with it:
+
+- Pause stops pending replies and a running reply's next paid call. A call already in flight finishes, and its reply is kept.
+- Send is refused while a reply is live (409 `reply_pending`, draft kept); saving continues.
+- Retries are never automatic: after an interruption the learner asks again.
+- `POST …/turns` returns 202 when a reply is queued and 201 otherwise.
+
+## Checkpoint 4a implementation and verification
+
+Migration `e8f9a0b1c2d3` adds:
+
+- `ai_request`: one row per reply attempt, with its status, a content-free error code, claim token and lease, the pinned profile version and models, and the turn it answers. Partial unique indexes allow one live (pending or running) request per session and one completed reply per turn.
+- `learning_ai_charge`: the content-free spending ledger in micro-dollars. It has no foreign key to sessions or requests, so it outlives delete.
+- `practice_session.profile_version` (existing rows get `interviewer-1`) and the `reply` receipt operation.
+
+The service (`practice_service`, `practice_budget`, `practice_worker`):
+
+- **Send** queues a reply in the same transaction when AI is available: the switch is on, the learner is the one verified account named by `LEARNING_AI_OWNER_EMAIL`, the models are priced, and the reply's worst case fits this month's budget. Otherwise the turn is saved with a reason (`disabled`, `owner_only`, or `budget`).
+- A live reply refuses another Send. A stale one reads as interrupted everywhere: pending for more than two minutes or once AI is unavailable, or running past its lease. The next Send, Ask, or pause records it; delete removes it with the session.
+- **request_reply** asks again for the latest unanswered turn: a retry, or a turn saved while AI was unavailable. On the website it also saves the page's work. If a reply reached the turn meanwhile, it still saves and reports `answered`.
+- **The worker** sweeps stale rows and claims the oldest fresh request by compare-and-swap, skipping profiles it doesn't know. Before each paid call it checks that the request is still running with its token and an unexpired lease, the session is active, and AI is available. It then extends the lease and reserves the worst case under a budget lock.
+- After the call, the charge is settled from usage (or at the reservation, without usage), released after a definite refusal, or left reserved when the outcome is unknown. Replies are written under the owner lock and cite the turn's revisions. A database error retries the write, never the call.
+- Lock order: owner (`FOR NO KEY UPDATE`), request, session, budget, charge.
+- The thread starts only from `run.py`; `flask learning-worker` runs the same loop in the foreground. `FakeProvider` modes: `success`, `slow`, `fail`, `lost`, `hang`, and `invalid`.
+
+The website adds a reply-status region under the conversation: replying; failed or interrupted, with **Retry the reply**; cancelled by pause; not available for this account; or no room in the budget. **Ask for a reply** covers a turn saved without one. Both are workspace-form actions that also save. A script polls `…/reply?after=<sequence>`, inserts newer turns marked New, and updates `expected_sequence`. It retries a dropped connection or server error with growing waits, and stops on sign-out, a 4xx, or six failures in a row, then brings Send back with a note to reload. Without JavaScript, **Check for the reply** saves and reloads. Send is disabled while a reply is live. The owner sees a spending banner from the warning line, or once the month is used up.
+
+The API's `POST …/turns` returns 202 with a pending reply, otherwise 201, plus `reply` and `latest_sequence`. It adds `GET …/sessions/<id>/reply?after=` and `POST …/sessions/<id>/reply` (`{request_id}`; 202 when a reply is queued, 200 with `answered` or `unavailable` otherwise), and 409 `reply_pending`. The session detail adds `reply` and `ai_budget` (the owner's only).
+
+The preview fixture runs the worker with the fake provider and makes `learning1@example.test` the owner. `/fixture/state` accepts `ai` (a fake mode) and `cap_usd`; `/fixture/results` adds reply counts and the month's spend.
+
+October 29 local validation: **454 backend tests run, 453 passed, one existing Linux-only test skipped on macOS**, with PostgreSQL 18.6. The 44 new tests cover:
+
+- **Service and worker (SQLite with foreign keys on, 19):** who gets a reply (switch, provider, priced model, and an owner email matching exactly one verified account in any case); inputs pinned to the turn, including edits made during a reply; hidden material kept out of requests; stale replies never blocking Send; pause cancelling a pending reply and fencing the next call; delete fencing a late reply while the ledger keeps its cost; each failure's status and charge; the budget rule; an expired lease; asking again; unknown profiles; reply text limits; the read-order race; no learner text in requests, ledger, receipts, or logs; the worker's start conditions; and the real thread on file SQLite, including a restart while a call is stuck.
+- **PostgreSQL (11):** two releases claiming at once; reservations racing at the cap; completion against delete, pause, and the sweep, each with either side first and racing; the worker's call check held at two points while a delete, a pause, or a stale Send arrives; `kill -9` mid-call and before storing, each recovered by an explicit retry with the ledger right; a fresh process picking up a reply queued before a restart.
+- **Web (10) and API (3):** every reply state and its message; polling (`after`, ownership, `no-store`, and the last poll reporting the newest turn); Retry and Ask saving the page, including after the reply already arrived; 409 with the draft kept; the spending banner and the non-owner note; and a `<script>` reply shown as text. On the API, also strict `after` and replaying a send recorded before 4a.
+- **Telemetry (1):** reply reports carry fixed codes only.
+
+The migration test also downgrades through `e8f9a0b1c2d3` and checks its CHECK constraints and partial-index predicates. Commit `81312c8` passed on its own in a clean checkout (441 tests).
+
+Repeated natural races never let a completion beat a delete or the sweep, so each pair runs with either side forced first and once racing. The call-check tests hold the worker at a lock with a SQLAlchemy engine event, because natural races almost never land there.
+
+An independent review of the service found four problems. Each is fixed with a regression test that was confirmed to fail without its fix:
+
+- **Medium-high:** a PostgreSQL deadlock. The call check inserts a ledger charge while holding the request row, and that insert's foreign-key check takes `FOR KEY SHARE` on the user row, which the `FOR UPDATE` owner lock blocked. A delete or a stale Send arriving then deadlocked. The owner lock is now `FOR NO KEY UPDATE`, and owner-side writes, delete included, lock the live request row before changing anything else.
+- **Medium-low:** a pause, or a Send that found an expired lease, could slip in during the call check. A paid call could then start after a pause had committed, or a reply about to be paid for was marked interrupted and a second one queued. The check now requires an unexpired lease and share-locks the session, and owner-side writes wait for it.
+- **Medium-low:** the budget could never read as used up, because reservations never take spending past the cap. Near the cap, every Send queued a reply that then failed, and Retry was offered forever. Now a reply is queued and offered only when its worst case fits, priced from the request body the worker will send. The month reads as used up once even the smallest reply can't fit.
+- **Low:** PostgreSQL returned the month's spend as a decimal, which reached the API's JSON as a string.
+
+Two smaller fixes came with them. A worker restarted while its thread was stuck in a call could start a second thread. The spending banner now also appears when the month is used up before the warning line.
+
+The walkthrough found one more bug, also fixed with a regression test. After **Retry the reply**, a reply landing between the page's two reads showed neither the reply nor "replying". The page now reads the reply's state before the transcript.
+
+A second independent review, of the website and API, found eight problems and three documentation errors, all fixed. Each code fix has a regression test that was confirmed to fail without it:
+
+- **Medium:** polling gave up on the first failure, so after a restart the page kept saying "replying" with Send disabled until a reload. It now retries dropped connections and server errors with growing waits, and when it does stop, it brings Send back with a note to reload.
+- **Low-medium:** the last poll could say "The interviewer replied." over a newer turn's failed reply, hiding its Retry, and a reply landing between two reads was never announced. "Replied" now means the latest learner turn has its reply.
+- **Low-medium:** Retry on a turn whose reply had just arrived (from another tab, or late) failed with a 400, didn't save the page's work, and left the page out of date. It now saves and says the interviewer has already replied.
+- **Low:** every poll rewrote the status region, so screen readers could repeat "replying" every few seconds; an out-of-range `after` returned an error page on the website, and the API read `after=abc` as 0; replaying a Send recorded before 4a crashed the API; and Ask with a typed message lost "Asked the interviewer for a reply." when newer work had arrived.
+
+The preview fixture also removes its temporary database when stopped with SIGTERM, as preview tools do; earlier runs had left nine behind.
+
+Root Node checks passed (13 tests plus dependency integrity). Browser checks passed: 23 legacy flashcard, nine extraction, 27 concept, and 42 practice checks (23 new, for polling). Sass compiled.
+
+The disposable fixture walkthrough covered:
+
+- a reply arriving while the page polls: Send disabled meanwhile, the reply marked New, and `expected_sequence` advanced without a reload;
+- `fail`, then **Retry the reply**; `hang` (about ten seconds of "replying", then "didn't answer in time"); `lost` (its reservation kept in the month's spend);
+- the budget: the spending banner, "used up", a Send saved with "no room for another reply", and **Ask for a reply** once the cap was raised;
+- `learning2@example.test`: messages saved, "AI replies aren't available for this account", no spending shown;
+- saving an artifact while a reply ran: the reply cites revision 1, and the editor keeps revision 2;
+- a second tab sending while a reply was live: 409 with its draft kept, then the reply appearing in that tab;
+- pausing mid-reply (the call already running finished and its reply was kept) and deleting mid-reply (the session gone, the call's cost still in the spend);
+- the 390-pixel layout;
+- server logs with only codes such as `provider` and `timeout`.
+
+Not covered: a screen-reader audit; Firefox and Safari; any real provider call; the interviewer's behaviour (4b). Nothing was pushed, deployed, migrated in production, or published.

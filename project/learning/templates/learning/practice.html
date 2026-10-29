@@ -8,6 +8,9 @@
   <h1 id="practice-title">{{ detail.session.exercise_title }}</h1>
   {% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
   {% if notice %}<p class="concept-notice" role="status">{{ notice }}</p>{% endif %}
+  {% if detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
+    <p class="practice-budget">{% if detail.ai_budget.exhausted %}This month's AI budget is used up: replies resume next month. Reading, saving, and sending still work.{% else %}AI spending this month: {{ money(detail.ai_budget.spent_microusd) }} of {{ money(detail.ai_budget.cap_microusd) }}.{% endif %}</p>
+  {% endif %}
   {% if paused %}<p class="practice-paused">This session is paused. Saving, sending, or resuming picks it up again.</p>{% endif %}
   {% if alert %}
     <div class="practice-alert" id="practice-alert" role="alert" tabindex="-1">
@@ -52,31 +55,22 @@
         </details>
 
         <h3 id="conversation">Conversation</h3>
-        <ol class="practice-transcript" aria-labelledby="conversation">
+        <ol class="practice-transcript" id="transcript" aria-labelledby="conversation">
           {% for message in detail.messages %}
-            <li class="practice-turn practice-turn--{{ message.role }}" id="turn-{{ message.sequence }}">
-              <p class="practice-speaker">{{ 'Interviewer' if message.role == 'interviewer' else 'You' }}{% if new_after is not none and message.sequence > new_after %} <span class="practice-new">New</span>{% endif %}</p>
-              <p class="practice-text">{{ message.body }}</p>
-              {% if message.artifact_revisions %}
-                <p class="practice-cited">Sent with
-                  {% for cited in message.artifact_revisions %}
-                    <a href="{{ url_for('learning.practice_revision', session_id=detail.session.id, artifact_id=cited.artifact_id, revision=cited.revision) }}">{{ artifacts[cited.artifact_id].title }} revision {{ cited.revision }}</a>{% if not loop.last %}, {% endif %}
-                  {%- endfor %}
-                </p>
-              {% elif message.role == 'learner' %}
-                <p class="practice-cited">Sent before any artifact was saved</p>
-              {% endif %}
-            </li>
+            {% with is_new=(new_after is not none and message.sequence > new_after), session_id=detail.session.id %}{% include "learning/_practice_turn.html" %}{% endwith %}
           {% endfor %}
         </ol>
+        <div class="practice-reply" id="reply-status" role="status" data-reply-poll="{{ url_for('learning.practice_reply', session_id=detail.session.id) }}"{% if reply_live %} data-reply-live{% endif %}>
+          {% with reply=detail.reply, polled=False %}{% include "learning/_practice_reply_status.html" %}{% endwith %}
+        </div>
         {% set message_attributes = {"aria-describedby": "message-help message-meta"} %}
         {% if errors.message %}{% set _ = message_attributes.update({"aria-invalid": "true"}) %}{% endif %}
         <label for="{{ form.message.id }}">Your message</label>
         {{ form.message(rows=4, class="practice-editor practice-message", spellcheck="true", data_draft=True, **message_attributes) }}
         <p class="practice-meta" id="message-meta"><output data-byte-count="{{ form.message.id }}" data-limit="{{ limits.turn }}"></output></p>
         {% if errors.message %}<p class="practice-error">{{ errors.message }}</p>{% endif %}
-        <p class="practice-note" id="message-help">Sending also saves your artifacts and brief, and records the revisions you sent with. The AI interviewer isn't connected yet, so no reply will come.</p>
-        <div class="concept-controls"><button class="button" name="action" value="send">Send message</button></div>
+        <p class="practice-note" id="message-help">Sending also saves your artifacts and brief, and records the revisions you sent with.{% if reply_live %} You can send again once the interviewer has replied.{% endif %}</p>
+        <div class="concept-controls"><button class="button" name="action" value="send"{% if reply_live %} disabled{% endif %}>Send message</button></div>
 
         <fieldset class="practice-notes{% if brief_conflict %} has-conflict{% endif %}" id="session-brief" aria-describedby="brief-help">
           <legend>Your brief</legend>

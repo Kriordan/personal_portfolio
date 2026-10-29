@@ -1,0 +1,35 @@
+{#- What's happening with the interviewer's reply. Shared by the workspace and the reply-polling endpoint.
+    Needs: reply (the service's reply summary) and polled (true when a page waiting for a reply asks). The buttons
+    are workspace-form actions, so they save the page's work too and never discard typing. -#}
+{% set problems = {
+  "not_started": "The reply didn't start.",
+  "lease_expired": "The reply was interrupted.",
+  "timeout": "The interviewer didn't answer in time.",
+  "invalid_output": "The interviewer's reply couldn't be used.",
+  "paused": "The reply was cancelled when you paused.",
+  "budget": "This month's AI budget has no room for another reply, so replies resume next month.",
+  "unpriced": "AI replies are turned off right now.",
+  "disabled": "AI replies are turned off right now.",
+  "owner_only": "AI replies aren't available for this account.",
+} %}
+{% if reply.status in ("pending", "running") %}
+  <p>The interviewer is replying… You can keep working; saving won't interrupt it.</p>
+  <noscript><button class="button button--secondary" name="action" value="save">Check for the reply</button></noscript>
+{% elif polled and reply.answered %}
+  <p>The interviewer replied.</p>
+{% elif reply.turn_sequence and not reply.answered %}
+  {% if reply.status in ("failed", "interrupted", "cancelled") %}
+    {#- A reply the budget refused can be retried once there's room again (another reply settled for less). -#}
+    <p>{{ "The interviewer couldn't reply." if reply.error == "budget" and reply.can_request
+          else problems.get(reply.error, "The interviewer couldn't reply.") }}</p>
+  {% elif reply.unavailable == "owner_only" %}
+    <p>{{ problems.owner_only }} Your messages are saved without a reply.</p>
+  {% elif reply.unavailable %}
+    <p>{{ problems[reply.unavailable] }} Your messages are still saved.</p>
+  {% elif reply.can_request %}
+    <p>Your last message hasn't had a reply.</p>
+  {% endif %}
+  {% if reply.can_request %}
+    <button class="button button--secondary" name="action" value="reply">{{ 'Retry the reply' if reply.status in ("failed", "interrupted", "cancelled") else 'Ask for a reply' }}</button>
+  {% endif %}
+{% endif %}

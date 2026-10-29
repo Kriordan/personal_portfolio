@@ -308,11 +308,15 @@ class PracticeReplyTests(PracticeReplyCase):
         retried = self.ask(session_id)
         self.assertNotEqual(retried["reply"]["id"], asked["reply"]["id"])
         self.assertTrue(self.work())
-        with self.assertRaises(service.PracticeValidationError):
-            self.ask(session_id)  # it has a reply now
+        # Asked again from a page that missed the reply: it still saves, and nothing new is queued.
+        late = service.request_reply(self.user, session_id, edits=[self.edit("api", "saved while asking")],
+                                     request_id=str(uuid4()), now=self.clock())
+        self.assertEqual((late["reply"], late["artifacts"]["api"]["revision"]),
+                         ({"id": None, "status": "answered", "reason": None}, 1))
+        self.assertEqual(AIRequest.query.count(), 2)
         with self.assertRaises(NotFoundError):
             self.ask(session_id, user=self.other)
-        self.assertEqual(PracticeReceipt.query.filter_by(operation="reply").count(), 2)
+        self.assertEqual(PracticeReceipt.query.filter_by(operation="reply").count(), 3)
 
     def test_the_worker_claims_only_fresh_replies_for_known_profiles(self):
         sent = self.send(self.start())
