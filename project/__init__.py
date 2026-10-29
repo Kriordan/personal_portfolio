@@ -167,6 +167,8 @@ def register_commands(app):
     app.cli.add_command(refresh_lottery)
     from project.services.practice_worker import learning_worker_command
     app.cli.add_command(learning_worker_command)
+    from project.learning.interviewer_eval import learning_eval_command
+    app.cli.add_command(learning_eval_command)
 
 
 def register_jinja_env(app):

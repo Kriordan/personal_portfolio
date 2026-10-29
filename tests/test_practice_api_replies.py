@@ -5,13 +5,14 @@ from uuid import uuid4
 
 from project.database import db
 from project.models import AIRequest, PracticeReceipt, User
-from project.services import practice_worker
+from project.services import practice_service, practice_worker
 from project.services.practice_worker import FakeProvider
 from tests.test_practice_api import MESSAGE_KEYS, PracticeApiCase
 
 AI_CONFIG = dict(LEARNING_AI_ENABLED=True, LEARNING_AI_PROVIDER="fake", LEARNING_AI_OWNER_EMAIL="fixture1@example.test")
 CURRENT = {"api": 0, "schema": 0, "algorithm": 0}
-REPLY_KEYS = {"id", "status", "error", "turn_sequence", "answered", "can_request", "unavailable"}
+REPLY_KEYS = {"id", "status", "error", "turn_sequence", "answered", "can_request", "can_continue_recent",
+              "unavailable", "too_large_part"}
 
 
 class PracticeApiReplyTests(PracticeApiCase):
@@ -71,9 +72,45 @@ class PracticeApiReplyTests(PracticeApiCase):
         answered = self.ask(session_id)  # it already has a reply: nothing to queue
         self.assertEqual((answered.status_code, answered.get_json()["reply"]["status"]), (200, "answered"))
         self.assertEqual(self.ask(session_id, user_id=2).status_code, 404)
-        extra = self.call("POST", f"/sessions/{session_id}/reply", {"request_id": str(uuid4()), "context": "recent"})
-        self.assertEqual(extra.status_code, 400)
+        for payload in ({"request_id": str(uuid4()), "extra": True}, {"context": "recent"},
+                        {"request_id": str(uuid4()), "context": "older"}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self.call("POST", f"/sessions/{session_id}/reply", payload).status_code, 400)
         self.assertEqual(AIRequest.query.filter_by(status="completed").count(), 1)
+
+    def test_revealed_requirements_and_recent_messages_over_the_api(self):
+        session_id = self.start()
+        self.assertEqual(self.call("POST", f"/sessions/{session_id}/turns", {
+            "request_id": str(uuid4()), "body": "Who owns the key?", "expected_sequence": 1,
+            "artifact_revisions": CURRENT, "brief_revision": 0}).status_code, 202)
+        self.work()
+        detail = self.call("GET", f"/sessions/{session_id}").get_json()
+        self.assertEqual([(item["id"], item["sequence"]) for item in detail["revealed_requirements"]], [("scope", 3)])
+        self.assertEqual([message["hint"] for message in detail["messages"]], [False, False, False])
+        polled = self.call("GET", f"/sessions/{session_id}/reply?after=2").get_json()
+        self.assertEqual(polled["revealed_requirements"], detail["revealed_requirements"])
+        latest = 3
+        for number in range(3):
+            self.call("POST", f"/sessions/{session_id}/turns", {
+                "request_id": str(uuid4()), "body": f"EARLY_{number} " + "detail " * 400, "expected_sequence": latest,
+                "artifact_revisions": CURRENT, "brief_revision": 0})
+            self.work()
+            latest = self.call("GET", f"/sessions/{session_id}").get_json()["messages"][-1]["sequence"]
+        with patch.dict(self.app.config, LEARNING_AI_ENABLED=False):
+            self.turn(session_id, expected=latest)
+        session = practice_service._owned_session(1, session_id)
+        worst = practice_service._worst_case(session, practice_service._latest_learner_turn(session_id), 1)
+        full = practice_worker.interviewer.prompt_bytes(worst["reply"])
+        only_latest = practice_worker.interviewer.prompt_bytes(
+            practice_service._narrowed(worst, len(worst["context"]["transcript"]) - 1))
+        self.app.config["LEARNING_AI_CONTEXT_BYTES"] = (only_latest + full) // 2
+        reply = self.call("GET", f"/sessions/{session_id}/reply").get_json()["reply"]
+        self.assertEqual((reply["unavailable"], reply["can_continue_recent"]), ("context_too_large", True))
+        recent = self.call("POST", f"/sessions/{session_id}/reply", {"request_id": str(uuid4()), "context": "recent"})
+        self.assertEqual((recent.status_code, recent.get_json()["reply"]["status"]), (202, "pending"))
+        start = recent.get_json()["context_from_sequence"]
+        self.assertEqual(self.call("GET", f"/sessions/{session_id}").get_json()["context_choices"][0]["from_sequence"],
+                         start)
 
     def test_polling_needs_a_whole_number_and_old_receipts_still_replay(self):
         session_id = self.start()

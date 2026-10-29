@@ -326,10 +326,13 @@ from project.services import practice_service, practice_worker
 
 class Provider:
     def call(self, body, *, deadline):
+        usage = {{"input_tokens": 10, "output_tokens": 5}}
+        if body["text"]["format"]["name"] == "interviewer_selector":
+            return {{"output": practice_worker.fake_selection(body), "usage": usage}}
         if {stage!r} == "call":
             print("READY", flush=True)
             input()
-        return {{"output": {{"reply": "A reply that is never stored."}}, "usage": {{"input_tokens": 10, "output_tokens": 5}}}}
+        return {{"output": {{"reply": "A reply that is never stored."}}, "usage": usage}}
 
 def stop_before_storing(*args, **kwargs):
     print("READY", flush=True)
@@ -354,8 +357,9 @@ with create_app({self.config!r}).app_context():
                 session_id, reply_id = self.queue()
                 self.run_worker_until(stage)
                 self.assertEqual(self.status(reply_id).status, "running")
-                charge = LearningAICharge.query.filter_by(reply_id=reply_id).one()
-                self.assertEqual(charge.state, first_charge)  # unknown outcome: the reservation keeps counting
+                charges = {charge.purpose: charge.state for charge in LearningAICharge.query.filter_by(reply_id=reply_id)}
+                # The selector call settled; the reply call's outcome is unknown, so its reservation keeps counting.
+                self.assertEqual(charges, {"select": "settled", "reply": first_charge})
                 with db.engine.begin() as connection:  # the dead process's lease runs out
                     connection.execute(text("UPDATE ai_request SET lease_expires_at = now() - interval '1 second' "
                                             "WHERE id = :id"), {"id": reply_id})
@@ -366,7 +370,8 @@ with create_app({self.config!r}).app_context():
                 self.assertEqual(SessionMessage.query.filter_by(practice_session_id=session_id,
                                                                 role="interviewer").count(), 2)  # opening + reply
                 self.assertEqual(sorted(row.state for row in LearningAICharge.query.filter(
-                    LearningAICharge.reply_id.in_([reply_id, retried["reply"]["id"]]))), sorted([first_charge, "settled"]))
+                    LearningAICharge.reply_id.in_([reply_id, retried["reply"]["id"]]))),
+                    sorted([first_charge, "settled", "settled", "settled"]))
 
     def test_a_fresh_process_picks_up_a_reply_queued_before_a_restart(self):
         _, reply_id = self.queue()

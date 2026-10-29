@@ -18,7 +18,7 @@ SESSION_KEYS = {"id", "exercise_id", "exercise_version", "exercise_title", "conc
                 "status", "created_at", "updated_at"}
 ARTIFACT_KEYS = {"artifact_id", "title", "format", "instructions", "languages", "revision", "language", "body",
                  "saved_at"}
-MESSAGE_KEYS = {"sequence", "role", "kind", "body", "created_at", "artifact_revisions", "brief_revision"}
+MESSAGE_KEYS = {"sequence", "role", "kind", "body", "created_at", "artifact_revisions", "brief_revision", "hint"}
 SESSION_BRIEF_KEYS = {"revision", "entries", "saved_at"}
 ENTRY_KEYS = {"id", "type", "basis", "text", "pinned", "sources"}
 BRIEF_KEYS = {"scenario", "learning_objectives", "functional_requirements", "nonfunctional_requirements",
@@ -83,9 +83,13 @@ class PracticeApiTests(PracticeApiCase):
         detail = self.call("GET", f"/sessions/{session_id}")
         self.assertEqual(detail.headers["Cache-Control"], "private, no-store")
         body = detail.get_json()
-        self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages", "reply", "ai_budget"})
+        self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages", "reply", "ai_budget",
+                                     "revealed_requirements", "context_choices", "learner_turns", "check_in_due"})
         self.assertEqual(body["reply"], {"id": None, "status": "none", "error": None, "turn_sequence": None,
-                                         "answered": False, "can_request": False, "unavailable": "disabled"})
+                                         "answered": False, "can_request": False, "can_continue_recent": False,
+                                         "unavailable": "disabled", "too_large_part": None})
+        self.assertEqual((body["revealed_requirements"], body["context_choices"], body["learner_turns"],
+                          body["check_in_due"]), ([], [], 0, False))
         self.assertIsNone(body["ai_budget"])
         self.assertEqual(set(body["session"]), SESSION_KEYS)
         self.assertEqual(set(body["brief"]), BRIEF_KEYS)

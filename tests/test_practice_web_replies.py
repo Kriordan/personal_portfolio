@@ -119,7 +119,7 @@ class PracticeWebReplyTests(PracticeWebCase):
             created_at=practice_service._now()))
         db.session.commit()
         self.assertIn("AI spending this month: $0.01 of $0.05.", self.page(session_id))
-        with patch.object(practice_service, "_reply_fits", return_value=False):  # this reply's worst case doesn't fit
+        with patch.object(practice_service, "_reply_obstacle", return_value=("budget", None)):  # its worst case doesn't fit
             self.act(session_id, self.fields(session_id), "send", message="too costly to answer")
             self.assertIn("This month&#39;s AI budget has no room for another reply, so replies resume next month. "
                           "Your messages are still saved.", self.page(session_id))

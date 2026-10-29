@@ -106,7 +106,8 @@ class PracticeServiceTests(PracticeServiceCase):
         self.assertEqual(detail["session"]["concept_id"], "idempotency")
         opening = self.catalog["items"][-1]["content"]["facilitator"]["opening_prompt"]
         self.assertEqual(detail["messages"], [{"sequence": 1, "role": "interviewer", "kind": "turn",
-            "body": opening, "created_at": NOW.isoformat(), "artifact_revisions": [], "brief_revision": None}])
+            "body": opening, "created_at": NOW.isoformat(), "artifact_revisions": [], "brief_revision": None,
+            "hint": False}])
         self.assertEqual(detail["session_brief"], {"revision": 0, "entries": [], "saved_at": None})
         self.assertEqual([(a["artifact_id"], a["revision"], a["language"], a["body"]) for a in detail["artifacts"]],
                          [("api", 0, "text", ""), ("schema", 0, "sql", ""), ("algorithm", 0, "pseudocode", "")])

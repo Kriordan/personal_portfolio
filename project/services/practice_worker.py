@@ -2,14 +2,16 @@
 
 Replies are database rows with leases, so a restart loses nothing: a stale reply reads as
 interrupted and the learner asks again. Paid calls are never retried automatically. Each
-provider call goes through an injectable provider: the scripted FakeProvider here, and in
-checkpoint 4b a short-lived child process, so a stuck call can always be abandoned.
-Logs and error reports carry fixed codes only, never learner text or model output.
+provider call goes through an injectable provider: the scripted FakeProvider here, or
+OpenAIProvider (learning_ai_provider), which makes each call in a short-lived child process
+so a stuck call can always be abandoned. A reply is up to two calls: the selector, then the
+reply. Logs and error reports carry fixed codes only, never learner text or model output.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import threading
 import time
@@ -24,34 +26,60 @@ from project import monitoring
 from project.database import db
 from project.learning import interviewer
 from project.services import practice_budget, practice_service, practice_signals
+from project.services.learning_ai_provider import OpenAIProvider, ProviderError
 
 FAKE_MODES = ("success", "slow", "fail", "lost", "hang", "invalid")
 # Expected outcomes that are logged but not reported as errors.
-QUIET_CODES = {"budget", "unpriced"}
+QUIET_CODES = {"budget", "unpriced", "context_too_large"}
+# Words too common to show what a message asks about, for the fake selector.
+_COMMON = {"about", "after", "also", "been", "before", "could", "does", "each", "from", "have", "happen", "happens",
+           "into", "just", "like", "more", "must", "need", "only", "other", "same", "should", "some", "than", "that",
+           "their", "them", "then", "there", "they", "this", "what", "when", "where", "which", "while", "will",
+           "with", "would", "your"}
 
 
-class ProviderError(Exception):
-    """A provider call that produced no usable reply.
+def _words(text):
+    words = set()
+    for word in re.findall(r"[a-z0-9]+", text.lower()):
+        word = word[:-1] if word.endswith("s") and len(word) > 4 else word
+        if len(word) >= 4 and word not in _COMMON:
+            words.add(word)
+    return words
 
-    `charged` says what the ledger records: "no" releases the reservation, "yes" settles it
-    (from `usage` when known), and "unknown" leaves it reserved as an uncertain cost.
-    """
 
-    def __init__(self, code, *, charged="unknown", usage=None):
-        super().__init__(code)
-        self.code, self.charged, self.usage = code, charged, usage
+def fake_selection(body):
+    """A deterministic stand-in for the selector: a requirement whose cue the message repeats, or
+    shares two distinctive words with, and a hint when the message asks for one. Real paraphrase
+    detection is the live model's job, measured by the evaluation harness."""
+    material = json.loads(body["input"])
+    message = material["message"]
+    said = _words(message)
+    chosen = [requirement["id"] for requirement in material["requirements"]
+              if any(cue.lower().strip(" ?") in message.lower() or len(_words(cue) & said) >= 2
+                     for cue in requirement["cues"])]
+    properties = body["text"]["format"]["schema"]["properties"]
+    output = {}
+    if "constraint_ids" in properties:
+        output["constraint_ids"] = chosen
+    if "hint_requested" in properties:
+        output["hint_requested"] = bool(re.search(r"\bhint\b|\bhelp me\b", message, re.I))
+    return output
 
 
 class FakeProvider:
-    """Scripted replies for tests and the preview fixture. It never contacts a network.
+    """Scripted answers for tests, the preview fixture, and the evaluation harness. It never
+    contacts a network.
 
     `mode` may be a callable, so a running fixture can switch it: success, slow, fail
     (refused before any paid work), lost (outcome unknown), hang (until the deadline), or
-    invalid (an empty reply).
+    invalid (an empty reply). Selector calls answer from `selections` when scripted (each a
+    dict, or a callable given the request), else from `fake_selection`; reply calls from
+    `replies`, else a fixed question.
     """
 
-    def __init__(self, mode="success", *, delay=2.0, replies=()):
-        self.mode, self.delay, self.replies, self.calls = mode, delay, list(replies), []
+    def __init__(self, mode="success", *, delay=2.0, replies=(), selections=()):
+        self.mode, self.delay, self.replies, self.selections = mode, delay, list(replies), list(selections)
+        self.calls = []
 
     def call(self, body, *, deadline):
         self.calls.append(body)
@@ -65,17 +93,32 @@ class FakeProvider:
             raise ProviderError("timeout")
         if mode == "slow":
             time.sleep(self.delay)
-        reply = "" if mode == "invalid" else (
-            self.replies.pop(0) if self.replies else "What should happen when the same order request arrives twice?")
+        if body["text"]["format"]["name"] == interviewer.SELECTOR_SCHEMA_NAME:
+            scripted = self.selections.pop(0) if self.selections else fake_selection
+            output = scripted(body) if callable(scripted) else scripted
+            text = json.dumps(output)
+        else:
+            text = "" if mode == "invalid" else (
+                self.replies.pop(0) if self.replies else "What should happen when the same order request arrives twice?")
+            output = {"reply": text}
         size = len(json.dumps(body, ensure_ascii=False).encode("utf-8"))
-        return {"output": {"reply": reply},
-                "usage": {"input_tokens": size // 4, "cached_input_tokens": 0, "output_tokens": max(len(reply) // 4, 1)}}
+        return {"output": output,
+                "usage": {"input_tokens": size // 4, "cached_input_tokens": 0, "output_tokens": max(len(text) // 4, 1)}}
+
+    def reply_calls(self):
+        return [body for body in self.calls if body["text"]["format"]["name"] == interviewer.REPLY_SCHEMA_NAME]
+
+    def selector_calls(self):
+        return [body for body in self.calls if body["text"]["format"]["name"] == interviewer.SELECTOR_SCHEMA_NAME]
 
 
 def provider_for(app):
-    """The configured provider, or None when this release can't call it."""
-    if app.config.get("LEARNING_AI_PROVIDER", "openai") == "fake":
+    """The configured provider, or None when this release can't call it (OpenAI without its key)."""
+    name = app.config.get("LEARNING_AI_PROVIDER", "openai")
+    if name == "fake":
         return FakeProvider(app.config.get("LEARNING_AI_FAKE_MODE", "success"))
+    if name == "openai" and os.environ.get("LEARNING_OPENAI_API_KEY"):
+        return OpenAIProvider(base_url=app.config.get("LEARNING_AI_BASE_URL", "https://api.openai.com/v1"))
     return None
 
 
@@ -110,20 +153,54 @@ def run_once(provider, *, now=_now, worker_id="worker"):
 
 
 def _run(provider, reply_id, token, now):
+    """One reply: the selector (when anything is left to reveal or hint), then the reply.
+
+    If the selector fails, so does the reply: answering without it could withhold a fact the
+    learner earned. Its cost is settled, nothing is revealed, and asking again reruns both.
+    """
     context = practice_service.reply_context(reply_id)
     if context is None:
         return
     settings = practice_service.ai_settings()
-    body = interviewer.reply_request(context, settings)
+    selection = {"constraint_ids": [], "hint_requested": False}
+    selector = interviewer.selector_request(context, settings)
+    if selector is not None:
+        output = _call(provider, reply_id, token, selector, purpose="select", settings=settings, now=now)
+        if output is None:
+            return
+        try:
+            selection = interviewer.parse_selection(output, context)
+        except interviewer.InvalidOutput:
+            practice_service.fail_reply(reply_id, token, code="invalid_output", now=now())
+            _report("invalid_output", reply_id)
+            return
+    facilitator = practice_service.reply_facilitator(context, selection)
+    if facilitator is None:
+        return
+    body = interviewer.reply_request(context, facilitator, settings)
+    if interviewer.prompt_bytes(body) > settings["context_bytes"]:
+        practice_service.fail_reply(reply_id, token, code="context_too_large", now=now())
+        _report("context_too_large", reply_id)
+        return
+    output = _call(provider, reply_id, token, body, purpose="reply", settings=settings, now=now)
+    if output is None:
+        return
+    _complete(reply_id, token, output.get("reply"), now,
+              disclosure={"constraint_ids": facilitator["constraint_ids"], "hint_index": facilitator["hint_index"]})
+
+
+def _call(provider, reply_id, token, body, *, purpose, settings, now):
+    """One paid call, fenced and reserved first and settled after. Returns its output object
+    (empty when the provider's answer isn't one), or None when the reply stops here."""
     try:
-        charge = practice_service.begin_call(reply_id, token, purpose="reply", input_bytes=interviewer.body_bytes(body),
+        charge = practice_service.begin_call(reply_id, token, purpose=purpose, input_bytes=interviewer.body_bytes(body),
                                              max_output_tokens=body["max_output_tokens"],
                                              deadline_seconds=settings["call_seconds"], now=now())
     except practice_service.CallFenced:
-        return
+        return None
     except practice_budget.BudgetExhausted as exc:
         _report(exc.code, reply_id)
-        return
+        return None
     try:
         result = provider.call(body, deadline=settings["call_seconds"])
     except ProviderError as error:
@@ -131,17 +208,18 @@ def _run(provider, reply_id, token, now):
         practice_service.finish_call(charge, outcome=outcome, usage=error.usage, now=now())
         practice_service.fail_reply(reply_id, token, code=error.code, now=now())
         _report(error.code, reply_id)
-        return
+        return None
     practice_service.finish_call(charge, outcome="settled", usage=result.get("usage"), now=now())
     output = result.get("output")
-    _complete(reply_id, token, output.get("reply") if isinstance(output, dict) else None, now)
+    return output if isinstance(output, dict) else {}
 
 
-def _complete(reply_id, token, reply, now):
+def _complete(reply_id, token, reply, now, *, disclosure=None):
     """Write the reply, retrying the database write (never the paid call) on transient errors."""
     for attempt in range(3):
         try:
-            if practice_service.complete_reply(reply_id, token, body=reply, now=now()) == "invalid":
+            if practice_service.complete_reply(reply_id, token, body=reply, now=now(),
+                                               disclosure=disclosure) == "invalid":
                 _report("invalid_output", reply_id)
             return
         except OperationalError:

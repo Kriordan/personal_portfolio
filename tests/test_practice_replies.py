@@ -102,7 +102,7 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertEqual(self.send(others, user=self.other)["reply"],
                          {"id": None, "status": "unavailable", "reason": "owner_only"})
         for change, reason in ((dict(LEARNING_AI_ENABLED=False), "disabled"),
-                               (dict(LEARNING_AI_PROVIDER="openai"), "disabled"),  # no OpenAI call process until 4b
+                               (dict(LEARNING_AI_PROVIDER="openai"), "disabled"),  # without LEARNING_OPENAI_API_KEY
                                (dict(LEARNING_AI_MODEL="unpriced-model"), "disabled"),
                                (dict(LEARNING_AI_OWNER_EMAIL=""), "owner_only")):
             with self.subTest(change=change), patch.dict(self.app.config, change):
@@ -124,14 +124,19 @@ class PracticeReplyTests(PracticeReplyCase):
         # Editing during generation: the reply still reviews what the turn was sent with.
         self.save(session_id, [self.edit("api", "LATER_V2 POST /orders", base=1)])
         self.assertTrue(self.work())
-        body = self.provider.calls[0]
+        [selector], [body] = self.provider.selector_calls(), self.provider.reply_calls()
         self.assertIn("PINNED_V1", body["input"])
         self.assertNotIn("LATER_V2", body["input"])
         self.assertIs(body["store"], False)
         self.assertIn("INSTRUCTION_SENTINEL", body["instructions"])  # the provider needs the instructions
         serialized = json.dumps(body)
-        for hidden in ("HIDDEN_SENTINEL", "HINT_SENTINEL", "EVALUATOR_SENTINEL", "clarification_cues"):
+        for hidden in ("HIDDEN_SENTINEL", "HINT_SENTINEL", "EVALUATOR_SENTINEL", "clarification_cues", "Who owns the key"):
             self.assertNotIn(hidden, serialized)
+        # The selector sees the message and the cues of what's still hidden: no facts, hints, or artifacts.
+        self.assertEqual(json.loads(selector["input"])["message"], "How long do clients retry?")
+        for private in ("HIDDEN_SENTINEL", "HINT_SENTINEL", "INSTRUCTION_SENTINEL", "EVALUATOR_SENTINEL",
+                        "PINNED_V1", "2,000 order attempts"):
+            self.assertNotIn(private, json.dumps(selector))
         detail = service.session_detail(1, session_id, now=self.clock())
         reply = detail["messages"][-1]
         self.assertEqual((reply["role"], reply["sequence"], reply["artifact_revisions"]),
@@ -139,10 +144,10 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertEqual(detail["artifacts"][0]["revision"], 2)
         self.assertEqual((detail["reply"]["status"], detail["reply"]["answered"], detail["reply"]["can_request"]),
                          ("completed", True, False))
-        charge = LearningAICharge.query.one()
-        self.assertEqual((charge.state, charge.purpose, charge.reply_id, charge.pricing_version),
-                         ("settled", "reply", sent["reply"]["id"], "fake-1"))
-        self.assertLessEqual(charge.cost_microusd, charge.reserved_microusd)
+        charges = LearningAICharge.query.order_by(LearningAICharge.id).all()  # the selector's settles first
+        self.assertEqual([(charge.state, charge.purpose, charge.reply_id, charge.pricing_version) for charge in charges],
+                         [("settled", purpose, sent["reply"]["id"], "fake-1") for purpose in ("select", "reply")])
+        self.assertTrue(all(charge.cost_microusd <= charge.reserved_microusd for charge in charges))
         self.assertFalse(self.work())
 
     def test_a_live_reply_refuses_a_send_and_a_stale_one_never_blocks(self):
@@ -211,10 +216,13 @@ class PracticeReplyTests(PracticeReplyCase):
                     self.assertTrue(self.work(FakeProvider(mode)))
                 request = self.request(sent["reply"]["id"])
                 self.assertEqual((request.status, request.error_code), (status, code))
-                charge = LearningAICharge.query.filter_by(reply_id=request.id).one()
-                self.assertEqual(charge.state, state)
+                charges = LearningAICharge.query.filter_by(reply_id=request.id).order_by(LearningAICharge.id).all()
+                # A failing provider fails the selector call; otherwise both calls are made and paid for.
+                self.assertEqual([charge.purpose for charge in charges],
+                                 ["select"] if mode in ("fail", "lost") else ["select", "reply"])
+                self.assertEqual(charges[-1].state, state)
                 if state == "released":
-                    self.assertEqual(charge.cost_microusd, 0)
+                    self.assertEqual(charges[-1].cost_microusd, 0)
         # The lost call's reservation keeps counting: its outcome is unknown.
         lost = LearningAICharge.query.filter_by(state="reserved").one()
         settled = sum(charge.cost_microusd for charge in LearningAICharge.query.filter_by(state="settled"))
@@ -246,15 +254,17 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertEqual((state["status"], state["unavailable"], state["can_request"]), ("none", "budget", False))
         self.assertEqual(AIRequest.query.count(), 0)
 
-        self.cap(50_000)
+        self.cap(60_000)
         self.assertTrue(self.reply_state(session_id)["can_request"])
         asked = self.ask(session_id)
-        in_flight = self.charge(40_000, state="reserved")  # another session's call takes the room meanwhile
+        in_flight = self.charge(50_000, state="reserved")  # another session's call takes the room meanwhile
         with self.assertLogs("project", "WARNING"):
             self.assertTrue(self.work())
         self.assertEqual((self.request(asked["reply"]["id"]).status, self.request(asked["reply"]["id"]).error_code),
                          ("failed", "budget"))
-        self.assertEqual((LearningAICharge.query.count(), self.provider.calls), (1, []))  # no reservation, no call
+        # The small selector call still fit; the reply's reservation didn't, so no reply call was made.
+        self.assertEqual(([charge.purpose for charge in LearningAICharge.query.filter_by(reply_id=asked["reply"]["id"])],
+                          len(self.provider.reply_calls())), (["select"], 0))
         state = self.reply_state(session_id)
         self.assertEqual((state["error"], state["unavailable"], state["can_request"]), ("budget", "budget", False))
 
@@ -467,6 +477,8 @@ class PracticeWorkerThreadTests(unittest.TestCase):
 
         class Stuck:
             def call(self, body, *, deadline):
+                if body["text"]["format"]["name"] == interviewer.SELECTOR_SCHEMA_NAME:
+                    return {"output": practice_worker.fake_selection(body), "usage": None}
                 called.set()
                 release.wait(10)
                 return {"output": {"reply": "Unstuck."}, "usage": None}

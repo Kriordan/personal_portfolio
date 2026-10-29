@@ -312,6 +312,20 @@ def opening_view(item):
     return {"interaction_style": body["interaction_style"], "opening_prompt": body["opening_prompt"]}
 
 
+def selector_view(item, *, revealed_constraint_ids=()):
+    """What the disclosure selector may see: the clarification cues of requirements still hidden.
+
+    Never facts, hints, instructions, or evaluation material.
+    """
+    body = item["content"]["facilitator"]
+    known = {constraint["id"] for constraint in body["hidden_constraints"]}
+    if not set(revealed_constraint_ids) <= known:
+        raise ValidationError("Unknown constraint disclosure.")
+    return deepcopy([{"id": constraint["id"], "cues": list(constraint["clarification_cues"])}
+                     for constraint in body["hidden_constraints"]
+                     if constraint["id"] not in revealed_constraint_ids])
+
+
 def interviewer_view(item, *, revealed_constraint_ids=(), hint_index=None):
     """What the conversational call may see: the authored instructions, the revealed facts, and
     one permitted hint only when the learner asked for help.

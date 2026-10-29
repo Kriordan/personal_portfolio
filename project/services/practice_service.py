@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
@@ -26,7 +27,7 @@ from project.curriculum_terms import (
 )
 from project.database import db
 from project.learning import interviewer
-from project.learning.content_schema import interviewer_view, learner_view, opening_view
+from project.learning.content_schema import interviewer_view, learner_view, opening_view, selector_view
 from project.models import (
     AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, PracticeReceipt, PracticeSession,
     SessionMessage, SessionMessageArtifact, User,
@@ -825,9 +826,10 @@ def delete_session(user, session_id):
 # next-call check never take the owner lock; owner-side writes lock the live request row
 # before they change the session row, so the two sides take turns instead of deadlocking.
 
-PROVIDERS = ("fake",)  # the OpenAI call process arrives with the interviewer itself (checkpoint 4b)
+PROVIDERS = ("fake", "openai")
 LIVE = ("pending", "running")
-REPLY_MAX_BYTES = 8 * 1024
+# Any reply the schema allows fits: at most REPLY_MAX_CHARS characters of up to four UTF-8 bytes.
+REPLY_MAX_BYTES = 4 * interviewer.REPLY_MAX_CHARS
 
 
 class ReplyPendingError(ConflictError):
@@ -852,7 +854,21 @@ def ai_settings():
         "call_seconds": int(config.get("LEARNING_AI_CALL_SECONDS", 60)),
         "lease_margin_seconds": int(config.get("LEARNING_AI_LEASE_MARGIN_SECONDS", 30)),
         "max_output_tokens": int(config.get("LEARNING_AI_MAX_OUTPUT_TOKENS", 1200)),
+        "selector_max_output_tokens": int(config.get("LEARNING_AI_SELECTOR_MAX_OUTPUT_TOKENS", 200)),
+        "reasoning_effort": config.get("LEARNING_AI_REASONING_EFFORT") or None,
+        # What the model may read per reply, in UTF-8 bytes (a token is at least one byte). The
+        # default fits the bounded essential context; activation sizes it to the chosen model.
+        "context_bytes": int(config.get("LEARNING_AI_CONTEXT_BYTES", 524_288)),
+        "check_in_turns": int(config.get("LEARNING_AI_CHECK_IN_TURNS", 24)),
+        "base_url": config.get("LEARNING_AI_BASE_URL", "https://api.openai.com/v1"),
     }
+
+
+def provider_ready(settings):
+    """Whether this release can call the configured provider: the fake always; OpenAI with its key."""
+    if settings["provider"] == "fake":
+        return True
+    return settings["provider"] == "openai" and bool(os.environ.get("LEARNING_OPENAI_API_KEY"))
 
 
 def ai_owner_id():
@@ -868,7 +884,8 @@ def ai_owner_id():
 def reply_unavailable(user_id, now):
     """Why the interviewer can't reply for this learner now, or None when it can."""
     settings = ai_settings()
-    if (not settings["enabled"] or settings["provider"] not in PROVIDERS or not settings["model"]
+    if (not settings["enabled"] or settings["provider"] not in PROVIDERS or not provider_ready(settings)
+            or not settings["model"]
             or not practice_budget.priced(settings["provider"], settings["model"], settings["tier"])
             or not practice_budget.priced(settings["provider"], settings["selector_model"], settings["tier"])):
         return "disabled"
@@ -945,35 +962,23 @@ def _reply_dto(reply_id=None, status="unavailable", reason=None):
     return {"id": reply_id, "status": status, "reason": reason}
 
 
-def _reply_fits(session, turn, now, *, context_from_sequence=1):
-    """Whether the most a reply to `turn` could cost still fits in this month's budget.
-
-    The worst case is priced from the request body the worker will send, built from the same
-    pinned inputs, so a reply that can't fit is neither queued nor offered again.
-    """
-    if session.profile_version not in interviewer.PROFILES:
-        return True  # a release that knows the profile runs it, and reserves before calling
-    settings = ai_settings()
-    context = {"profile_version": session.profile_version, "model": settings["model"],
-               **_reply_inputs(session, turn, context_from_sequence)}
-    body = interviewer.reply_request(context, settings)
-    worst = practice_budget.worst_case(settings["provider"], settings["model"], settings["tier"],
-                                       input_bytes=interviewer.body_bytes(body),
-                                       max_output_tokens=body["max_output_tokens"])
-    return worst is None or practice_budget.fits(worst, now)
-
-
-def _queue_reply(session, turn, now):
-    """Queue the interviewer's reply to `turn` when AI may reply for this learner and it fits the budget."""
+def _queue_reply(session, turn, now, *, context_from_sequence=None):
+    """Queue the interviewer's reply to `turn` when AI may reply for this learner, the interviewer
+    can read what the reply needs, and its worst case fits the budget. The reply reads from the
+    learner's latest Continue with recent messages choice, if any."""
     unavailable = reply_unavailable(session.user_id, now)
     if unavailable:
         return _reply_dto(reason=unavailable)
-    if not _reply_fits(session, turn, now):
-        return _reply_dto(reason="budget")
+    if context_from_sequence is None:
+        context_from_sequence = _context_from(_records(session.id))
+    obstacle, _ = _reply_obstacle(session, turn, now, context_from_sequence)
+    if obstacle:
+        return _reply_dto(reason=obstacle)
     settings = ai_settings()
     request = AIRequest(id=str(uuid4()), practice_session_id=session.id, turn_message_id=turn.id, kind="reply",
                         status="pending", profile_version=session.profile_version, provider=settings["provider"],
-                        model=settings["model"], selector_model=settings["selector_model"], created_at=now)
+                        model=settings["model"], selector_model=settings["selector_model"],
+                        context_from_sequence=context_from_sequence, created_at=now)
     db.session.add(request)
     db.session.flush()
     return _reply_dto(request.id, "pending")
@@ -991,19 +996,28 @@ def _latest_learner_turn(session_id):
     ).order_by(SessionMessage.sequence.desc()).limit(1)).scalar_one_or_none()
 
 
-def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=None):
+def request_reply(user, session_id, *, request_id, edits=None, brief=None, context=None, now=None):
     """Ask for a reply to the latest learner turn: a retry, or a turn saved while AI was unavailable.
 
     The website also saves the page's artifacts and brief in the same transaction, so asking
     never discards typing. Only the latest learner turn qualifies. If a reply reached it
     meanwhile (seen from another tab, or arriving late), asking still saves, and the reply's
     status is "answered".
+
+    context="recent" is Continue with recent messages: when the whole conversation no longer
+    fits what the interviewer can read, record that replies read from the earliest message
+    that fits, and ask. Nothing is deleted; later replies keep reading from there.
     """
     validate_request_id(request_id)
     _check_session_id(session_id)
+    if context not in (None, "recent"):
+        raise PracticeValidationError('context must be "recent" when given.', field="context", part="turn")
     normalized = _normalize_edits([] if edits is None else edits, minimum=0)
     normalized_brief = _normalize_brief(brief) if brief is not None else None
-    digest = _digest("reply", session_id, {"edits": normalized, "brief": normalized_brief})
+    payload = {"edits": normalized, "brief": normalized_brief}
+    if context is not None:
+        payload["context"] = context
+    digest = _digest("reply", session_id, payload)
     now = now or _now()
     try:
         _lock_owner(user.id)
@@ -1035,6 +1049,11 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=N
             raise PracticeValidationError("Send a message first.", part="turn")
         if _latest_turn(session.id) != turn.sequence:
             reply = _reply_dto(status="answered")  # what was asked for has happened
+        elif context == "recent":
+            reply, choice = _continue_recent(session, turn, now)
+            if choice is not None:
+                response["context_from_sequence"] = choice
+                changed = True
         else:
             reply = _queue_reply(session, turn, now)
         if session.status == "paused":
@@ -1051,10 +1070,33 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=N
         raise
 
 
-def reply_summary(session, now):
-    """The latest learner turn's reply as the learner sees it, and whether a reply can be requested.
+def _continue_recent(session, turn, now):
+    """Record a Continue with recent messages choice for `turn`, when it moves where replies read
+    from, and queue the reply. Returns the reply and the new starting message (or None)."""
+    unavailable = reply_unavailable(session.user_id, now)
+    if unavailable:
+        return _reply_dto(reason=unavailable), None  # nothing to read from, so no choice to record
+    if session.profile_version not in interviewer.PROFILES:
+        return _queue_reply(session, turn, now), None  # a release that knows the profile checks its size
+    current = _context_from(_records(session.id))
+    start = _recent_from(session, turn)
+    if start is None:
+        return _reply_dto(reason="essential_too_large"), None
+    if start <= current:
+        return _queue_reply(session, turn, now), None  # the conversation already fits from where it reads
+    db.session.add(SessionMessage(practice_session_id=session.id, sequence=_next_sequence(session.id), role="learner",
+                                  kind="context", modality="text", body="", data={"from_sequence": start},
+                                  created_at=now))
+    db.session.flush()
+    return _queue_reply(session, turn, now, context_from_sequence=start), start
 
-    Asking needs AI available for this learner and room in this month's budget for the reply's worst case.
+
+def reply_summary(session, now):
+    """The latest learner turn's reply as the learner sees it, and what the learner can do next.
+
+    Asking needs AI available for this learner, a conversation the interviewer can read at once
+    (or **Continue with recent messages** when it can't), and room in this month's budget for
+    the reply's worst case. `too_large_part` names what to shorten when even the essentials don't fit.
     """
     unavailable = reply_unavailable(session.user_id, now)
     turn = _latest_learner_turn(session.id)
@@ -1064,13 +1106,14 @@ def reply_summary(session, now):
             AIRequest.created_at.desc()).limit(1).execution_options(populate_existing=True)).scalar_one_or_none()
     status, error = _effective(request, now, unavailable) if request is not None else ("none", None)
     answered = turn is not None and _latest_turn(session.id) != turn.sequence
-    if unavailable is None and turn is not None and not answered and status not in LIVE \
-            and not _reply_fits(session, turn, now):
-        unavailable = "budget"
+    part = None
+    if unavailable is None and turn is not None and not answered and status not in LIVE:
+        unavailable, part = _reply_obstacle(session, turn, now, _context_from(_records(session.id)))
     return {"id": request.id if request is not None else None, "status": status, "error": error,
             "turn_sequence": turn.sequence if turn is not None else None, "answered": answered,
             "can_request": turn is not None and not answered and status not in LIVE and unavailable is None,
-            "unavailable": unavailable}
+            "can_continue_recent": unavailable == "context_too_large",
+            "unavailable": unavailable, "too_large_part": part}
 
 
 def reply_updates(user_id, session_id, *, after, now=None):
@@ -1083,7 +1126,8 @@ def reply_updates(user_id, session_id, *, after, now=None):
     reply = reply_summary(session, now or _now())
     turns = _turns(session.id)
     return {"reply": reply, "turns": [turn for turn in turns if turn["sequence"] > after],
-            "latest_sequence": turns[-1]["sequence"] if turns else 0}
+            "latest_sequence": turns[-1]["sequence"] if turns else 0,
+            "revealed_requirements": _revealed_requirements(_pinned_exercise(session).payload, _records(session.id))}
 
 
 def sweep_replies(now):
@@ -1156,10 +1200,44 @@ def reply_context(reply_id):
     }
 
 
+def _records(session_id, *, before=None):
+    """The session's disclosure, hint, and context-choice records, in order."""
+    query = select(SessionMessage).where(SessionMessage.practice_session_id == session_id,
+                                         SessionMessage.kind.in_(("context", "assistance")))
+    if before is not None:
+        query = query.where(SessionMessage.sequence < before)
+    return db.session.scalars(query.order_by(SessionMessage.sequence)).all()
+
+
+def _revealed(records):
+    """Revealed requirement IDs in the order they were revealed, each with the reply that revealed it."""
+    revealed = {}
+    for row in records:
+        if row.kind == "context" and row.role == "interviewer":
+            for constraint_id in (row.data or {}).get("revealed", []):
+                revealed.setdefault(constraint_id, (row.data or {}).get("turn_sequence"))
+    return revealed
+
+
+def _hints_given(records):
+    return sum(1 for row in records if row.kind == "assistance" and row.role == "interviewer")
+
+
+def _context_from(records):
+    """Where the learner's latest Continue with recent messages choice has replies start reading; 1 means everything."""
+    chosen = [(row.data or {}).get("from_sequence", 1) for row in records
+              if row.kind == "context" and row.role == "learner"]
+    return chosen[-1] if chosen else 1
+
+
 def _reply_inputs(session, turn, context_from_sequence):
     """What a reply to `turn` is built from. Later edits never leak in: artifacts are the
-    turn's cited revisions and the brief is the revision it was sent with."""
+    turn's cited revisions, the brief is the revision it was sent with, and what counts as
+    revealed (and which hints were given) is what was recorded before the turn."""
     payload = _pinned_exercise(session).payload
+    records = _records(session.id, before=turn.sequence)
+    revealed_before, hints_given = list(_revealed(records)), _hints_given(records)
+    hint_count = len(payload["content"]["facilitator"]["permitted_hints"])
     specs = _artifact_specs(payload)
     revision_ids = db.session.scalars(select(SessionMessageArtifact.artifact_revision_id).where(
         SessionMessageArtifact.message_id == turn.id)).all()
@@ -1172,8 +1250,10 @@ def _reply_inputs(session, turn, context_from_sequence):
         SessionMessage.sequence >= context_from_sequence, SessionMessage.sequence <= turn.sequence,
     ).order_by(SessionMessage.sequence)).all()
     return {
-        "exercise": {"title": payload["title"], "brief": learner_view(payload)["content"]["brief"],
-                     "facilitator": interviewer_view(payload)},
+        "exercise": {"title": payload["title"], "brief": learner_view(payload)["content"]["brief"]},
+        "selector": {"message": turn.body, "hidden": selector_view(payload, revealed_constraint_ids=revealed_before),
+                     "hints_left": hints_given < hint_count},
+        "revealed_before": revealed_before, "hints_given": hints_given,
         "brief": {"revision": brief_revision, "entries": [_entry_dto(entry) for entry in brief.data["entries"]]
                   if brief is not None else []},
         "artifacts": [{"artifact_id": row.artifact_id, "title": specs.get(row.artifact_id, {}).get("title", row.title),
@@ -1181,6 +1261,93 @@ def _reply_inputs(session, turn, context_from_sequence):
         "transcript": [{"sequence": message.sequence, "role": message.role, "body": message.body}
                        for message in transcript],
     }
+
+
+def reply_facilitator(context, selection):
+    """What a reply may use: the authored instructions, the facts revealed before its turn and
+    those its selector names now, and the next permitted hint only when the learner asked for
+    one. Server-side only; None when the session is gone."""
+    session = db.session.get(PracticeSession, context["session_id"], populate_existing=True)
+    if session is None:
+        return None
+    return interviewer.facilitator(_pinned_exercise(session).payload, context, selection)
+
+
+def _worst_case(session, turn, context_from_sequence):
+    """The largest requests a reply to `turn` could make: every hidden requirement revealed at
+    once and the next hint given. They bound both its cost and what the model must read."""
+    settings = ai_settings()
+    payload = _pinned_exercise(session).payload
+    context = {"session_id": session.id, "profile_version": session.profile_version, "model": settings["model"],
+               "selector_model": settings["selector_model"], "context_from_sequence": context_from_sequence,
+               **_reply_inputs(session, turn, context_from_sequence)}
+    facilitator = interviewer.facilitator(payload, context, {
+        "constraint_ids": [item["id"] for item in context["selector"]["hidden"]], "hint_requested": True})
+    return {"settings": settings, "context": context, "facilitator": facilitator,
+            "selector": interviewer.selector_request(context, settings),
+            "reply": interviewer.reply_request(context, facilitator, settings)}
+
+
+def _narrowed(worst, index):
+    """The worst-case reply reading the transcript from position `index` on."""
+    transcript = worst["context"]["transcript"][index:]
+    context = dict(worst["context"], transcript=transcript, context_from_sequence=transcript[0]["sequence"])
+    return interviewer.reply_request(context, worst["facilitator"], worst["settings"])
+
+
+def _largest_part(worst):
+    """The biggest piece of what a reply must read: {"part": "artifact", "artifact_id", "title"},
+    or {"part": "brief"}, {"part": "message"} (the turn itself), or {"part": "exercise"}."""
+    context = worst["context"]
+    parts = [({"part": "artifact", "artifact_id": artifact["artifact_id"], "title": artifact["title"]}, artifact)
+             for artifact in context["artifacts"]]
+    parts += [({"part": "brief"}, context["brief"]["entries"]), ({"part": "message"}, context["transcript"][-1]),
+              ({"part": "exercise"}, [context["exercise"], worst["facilitator"]])]
+    return max(parts, key=lambda part: len(json.dumps(part[1], ensure_ascii=False).encode("utf-8")))[0]
+
+
+def _reply_obstacle(session, turn, now, context_from_sequence):
+    """Why a reply to `turn` can't be queued, once AI is available: ("context_too_large", None)
+    when the transcript doesn't fit what the interviewer can read, ("essential_too_large", part)
+    when even the latest message with the brief and artifacts doesn't, ("budget", None) when its
+    worst case doesn't fit this month's budget; otherwise (None, None).
+
+    A reply reads the work its turn was sent with, so an essential that's too large is fixed by
+    shortening it, saving, and sending a new message, never by asking again for this turn."""
+    if session.profile_version not in interviewer.PROFILES:
+        return None, None  # a release that knows the profile runs it, and checks before calling
+    worst = _worst_case(session, turn, context_from_sequence)
+    settings = worst["settings"]
+    if interviewer.prompt_bytes(worst["reply"]) > settings["context_bytes"]:
+        latest_only = _narrowed(worst, len(worst["context"]["transcript"]) - 1)
+        if interviewer.prompt_bytes(latest_only) > settings["context_bytes"]:
+            return "essential_too_large", _largest_part(worst)
+        return "context_too_large", None
+    total = 0
+    for body, model in ((worst["selector"], settings["selector_model"]), (worst["reply"], settings["model"])):
+        if body is not None:
+            total += practice_budget.worst_case(settings["provider"], model, settings["tier"],
+                                                input_bytes=interviewer.body_bytes(body),
+                                                max_output_tokens=body["max_output_tokens"]) or 0
+    return (None, None) if practice_budget.fits(total, now) else ("budget", None)
+
+
+def _recent_from(session, turn):
+    """The earliest message from which a reply to `turn` fits what the interviewer can read, or
+    None when even the latest message alone doesn't. Fewer messages never read as more, so
+    a binary search finds the longest recent stretch."""
+    worst = _worst_case(session, turn, 1)
+    allowance = worst["settings"]["context_bytes"]
+    low, high = 0, len(worst["context"]["transcript"]) - 1
+    if interviewer.prompt_bytes(_narrowed(worst, high)) > allowance:
+        return None
+    while low < high:
+        middle = (low + high) // 2
+        if interviewer.prompt_bytes(_narrowed(worst, middle)) <= allowance:
+            high = middle
+        else:
+            low = middle + 1
+    return worst["context"]["transcript"][low]["sequence"]
 
 
 def begin_call(reply_id, token, *, purpose, input_bytes, max_output_tokens, deadline_seconds, now):
@@ -1269,12 +1436,17 @@ def fail_reply(reply_id, token, *, code, now):
         raise
 
 
-def complete_reply(reply_id, token, *, body, now):
+def complete_reply(reply_id, token, *, body, now, disclosure=None):
     """Write the interviewer's reply. Returns "written", "fenced", or "invalid".
 
     Fenced on status and claim token only, so a late reply that nothing has marked
     interrupted is still kept. The reply cites the revisions the turn was sent with.
+    `disclosure` ({"constraint_ids", "hint_index"}) is what the reply was given to reveal;
+    the same transaction records it after the reply, as an interviewer `context` record
+    and an `assistance` record, so the revealed list and hint history match the replies.
     """
+    constraint_ids = list((disclosure or {}).get("constraint_ids") or [])
+    hint_index = (disclosure or {}).get("hint_index")
     try:
         found = db.session.get(AIRequest, reply_id, populate_existing=True)
         if found is None:
@@ -1304,16 +1476,34 @@ def complete_reply(reply_id, token, *, body, now):
             db.session.commit()
             return "invalid"
         turn = db.session.get(SessionMessage, request.turn_message_id)
+        records = _records(session.id, before=turn.sequence)
+        revealed_before = _revealed(records)
+        if (any(item in revealed_before for item in constraint_ids)
+                or (hint_index is not None and hint_index != _hints_given(records))):
+            # Only one reply per session is ever live, so this means the inputs were built wrongly.
+            request.status, request.error_code, request.finished_at = "failed", "invalid_output", now
+            request.lease_expires_at = None
+            db.session.commit()
+            return "invalid"
         reply = SessionMessage(practice_session_id=session.id, sequence=_next_sequence(session.id), role="interviewer",
                                kind="turn", modality="text", body=text_body, created_at=now,
                                data={"reply_id": request.id, "profile_version": request.profile_version,
-                                     "brief_revision": (turn.data or {}).get("brief_revision", 0)})
+                                     "brief_revision": (turn.data or {}).get("brief_revision", 0),
+                                     "context_from_sequence": request.context_from_sequence})
         db.session.add(reply)
         db.session.flush()
         for revision_id in db.session.scalars(select(SessionMessageArtifact.artifact_revision_id).where(
                 SessionMessageArtifact.message_id == turn.id)).all():
             db.session.add(SessionMessageArtifact(message_id=reply.id, artifact_revision_id=revision_id,
                                                   practice_session_id=session.id))
+        for kind, data in (("context", {"revealed": constraint_ids} if constraint_ids else None),
+                           ("assistance", {"hint_index": hint_index} if hint_index is not None else None)):
+            if data is not None:
+                db.session.add(SessionMessage(
+                    practice_session_id=session.id, sequence=_next_sequence(session.id), role="interviewer",
+                    kind=kind, modality="text", body="", created_at=now,
+                    data={**data, "turn_sequence": reply.sequence, "reply_id": request.id}))
+                db.session.flush()
         request.status, request.reply_message_id, request.finished_at = "completed", reply.id, now
         request.lease_expires_at = None
         session.updated_at = now
@@ -1327,6 +1517,14 @@ def complete_reply(reply_id, token, *, body, now):
 # Reads.
 
 def _turns(session_id):
+    """Every turn in order, with its citations and whether it gave a hint.
+
+    The turns are read first: their citations and records commit with them, so a turn that
+    lands between these reads is simply missing, never shown without its details.
+    """
+    messages = db.session.scalars(select(SessionMessage).where(
+        SessionMessage.practice_session_id == session_id, SessionMessage.kind == "turn"
+    ).order_by(SessionMessage.sequence)).all()
     citations = {}
     for message_id, artifact_id, revision in db.session.execute(
             select(SessionMessageArtifact.message_id, ArtifactRevision.artifact_id, ArtifactRevision.revision)
@@ -1334,13 +1532,27 @@ def _turns(session_id):
             .where(SessionMessageArtifact.practice_session_id == session_id)
             .order_by(ArtifactRevision.artifact_id)):
         citations.setdefault(message_id, []).append({"artifact_id": artifact_id, "revision": revision})
-    messages = db.session.scalars(select(SessionMessage).where(
-        SessionMessage.practice_session_id == session_id, SessionMessage.kind == "turn"
-    ).order_by(SessionMessage.sequence))
+    hinted = {(row.data or {}).get("turn_sequence") for row in _records(session_id)
+              if row.kind == "assistance" and row.role == "interviewer"}
     return [{"sequence": message.sequence, "role": message.role, "kind": message.kind, "body": message.body,
              "created_at": _iso(message.created_at), "artifact_revisions": citations.get(message.id, []),
-             "brief_revision": (message.data or {}).get("brief_revision")}
+             "brief_revision": (message.data or {}).get("brief_revision"), "hint": message.sequence in hinted}
             for message in messages]
+
+
+def _revealed_requirements(payload, records):
+    """The facts revealed so far, in the order they were revealed, each with the reply that revealed it."""
+    revealed = _revealed(records)
+    facts = {item["id"]: item["fact"] for item in
+             interviewer_view(payload, revealed_constraint_ids=list(revealed))["revealed_constraints"]}
+    return [{"id": constraint_id, "fact": facts[constraint_id], "sequence": sequence}
+            for constraint_id, sequence in revealed.items()]
+
+
+def _context_choices(records):
+    """Each Continue with recent messages choice: where it was made, and where replies read from after it."""
+    return [{"sequence": row.sequence, "from_sequence": (row.data or {}).get("from_sequence", 1)}
+            for row in records if row.kind == "context" and row.role == "learner"]
 
 
 def session_detail(user_id, session_id, *, now=None):
@@ -1360,11 +1572,19 @@ def session_detail(user_id, session_id, *, now=None):
         })
     now = now or _now()
     # Read the reply's state before the transcript: if the reply lands between the two reads,
-    # the page shows it as still coming (and polls) rather than as arrived but missing.
+    # the page shows it as still coming (and polls) rather than as arrived but missing. The
+    # records come last, so every turn shown has its own.
     reply = reply_summary(session, now)
+    messages = _turns(session.id)
+    records = _records(session.id)
+    learner_turns = sum(1 for message in messages if message["role"] == "learner")
+    check_in = ai_settings()["check_in_turns"]
     return {"session": _session_dto(session, payload), "brief": brief,
             "session_brief": _brief_dto(_brief_record(session.id)), "artifacts": artifacts,
-            "messages": _turns(session.id), "reply": reply, "ai_budget": ai_budget(session.user_id, now)}
+            "messages": messages, "reply": reply, "ai_budget": ai_budget(session.user_id, now),
+            "revealed_requirements": _revealed_requirements(payload, records),
+            "context_choices": _context_choices(records),
+            "learner_turns": learner_turns, "check_in_due": check_in > 0 and learner_turns >= check_in}
 
 
 def session_counts(user_id, session_id):

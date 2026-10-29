@@ -186,17 +186,25 @@ def reply_status(session_id):
 def ask_for_reply(session_id):
     """Retry a reply, or ask for one to a turn saved while AI was unavailable.
 
+    With "context": "recent", continue with recent messages when the conversation no longer
+    fits what the interviewer can read: later replies read from the earliest message that
+    fits ("context_from_sequence" in the response). Nothing is deleted.
+
     202 when a reply is queued. 200 when none is: the turn already has a reply ("answered"),
-    or AI can't reply now ("unavailable", with a reason).
+    or AI can't reply now ("unavailable", with a reason). For "essential_too_large", the
+    reply detail's too_large_part names what to shorten; a reply reads the work its turn
+    was sent with, so shorten it, save, and send a new turn.
     """
     user, payload, failure = _user_and_payload()
     if failure:
         return failure
-    if set(payload) != {"request_id"}:
-        return _error("Send request_id.", 400, "invalid_request")
+    if "request_id" not in payload or set(payload) - {"request_id", "context"}:
+        return _error('Send request_id, and context "recent" to continue with recent messages.', 400,
+                      "invalid_request")
 
     def ask():
-        result = practice.request_reply(user, session_id, request_id=payload["request_id"])
+        result = practice.request_reply(user, session_id, request_id=payload["request_id"],
+                                        context=payload.get("context"))
         return jsonify(result), 202 if result["reply"]["status"] == "pending" else 200
     return _call(ask)
 

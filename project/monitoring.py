@@ -7,8 +7,8 @@ from flask import g, has_request_context, request
 
 SAFE_CODES = {"invalid_request", "invalid_request_id", "provider_auth", "provider_quota", "invalid_summary", "failed"}
 # Fixed codes a Learning reply may report. Never learner text, model output, or provider bodies.
-LEARNING_CODES = {"provider", "provider_auth", "provider_quota", "timeout", "refused", "incomplete", "invalid_output",
-                  "too_large", "worker", "store", "failed"}
+LEARNING_CODES = {"provider", "provider_auth", "provider_quota", "provider_request", "timeout", "refused", "incomplete",
+                  "invalid_output", "too_large", "worker", "store", "failed"}
 OPERATIONS = {"jobwizard.extraction": "Jobwizard extraction failed", "learning.reply": "Learning reply failed"}
 
 
