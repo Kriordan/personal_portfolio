@@ -1,7 +1,7 @@
 {#- One conversation turn. Shared by the workspace and the reply-polling endpoint, so both render it the same way.
     Needs: message, titles (artifact ID to title), session_id, is_new. -#}
 <li class="practice-turn practice-turn--{{ message.role }}" id="turn-{{ message.sequence }}">
-  <p class="practice-speaker">{{ 'Interviewer' if message.role == 'interviewer' else 'You' }}{% if is_new %} <span class="practice-new">New</span>{% endif %}</p>
+  <p class="practice-speaker">{{ 'Interviewer' if message.role == 'interviewer' else 'You' }}{% if message.hint %} <span class="practice-hint">Hint</span>{% endif %}{% if is_new %} <span class="practice-new">New</span>{% endif %}</p>
   <p class="practice-text">{{ message.body }}</p>
   {% if message.artifact_revisions %}
     <p class="practice-cited">{{ 'Reviewed' if message.role == 'interviewer' else 'Sent with' }}

@@ -23,7 +23,7 @@ from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, Pract
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
 STATUS_LABELS = {"active": "In progress", "paused": "Paused", "completed": "Completed"}
-ACTIONS = ("save", "send", "pause", "resume", "reply")
+ACTIONS = ("save", "send", "pause", "resume", "reply", "recent")
 LIVE = ("pending", "running")
 BLANK_BRIEF_ROWS = 3
 
@@ -288,7 +288,10 @@ def _summary(result, action):
     brief = result.get("brief", {}).get("changed", False)
     noun = f"{changed} artifact{'s' if changed != 1 else ''}"
     parts = ["Message sent."] if action == "send" else []
-    if action == "reply":
+    if "context_from_sequence" in result:
+        parts.append("The interviewer now reads from a recent message on, marked in the conversation. "
+                     "Nothing was deleted.")
+    if action in ("reply", "recent"):
         parts.append({"pending": "Asked the interviewer for a reply.",
                       "answered": "The interviewer has already replied."}.get(
             result["reply"]["status"], "The interviewer can't reply right now."))
@@ -322,9 +325,9 @@ def _post(session_id):
             result = practice.save_and_send(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                             body=submitted["message"], expected_sequence=submitted["expected_sequence"],
                                             request_id=request_id)
-        elif action == "reply":
+        elif action in ("reply", "recent"):
             result = practice.request_reply(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
-                                            request_id=request_id)
+                                            context="recent" if action == "recent" else None, request_id=request_id)
         else:
             result = practice.save_work(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                         request_id=request_id, status="paused" if action == "pause" else "active")
@@ -365,7 +368,7 @@ def _post(session_id):
             # The message was written against an older view. Say so, as an out-of-date Send would,
             # before the page moves on to the latest state.
             saved = (any(outcome["changed"] for outcome in result.get("artifacts", {}).values())
-                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume", "reply"))
+                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume", "reply", "recent"))
             return _render(detail, form, alert=(f"{summary} " if saved else "") + "Newer work arrived while you were "
                            "writing and is marked below. Your message hasn't been sent.",
                            refreshed=refreshed, brief_refreshed=brief_refreshed, new_after=new_after)
@@ -411,6 +414,7 @@ def practice_reply(session_id):
         reply={"status": reply["status"], "live": reply["status"] in LIVE},
         # Only a page waiting for a reply polls, so an answered turn means the reply has arrived.
         status_html=render_template("learning/_practice_reply_status.html", reply=reply, polled=True),
+        revealed_html=render_template("learning/_practice_revealed.html", revealed=updates["revealed_requirements"]),
         turns=[{"sequence": turn["sequence"],
                 "html": render_template("learning/_practice_turn.html", message=turn, titles=titles,
                                         session_id=session_id, is_new=True)}

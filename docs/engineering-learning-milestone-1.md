@@ -10,8 +10,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 2. Learn and Review on web | Published lesson, retry visualization, safe Markdown, explicit answer reveal, four questions through the existing scheduler; unchanged old API behavior and progress. Human content review precedes publication. | Committed as `3b108bf`; [hands-on guide](learning-checkpoint-2-test-guide.md), refined in `0c2848a`. Production publication remains pending human content review. |
 | 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) and `709658b` (web workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part A. |
 | 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) and `bcb0f40` (workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part B. |
-| 4a. Durable replies | Replies as tracked PostgreSQL requests, run by a worker thread in the web process against a scripted fake provider: owner-only access, fencing, budgets and reservations, interruption and explicit retry, polling on the website and API. | Committed as `81312c8` (service and worker) plus the following website/API commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part A. |
-| 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Not started. |
+| 4a. Durable replies | Replies as tracked PostgreSQL requests, run by a worker thread in the web process against a scripted fake provider: owner-only access, fencing, budgets and reservations, interruption and explicit retry, polling on the website and API. | Committed as `81312c8` (service and worker) and `27af973` (website and API); [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part A. |
+| 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Committed as `216d394` (the interviewer, its service and API) plus the following website commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part B. |
 | 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Needs Keith. |
 | 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
@@ -287,3 +287,86 @@ The disposable fixture walkthrough covered:
 - server logs with only codes such as `provider` and `timeout`.
 
 Not covered: a screen-reader audit; Firefox and Safari; any real provider call; the interviewer's behaviour (4b). Nothing was pushed, deployed, migrated in production, or published.
+
+## Checkpoint 4b implementation and verification
+
+No migration: `session_message` already allowed `context` and `assistance` records and the `system` role. The interviewer (`project/learning/interviewer.py`, profile `interviewer-1`) makes up to two calls per reply:
+
+- **The selector** sees only the learner's latest message and the clarification cues of the requirements still hidden (`selector_view`). Its strict schema offers only those IDs, and `hint_requested` only while permitted hints remain; with neither, the call is skipped. The server checks its answer again. If it fails or answers badly, the reply fails: its cost settles, nothing is revealed, and asking again reruns both calls.
+- **The reply** sees the rules and the exercise's authored instructions, the scenario, the facts revealed before the turn and those just revealed (marked as new), the learner's brief at the turn's revision, the cited artifacts, the transcript, and the next permitted hint only when the learner asked for one. The input puts what stays fixed first, then the append-only transcript, then what changes, for prompt caching. It notes any omitted earlier messages.
+- **Records:** the reply, then an interviewer `context` record (the IDs it revealed) and an `assistance` record (the hint index), all in one transaction. What counts as revealed, and which hint comes next, is read from the records before the turn, so retries and late replies can't shift it.
+
+The context allowance (`LEARNING_AI_CONTEXT_BYTES`, a placeholder of 512 KiB until activation) bounds what a reply may read, measured in UTF-8 bytes of its instructions and input. It is checked when a reply would be queued or offered, using the worst case (every hidden fact revealed and a hint given), and again on the actual request before the reply's paid call.
+
+- When the conversation doesn't fit, **Continue with recent messages** records a learner `context` entry. Replies then read from the earliest message that still fits, found by binary search. Nothing is deleted, later replies keep reading from there, and the transcript marks the spot.
+- When even the latest message with the brief and artifacts doesn't fit, the reply stops and names the largest part to shorten.
+
+The budget check prices the selector and reply worst cases together.
+
+The OpenAI call runs in a child process: `project/learning_ai_call.py`, run with `python -I`, imports only the standard library and `requests`. `project/services/learning_ai_provider.py` gives it an environment of just the key, `PATH`, and CA settings, and discards its stderr. The child:
+
+- reads one size-capped request on stdin;
+- guards against an orphaned start, with a hard alarm deadline;
+- refuses plain HTTP except to `127.0.0.1` or `localhost`, and never follows redirects;
+- caps the response size;
+- reports usage on every path that read a reply (refusals, cut-off replies, and invalid output included).
+
+Codes map to what the ledger records: 400, 401, 402, 403, 404, and 429 release the reservation; refusals and invalid output settle it from usage; timeouts, 5xx, and connection failures keep it. `provider_for` returns this provider only when `LEARNING_OPENAI_API_KEY` is set, and models stay unpriced until activation, so AI stays off with OpenAI configured. Starting the process took about 66 ms per call locally.
+
+The website shows **Revealed requirements** beside the scenario, each with a link to the reply that revealed it, updated while polling. Turns that gave a hint are labelled **Hint**. A notice appears after 24 learner turns (`LEARNING_AI_CHECK_IN_TURNS`), offering to keep going or pause; it never stops the conversation. **Continue with recent messages** is a workspace action, and a learner whose essentials are too large is told which part to shorten. The API adds `revealed_requirements`, `context_choices`, `learner_turns`, and `check_in_due` to the session detail, `hint` to each turn, and `context: "recent"` to `POST …/reply`.
+
+The evaluation harness (`project/learning/interviewer_eval.py`, `flask learning-eval`) runs 13 reviewed cases from `tests/fixtures/interviewer/cases.json` through the real request builders:
+
+- a paraphrase for each hidden requirement, and two requirements asked at once;
+- an unrelated question, an already revealed requirement, "just tell me the answer", and a hint request;
+- prompt injection in a message and in an artifact;
+- a valid alternative design, and an artifact discrepancy.
+
+Every expectation comes from the case itself, never from the builders being checked. The nine checks:
+
+- the selector is offered exactly the requirements still hidden, sees nothing but their cues, answers validly, and answers as expected;
+- the reply request carries only what may be revealed, and everything that was earned (earlier facts, new facts, and a requested hint);
+- the reply is valid and repeats no unrevealed fact (five-word runs, or numbers however they're written) and no reference reasoning (eight-word runs).
+
+Against the fake, which answers as each case expects, all 13 cases pass all nine checks; this tests the plumbing and the request checks. Live runs at activation test the model and write `docs/evaluations/learning-interviewer-<date>.json`.
+
+October 29 local validation: **503 backend tests run, 502 passed, one existing Linux-only test skipped on macOS**, with PostgreSQL 18.6. The 49 new tests cover:
+
+- **The interviewer (19):**
+  - disclosure: a clarifying question revealing its requirement once; unrelated questions and "just tell me the answer" revealing nothing; hints only when asked, each once; the selector skipped once nothing is left; a failing or badly answering selector failing the reply and revealing nothing;
+  - privacy: what each call carries (sentinels for hidden facts, hints, instructions, and evaluator content, and prompt injection kept out of `instructions`), and the input's order;
+  - the allowance: Continue with recent messages; work too large to read, naming the part, then shortening and sending again; a message too long to read; no choice recorded when the interviewer can't reply; an unknown profile; a reply that outgrows the allowance before its paid call;
+  - the check-in and the long-session recovery case;
+  - a reply through the real child process against a local stand-in for the Responses API, and the request builders without a database.
+- **The call process (17):** every status, refusal, timeout, and size limit; usage on every path; no redirects; plain HTTP only to localhost; the minimal environment; stderr discarded; and text beyond ASCII intact.
+- **The harness (8):** the cases are well formed, all pass against the fake, and each check fails when what it checks is broken.
+- **Web (4) and API (1):** revealed requirements and hints, Continue with recent messages from the page, work too large to read, the check-in, and the same over the API.
+
+Existing tests changed with the design: each reply now makes two calls and two charges, the PostgreSQL process-death test's stand-in answers the selector, and the API and service key sets grew. The long-session case covers 26 learner turns, a worker that dies mid-reply, a revised assumption, and six artifact revisions, then the budget and size limits, keeping every turn, revision, and brief snapshot.
+
+My own tests caught the harness taking "what may be revealed" from the builder it was checking, and that is fixed. Two independent reviews followed; the first service review was cut off by a network error and rerun. Each fix below has a test confirmed to fail without it.
+
+- **Website and API, medium:** when the learner's own work was too large to read, the page said to shorten it and ask again. Asking again couldn't help, because a reply reads the work its message was sent with, and no button appeared. The page now says to shorten, save, and send a new message, and names the part; the API names it with the artifact ID. A message that is too long gets its own wording.
+- **Website and API, low:** Continue with recent messages crashed for a session pinned to a profile this release doesn't know; it now falls back to a normal request. The fixture can now simulate failures for Ask, Retry, and Continue. A tab already waiting for a reply shows another tab's Continue marker only after reloading (documented).
+- **Service:** no correctness or privacy problems in disclosure, pinning, the worst-case bounds, the budget, locking, or the call process.
+- **Service, medium:** nothing checked that a reply received what the learner earned, so a disclosure regression could pass the harness. It is now checked.
+- **Service, low:**
+  - The harness's leak checks searched escaped JSON, missing text with quotes or line breaks.
+  - It trusted `selector_view` for what was offered.
+  - It accepted a mistyped `--case`, and missed "2000" written without a comma.
+  - Continue with recent messages recorded a choice before checking AI was available.
+  - A bad `context` was reported as an artifact error.
+  - The child's input cap had little headroom; it now has more, and the request travels as UTF-8.
+  - A reply the schema allows could exceed the storage limit; any such reply now fits.
+
+Root Node checks passed (13 tests plus dependency integrity). Browser checks passed: 23 legacy flashcard, nine extraction, 27 concept, and 43 practice checks (one new, for the revealed list). Sass compiled.
+
+The disposable fixture walkthrough covered:
+
+- "Who owns the key?" revealing the scope requirement, with the list filling while polling and linking to its reply;
+- a hint request labelled **Hint**, and an unrelated question revealing nothing;
+- three long messages and a lowered allowance, then **Continue with recent messages**: its marker placed before the first message the interviewer reads, earlier messages kept, and the reply arriving;
+- work too large to read, with the new wording;
+- the 390-pixel layout.
+
+Not covered: the live model (activation); the check-in in the browser (tests only); a screen-reader audit; Firefox and Safari. Nothing was pushed, deployed, migrated in production, or published.

@@ -6,6 +6,8 @@
   "lease_expired": "The reply was interrupted.",
   "timeout": "The interviewer didn't answer in time.",
   "invalid_output": "The interviewer's reply couldn't be used.",
+  "refused": "The interviewer declined to answer that.",
+  "incomplete": "The interviewer's reply was cut off.",
   "paused": "The reply was cancelled when you paused.",
   "budget": "This month's AI budget has no room for another reply, so replies resume next month.",
   "unpriced": "AI replies are turned off right now.",
@@ -18,7 +20,19 @@
 {% elif polled and reply.answered %}
   <p>The interviewer replied.</p>
 {% elif reply.turn_sequence and not reply.answered %}
-  {% if reply.status in ("failed", "interrupted", "cancelled") %}
+  {% if reply.unavailable == "context_too_large" %}
+    <p>This conversation is now longer than the interviewer can read at once. Continue with recent messages: the interviewer reads from a recent message on, with your brief and artifacts. Nothing is deleted.</p>
+  {% elif reply.unavailable == "essential_too_large" %}
+    {#- A reply reads the work its message was sent with, so asking again can't help: a new message can. -#}
+    {% set part = reply.too_large_part or {} %}
+    {% if part.part == "message" %}
+      <p>Your latest message is too long for the interviewer to read along with your work. Send a shorter message.</p>
+    {% elif part.part == "exercise" %}
+      <p>The interviewer can't read this session at once: its size limit is set too low for this exercise.</p>
+    {% else %}
+      <p>The interviewer can't read your work at once: {% if part.part == "artifact" %}“{{ part.title }}”{% else %}your brief{% endif %} is too long. Shorten it and save, then send a new message: a reply reads the work your message was sent with.</p>
+    {% endif %}
+  {% elif reply.status in ("failed", "interrupted", "cancelled") %}
     {#- A reply the budget refused can be retried once there's room again (another reply settled for less). -#}
     <p>{{ "The interviewer couldn't reply." if reply.error == "budget" and reply.can_request
           else problems.get(reply.error, "The interviewer couldn't reply.") }}</p>
@@ -31,5 +45,8 @@
   {% endif %}
   {% if reply.can_request %}
     <button class="button button--secondary" name="action" value="reply">{{ 'Retry the reply' if reply.status in ("failed", "interrupted", "cancelled") else 'Ask for a reply' }}</button>
+  {% endif %}
+  {% if reply.can_continue_recent %}
+    <button class="button button--secondary" name="action" value="recent">Continue with recent messages</button>
   {% endif %}
 {% endif %}

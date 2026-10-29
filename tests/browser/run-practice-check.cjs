@@ -89,9 +89,10 @@ const pages = {
       window.fetchCalls = [];
       window.loadMarker = 'kept';
       const answers = [
-        { live: true, latest: 3, status: '<p>The interviewer is replying…</p>',
+        { live: true, latest: 3, status: '<p>The interviewer is replying…</p>', revealed: '<p>None yet.</p>',
           turns: [{ sequence: 3, html: '<li id="turn-3">sent from another device</li>' }] },
         { live: false, latest: 4, status: '<p>The interviewer replied.</p>',
+          revealed: '<ul><li>Each tenant has its own key space.</li></ul>',
           turns: [{ sequence: 3, html: '<li id="turn-3">a duplicate</li>' }, { sequence: 4, html: '<li id="turn-4">the reply</li>' }] },
       ];
       window.fetch = async (url) => {
@@ -99,13 +100,17 @@ const pages = {
         const next = answers.shift();
         return { ok: true, status: 200, redirected: false, headers: { get: () => 'application/json' },
           json: async () => ({ reply: { status: next.live ? 'pending' : 'completed', live: next.live },
-            status_html: next.status, turns: next.turns, latest_sequence: next.latest }) };
+            status_html: next.status, revealed_html: next.revealed, turns: next.turns, latest_sequence: next.latest }) };
       };
       window.statusWrites = 0;
+      window.revealedWrites = 0;
+      new MutationObserver((records) => { window.revealedWrites += records.length; })
+        .observe(document.getElementById('revealed-requirements'), { childList: true, subtree: true, characterData: true });
       new MutationObserver((records) => { window.statusWrites += records.length; })
         .observe(document.getElementById('reply-status'), { childList: true, subtree: true, characterData: true });`,
     body: `<form data-practice-form>
         <input type="hidden" name="expected_sequence" value="2">
+        <div id="revealed-requirements"><p>None yet.</p></div>
         <ol id="transcript"><li id="turn-2">my message</li></ol>
         <div id="reply-status" role="status" data-reply-poll="/poll" data-reply-live><p>The interviewer is replying…</p></div>
         <textarea id="typing">typing in progress</textarea>
@@ -124,6 +129,8 @@ const pages = {
           check(!document.getElementById('reply-status').hasAttribute('data-reply-live'), 'notes that the reply arrived');
           check(document.getElementById('reply-status').textContent.includes('replied'), 'announces the reply');
           check(window.statusWrites === 1, 'rewrites the status region only when its words change');
+          check(document.getElementById('revealed-requirements').textContent.includes('own key space')
+            && window.revealedWrites === 1, 'updates the revealed requirements only when a reply reveals one');
           check(!document.querySelector('button[value=send]').disabled, 're-enables Send');
           check(document.activeElement.id === 'typing', 'leaves focus where the learner is typing');
           check(document.getElementById('typing').value === 'typing in progress' && window.loadMarker === 'kept',

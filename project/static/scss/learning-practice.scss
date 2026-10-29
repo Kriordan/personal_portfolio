@@ -74,6 +74,17 @@
 .practice-reply:has(p) { margin: 0 0 1rem; padding: .5rem .75rem; border-left: 4px solid #17675a; background: #eaf3f0; }
 .practice-reply p { margin: .25rem 0; }
 .practice-budget { padding: .75rem 1rem; border-left: 4px solid #a15c00; background: #fff4e5; }
+.practice-revealed { margin: 1rem 0; padding: .75rem 1rem; border-left: 4px solid #17675a; background: #eaf3f0; }
+.practice-revealed h3 { margin: 0 0 .5rem; }
+.practice-revealed-list { margin: 0; padding-left: 1.25rem; }
+.practice-revealed-list li { margin-bottom: .5rem; }
+.practice-revealed-source { font-size: .9rem; }
+.practice-hint {
+  display: inline-block; margin-left: .35rem; padding: 0 .4rem; border: 1px solid #a15c00; border-radius: 4px;
+  font-size: .85rem; color: #7a4500;
+}
+.practice-reads-from { margin: 0 0 .75rem; padding: .5rem .75rem; border-top: 2px dashed #767676; color: #444; font-size: .9rem; }
+.practice-checkin { padding: .5rem .75rem; border-left: 4px solid #555; background: #f3f4f4; }
 .practice-default-action {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   border: 0; padding: 0; margin: -1px;

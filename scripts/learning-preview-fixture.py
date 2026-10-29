@@ -2,11 +2,14 @@
 
 POST /fixture/state with reads=success|failure|empty, rating=success|failure|lost,
 receipts=success|failure, delay=seconds, practice=success|failure|lost,
-ai=success|slow|fail|lost|hang|invalid, cap_usd=dollars. With --concept, practice
+ai=success|slow|fail|lost|hang|invalid, cap_usd=dollars, context_bytes=bytes. With --concept, practice
 sessions are enabled; practice=failure makes saves and sends (website and API) fail
 before saving, and practice=lost saves and then reports an unconfirmed result. AI replies
 come from a scripted fake provider (never a paid call) for learning1, the configured
-owner; `ai` switches how it behaves, and cap_usd lowers the monthly AI budget.
+owner; `ai` switches how it behaves, cap_usd lowers the monthly AI budget, and
+context_bytes shrinks what the interviewer may read (to try Continue with recent messages).
+The fake selector reveals a requirement when a message repeats one of its clarification
+cues (or shares two distinctive words with one), and gives a hint when asked for one.
 GET /fixture/results reports saved counts. The 10-second access token also exercises
 the real refresh flow. All notes and database files live in a temporary directory and
 are removed when stopped.
@@ -136,7 +139,10 @@ def main():
             if "cap_usd" in values:
                 app.config.update(LEARNING_AI_MONTHLY_CAP_USD=float(values["cap_usd"]),
                                   LEARNING_AI_WARN_USD=float(values["cap_usd"]) * 0.8)
-            return jsonify(dict(mode, cap_usd=app.config.get("LEARNING_AI_MONTHLY_CAP_USD", 50)))
+            if "context_bytes" in values:
+                app.config["LEARNING_AI_CONTEXT_BYTES"] = int(values["context_bytes"])
+            return jsonify(dict(mode, cap_usd=app.config.get("LEARNING_AI_MONTHLY_CAP_USD", 50),
+                                context_bytes=practice_service.ai_settings()["context_bytes"]))
 
         @app.get("/fixture/results")
         def results():
@@ -189,7 +195,8 @@ def main():
         with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir), \
                 patch.object(practice_service, "save_work", simulate_failures(practice_service.save_work)), \
                 patch.object(practice_service, "save_and_send", simulate_failures(practice_service.save_and_send)), \
-                patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)):
+                patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)), \
+                patch.object(practice_service, "request_reply", simulate_failures(practice_service.request_reply)):
             app.run(host="127.0.0.1", port=5057, use_reloader=False, threaded=True)
 
 

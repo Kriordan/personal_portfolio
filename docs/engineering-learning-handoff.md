@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of October 29, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry, all exercised against a scripted fake interviewer. The real interviewer, any provider call, feedback, and export do not exist yet.** Continue on `feature/learning-content-foundation`. The next implementation checkpoint is 4b, the interviewer itself, from the checkpoint 4 plan Keith approved on October 29 (see Decisions).
+As of October 29, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. All of it has run only against a scripted fake and a local stand-in for the OpenAI API; no real provider call has been made. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: activation, which needs Keith's Learning OpenAI key, and the checkpoint 5 plan (see Recommended next checkpoint).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 4a, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 4b, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -27,7 +27,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
-| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Approved; checkpoints 1, 2, 3a, 3b, and 4a complete locally. |
+| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Approved; checkpoints 1, 2, 3a, 3b, 4a, and 4b complete locally. |
 | 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | Requires approval after Milestone 1. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
@@ -43,8 +43,8 @@ Within Milestone 1:
 | Documentation follow-up | Replace test-suite instructions with interactive investigation guides. | `0c2848a`. |
 | 3a | Practice sessions pinned to a published exercise, immutable artifact revisions, idempotent saves, per-artifact conflicts, ownership, failure recovery, web workspace, JWT API, feature flag. | `fe91fe2` (persistence and service) and `709658b` (web workspace and JSON API) — complete locally. |
 | 3b | Discussion turns citing exact artifact revisions, editable session brief, pause/resume, delete. | `b7ae1e2` (service) and `bcb0f40` (workspace and API) — complete locally. |
-| 4a | Durable replies: tracked requests, a worker thread, owner-only access, fencing, budgets and reservations, interruption and explicit retry, and polling, all against a scripted fake provider. | `81312c8` (service and worker) plus the following website/API commit — complete locally. |
-| 4b | The interviewer: the OpenAI call process, the `interviewer-1` profile, disclosure and hints, revealed requirements, the context allowance, the check-in, and an evaluation harness. | Not started. |
+| 4a | Durable replies: tracked requests, a worker thread, owner-only access, fencing, budgets and reservations, interruption and explicit retry, and polling, all against a scripted fake provider. | `81312c8` (service and worker) and `27af973` (website and API) — complete locally. |
+| 4b | The interviewer: the OpenAI call process, the `interviewer-1` profile, disclosure and hints, revealed requirements, the context allowance, the check-in, and an evaluation harness. | `216d394` (the interviewer, its service and API) plus the following website commit — complete locally. |
 | 4 activation | Learning's OpenAI project and key (Keith), live evaluations, model choice, verified prices. No production enablement. | Needs Keith. |
 | 5 | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started. |
 
@@ -186,6 +186,35 @@ Lock order everywhere: owner (`FOR NO KEY UPDATE`), request, session, budget, ch
 
 **Privacy and telemetry.** Requests, the ledger, receipts, logs, and Sentry hold no learner text or model output; sentinel tests check each. The worker logs a fixed code per failure. Sentry gets `operation=learning.reply` with codes from a fixed list, reported explicitly because threads aren't captured automatically.
 
+### The interviewer (checkpoint 4b)
+
+The interviewer (`project/learning/interviewer.py`, profile `interviewer-1`) answers with up to two calls, both through the 4a worker, fencing, and ledger.
+
+**The selector** sees only the learner's latest message and the clarification cues of the requirements still hidden (`content_schema.selector_view`): no facts, hints, conversation, or reference. Its strict schema offers only the hidden IDs, and `hint_requested` only while permitted hints remain; with neither left, the call is skipped. The server checks the answer again (`parse_selection`). If the selector fails, so does the reply: its cost settles, nothing is revealed, and asking again reruns both calls.
+
+**The reply** sees the rules, the exercise's authored instructions, and the scenario. It also gets the facts revealed before the turn and those just revealed (marked as new), the learner's brief at the turn's revision, the cited artifacts, the transcript, and the next permitted hint only when asked (`interviewer.facilitator`). Its input is ordered for prompt caching: fixed parts, then the append-only transcript, then what changes. Learner text travels only in `input`, never in `instructions`. The rules are placeholders until the first live evaluation; `interviewer-1` is released then and never edited after.
+
+**Records.** The reply turn is followed by an interviewer `context` record (`revealed`, `turn_sequence`) and an `assistance` record (`hint_index`), in one transaction. What counts as revealed, and which hint comes next, is read from the records before the turn, so retries and late replies can't shift it. Revealed requirements appear in a read-only list beside the scenario (`revealed_requirements` in the API), each linked to its reply, and hinted turns are labelled **Hint**.
+
+**The context allowance.** `LEARNING_AI_CONTEXT_BYTES` (a 512 KiB placeholder) bounds what a reply reads, in UTF-8 bytes of its instructions and input; a token is at least one byte. It is checked when a reply would be queued or offered, against the worst case (every hidden fact revealed and a hint given), and again on the real request before the reply's paid call (`failed`/`context_too_large`).
+
+- When the conversation doesn't fit, **Continue with recent messages** records a learner `context` entry. Replies then read from the earliest message that fits, found by binary search, and keep doing so. Nothing is deleted, and the transcript marks the spot. It is `request_reply(context="recent")`: the `recent` workspace action, or `context: "recent"` on the API.
+- When even the latest message with the brief and artifacts doesn't fit (`essential_too_large`), the learner is told the largest part to shorten.
+
+The budget check prices the selector's and reply's worst cases together.
+
+**The check-in.** After `LEARNING_AI_CHECK_IN_TURNS` (24) learner turns, a notice offers to keep going or pause; nothing stops. The API detail adds `learner_turns` and `check_in_due`.
+
+**The OpenAI call** runs in a child process: `project/learning_ai_call.py`, started with `python -I` by `project/services/learning_ai_provider.py`. It imports only the standard library and `requests`, and gets an environment of just the key, `PATH`, and CA settings; its stderr is discarded. It reads one size-capped request on stdin, guards against an orphaned start, and enforces a hard alarm deadline. It refuses plain HTTP except to `127.0.0.1` or `localhost` and never follows a redirect. It caps the response size and reports usage on every path that read a reply. Codes map to the ledger:
+
+- 400, 401, 402, 403, 404, and 429 release the reservation;
+- refusals, cut-off replies, and invalid output settle it from usage;
+- timeouts, 5xx, and connection failures keep it.
+
+`provider_for` uses this provider only when `LEARNING_OPENAI_API_KEY` is set; `LEARNING_AI_BASE_URL` points it at a local stand-in in tests. Starting the process took about 66 ms per call locally. The fake provider answers selector calls from a script, or by spotting a message that repeats a cue (`fake_selection`).
+
+**Evaluation.** `flask learning-eval` runs the reviewed cases in `tests/fixtures/interviewer/cases.json` through the real request builders. It checks the selector's answers, that each request carries only what it may and everything the learner earned, and the replies for leaks, taking every expectation from the case rather than from the builders (`project/learning/interviewer_eval.py`; `project/learning/evaluation.py` is the review scheduler's, unrelated). Against the fake it tests the plumbing; with `--provider openai` at activation it tests the model and writes `docs/evaluations/learning-interviewer-<date>.json`.
+
 ### Migrations
 
 | Revision | Change | Downgrade consequence |
@@ -203,11 +232,8 @@ Everything in this section is approved direction, not an existing subsystem.
 
 ### Session record: what later checkpoints add
 
-Checkpoints 3a and 3b implemented sessions, artifacts, turns, the brief, pause/resume, and delete, and 4a added interviewer replies as `interviewer` turns (above). Later records reuse the same ordered `SessionMessage` table:
+Checkpoints 3a through 4b implemented sessions, artifacts, turns, the brief, pause/resume, delete, interviewer replies, and the records 4b adds to the same ordered `SessionMessage` table (above): interviewer `context` records for revealed requirements, `assistance` records for hints, and learner `context` entries for Continue with recent messages. The interviewer adds nothing to the learner's brief, which keeps only `learner` entries; model "interpretation" entries are deferred with compaction (Keith, October 29). Explicit style changes would be `assistance` records too. What remains:
 
-- **Revealed requirements (4b)** come from `context` records committed with the reply that disclosed them. They appear as a separate read-only list beside the scenario, each marked with its turn, and as `revealed_requirements` in the API detail. The interviewer adds nothing to the learner's brief, which keeps only `learner` entries; model "interpretation" entries are deferred with compaction (Keith, October 29).
-- **Assistance history (4b):** a hint given is an `assistance` record, and that turn shows "Hint". Explicit style changes would be recorded the same way.
-- **A context choice (4b):** **Continue with recent messages** records a learner `context` entry with `from_sequence`, shown in the transcript and honoured by later requests.
 - **A submission checkpoint** (the set of revisions feedback evaluates) is a `submission` message in checkpoint 5, which also decides what a `completed` session allows.
 
 Responses and feedback must identify which revisions they reviewed. AI suggestions never overwrite learner artifacts automatically. Persisting foreign IDs, reading another user's history, and replaying another user's request must keep failing; tests for each exist for 3a and 3b.
@@ -218,22 +244,21 @@ The interviewer challenges reasoning and asks focused follow-ups without prematu
 
 For hidden constraints, a bounded selector receives the learner turn and authored clarification cues and returns eligible IDs. Validate IDs server-side; provide only approved facts to the conversational call. The selector does not receive reference solutions, and the conversational call does not receive all unrevealed facts. Commit successful disclosure with the response and visible requirements record. Unspecified facts remain unknown; learner assumptions do not become scenario facts.
 
-`interviewer_view` (4a) projects the authored instructions, revealed facts, and one supplied hint. Profiles live in code (`project/learning/interviewer.py`) with their own version, pinned when a session starts, and every input to a result is pinned. There is no selector, disclosure persistence, provider call, prompt suite, or behavior evaluation yet: those are 4b.
+4b built this (above): `selector_view` gives the selector cues only, `interviewer_view` gives the reply revealed facts and a requested hint, and disclosure commits with the reply. Profiles live in code with their own version, pinned when a session starts. What remains is the model's behaviour itself, measured by the live evaluations at activation.
 
 ### Durable AI requests and spending
 
 Checkpoint 4a implemented the request lifecycle, the worker thread, owner-only access, the $50/$40 budget with reservations, and recovery (above). Database deduplication cannot guarantee exactly one provider charge after an uncertain network outcome, which is why uncertain reservations keep counting and retries wait for the learner.
 
-Still to do:
+4b added the OpenAI call process (above); the selector's charge settles before the reply's reservation. Still to do:
 
-- **4b:** the OpenAI call, as a standalone script run in a child process with a hard deadline, using `store: false`, a strict schema, and no tools. It reports usage on every path, including refusals and invalid output, and a test-only base URL lets a local fake server exercise it. The selector's charge settles before the reply's reservation.
-- **Activation:** Keith creates the Learning OpenAI project and key and sets its spending limit. Candidate models are evaluated live, and the model, service tier, prices, `pricing_version`, p95 latency, and cost per session are recorded. The original candidate was GPT-6.1 Sol with low reasoning for turns and medium for feedback; it has not passed Learning evaluations. Verify access and current pricing before activation. Do not silently switch models after failures, or couple Learning to JobWizard's extraction workflow.
+- **Activation:** Keith creates the Learning OpenAI project and key and sets its spending limit. Candidate models are evaluated live, and the model, service tier, prices, `pricing_version`, p95 latency, and cost per session are recorded. The original candidate was GPT-6.1 Sol with low reasoning for turns and medium for feedback; it has not passed Learning evaluations. Verify access and current pricing before activation. Do not silently switch models after failures, or couple Learning to JobWizard's extraction workflow. On the deploy target, make one real call first: the child starts with only the key, `PATH`, and CA settings, so check Python starts without anything else (such as `LD_LIBRARY_PATH`). `requests` verifies TLS with certifi, so only `REQUESTS_CA_BUNDLE` changes the trust store.
 
 Disclosure, evaluation passes, and synthesis all consume this budget, as would compaction if it returns. Hosting is separate. At the cap, paid generation stops while reading, review, editing, saving, export, and later resumption continue.
 
 ### Continuity and context
 
-Keep 24 learner turns as a configurable progress check-in (4b). Continuation stays in the same session. Suggested duration, input allowance, output limits, and deadlines are server policy. 4a's defaults (a 60-second call deadline and 1,200 output tokens) are placeholders until activation measures real calls; the input allowance arrives in 4b.
+24 learner turns is a configurable progress check-in (4b). Continuation stays in the same session. Suggested duration, input allowance, output limits, and deadlines are server policy. The defaults (a 60-second call deadline, 1,200 reply and 200 selector output tokens, and a 512 KiB context allowance) are placeholders until activation measures real calls.
 
 Compaction is deferred out of Milestone 1 (Keith, October 29). Each call includes pinned instructions and disclosed facts, the current session brief, the current artifact revisions, and the whole transcript, within a configurable input allowance larger than the original 32,000 tokens. Keep prompts append-only so provider caching applies.
 
@@ -264,7 +289,9 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | [Learning service](../project/services/learning_service.py) | Existing queues, scheduler integration, revision checks, user lock, rating/receipt transaction. Preserve these guarantees. |
 | [Models](../project/models.py) and [migrations](../migrations/versions/) | Catalog, review, and practice persistence. |
 | [Practice service](../project/services/practice_service.py) | The only practice writer: sessions, artifact saves and conflicts, turns, the brief, replies (queueing, the call check, completion), receipts, owner-scoped reads, log-safe failure summaries. |
-| [Interviewer profiles](../project/learning/interviewer.py) | Versioned interviewer rules and the request body a reply sends. |
+| [Interviewer profiles](../project/learning/interviewer.py) | Versioned interviewer rules; the selector and reply requests; what each call may see; size helpers. |
+| [OpenAI call process](../project/learning_ai_call.py), [provider](../project/services/learning_ai_provider.py) | The child script (standard library and `requests` only) and the parent that runs it with a minimal environment. |
+| [Interviewer evaluation](../project/learning/interviewer_eval.py), [cases](../tests/fixtures/interviewer/cases.json) | `flask learning-eval` and its reviewed cases. Not [`evaluation.py`](../project/learning/evaluation.py), which evaluates the review scheduler. |
 | [Practice budget](../project/services/practice_budget.py), [reply worker](../project/services/practice_worker.py), [wake-up signal](../project/services/practice_signals.py) | The spending ledger and reservations; the worker thread, fake provider, and `learning-worker` command; the event a commit sets to wake the worker. |
 | [Learning views](../project/learning/views.py), [practice routes](../project/learning/practice_views.py), [forms](../project/learning/forms.py), [templates](../project/learning/templates/learning/) | Website authentication, CSRF, lesson/review flow, practice workspace, re-render and rescue paths. |
 | [Practice API](../project/api/learning_practice.py) | JWT endpoints over the practice service. |
@@ -277,6 +304,7 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | [Web concept tests](../tests/test_concept_web.py), [PostgreSQL review tests](../tests/test_learning_postgres.py) | Auth/CSRF, reveal/version pinning, rollback/replay, scheduling and concurrency. |
 | Practice tests: service ([3a](../tests/test_practice_service.py), [3b](../tests/test_practice_discussion.py)), web ([3a](../tests/test_practice_web.py), [3b](../tests/test_practice_web_discussion.py)), API ([3a](../tests/test_practice_api.py), [3b](../tests/test_practice_api_discussion.py)), [PostgreSQL](../tests/test_practice_postgres.py) | Saves, sends, citations, brief snapshots, replays, conflicts, normalization, limits, leakage, ownership, pause/resume, delete, rescue page, two-device behaviour, races, process death, cross-session citations, log safety. |
 | Reply tests (4a): [service and worker](../tests/test_practice_replies.py), [web](../tests/test_practice_web_replies.py), [API](../tests/test_practice_api_replies.py), [PostgreSQL](../tests/test_practice_replies_postgres.py) | Access, pinned inputs, staleness, fencing, budgets and the ledger, each fake failure mode, polling, claims across releases, forced lock interleavings, process death, restart pickup, worker start conditions. |
+| Interviewer tests (4b): [service](../tests/test_practice_interviewer.py), [call process](../tests/test_learning_ai_call.py), [evaluation](../tests/test_interviewer_eval.py) | Disclosure, hints, what each call sees, selector failures, the allowance and Continue with recent messages, the check-in, the long-session recovery case, a reply through the real child process, every status and failure of the child, and checks that the harness's checks can fail. |
 | [Browser checks](../tests/browser/README.md) | Actual renderer/simulation and legacy browser regression checks. |
 | [Preview fixture](../scripts/learning-preview-fixture.py) | Disposable local demo and inspection endpoints. |
 
@@ -297,23 +325,26 @@ The fixture disables dotenv, uses temporary SQLite, and directly inserts demo-pu
 
 With `--concept`, practice is enabled: Learning → Idempotency → **Apply it** starts a session. `POST /fixture/state` with `practice=failure` or `practice=lost` simulates database failures before or after a save or send commits, and `/fixture/results` also reports practice counts. The fixture turns on SQLite foreign keys so deletes cascade.
 
-It also runs the reply worker with the fake provider, and `learning1@example.test` is the AI owner. `POST /fixture/state` accepts `ai` (`success`, `slow`, `fail`, `lost`, `hang`, or `invalid`) and `cap_usd`, which lowers the monthly budget and moves the warning line to 80% of it. `/fixture/results` adds reply counts and the month's spend. Restart the fixture after editing a template: outside debug mode, Flask caches them.
+It also runs the reply worker with the fake provider, and `learning1@example.test` is the AI owner. `POST /fixture/state` accepts `ai` (`success`, `slow`, `fail`, `lost`, `hang`, or `invalid`) `cap_usd`, which lowers the monthly budget and moves the warning line to 80% of it, and `context_bytes`, which shrinks what the interviewer may read. `/fixture/results` adds reply counts and the month's spend. The fake reveals a requirement when a message repeats one of its clarification cues, and gives a hint when asked. Restart the fixture after editing a template: outside debug mode, Flask caches them.
 
-Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections, provoke validation failures, and step through functions. Use the [running-system guide](learning-checkpoint-2-test-guide.md) for Network request replay, Console/Sources inspection, HTTPie/Postman, and profiling. Use the [practice guide](learning-checkpoint-3-test-guide.md) for saves, sends, the brief, conflicts, recovery pages, pause/resume, delete, and the practice API (parts A and B), and the [checkpoint 4 guide](learning-checkpoint-4-test-guide.md) for replies, the fake failure modes, the budget, locks, and the reply API (part A). Form navigations appear under Network All/Doc, not a Fetch/XHR-only filter. The simulation performs local DOM work without application requests.
+Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections, provoke validation failures, and step through functions. Use the [running-system guide](learning-checkpoint-2-test-guide.md) for Network request replay, Console/Sources inspection, HTTPie/Postman, and profiling. Use the [practice guide](learning-checkpoint-3-test-guide.md) for saves, sends, the brief, conflicts, recovery pages, pause/resume, delete, and the practice API (parts A and B), and the [checkpoint 4 guide](learning-checkpoint-4-test-guide.md) for replies, the fake failure modes, the budget, locks, and the reply API (part A), and for what each interviewer call sees, disclosure, hints, the context allowance, the call process, and the evaluation harness (part B). Form navigations appear under Network All/Doc, not a Fetch/XHR-only filter. The simulation performs local DOM work without application requests.
 
 ## Verification evidence and commands
 
-Latest full application verification, recorded October 29 after checkpoint 4a:
+Latest full application verification, recorded October 29 after checkpoint 4b:
 
-- **454 backend tests run: 453 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with PostgreSQL **18.6** enabled.
-  - 4a added 44: 19 service and worker, 11 PostgreSQL, 10 web, 3 API, and 1 telemetry test. The migration test also covers `e8f9a0b1c2d3`.
-  - Two independent reviews, one of the service and one of the website and API, found twelve problems, including a PostgreSQL deadlock and polling that gave up after one failure. All are fixed with regression tests (see the checkpoint log), each confirmed to fail with its fix removed.
-  - Commit `81312c8` passed on its own in a clean checkout (441 tests).
-- **101 browser checks**: 23 legacy flashcard, nine extraction, 27 concept, and 42 practice checks.
+- **503 backend tests run: 502 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with PostgreSQL **18.6** enabled.
+  - 4b added 49: 19 interviewer, 17 call-process, 8 harness, 4 web, and 1 API test.
+  - The tests include the long-session recovery case and a reply through the real child process against a local stand-in for the Responses API.
+  - My tests and two independent reviews found problems, all fixed with regression tests, each confirmed to fail with its fix removed (see the checkpoint log).
+- The evaluation harness passes all 13 cases on all nine checks against the fake.
+- **102 browser checks**: 23 legacy flashcard, nine extraction, 27 concept, and 43 practice checks.
 - **13 root Node tests**, dependency integrity checks, Sass build, and `git diff --check` passed.
-- A live walkthrough in the disposable fixture covered every fake mode, Retry, the budget states, a second account, edits during a reply, a second tab, pause and delete mid-reply, and the 390-pixel layout (details in the checkpoint log). This is not a screen-reader audit.
+- A live walkthrough in the disposable fixture covered disclosure, hints, Continue with recent messages, work too large to read, and the 390-pixel layout (details in the checkpoint log). This is not a screen-reader audit.
 
-Checkpoint 3b's results (410 tests, 78 browser checks), 3a's (371, 70), and 2's (326, 59), and the checkpoint-by-checkpoint coverage are in the checkpoint log.
+Checkpoint 4a's results (454 tests, 101 browser checks; its first commit passed alone with 441) are in the checkpoint log.
+
+Earlier results (3b: 410 tests, 78 browser checks; 3a: 371, 70; 2: 326, 59) and the checkpoint-by-checkpoint coverage are there too.
 
 These are historical local results, not a claim that CI or AI evaluations have passed for unimplemented work. Detailed coverage is in the [checkpoint log](engineering-learning-milestone-1.md).
 
@@ -369,6 +400,9 @@ These fixtures drop tables and reset migration state. Never use a database conta
 - **Natural races rarely land in narrow windows.** Repeated runs never let a completion beat a delete, so the race tests force each order, and the call-check tests hold the worker at a lock with a SQLAlchemy `before_cursor_execute` event. When polling `pg_stat_activity` for a waiting lock, start a new transaction each time: the view is a per-transaction snapshot.
 - **CSS `:empty` doesn't match an element holding only whitespace,** which Jinja leaves behind. The reply region uses `:has(p)` instead.
 - **SIGTERM skips `with` cleanup.** By default it ends Python without unwinding, so the preview fixture left its temporary database behind whenever a tool stopped it that way. The fixture now turns SIGTERM into a normal exit.
+- **A check must not trust what it checks.** The evaluation harness first took "what the reply may reveal" from the facilitator it was checking, so a facilitator that revealed everything looked consistent. It now derives that from the selection. `tests/test_interviewer_eval.py` breaks each check on purpose.
+- **Bytes bound tokens, but escaping inflates bytes.** Reservations price the whole request as sent, where the material is JSON inside JSON and a newline costs three bytes. The allowance measures only what the model reads (instructions and input). Both are safe upper bounds.
+- **Template text isn't escaped; values are.** A literal apostrophe in a template stays `'`, while one inside an inserted value becomes `&#39;`. Tests asserting page text must match which it is.
 
 ## Open items and decisions to revisit
 
@@ -378,7 +412,7 @@ These fixtures drop tables and reset migration state. Never use a database conta
 4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a). Still to do: the OpenAI call process (4b); Keith creates the project and key and sets its spending limit; the model is chosen, with access and current prices verified, during the live evaluations, which also set final deadlines, output caps, and the context allowance. The `Procfile` runs only `web`, and `run.py` uses Flask's built-in server, so the worker thread starts there and nowhere else.
 5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). Structured AI outputs, feedback annotations, and evidence/coverage validation still need implementation and evaluation. Do not invent a hidden solution-disclosure path when adding these.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
-7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. Still outstanding: export, the interviewer's disclosure and evaluation, oversized essential context, the long-session recovery case, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion; Milestone 1 still needs reviewed interviewer-specific fixtures including valid alternatives and adversarial learner text.
+7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. 4b covered disclosure, hints, the context allowance with oversized essential context, the long-session recovery case, and reviewed interviewer fixtures, all against the fake. Still outstanding: live interviewer evaluations (activation), export, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion.
 8. **Content-schema gaps against the approved plan:** decided October 29. The behaviour profile/version lives in code (item 5), so the facilitator schema stays as it is. Misconception mappings arrive with content schema 2 and exercise version 2 at the start of checkpoint 5.
 9. **Third-party scripts on private pages:** Marked (no SRI) and Alpine (no SRI, in the base template) load from jsDelivr, and the CSP allows `ws:`/`wss:` to any host. The practice workspace loads no Markdown library. Site-wide SRI and a narrower CSP are follow-ups.
 10. **Proposals from the October 28 vision review.** Keith accepted three on October 29 (see Decisions): defer compaction out of Milestone 1, close the misconception loop, and report deterministic JSON/YAML checks first. Three wait for Milestone 1's completion:
@@ -391,19 +425,24 @@ These fixtures drop tables and reset migration state. Never use a database conta
     - After a pause, a reply whose call was already in flight still appears in the paused session (approved with the plan).
     - Asking for a reply to a turn that already has one still saves the page and reports `answered` (200 on the API), rather than failing with a 400.
     - The page stops checking for a reply after six failures in a row (about a minute and a half) and asks the learner to reload.
+12. **Choices made while building 4b that Keith may want to revisit:**
+    - Continue with recent messages picks the longest recent stretch that fits, so a long conversation may need it again a few messages later.
+    - The selector sees only the latest message, as planned, so a question split over two messages may not reveal anything until it is asked in one.
+    - Revealed requirements are listed in the order they were revealed, each linked to its reply; hinted replies are labelled, and the hint text appears only inside the reply.
+    - The check-in notice stays from the 24th message on, rather than appearing once.
+    - A tab that is waiting for a reply while another tab chooses Continue with recent messages shows the marker (and any new check-in notice) only after it reloads; polling brings the new turns but not those.
+    - A connection that fails before anything is sent still keeps the reservation ("unknown"), which is conservative; it could be released.
+    - The fake selector, used by the fixture, reveals a requirement only when a message repeats a cue or shares two distinctive words with one. Paraphrases are the live model's job.
 
 ## Recommended next checkpoint
 
-Checkpoint 4b, the interviewer itself, from the approved checkpoint 4 plan and on 4a's request lifecycle:
+Activation, which needs Keith (see Durable AI requests and spending):
 
-- the OpenAI call as a standalone script run in a child process, with a local fake server for tests;
-- the `interviewer-1` profile's rules and prompt order;
-- the selector for hidden requirements and hint requests, validated server-side;
-- disclosure and assistance records committed with the reply, and the read-only revealed-requirements list;
-- the context allowance, with **Continue with recent messages** and the essential-context stop;
-- the 24-turn check-in;
-- the evaluation harness against the fake provider, and the deterministic long-session recovery case.
+1. Keith creates the Learning OpenAI project and key, and sets its spending limit.
+2. Run `flask learning-eval --provider openai` on candidate models, within a small evaluation budget. Fill `PRICES` for each candidate first, so the results show cost. These calls don't go through the ledger or the monthly cap: the project's spending limit bounds them, and the results file records each call's cost.
+3. Keith reviews the outputs, including each case's `reply_should`, and picks the model.
+4. Record the verified prices, the tier, `pricing_version`, the measured p95 latency, and the cost per session. Size `LEARNING_AI_CONTEXT_BYTES` and the output caps to the model, and release `interviewer-1`.
 
-Then activation, which needs Keith: the Learning OpenAI project and key, live evaluations, the model choice, and verified prices. Production enablement waits for content review and a separate approval.
+Production enablement waits for content review and a separate approval. Checkpoint 5 can be planned meanwhile.
 
 Then checkpoint 5: content schema 2 with misconception mappings, feedback with deterministic checks first, the follow-up review, export, and the full demonstration. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.

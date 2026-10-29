@@ -38,11 +38,12 @@
     let failures = 0;
     // Rewriting the live region with the same words would make screen readers repeat them.
     const words = (node) => node.textContent.replace(/\s+/g, ' ').trim();
-    const sameWords = (html) => {
+    const sameWords = (target, html) => {
       const holder = document.createElement('div');
       holder.innerHTML = html;
-      return words(holder) === words(status);
+      return words(holder) === words(target);
     };
+    const revealed = document.getElementById('revealed-requirements');
     const giveUp = () => {
       status.removeAttribute('data-reply-live');
       status.innerHTML = '<p>Couldn\'t check for the reply. Reload the page to see it.</p>';
@@ -65,7 +66,10 @@
             if (!document.getElementById(`turn-${turn.sequence}`)) transcript.insertAdjacentHTML('beforeend', turn.html);
           });
           if (data.latest_sequence > Number(expected.value)) expected.value = String(data.latest_sequence);
-          if (!sameWords(data.status_html)) status.innerHTML = data.status_html;
+          if (!sameWords(status, data.status_html)) status.innerHTML = data.status_html;
+          if (revealed && typeof data.revealed_html === 'string' && !sameWords(revealed, data.revealed_html)) {
+            revealed.innerHTML = data.revealed_html;
+          }
           status.toggleAttribute('data-reply-live', data.reply.live);
           sendButtons.forEach((button) => { button.disabled = data.reply.live; });
           if (data.reply.live) setTimeout(poll, Date.now() - started < 30000 ? 1500 : 5000);

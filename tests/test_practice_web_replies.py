@@ -195,6 +195,76 @@ class PracticeWebReplyTests(PracticeWebCase):
                 self.assertIn('value="reply">Retry the reply</button>', html)
                 self.assertNotIn("data-reply-live", html)
 
+    def test_revealed_requirements_and_hints_show_where_they_came_from(self):
+        session_id = self.start()
+        self.assertIn("None yet. The interviewer reveals more when you ask", self.page(session_id))
+        self.act(session_id, self.fields(session_id), "send", message="Who owns the key?")
+        polled = self.poll(session_id, 2).get_json()
+        self.assertNotIn("HIDDEN_SENTINEL", polled["revealed_html"])  # nothing revealed until the reply lands
+        self.work()
+        polled = self.poll(session_id, 2).get_json()
+        self.assertIn('HIDDEN_SENTINEL <a class="practice-revealed-source" href="#turn-3">Show the reply</a>',
+                      polled["revealed_html"])
+        html = self.page(session_id)
+        self.assertIn('<h3 id="revealed-heading">Revealed requirements</h3>', html)
+        self.assertIn('href="#turn-3">Show the reply</a>', html)
+        self.act(session_id, self.fields(session_id), "send", message="Could I have a hint?")
+        self.work()
+        html = self.page(session_id)
+        self.assertIn('Interviewer <span class="practice-hint">Hint</span>', html)
+        self.assertEqual(html.count('class="practice-hint"'), 1)
+
+    def long_conversation(self, session_id, *, allowance):
+        """Four long exchanges, then a message saved while AI was off, with the allowance set relative to it."""
+        for number in range(4):
+            self.act(session_id, self.fields(session_id), "send", message=f"EARLY_{number} " + "detail " * 400)
+            self.work()
+        with patch.dict(self.app.config, LEARNING_AI_ENABLED=False):
+            self.act(session_id, self.fields(session_id), "send", message="LATEST question?")
+        session = practice_service._owned_session(1, session_id)
+        worst = practice_service._worst_case(session, practice_service._latest_learner_turn(session_id), 1)
+        full = practice_worker.interviewer.prompt_bytes(worst["reply"])
+        latest = practice_worker.interviewer.prompt_bytes(
+            practice_service._narrowed(worst, len(worst["context"]["transcript"]) - 1))
+        self.app.config["LEARNING_AI_CONTEXT_BYTES"] = allowance(latest, full)
+
+    def test_continuing_with_recent_messages_from_the_page(self):
+        session_id = self.start()
+        self.long_conversation(session_id, allowance=lambda latest, full: (latest + full) // 2)
+        html = self.page(session_id)
+        self.assertIn("This conversation is now longer than the interviewer can read at once.", html)
+        self.assertIn('value="recent">Continue with recent messages</button>', html)
+        self.assertNotIn('value="reply">', html)
+        self.assertEqual(self.act(session_id, FormFields(html).values, "recent").status_code, 303)
+        html = self.page(session_id)
+        self.assertIn("The interviewer now reads from a recent message on, marked in the conversation. "
+                      "Nothing was deleted. Asked the interviewer for a reply.", html)
+        marker = html.index('id="reads-from"')
+        self.assertLess(html.index("EARLY_0"), marker)  # earlier messages stay in the record
+        self.assertLess(marker, html.index("LATEST question?"))
+        self.assertIn("The interviewer is replying", html)
+
+    def test_work_too_long_to_read_names_what_to_shorten(self):
+        session_id = self.start()
+        self.act(session_id, self.fields(session_id), "save", api="contract " * 3000)
+        with patch.dict(self.app.config, LEARNING_AI_ENABLED=False):
+            self.act(session_id, self.fields(session_id), "send", message="Is this right?")
+        self.app.config["LEARNING_AI_CONTEXT_BYTES"] = 2_000
+        html = self.page(session_id)
+        self.assertIn("The interviewer can't read your work at once: “API contract” is too long. Shorten it and save, "
+                      "then send a new message: a reply reads the work your message was sent with.", html)
+        self.assertNotIn('value="recent">', html)
+        self.assertNotIn('value="reply">', html)
+
+    def test_a_check_in_after_many_messages_never_stops_the_conversation(self):
+        session_id = self.start()
+        self.app.config.update(LEARNING_AI_CHECK_IN_TURNS=2, LEARNING_AI_ENABLED=False)
+        self.act(session_id, self.fields(session_id), "send", message="one")
+        self.assertNotIn("practice-checkin", self.page(session_id))
+        self.act(session_id, self.fields(session_id), "send", message="two")
+        self.assertIn("You've sent 2 messages in this session. Keep going while it helps", self.page(session_id))
+        self.assertEqual(self.act(session_id, self.fields(session_id), "send", message="three").status_code, 303)
+
     def test_a_reply_containing_markup_is_shown_as_text(self):
         session_id = self.start()
         self.act(session_id, self.fields(session_id), "send", message="hi")
