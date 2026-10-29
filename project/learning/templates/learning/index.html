@@ -42,6 +42,7 @@
     <section class="learning-study" aria-labelledby="concepts-heading">
       <h2 id="concepts-heading">Engineering concepts</h2>
       <p>Build understanding, then practise recalling and applying it.</p>
+      {% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
       {% if practice_sessions %}
         <div class="practice-continue">
           <h3>Continue practising</h3>

@@ -8,8 +8,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | --- | --- | --- |
 | 1. Content foundation | Versioned catalog, draft lesson/four questions/one structured interview; audience projections; atomic import; additive migration verified on PostgreSQL; legacy Learning regression checks. | Committed as `1f344a5`; [REPL guide](learning-checkpoint-1-test-guide.md). |
 | 2. Learn and Review on web | Published lesson, retry visualization, safe Markdown, explicit answer reveal, four questions through the existing scheduler; unchanged old API behavior and progress. Human content review precedes publication. | Committed as `3b108bf`; [hands-on guide](learning-checkpoint-2-test-guide.md), refined in `0c2848a`. Production publication remains pending human content review. |
-| 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) plus the following web workspace/API commit; [practice guide](learning-checkpoint-3-test-guide.md), part A. |
-| 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Not started. |
+| 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) and `709658b` (web workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part A. |
+| 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) plus the following workspace/API commit; [practice guide](learning-checkpoint-3-test-guide.md), part B. |
 | 4. Interview and continuity | Postgres-backed worker, owner-only AI use, approved disclosure, idempotent requests, budgets/reservations, configurable soft turn check-in, context compaction, durable recovery. | Not started. |
 | 5. Feedback and complete demonstration | Evidence-linked transcript/artifact feedback, remediation, pause/reopen/recover, one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
@@ -127,3 +127,61 @@ The disposable fixture walkthrough covered:
 - the 390-pixel layout.
 
 Not covered: a screen-reader audit; if the database is down before sign-in, the site's error page appears instead of the rescue page; 3b behaviour; anything involving AI. Nothing was pushed, deployed, migrated in production, or published.
+
+## Checkpoint 3b implementation and verification
+
+No migration: 3b uses the tables from 3a. `practice_service` adds:
+
+- **`save_work`:** an all-or-nothing save of artifact edits and/or the learner's brief.
+  - A brief edit stores a full snapshot (`kind='brief'`) with the next revision number. It follows the artifact rule: unchanged, next revision, untouched (keep the newer brief), or conflict.
+  - Saving resumes a paused session; the website's **Save and pause** saves first, then pauses.
+- **`save_and_send`:** the website's Send. One transaction saves every artifact and the brief, then appends the learner turn. The turn cites the current revision of every artifact and records the brief revision.
+  - A turn needs an up-to-date view. A conflict, an untouched artifact or brief that changed elsewhere, or a newer turn refuses the whole request.
+  - Freshness compares against the latest turn, so brief snapshots never cause false conflicts.
+- **`send_turn`:** the API's Send, citing already-saved revisions; each must be current.
+- **`set_status`:** pause and resume, with receipts.
+- **`delete_session`:** takes the owner lock and deletes the session row; database cascades remove revisions, messages, citations, and receipts. A repeat finds nothing (404). It refuses to run on a SQLite connection without foreign-key enforcement, which would otherwise keep every row.
+
+Limits: 8 KiB per turn; 50 brief entries of 2 KiB each; up to ten sources per entry, each an existing turn or artifact revision of the session. `StaleViewError` replaces `StaleArtifactError` and carries every stale part, with codes `stale_artifact`, `stale_brief`, `stale_transcript`, and (website Send only) `out_of_date`.
+
+The workspace is still one form, now with the brief editor and a message box:
+
+- **Send**, **Save work**, and **Save and pause** (or **Resume**) all submit everything, so no button discards other work. A hidden first button makes Enter in a field save, never send.
+- Saving with a typed message re-renders (200) with the message kept, flagging anything that changed elsewhere while it was written; other saves redirect.
+- **409** re-renders show the newer work beside yours: conflicting artifacts and brief side by side, untouched parts refreshed, new turns labelled. Your edits and message stay in place.
+- The rescue page now holds the message and brief entries too, and retries the same action with the same request ID.
+- A confirmation page explains that deletion has no undo and that backups are separate, then returns to the lesson.
+
+The API adds `PUT …/brief`, `POST …/turns`, `POST …/pause`, `POST …/resume`, and `DELETE /sessions/<id>`. The preview fixture turns on SQLite foreign keys, simulates failures for sends as well as saves, and counts turns and brief revisions.
+
+October 29 local validation: **410 backend tests run, 409 passed, one existing Linux-only test skipped on macOS**, with PostgreSQL 18.6 enabled. The 39 new tests cover:
+
+- **Service (SQLite with foreign keys on, 14):** citations, API turns and each stale code, freshness ignoring brief records, out-of-date sends, required message and artifacts, replays, brief snapshots and conflicts, brief validation, pause/resume, delete removing everything and nothing else, the foreign-key guard, ownership, and hash-only receipts.
+- **Web (13):** Send with citations, the kept draft and work that changed while it was written, out-of-date and new-turn re-renders, a resent page based on the saved work it matches, brief add/edit/pin/remove, brief conflicts and refresh, message and brief errors, pause/resume, delete with confirmation and replay, cross-account refusal, and the rescue page for a send that failed before or after committing.
+- **API (5):** brief, turns, pause/resume/delete, retry advice in each 503, and cross-account 404.
+- **Content schema (1):** an exercise expects at most 20 artifacts.
+- **PostgreSQL (6):** Send against a save, two Sends, brief lookup by revision on the `json` type, a fresh process resuming a paused session, delete cascades, and delete during a save. Repeated runs saw both orders of each race, with no orphan rows: in 15 runs the Send committed first 7 times and the save 8 times; in 20 runs the delete committed first 5 times and the save 15 times.
+
+An independent review of the diff found no high-severity problems and three real ones, each now fixed with a regression test that fails without the fix:
+
+- **Medium:** after **Save work** with a typed message, the page moved to the latest state silently, so a message written against an older view could then be sent without the learner seeing what changed. The page now flags new turns and updated parts first, as an out-of-date Send does.
+- **Low:** after a lost response, a re-render could keep an old base for work that already matched the learner's own saved revision, so a later edit conflicted with their own work. Re-renders now base such parts on the saved head.
+- **Low:** an exercise with more than 20 artifacts would publish but crash the workspace. The content schema now caps it at 20, the same shared limit the form and service use.
+
+The API's 503 messages also no longer tell GET and DELETE callers to reuse a request ID.
+
+Two test-fixture fixes came with these tests. The form parser now submits only ticked checkboxes and normalizes textarea line breaks as browsers do. The web suites' `login()` also clears the CSRF token cached on the shared app context. 3a's cross-account save test had been refused for that stale token rather than for ownership; it now reaches the ownership check.
+
+Root Node checks passed (13 tests plus dependency integrity). Browser checks passed: 23 legacy flashcard, nine extraction, 27 concept, and 19 practice checks. Sass compiled.
+
+The disposable fixture walkthrough covered:
+
+- sending with an artifact edit, then the transcript's revision link;
+- a send from a stale tab (focused alert, the other tab's turn marked New, draft kept), then sending again;
+- **Save and pause**, signing out, the API reading the paused session intact and resuming it, then signing back in;
+- a send whose result was lost after commit (rescue page with message and brief, one turn after the retry, a log line with only the error class);
+- keyboard order (message box, then Send, then the brief) and Enter on a Pin box saving rather than sending;
+- the 390-pixel layout;
+- delete, ending with zero rows, receipts included.
+
+Not covered: a screen-reader audit; Firefox and Safari (the walkthrough used Chromium, where Enter on a Pin box submitted the form and the hidden Save button kept the message unsent); AI. A tab open on a session deleted elsewhere gets "not found" on its next save. Sources on brief entries can be added through the API only (the website shows and preserves them). There is no brief history page. Nothing was pushed, deployed, migrated in production, or published.

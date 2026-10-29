@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of October 28, 2026, **Milestone 1 is partially implemented: Learn and Review work on web, and practice sessions save Build artifacts with history, conflicts, and recovery (checkpoint 3a). Discussion turns, the session brief, pause/resume, delete (checkpoint 3b), the AI interviewer, and feedback do not exist yet.** Continue on `feature/learning-content-foundation`. The next implementation checkpoint is 3b, the discussion record.
+As of October 29, 2026, **Milestone 1 is partially implemented: Learn and Review work on web, and practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) plus the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). The AI interviewer, feedback, and export do not exist yet.** Continue on `feature/learning-content-foundation`. The next implementation checkpoint is 4, the interviewer, which needs Keith's decisions first (see the last section).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 3a, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 3b, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -27,7 +27,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
-| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Approved; checkpoints 1, 2, and 3a complete locally. |
+| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Approved; checkpoints 1, 2, 3a, and 3b complete locally. |
 | 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | Requires approval after Milestone 1. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
@@ -41,8 +41,8 @@ Within Milestone 1:
 | 1 | Versioned content, validation, projections, importer, draft idempotency material, additive migration. | `1f344a5` — complete locally. |
 | 2 | Web lesson, visualization, answer reveal, shared review scheduling, version-pinned logs, privacy treatment. | `3b108bf` — complete locally. |
 | Documentation follow-up | Replace test-suite instructions with interactive investigation guides. | `0c2848a`. |
-| 3a | Practice sessions pinned to a published exercise, immutable artifact revisions, idempotent saves, per-artifact conflicts, ownership, failure recovery, web workspace, JWT API, feature flag. | `fe91fe2` (persistence and service) plus the following "web practice workspace and JSON API" commit — complete locally. |
-| 3b | Discussion turns citing exact artifact revisions, editable session brief, pause/resume, delete. | Not started. |
+| 3a | Practice sessions pinned to a published exercise, immutable artifact revisions, idempotent saves, per-artifact conflicts, ownership, failure recovery, web workspace, JWT API, feature flag. | `fe91fe2` (persistence and service) and `709658b` (web workspace and JSON API) — complete locally. |
+| 3b | Discussion turns citing exact artifact revisions, editable session brief, pause/resume, delete. | `b7ae1e2` (service) plus the following "workspace and API" commit — complete locally. |
 | 4 | Interview behavior, PostgreSQL worker, provider adapter, disclosure, durable requests, budgets, context compaction and recovery. | Not started. |
 | 5 | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started. |
 
@@ -78,7 +78,7 @@ No push, PR, deployment, production migration, or production publication was per
 
 [The idempotency package](../curriculum/idempotency/catalog.json) has six version-1 items: concept `idempotency`; questions `idempotency:timeout`, `idempotency:race`, `idempotency:scope`, and `idempotency:external-effect`; exercise `idempotent-order-api`. The three lesson sections are `overview`, `retries`, and `design`. Its prerequisites include descriptive prior knowledge; it does not fabricate prerequisite concept records for content not yet authored.
 
-The exercise expects `api`, `schema`, and `algorithm` artifacts. Its schema separates `brief`, `facilitator`, and `assessment`. The brief contains scenario, objectives, functional/nonfunctional requirements, prerequisites, artifact expectations, and public assessment dimensions. Server-side content contains disclosure cues/facts, interviewer instructions, allowed hints, alternative approaches, anchored rubrics, and remediation links. Do not copy those private packets into future UI fixtures, HTML, bundles, or session exports.
+The exercise expects `api`, `schema`, and `algorithm` artifacts; an exercise may expect at most 20, so they fit one practice form and one save. Its schema separates `brief`, `facilitator`, and `assessment`. The brief contains scenario, objectives, functional/nonfunctional requirements, prerequisites, artifact expectations, and public assessment dimensions. Server-side content contains disclosure cues/facts, interviewer instructions, allowed hints, alternative approaches, anchored rubrics, and remediation links. Do not copy those private packets into future UI fixtures, HTML, bundles, or session exports.
 
 `schema_version: 1` versions the catalog; exercise `spec_version: 1` versions the simulation contract; each item's integer `version` versions its content. Strict schemas reject unknown fields, invalid or duplicate IDs, duplicate JSON keys, invalid references, prerequisite cycles, and invalid versions, including booleans masquerading as integers. Markdown paths cannot escape the package, including through symlinks. Resolved Markdown text participates in the checksum.
 
@@ -102,11 +102,11 @@ The JSON API under `/api/v1/learning` remains the legacy notes/review/rating/rec
 
 Personal Learning responses use `Cache-Control: private, no-store`. The shared base template omits Google Analytics and Hotjar on authenticated Learning pages. Sentry reporting is strictly allowlisted in `project/monitoring.py`. Practice routes have their own leakage checks (below); provider errors and AI telemetry will need theirs.
 
-### Practice sessions (checkpoint 3a)
+### Practice sessions (checkpoints 3a and 3b)
 
 `LEARNING_PRACTICE_ENABLED` (default off) gates every practice route and query. With it on, a concept page's **Apply it** section starts a session for a published exercise (`POST /learning/practice`), and the Learning index lists open sessions under **Continue practising**.
 
-A `PracticeSession` pins the exercise's `(item_id, version)` and records the interviewer's authored `opening_prompt` as turn 1. That comes from `opening_view`, the only facilitator field a learner ever receives. `ArtifactRevision` rows are immutable: each changed save adds revision N+1 with title, format, notation (`language`), text, and SHA-256. `SessionMessage`, `SessionMessageArtifact`, and `PracticeReceipt` are in place for 3b and later. Composite foreign keys keep citations inside one session, and receipts store a payload hash, never text. Deletes cascade from the session in the database.
+A `PracticeSession` pins the exercise's `(item_id, version)` and records the interviewer's authored `opening_prompt` as turn 1. That comes from `opening_view`, the only facilitator field a learner ever receives. `ArtifactRevision` rows are immutable: each changed save adds revision N+1 with title, format, notation (`language`), text, and SHA-256. `SessionMessage` is the ordered record of turns and brief snapshots, `SessionMessageArtifact` holds each turn's citations, and `PracticeReceipt` holds mutation results. Composite foreign keys keep citations inside one session, and receipts store a payload hash, never text. Deletes cascade from the session in the database.
 
 `practice_service` is the only writer. Every mutation takes the owner's user-row lock, checks its receipt, then reads owner-scoped rows fresh. A save is all-or-nothing across artifacts:
 
@@ -117,15 +117,24 @@ A `PracticeSession` pins the exercise's `(item_id, version)` and records the int
 
 Line endings are normalized to LF, and revision 0 counts as an empty body. Limits: 64 KiB of UTF-8 per artifact, NUL characters rejected before the database, and 2 MiB per request.
 
-The workspace (`/learning/practice/<id>`) is one Flask-WTF form whose CSRF token lasts 24 hours, with Discuss and Build side by side on wide screens. Every rejected save re-renders the learner's text:
+Checkpoint 3b adds the discussion record:
 
-- **400:** an expired CSRF token or invalid input.
-- **409:** a conflict. The saved version appears beside the learner's text, and saving again is an informed choice.
-- **503:** a database failure. A standalone page that needs neither the database nor the shared layout holds the text. An unknown outcome keeps the request ID, so a retry replays rather than duplicates.
+- **Brief.** The learner's entries are assumptions, open questions, decisions, and a next step. Each has a stable ID, basis `learner`, text, a pin flag, and optional sources: up to ten turns or artifact revisions of the same session. Every edit stores a full snapshot (`kind='brief'`, role `learner`) with the next revision number, using the same four-way rule as artifacts. Limits: 50 entries of 2 KiB each. Initial requirements come from the exercise brief and are not copied in.
+- **Turns.** A learner turn cites the current revision of every artifact (`SessionMessageArtifact`) and records the brief revision in its `data`. On the website, Send saves the artifacts and brief and appends the turn in one transaction. API clients save first, then cite. A turn needs an up-to-date view: a conflict, an untouched artifact or brief that changed elsewhere, or a turn newer than `expected_sequence` refuses the whole request. Only turns count for `expected_sequence`, so brief and later system records never cause false conflicts. Turns are limited to 8 KiB.
+- **Pause and resume.** Each is an idempotent status change with a receipt. Any learner save or turn resumes a paused session. Fencing pending generation arrives with checkpoint 4. Nothing pauses, resumes, or reopens a `completed` session; checkpoint 5 decides what completion allows.
+- **Delete.** It takes the owner lock and deletes the session row; database cascades remove its revisions, messages, citations, and receipts. There is no receipt to replay, so a repeat reports not found. It refuses to run on a SQLite connection without foreign-key enforcement, because SQLite would otherwise skip the cascades and keep every row.
+
+The workspace (`/learning/practice/<id>`) is one Flask-WTF form whose CSRF token lasts 24 hours, with Discuss (scenario, conversation, message box, brief editor) and Build side by side on wide screens. **Send message**, **Save work**, and **Save and pause** (or **Resume**) all submit the whole form, so no button discards other work; a hidden first button makes Enter in a field save, never send. Saving with a typed message re-renders the page with the message kept, flagging anything that changed elsewhere while it was written. Every rejected request re-renders the learner's text and message:
+
+- **400:** an expired CSRF token or invalid input, shown beside the artifact, brief, or message.
+- **409:** a conflict or an out-of-date Send. Saved versions appear beside the learner's text, untouched parts refresh, and new turns are marked; saving or sending again is an informed choice.
+- **503:** a database failure. A standalone page that needs neither the database nor the shared layout holds the artifacts, brief entries, and message, and retries the same action. An unknown outcome keeps the request ID, so a retry replays rather than duplicates.
+
+`/learning/practice/<id>/delete` is a confirmation page that says there is no undo and that backups are separate. Deleting returns to the lesson; repeating it, or targeting another account's session, lands on Learning with "doesn't exist or was already deleted".
 
 Logs carry only exception class, SQLSTATE, and constraint name (`describe_failure`), and SQL parameters are hidden in every environment. History pages are addressed by artifact ID and revision number. A small script adds an unsaved-changes prompt and a UTF-8 byte counter; nothing depends on it.
 
-The JWT API under `/api/v1/learning/practice` uses the same service: list, start, and read sessions; `PUT …/artifacts/<artifact_id>`; revision history; and receipts. Responses are explicit field lists. The 409 codes are `stale_artifact` (which includes the saved body) and `request_conflict`, and each 503 says whether to retry with the same request ID.
+The JWT API under `/api/v1/learning/practice` uses the same service: list, start, read, and delete sessions; `PUT …/artifacts/<artifact_id>` and `PUT …/brief`; `POST …/turns`, `POST …/pause`, and `POST …/resume`; revision history; and receipts. In the session detail, `brief` is the exercise's authored brief and `session_brief` is the learner's; `PUT …/brief` replaces the latter. Responses are explicit field lists. The 409 codes are `stale_artifact` (with the saved bodies), `stale_brief` (with the saved brief), `stale_transcript` (with `latest_sequence`), and `request_conflict`; validation errors name a `part` (`artifact`, `brief`, or `turn`) and a `field`. Each 503 says whether to retry with the same request ID.
 
 ### Migrations
 
@@ -141,16 +150,16 @@ These migrations were exercised on populated disposable PostgreSQL fixtures, inc
 
 Everything in this section is approved direction, not an existing subsystem.
 
-### Unified session and artifacts: what 3b adds
+### Session record: what later checkpoints add
 
-Checkpoint 3a implemented sessions and artifacts (above). The schema already holds everything below; checkpoint 3b adds the operations through `practice_service`, the workspace form, and the JWT API.
+Checkpoints 3a and 3b implemented sessions, artifacts, turns, the brief, pause/resume, and delete (above). Later records reuse the same ordered `SessionMessage` table:
 
-- **Turns.** A learner turn cites the exact revision of each artifact it was sent with. On the web, Send saves any edits and appends the turn in one transaction; API clients save first, then cite the saved revisions. A turn needs an up-to-date view: every artifact and brief base must be current, and `expected_sequence` must be the latest turn (system records are ignored, so later checkpoint and assistance records cannot cause false conflicts). The interviewer replies from checkpoint 4.
-- **Brief.** Learner entries cover assumptions, open questions, decisions, and next step. Each entry has a stable ID, a basis, text, a pin flag, and optional sources (a turn, or an artifact revision). Every edit stores a full snapshot (`kind='brief'`), and conflicts are shown, not merged. Initial requirements, current artifact references, and assistance are computed, not stored. Checkpoint 4 adds disclosed constraints (`scenario_fact`) and unconfirmed model interpretations (`interpretation`).
-- **Pause/resume.** A status flip; a learner save resumes the session. Its job of fencing pending generation arrives with checkpoint 4.
-- **Delete.** Owner-only, after a confirmation page; database cascades remove everything. Export remains checkpoint 5 work.
+- **Interviewer replies (checkpoint 4)** are `interviewer` turns. The `AIRequest` is created inside Send's transaction and pins the brief record and the turn's cited revisions. Pause fences pending generation; delete must cancel pending work and fence late responses.
+- **Brief entries from the interviewer (checkpoint 4)** use the bases `scenario_fact` (disclosed constraints) and `interpretation` (unconfirmed model readings). The website's brief editor must then round-trip their basis, and the rules for learner edits of those entries need deciding. Today only `learner` entries exist.
+- **Assistance history** (permitted hints, explicit style changes) is recorded as `assistance` messages once checkpoint 4 introduces assistance.
+- **A submission checkpoint** (the set of revisions feedback evaluates) is a `submission` message in checkpoint 5, which also decides what a `completed` session allows.
 
-Assistance history (permitted hints, explicit style changes) is recorded as `assistance` messages once checkpoint 4 introduces assistance. A submission checkpoint — the set of revisions feedback evaluates — is a `submission` message in checkpoint 5. Responses and feedback must identify which revisions they reviewed. AI suggestions never overwrite learner artifacts automatically. Persisting foreign IDs, reading another user's history, and replaying another user's request must keep failing; tests for each exist for 3a.
+Responses and feedback must identify which revisions they reviewed. AI suggestions never overwrite learner artifacts automatically. Persisting foreign IDs, reading another user's history, and replaying another user's request must keep failing; tests for each exist for 3a and 3b.
 
 ### Interview behavior and disclosure
 
@@ -210,7 +219,7 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | [JobWizard provider integration](../project/services/jobwizard_extraction.py) | Existing bounded-call/validation patterns to study, not the Learning worker. |
 | [Content tests](../tests/test_curriculum.py), [PostgreSQL import tests](../tests/test_curriculum_postgres.py) | Schemas, leakage, imports, process death, migrations. |
 | [Web concept tests](../tests/test_concept_web.py), [PostgreSQL review tests](../tests/test_learning_postgres.py) | Auth/CSRF, reveal/version pinning, rollback/replay, scheduling and concurrency. |
-| Practice tests: [service](../tests/test_practice_service.py), [web](../tests/test_practice_web.py), [API](../tests/test_practice_api.py), [PostgreSQL](../tests/test_practice_postgres.py) | Saves, replays, conflicts, normalization, limits, leakage, ownership, rescue page, two-device behaviour, races, process death, cross-session citations, log safety. |
+| Practice tests: service ([3a](../tests/test_practice_service.py), [3b](../tests/test_practice_discussion.py)), web ([3a](../tests/test_practice_web.py), [3b](../tests/test_practice_web_discussion.py)), API ([3a](../tests/test_practice_api.py), [3b](../tests/test_practice_api_discussion.py)), [PostgreSQL](../tests/test_practice_postgres.py) | Saves, sends, citations, brief snapshots, replays, conflicts, normalization, limits, leakage, ownership, pause/resume, delete, rescue page, two-device behaviour, races, process death, cross-session citations, log safety. |
 | [Browser checks](../tests/browser/README.md) | Actual renderer/simulation and legacy browser regression checks. |
 | [Preview fixture](../scripts/learning-preview-fixture.py) | Disposable local demo and inspection endpoints. |
 
@@ -229,28 +238,30 @@ Open `http://127.0.0.1:5057/login`. Sign in with `learning1@example.test` / `Lea
 
 The fixture disables dotenv, uses temporary SQLite, and directly inserts demo-published content. It does not exercise the real PostgreSQL importer or migrations and must not be pointed at real data. The actual importer intentionally rejects SQLite. `/fixture/results` exposes review counts for inspection only in this fixture. Its access JWTs expire after ten seconds, so delayed HTTPie/Postman calls may need a fresh login or refresh token.
 
-With `--concept`, practice is enabled: Learning → Idempotency → **Apply it** starts a session. `POST /fixture/state` with `practice=failure` or `practice=lost` simulates database failures before or after a save commits, and `/fixture/results` also reports practice counts.
+With `--concept`, practice is enabled: Learning → Idempotency → **Apply it** starts a session. `POST /fixture/state` with `practice=failure` or `practice=lost` simulates database failures before or after a save or send commits, and `/fixture/results` also reports practice counts. The fixture turns on SQLite foreign keys so deletes cascade.
 
-Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections, provoke validation failures, and step through functions. Use the [running-system guide](learning-checkpoint-2-test-guide.md) for Network request replay, Console/Sources inspection, HTTPie/Postman, and profiling. Use the [practice guide](learning-checkpoint-3-test-guide.md) for saves, replays, conflicts, recovery pages, and the practice API. Form navigations appear under Network All/Doc, not a Fetch/XHR-only filter. The simulation performs local DOM work without application requests.
+Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections, provoke validation failures, and step through functions. Use the [running-system guide](learning-checkpoint-2-test-guide.md) for Network request replay, Console/Sources inspection, HTTPie/Postman, and profiling. Use the [practice guide](learning-checkpoint-3-test-guide.md) for saves, sends, the brief, conflicts, recovery pages, pause/resume, delete, and the practice API (parts A and B). Form navigations appear under Network All/Doc, not a Fetch/XHR-only filter. The simulation performs local DOM work without application requests.
 
 ## Verification evidence and commands
 
-Latest full application verification, recorded October 28 after checkpoint 3a:
+Latest full application verification, recorded October 29 after checkpoint 3b:
 
-- **371 backend tests run: 370 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with PostgreSQL **18.6** enabled.
-  - 45 tests are new: 17 practice-service, 13 web, 6 API, and 7 PostgreSQL practice tests, plus 2 projection tests.
-  - The existing Alembic test now also downgrades and re-upgrades populated practice tables and checks the migrated CHECK constraints.
-- **70 browser checks**: 23 legacy flashcard, nine extraction, 27 concept, and 11 practice checks.
+- **410 backend tests run: 409 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with PostgreSQL **18.6** enabled.
+  - 3b added 39: 14 service, 13 web, 5 API, 6 PostgreSQL, and 1 content-schema test.
+  - An independent review of the diff found three issues, all fixed with regression tests (see the checkpoint log).
+  - Repeated PostgreSQL race runs saw both commit orders for Send against a save and for delete against a save, with no orphan rows.
+- **78 browser checks**: 23 legacy flashcard, nine extraction, 27 concept, and 19 practice checks.
 - **13 root Node tests**, dependency integrity checks, Sass build, and `git diff --check` passed.
 - A live walkthrough in the disposable fixture covered:
-  - starting a session from the lesson and saving;
-  - a two-tab conflict (focused error summary, both texts kept);
-  - a simulated database failure (rescue page, a retry that saved without a duplicate, a log line without learner text);
-  - a 390-pixel layout with no horizontal overflow.
+  - sending with an artifact edit, then following the turn's revision link;
+  - a send from a stale tab (focused alert, the new turn marked, draft kept);
+  - Save and pause, signing out, the API reading and resuming the paused session, then signing back in to find everything intact;
+  - a send whose result was lost after commit (rescue page, one turn after the retry, a log line without learner text);
+  - the 390-pixel layout, and delete (zero rows left, receipts included).
 
   This is not a screen-reader audit.
 
-Checkpoint 2's earlier results (326 tests, 59 browser checks) and the checkpoint-by-checkpoint coverage are in the checkpoint log.
+Checkpoint 3a's results (371 tests, 70 browser checks), checkpoint 2's (326 tests, 59 browser checks), and the checkpoint-by-checkpoint coverage are in the checkpoint log.
 
 These are historical local results, not a claim that CI or AI evaluations have passed for unimplemented work. Detailed coverage is in the [checkpoint log](engineering-learning-milestone-1.md).
 
@@ -293,17 +304,21 @@ These fixtures drop tables and reset migration state. Never use a database conta
 - **Flask-WTF CSRF tokens expire after an hour,** and `Meta.csrf_time_limit = None` falls back to that hour. The workspace form uses 24 hours, and every CSRF rejection re-renders the learner's text.
 - **Textareas change what is submitted.** Browsers send CRLF line breaks and drop one newline directly after `<textarea>`. The service normalizes to LF, and templates render through WTForms `TextAreaField`, which writes the guard newline.
 - **Error pages read the database.** `_header.html` and `500.html` use `current_user.username`, which needs a query after a rollback, so with the database down both fail. The practice rescue page avoids the shared layout. The concept review 503 path still has this latent issue (it is tested only with injected errors).
-- **SQLite enforces foreign keys only with `PRAGMA foreign_keys=ON`.** The practice tests enable it per connection. In-memory SQLite uses one connection, so races are only meaningful on PostgreSQL. The test login leak above recurred: clear `g._login_user` along with the session.
+- **SQLite enforces foreign keys only with `PRAGMA foreign_keys=ON`.** The practice tests and the preview fixture enable it per connection. Deleting a session relies on it for the cascades, so `delete_session` refuses to run on a SQLite connection without it rather than leave the rows behind; PostgreSQL always enforces foreign keys. In-memory SQLite uses one connection, so races are only meaningful on PostgreSQL. The practice tables' `user_id` foreign keys don't cascade, so any future account deletion must delete practice sessions first.
+- **The shared test app context also caches the CSRF token.** Suites that keep one app context pushed share `g` across requests. The test login leak above recurred: `login()` must clear `g._login_user`, and also `g.csrf_token`, or the next POST fails with "The CSRF session token is missing". 3a's cross-account save test had passed only because of that rejection; it now reaches the ownership check.
+- **A WTForms field named `type` is unreachable through a `FormField`:** the enclosing field's own `type` attribute shadows it. The brief row's field is `kind`.
+- **Enter submits with the form's first button, even from a checkbox.** Chromium did this from a brief entry's Pin box. With Discuss before Build, that first button was Send, so Enter would have sent a half-written message. A hidden Save button now comes first: the same keypress saves and keeps the message in the box.
+- **Replays return the recorded response.** A replayed pause still says `"changed": true`. Clients should read a replay as history, not as current state.
 
 ## Open items and decisions to revisit
 
 1. **Human content review and rollout owner:** the exact lesson/questions/exercise/reference packet still need review. Confirm the reviewer and actual review date before publication. Migration/deployment and paid-provider activation have not happened.
 2. **Enrollment and reading progress:** the original plan includes explicit concept enrollment, reading position, self-assessment, and avoiding automatic due-queue expansion. `UserConceptProgress` does not exist. Currently, visiting a concept's review route offers its four eligible questions, while the legacy API queue is unchanged. Carry this forward as unfinished product work; do not claim enrollment is delivered. Settle its placement before Milestone 1 acceptance, and implement it before content expansion.
-3. **Exact session schema and lifecycle:** decided and built for 3a (schema, constraints, save payloads, replay, conflicts, byte limits). The 3b details are set out under "what 3b adds" above. Ask Keith if a substantial departure is necessary.
+3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
 4. **Provider and worker activation:** identify the authorized account, verify provider/model availability and current price accounting, and confirm worker compatibility with existing hosting. There is no worker process today: the `Procfile` runs only `web`, and `run.py` uses Flask's built-in server. Choose a worker dyno or an in-process thread before checkpoint 4. Finalize output caps, deadlines, reservation reconciliation, and configurable context policy with deterministic tests. No Learning provider key, worker process, or budget ledger has been configured. The budget ledger must stay content-free and must not cascade from session deletion.
 5. **Profile versioning and evaluator contract:** catalog item versions pin today's interviewer configuration, but independent prompt/profile versions, structured AI outputs, feedback annotations, and evidence/coverage validation still need implementation and evaluation. Do not invent a hidden solution-disclosure path when adding these.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
-7. **Remaining acceptance:** export/delete with late-response fencing, owner-only AI access, telemetry exclusions, worker outage/restart, budget races, failed/oversized compaction, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration are still outstanding. The 3a workspace has labelled controls, a focused error summary, status/alert regions, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion; Milestone 1 still needs reviewed interviewer-specific fixtures including valid alternatives and adversarial learner text.
+7. **Remaining acceptance:** export, fencing late AI responses after pause or delete, owner-only AI access, telemetry exclusions, worker outage/restart, budget races, failed/oversized compaction, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration are still outstanding. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion; Milestone 1 still needs reviewed interviewer-specific fixtures including valid alternatives and adversarial learner text.
 8. **Content-schema gaps against the approved plan:** the assessment reference has no misconception mappings, and the facilitator configuration has no behaviour profile/version. Either needs a schema change and new item versions. Decide before checkpoints 4–5.
 9. **Third-party scripts on private pages:** Marked (no SRI) and Alpine (no SRI, in the base template) load from jsDelivr, and the CSP allows `ws:`/`wss:` to any host. The practice workspace loads no Markdown library. Site-wide SRI and a narrower CSP are follow-ups.
 10. **Proposals from the October 28 vision review, awaiting Keith's decision.** None changes checkpoint 3.
@@ -316,6 +331,10 @@ These fixtures drop tables and reset migration state. Never use a database conta
 
 ## Recommended next checkpoint
 
-Checkpoint 3b, the discussion record: turns, the editable brief, pause/resume, and delete, as described under "what 3b adds". The tables already exist, so 3b needs no migration. Its gate: pause, close, and resume from another browser or the API with transcript, brief, and revisions intact; turns cite exact revisions; turn and brief conflicts lose nothing; and delete removes everything the owner had and nothing else, verified on PostgreSQL. Add part B of the practice guide and commit separately.
+Checkpoint 4, the interviewer and continuity. Before it starts, Keith needs to decide:
 
-Then implement the interviewer/continuity and feedback checkpoints with mocked provider responses and deterministic accounting/recovery fixtures, followed by reviewed live AI evaluations. At Milestone 1 completion, demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.
+1. Provider and worker hosting (open item 4): the authorized account, model access and current prices, and a worker dyno or in-process thread.
+2. The content-schema gaps (open item 8): misconception mappings and a behaviour profile/version, which need new exercise content versions.
+3. The vision-review proposals (open item 10), especially whether context compaction stays in Milestone 1.
+
+Build it with mocked provider responses and deterministic accounting and recovery fixtures, followed by reviewed live AI evaluations. Then checkpoint 5: feedback, export, and the full demonstration. At Milestone 1 completion, demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.

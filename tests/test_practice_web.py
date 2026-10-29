@@ -14,7 +14,7 @@ from project.database import db
 from project.learning.forms import PracticeWorkspaceForm
 from project.models import ArtifactRevision, PracticeSession, User
 from project.services import practice_service
-from tests.test_practice_service import EXERCISE, SENTINELS, enable_sqlite_foreign_keys, seed_catalog
+from tests.test_practice_service import SENTINELS, enable_sqlite_foreign_keys, seed_catalog
 
 LESSON = "/learning/concepts/idempotency"
 
@@ -31,7 +31,10 @@ class FormFields(HTMLParser):
         attrs = dict(attrs)
         name = attrs.get("name")
         if tag == "input" and name:
-            self.values[name] = attrs.get("value", "")
+            if attrs.get("type") != "checkbox":
+                self.values[name] = attrs.get("value", "")
+            elif "checked" in attrs:  # unticked boxes aren't submitted
+                self.values[name] = attrs.get("value", "on")
         elif tag == "textarea" and name:
             self._textarea, self.values[name] = name, ""
         elif tag == "select" and name:
@@ -45,11 +48,10 @@ class FormFields(HTMLParser):
 
     def handle_endtag(self, tag):
         if tag == "textarea" and self._textarea:
-            value = self.values[self._textarea]
-            # Browsers drop one newline directly after <textarea>; WTForms writes one for that reason.
-            if value.startswith("\r\n"):
-                value = value[2:]
-            elif value.startswith("\n"):
+            # Like a browser: normalize line breaks, then drop one newline directly after <textarea>
+            # (WTForms writes one for that reason).
+            value = self.values[self._textarea].replace("\r\n", "\n").replace("\r", "\n")
+            if value.startswith("\n"):
                 value = value[1:]
             self.values[self._textarea] = value
             self._textarea = None
@@ -59,11 +61,14 @@ class FormFields(HTMLParser):
 
 def as_browser(values):
     """Browsers submit textarea line breaks as CRLF."""
-    return {name: value.replace("\r\n", "\n").replace("\n", "\r\n") if name.endswith("-body") else value
+    textareas = ("-body", "-text", "message")
+    return {name: value.replace("\r\n", "\n").replace("\n", "\r\n") if name.endswith(textareas) else value
             for name, value in values.items()}
 
 
-class PracticeWebTests(unittest.TestCase):
+class PracticeWebCase(unittest.TestCase):
+    """Shared fixtures for the practice website suites; no tests of its own."""
+
     def setUp(self):
         self.app = create_app(dict(TESTING=True, SECRET_KEY="fixture", SQLALCHEMY_DATABASE_URI="sqlite://",
             JWT_SECRET_KEY="fixture-jwt-secret-at-least-32-characters", WTF_CSRF_ENABLED=True,
@@ -91,7 +96,9 @@ class PracticeWebTests(unittest.TestCase):
             session.clear()
             session["_user_id"] = str(user_id)
             session["_fresh"] = True
+        # The outer app context outlives requests: drop its cached login and CSRF token too.
         g.pop("_login_user", None)
+        g.pop("csrf_token", None)
 
     def get(self, path):
         return self.client.get(path, base_url="https://localhost")
@@ -118,6 +125,8 @@ class PracticeWebTests(unittest.TestCase):
                 data[f"artifacts-{index}-body"] = bodies[name]
         return self.post(f"/learning/practice/{session_id}", as_browser(data))
 
+
+class PracticeWebTests(PracticeWebCase):
     def test_practice_is_absent_when_the_flag_is_off(self):
         session_id = self.start()
         self.app.config["LEARNING_PRACTICE_ENABLED"] = False

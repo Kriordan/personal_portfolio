@@ -135,6 +135,20 @@ class CurriculumSchemaTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_catalog(draft)
 
+    def test_an_exercise_expects_at_most_twenty_artifacts(self):
+        # The practice workspace edits every artifact in one form and saves them in one request.
+        for count, valid in ((20, True), (21, False)):
+            with self.subTest(count=count):
+                draft = deepcopy(self.catalog)
+                brief = draft["items"][-1]["content"]["brief"]
+                brief["expected_artifacts"] = [dict(brief["expected_artifacts"][0], id=f"part-{index}")
+                                               for index in range(count)]
+                if valid:
+                    validate_catalog(draft)
+                else:
+                    with self.assertRaisesRegex(ValidationError, "expected_artifacts"):
+                        validate_catalog(draft)
+
     def test_review_answer_requires_explicit_reveal(self):
         question = self.catalog["items"][1]
         self.assertNotIn("answer", learner_view(question)["content"])

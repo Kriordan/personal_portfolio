@@ -1,6 +1,6 @@
 # Checkpoint 3: save, conflict, and recover practice work
 
-Pick one experiment. Predict the result, inspect it, then explain any surprise. Part A covers checkpoint 3a (sessions and artifacts). Part B will cover checkpoint 3b (discussion turns, brief, pause/resume, delete).
+Pick one experiment. Predict the result, inspect it, then explain any surprise. Part A covers checkpoint 3a (sessions and artifacts). Part B covers checkpoint 3b (discussion turns, the brief, pause/resume, delete).
 
 ## Part A — sessions and artifacts
 
@@ -137,8 +137,124 @@ Then, with a fresh token and the same `session` and `request` values:
 
 The website and the API are two devices for the same session. Save from HTTPie while a browser tab is open, then save from the tab: it gets the same 409 as two tabs.
 
+## Part B — turns, the brief, pause/resume, and delete
+
+### REPL: a turn and the record around it
+
+Continue in part A's REPL session.
+
+```python
+from project.models import SessionMessage
+detail = practice.session_detail(1, session_id)
+edits = [dict(artifact_id=a["artifact_id"], base_revision=a["revision"], language=a["language"], body=a["body"])
+         for a in detail["artifacts"]]
+brief = dict(base_revision=0, entries=[dict(id="e1", type="decision", text="Replays return the stored 201", pinned=True)])
+sent = practice.save_and_send(user, session_id, edits=edits, brief=brief, body="Is the stored 201 enough?",
+                              expected_sequence=1, request_id=str(uuid4()))
+pprint(sent)
+[(m.sequence, m.role, m.kind) for m in SessionMessage.query.order_by(SessionMessage.sequence)]
+```
+
+The turn cites API contract revision 1, the revision on screen when it was sent. The record reads `[(1, 'interviewer', 'turn'), (2, 'learner', 'brief'), (3, 'learner', 'turn')]`. Why is the turn number 3, not 2?
+
+**Send from an out-of-date view:**
+
+```python
+try:
+    practice.save_and_send(user, session_id, edits=edits, brief=brief, body="From a second device",
+                           expected_sequence=1, request_id=str(uuid4()))
+except practice.StaleViewError as exc:
+    print(exc.code, exc.latest_turn)
+```
+
+Expect `stale_transcript 3`. The brief at record 2 didn't count: find `_latest_turn`. The brief isn't stale either, even though its base is still 0. Why not?
+
+**Step through the brief decision:**
+
+```python
+pdb.runcall(practice.save_and_send, user, session_id, edits=edits, brief=brief, body="From a second device",
+            expected_sequence=3, request_id=str(uuid4()))
+```
+
+At `(Pdb)`, set `b _decide_brief`, press `c`, then step with `n`. Which `return` runs? Then change `brief["entries"][0]["text"]`, keep `base_revision=0`, and send again with `expected_sequence=4`. What do you get, and why?
+
+**Pause, then save:**
+
+```python
+practice.set_status(user, session_id, status="paused", request_id=str(uuid4()))
+practice.save_work(user, session_id, request_id=str(uuid4()),
+                   edits=[dict(edits[0], base_revision=1, body="POST /orders\nIdempotency-Key: required\n")])["status"]
+```
+
+Expect `'active'`: saving resumes a paused session. Find where `save_work` does that.
+
+**Delete:**
+
+```python
+practice.delete_session(user, session_id)
+```
+
+Expect a `RuntimeError`. This REPL's SQLite connection doesn't enforce foreign keys, so the database cascades wouldn't run and the "deleted" session's rows would stay behind. Turn enforcement on, then delete and count:
+
+```python
+from sqlalchemy import text
+db.session.execute(text("PRAGMA foreign_keys=ON"))
+practice.delete_session(user, session_id)
+[model.query.count() for model in (ArtifactRevision, SessionMessage, PracticeReceipt)]
+```
+
+Expect `[0, 0, 0]`. PostgreSQL always enforces foreign keys; the tests and the preview fixture turn SQLite's on for every connection.
+
+### DevTools: Send, conflicts, and recovery
+
+Start the fixture and a practice session as in part A, with **Network** open (**Preserve log**, **All** or **Doc**).
+
+1. **Send.** Edit **API contract**, add a brief entry, write a message, and select **Send message**.
+   - Expect **POST**, **303**, then **GET**.
+   - The payload carries `action=send`, `expected_sequence`, `brief_revision`, and the `brief-N-…` rows.
+   - The conversation shows "Sent with API contract revision 1". Follow the link.
+2. **New turns elsewhere.** Open the workspace in two tabs. Send from the second, then from the first.
+   - Expect **409**, the other tab's turn marked **New**, and your message still in the box.
+   - In Elements, `expected_sequence` has moved to the new turn. Send again.
+3. **Untouched but out of date.** In two tabs, save a schema edit in one. In the other, edit only the API contract and select **Send message**.
+   - Expect **409** "this page was out of date"; the schema box now shows the other tab's text.
+   - **Save work** from the same stale page would have succeeded. Why does Send refuse it?
+4. **Brief conflict.** Edit the same brief entry in two tabs and save both. The second gets **409**, "Saved elsewhere: brief revision N", with the other version listed.
+5. **Save with a typed message.** Type a message, then select **Save work**. Expect **200** rather than a redirect, with the message still in the box. Why no redirect? Now send from a second tab, then type and save in the first again: the page flags the new turn before you can send.
+6. **Pause, then resume elsewhere.** Select **Save and pause**. Learning lists the session as Paused. Sign out, then resume from HTTPie (below) or a second browser profile: the transcript, brief, and revisions are intact.
+7. **A lost Send.** Set `practice: 'lost'` from the Console as in part A, then send.
+   - Expect **503** "Your message wasn't confirmed", holding your message and brief entries.
+   - Set `practice` back to `success` and select **Try sending again**. The message appears once, and `/fixture/results` counts it once.
+8. **Delete.** Select **Delete this practice session**, then **Delete permanently**: **303** to the lesson, which says the session was deleted.
+   - Replay that POST with **Copy as cURL**: it now answers **303** to `/learning/`, where a browser would say the session "doesn't exist or was already deleted". The same answer goes to another account, so it reveals nothing.
+   - `/fixture/results` shows zero sessions, revisions, turns, and receipts.
+
+### HTTPie or Postman: brief, turns, pause, delete
+
+Get `token` and `session` with part A's first two commands, then within ten seconds:
+
+```sh
+http --ignore-stdin PUT :5057/api/v1/learning/practice/sessions/$session/brief "Authorization:Bearer $token" \
+  request_id=$(uuidgen | tr A-Z a-z) base_revision:=0 \
+  entries:='[{"id": "e1", "type": "assumption", "text": "Keys expire after 24 hours", "pinned": true}]'
+http --ignore-stdin POST :5057/api/v1/learning/practice/sessions/$session/turns "Authorization:Bearer $token" \
+  request_id=$(uuidgen | tr A-Z a-z) body='Do keys expire?' expected_sequence:=1 brief_revision:=1 \
+  artifact_revisions:='{"api": 0, "schema": 0, "algorithm": 0}'
+```
+
+Expect brief revision 1, then **201** with `"sequence": 3`. Then, with a fresh token:
+
+1. Send the turn again with a new request ID and `expected_sequence:=1`: **409** `stale_transcript` with `"latest_sequence": 3`.
+2. PUT the brief from `base_revision:=0` with different text: **409** `stale_brief`, with the saved brief.
+3. Cite `"api": 1` in a turn before saving any API contract: **400**, not 409. Why?
+4. `POST …/sessions/$session/pause` with `request_id=$request` twice, reusing the same ID: identical JSON, `"changed": true` both times. With a new ID: `"changed": false`. Why the difference?
+5. `DELETE :5057/api/v1/learning/practice/sessions/$session`: **204**. Repeat it: **404**. Then `GET …/receipts/$request`: `null`, because receipts go with the session.
+
+Responses from the API and the website are the same session: pause in HTTPie, then reload the workspace.
+
 ### What this does not cover
 
-- PostgreSQL behaviour (row locks, races, process death, migrations) is in `tests/test_practice_postgres.py` and `tests/test_curriculum_postgres.py`. The fixture uses SQLite.
+- PostgreSQL behaviour (row locks, races, process death, migrations, cascades) is in `tests/test_practice_postgres.py` and `tests/test_curriculum_postgres.py`. That includes Send against a save, two Sends from one view, delete during a save, and a fresh process resuming a paused session. The fixture uses SQLite.
 - If the database is down before the request signs you in, the site's normal error page appears instead of the rescue page. Use the browser's Back button to recover typed text.
-- The AI interviewer, discussion turns, the brief, pause/resume, and delete are not part of checkpoint 3a.
+- A tab still open on a session deleted elsewhere gets "not found" on its next save. Use Back to recover typed text.
+- The AI interviewer, feedback, and export arrive in later checkpoints.

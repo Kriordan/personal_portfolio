@@ -2,8 +2,8 @@
 
 POST /fixture/state with reads=success|failure|empty, rating=success|failure|lost,
 receipts=success|failure, delay=seconds, practice=success|failure|lost. With --concept,
-practice sessions are enabled; practice=failure makes artifact saves fail before
-saving, and practice=lost saves and then reports an unconfirmed result.
+practice sessions are enabled; practice=failure makes saves and sends (website and API)
+fail before saving, and practice=lost saves and then reports an unconfirmed result.
 GET /fixture/results reports saved counts. The 10-second access token also exercises
 the real refresh flow. All notes and database files live in a temporary directory and
 are removed when stopped.
@@ -36,6 +36,7 @@ from project.models import (  # noqa: E402
 from project.learning.content_schema import load_catalog  # noqa: E402
 from project.services import practice_service  # noqa: E402
 from project.services.curriculum_service import content_checksum  # noqa: E402
+from sqlalchemy import event  # noqa: E402
 from sqlalchemy.exc import OperationalError  # noqa: E402
 
 
@@ -77,18 +78,24 @@ def main():
         })
         talisman.force_https = False
         mode = {"reads": "success", "rating": "success", "receipts": "success", "delay": 0, "practice": "success"}
-        real_save = practice_service.save_work
 
-        def fixture_save(*save_args, **save_kwargs):
-            # Simulated database failures, so the rescue page and replay can be inspected.
-            if mode["practice"] == "failure":
-                raise OperationalError("fixture", {}, Exception("Fixture practice database unavailable"))
-            result = real_save(*save_args, **save_kwargs)
-            if mode["practice"] == "lost":
-                raise OperationalError("fixture", {}, Exception("Fixture lost the result after commit"))
-            return result
+        def simulate_failures(operation):
+            """Simulated database failures, so the rescue page and replay can be inspected."""
+            def fixture_operation(*call_args, **call_kwargs):
+                if mode["practice"] == "failure":
+                    raise OperationalError("fixture", {}, Exception("Fixture practice database unavailable"))
+                result = operation(*call_args, **call_kwargs)
+                if mode["practice"] == "lost":
+                    raise OperationalError("fixture", {}, Exception("Fixture lost the result after commit"))
+                return result
+            return fixture_operation
         now = datetime.now(timezone.utc)
         with app.app_context():
+            if args.concept:
+                # Deleting a practice session relies on database cascades, which SQLite
+                # enforces only with this pragma on every connection.
+                event.listen(db.engine, "connect", lambda connection, _record: connection.execute("PRAGMA foreign_keys=ON"))
+                db.engine.dispose()
             db.create_all()
             if args.concept:
                 # Fixture-only publication: not a human review attestation and
@@ -125,8 +132,10 @@ def main():
                 return {"sessions": len(sessions),
                         "artifact_revisions": ArtifactRevision.query.filter(
                             ArtifactRevision.practice_session_id.in_(sessions)).count(),
-                        "messages": SessionMessage.query.filter(
-                            SessionMessage.practice_session_id.in_(sessions)).count(),
+                        "turns": SessionMessage.query.filter(SessionMessage.practice_session_id.in_(sessions),
+                                                             SessionMessage.kind == "turn").count(),
+                        "brief_revisions": SessionMessage.query.filter(
+                            SessionMessage.practice_session_id.in_(sessions), SessionMessage.kind == "brief").count(),
                         "receipts": PracticeReceipt.query.filter_by(user_id=user_id).count()}
             return jsonify({str(user.id): {"logs": ReviewLog.query.filter_by(user_id=user.id).count(),
                 "receipts": ReviewReceipt.query.filter_by(user_id=user.id).count(),
@@ -159,7 +168,9 @@ def main():
 
         print("Disposable logins: learning1@example.test or learning2@example.test / LearningPreview123!", flush=True)
         with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir), \
-                patch.object(practice_service, "save_work", fixture_save):
+                patch.object(practice_service, "save_work", simulate_failures(practice_service.save_work)), \
+                patch.object(practice_service, "save_and_send", simulate_failures(practice_service.save_and_send)), \
+                patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)):
             app.run(host="127.0.0.1", port=5057, use_reloader=False, threaded=True)
 
 

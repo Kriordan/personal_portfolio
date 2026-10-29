@@ -19,11 +19,15 @@ SESSION_KEYS = {"id", "exercise_id", "exercise_version", "exercise_title", "conc
 ARTIFACT_KEYS = {"artifact_id", "title", "format", "instructions", "languages", "revision", "language", "body",
                  "saved_at"}
 MESSAGE_KEYS = {"sequence", "role", "kind", "body", "created_at", "artifact_revisions", "brief_revision"}
+SESSION_BRIEF_KEYS = {"revision", "entries", "saved_at"}
+ENTRY_KEYS = {"id", "type", "basis", "text", "pinned", "sources"}
 BRIEF_KEYS = {"scenario", "learning_objectives", "functional_requirements", "nonfunctional_requirements",
               "prerequisite_concept_ids", "expected_artifacts", "assessment_dimensions"}
 
 
-class PracticeApiTests(unittest.TestCase):
+class PracticeApiCase(unittest.TestCase):
+    """Shared fixtures for the practice API suites; no tests of its own."""
+
     def setUp(self):
         self.app = create_app(dict(TESTING=True, SECRET_KEY="fixture", SQLALCHEMY_DATABASE_URI="sqlite://",
             JWT_SECRET_KEY="fixture-jwt-secret-at-least-32-characters", WTF_CSRF_ENABLED=True,
@@ -61,6 +65,8 @@ class PracticeApiTests(unittest.TestCase):
             "request_id": request_id or str(uuid4()), "base_revision": base, "language": language, "body": body,
         }, user_id=user_id)
 
+
+class PracticeApiTests(PracticeApiCase):
     def test_authentication_and_the_feature_flag_are_required(self):
         self.assertEqual(self.call("GET", "/sessions", user_id=None).status_code, 401)
         self.app.config["LEARNING_PRACTICE_ENABLED"] = False
@@ -80,6 +86,7 @@ class PracticeApiTests(unittest.TestCase):
         self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages"})
         self.assertEqual(set(body["session"]), SESSION_KEYS)
         self.assertEqual(set(body["brief"]), BRIEF_KEYS)
+        self.assertEqual(set(body["session_brief"]), SESSION_BRIEF_KEYS)
         self.assertTrue(all(set(artifact) == ARTIFACT_KEYS for artifact in body["artifacts"]))
         self.assertEqual([set(message) for message in body["messages"]], [MESSAGE_KEYS])
         self.assertEqual(set(self.call("GET", "/sessions").get_json()["sessions"][0]), SESSION_KEYS)

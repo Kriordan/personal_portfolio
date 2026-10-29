@@ -3,6 +3,8 @@ import json
 import unittest
 from uuid import uuid4
 
+from sqlalchemy import text
+
 from project.database import db
 from project.models import (
     ArtifactRevision, ContentRevision, PracticeReceipt, PracticeSession, SessionMessage, SessionMessageArtifact,
@@ -280,6 +282,16 @@ class PracticeDiscussionTests(PracticeServiceCase):
                 with self.assertRaises(NotFoundError):
                     service.delete_session(self.user, target)
         self.assertIsNotNone(db.session.get(PracticeSession, others))
+
+    def test_delete_refuses_sqlite_without_foreign_keys_rather_than_keep_rows(self):
+        session_id = self.start()
+        db.session.execute(text("PRAGMA foreign_keys=OFF"))
+        try:
+            with self.assertRaisesRegex(RuntimeError, "foreign keys"):
+                service.delete_session(self.user, session_id)
+        finally:
+            db.session.execute(text("PRAGMA foreign_keys=ON"))
+        self.assertIsNotNone(db.session.get(PracticeSession, session_id))
 
     def test_other_accounts_cannot_change_or_delete_a_session(self):
         session_id = self.start()

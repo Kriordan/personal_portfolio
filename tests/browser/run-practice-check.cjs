@@ -1,5 +1,6 @@
-// Run the actual practice workspace script in headless Chrome: unsaved-change guard,
-// UTF-8 byte counting, and focus on the error summary.
+// Run the actual practice workspace script in headless Chrome: unsaved-change guard
+// (text, notation, checkboxes, and an unsent message), UTF-8 byte counting, and focus on
+// the error summary.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -32,6 +33,8 @@ const pages = {
         <select id="notation"><option value="text" selected>Text</option><option value="json">JSON</option></select>
         <textarea id="api">saved text</textarea><output data-byte-count="api" data-limit="65536"></output>
         <textarea id="small">abc</textarea><output id="small-count" data-byte-count="small" data-limit="8"></output>
+        <input type="checkbox" id="pin">
+        <textarea id="message" data-draft></textarea>
       </form>`,
     tests: `
       check(document.activeElement.id === 'practice-alert', 'error summary receives focus');
@@ -49,6 +52,14 @@ const pages = {
       document.getElementById('notation').value = 'json';
       check(leaving(), 'a changed notation prompts before leaving');
       document.getElementById('notation').value = 'text';
+      document.getElementById('pin').checked = true;
+      check(leaving(), 'ticking a box prompts before leaving');
+      document.getElementById('pin').checked = false;
+      check(!leaving(), 'unticking it again is not a change');
+      document.getElementById('message').value = 'an unsent message';
+      check(leaving(), 'an unsent message prompts before leaving');
+      document.getElementById('message').value = '  ';
+      check(!leaving(), 'a blank message box is not unsaved work');
       document.getElementById('api').value = 'edited text';
       check(leaving(), 'edited text prompts before leaving');
       document.querySelector('[data-practice-form]').dispatchEvent(new Event('submit', { cancelable: true }));
@@ -61,6 +72,23 @@ const pages = {
     tests: `
       check(leaving(), 'a re-rendered page with unsaved text prompts before any edit');
       finish('re-render checks');
+    `,
+  },
+  draft: {
+    body: `<form data-practice-form><textarea id="message" data-draft>kept after saving</textarea></form>`,
+    tests: `
+      check(leaving(), 'a message kept after saving prompts before any edit');
+      document.getElementById('message').value = '';
+      check(!leaving(), 'clearing the kept message stops the prompt');
+      finish('draft checks');
+    `,
+  },
+  alertOnly: {
+    body: `<div id="practice-alert" tabindex="-1" role="alert">Nothing was deleted.</div>`,
+    tests: `
+      check(document.activeElement.id === 'practice-alert', 'an error summary is focused without the workspace form');
+      check(!leaving(), 'and leaving is not blocked');
+      finish('alert checks');
     `,
   },
   absent: {

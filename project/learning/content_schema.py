@@ -5,7 +5,7 @@ import json
 
 from marshmallow import Schema, ValidationError, fields, validate
 
-from project.curriculum_terms import ARTIFACT_FORMATS, INTERACTION_STYLES
+from project.curriculum_terms import ARTIFACT_FORMATS, INTERACTION_STYLES, MAX_EXPECTED_ARTIFACTS
 
 
 def text_field():
@@ -86,7 +86,7 @@ class BriefSchema(Schema):
     nonfunctional_requirements = texts()
     prerequisite_concept_ids = ids()
     expected_artifacts = fields.List(fields.Nested(ArtifactSchema), required=True,
-        validate=validate.Length(min=1))
+        validate=validate.Length(min=1, max=MAX_EXPECTED_ARTIFACTS))
     assessment_dimensions = fields.List(fields.Nested(DimensionSchema), required=True,
         validate=validate.Length(min=1))
 

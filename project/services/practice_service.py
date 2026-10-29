@@ -17,9 +17,11 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from flask import current_app
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, select, text, update
 
-from project.curriculum_terms import ARTIFACT_LANGUAGES, BRIEF_ENTRY_TYPES, FORMAT_LANGUAGES
+from project.curriculum_terms import (
+    ARTIFACT_LANGUAGES, BRIEF_ENTRY_TYPES, BRIEF_MAX_ENTRIES, FORMAT_LANGUAGES, MAX_EXPECTED_ARTIFACTS,
+)
 from project.database import db
 from project.learning.content_schema import learner_view, opening_view
 from project.models import (
@@ -36,9 +38,8 @@ def validate_request_id(value):
 
 ARTIFACT_MAX_BYTES = 64 * 1024
 TURN_MAX_BYTES = 8 * 1024
-BRIEF_MAX_ENTRIES = 50
 BRIEF_ENTRY_MAX_BYTES = 2 * 1024
-MAX_EDITS = 20
+MAX_EDITS = MAX_EXPECTED_ARTIFACTS
 MAX_SOURCES = 10
 MAX_INT = 2_147_483_647
 LISTED_SESSIONS = 20
@@ -417,6 +418,22 @@ def _normalize_turn(body):
     return text
 
 
+def same_text(body, saved_body):
+    """Whether submitted artifact text equals saved text once normalized as a save would."""
+    try:
+        return normalize_text(body, limit=ARTIFACT_MAX_BYTES) == saved_body
+    except PracticeValidationError:
+        return False
+
+
+def same_brief(entries, saved_entries):
+    """Whether submitted brief entries equal saved ones once normalized as a save would."""
+    try:
+        return _normalize_brief({"base_revision": 0, "entries": entries})["entries"] == saved_entries
+    except PracticeValidationError:
+        return False
+
+
 def _check_expected_sequence(value):
     if not _whole_number(value):
         raise PracticeValidationError("expected_sequence must be a whole number.", part="turn")
@@ -762,6 +779,10 @@ def delete_session(user, session_id):
     """
     _check_session_id(session_id)
     try:
+        if (db.session.get_bind().dialect.name == "sqlite"
+                and not db.session.execute(text("PRAGMA foreign_keys")).scalar()):
+            # Without it SQLite skips the cascades and would keep every row of a "deleted" session.
+            raise RuntimeError("Deleting a practice session needs SQLite foreign keys on (PRAGMA foreign_keys=ON).")
         _lock_owner(user.id)
         session = _owned_session(user.id, session_id)
         concept_id = _pinned_exercise(session).payload["content"]["concept_id"]

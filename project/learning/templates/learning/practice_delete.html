@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Delete practice session{% endblock %}
+{% block body %}
+{% set practice_session = counts.session %}
+<main class="practice practice-narrow" aria-labelledby="delete-title">
+  <a href="{{ url_for('learning.practice_workspace', session_id=practice_session.id) }}">← Back to the workspace</a>
+  <p class="learning-eyebrow">Practice · {{ practice_session.exercise_title }}</p>
+  <h1 id="delete-title">Delete this practice session?</h1>
+  {% if alert %}<div class="practice-alert" id="practice-alert" role="alert" tabindex="-1"><p>{{ alert }}</p></div>{% endif %}
+  <p>Started {{ practice_session.created_at|practice_time }}, last updated {{ practice_session.updated_at|practice_time }}. Deleting it permanently removes:</p>
+  <ul>
+    <li>the conversation: {{ counts.turns }} message{{ 's' if counts.turns != 1 }}</li>
+    <li>your brief: {{ counts.brief_revisions }} saved version{{ 's' if counts.brief_revisions != 1 }}</li>
+    <li>your artifacts: {{ counts.artifact_revisions }} saved revision{{ 's' if counts.artifact_revisions != 1 }}</li>
+  </ul>
+  <p><strong>There is no undo.</strong> Downloading a copy isn't available yet, so copy anything you want to keep first. Database backups are kept separately and may hold a copy until they expire.</p>
+  <form method="post" action="{{ url_for('learning.practice_delete', session_id=practice_session.id) }}" class="concept-controls">
+    {{ form.csrf_token }}
+    <button class="button button--danger">Delete permanently</button>
+    <a class="button button--secondary" href="{{ url_for('learning.practice_workspace', session_id=practice_session.id) }}">Keep the session</a>
+  </form>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}

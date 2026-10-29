@@ -6,6 +6,7 @@
   {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable progress · draft content for review</p>{% endif %}
   <p class="learning-eyebrow">Learn · Version {{ concept.version }}</p>
   <h1>{{ concept.title }}</h1>
+  {% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
   <p class="concept-lead">{{ concept.content.summary }}</p>
   <section aria-labelledby="objectives"><h2 id="objectives">What you'll be able to explain</h2>
     <ul>{% for objective in concept.content.learning_objectives %}<li>{{ objective }}</li>{% endfor %}</ul>

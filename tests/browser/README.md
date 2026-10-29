@@ -32,8 +32,10 @@ links, remote-media removal, missing-sanitizer fallback, all six combinations of
 failure position/key reuse, and reset/end states. Dependencies load locally; no
 AI service or external website is contacted by these fixtures.
 
-`run-practice-check.cjs` runs the practice workspace script on three small pages
-(11 checks): the leave-page prompt appears only for unsaved changes, including
-text that a rejected or failed save re-rendered, and not while saving; byte
-counts use UTF-8 like the server limit; and the error summary receives focus.
-Saving, conflicts, and recovery do not depend on this script.
+`run-practice-check.cjs` runs the practice workspace script on five small pages
+(19 checks): the leave-page prompt appears only for unsaved changes (text,
+notation, ticked boxes, and an unsent message, including one kept after saving
+or re-rendered after a rejected or failed request) and not while saving; byte
+counts use UTF-8 like the server limit; and the error summary receives focus,
+with or without the workspace form. Saving, sending, conflicts, and recovery do
+not depend on this script.

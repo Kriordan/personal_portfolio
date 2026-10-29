@@ -1,13 +1,21 @@
 (() => {
-  // Progressive enhancement only: saving, conflicts and recovery all work without it.
+  // Progressive enhancement only: saving, sending, conflicts and recovery all work without it.
+  document.getElementById('practice-alert')?.focus();
   const form = document.querySelector('[data-practice-form]');
   if (!form) return;
-  const fields = [...form.querySelectorAll('textarea, select')];
-  const initial = new Map(fields.map((field) => [field, field.value]));
-  // A re-rendered page (rejected or failed save) holds unsaved text from the start.
+  // An unsent message is unsaved whenever it has text, even when the page loaded with it
+  // (saving keeps the draft in the box); a blank box is not.
+  const drafts = [...form.querySelectorAll('[data-draft]')];
+  const fields = [...form.querySelectorAll('textarea, select, input[type="checkbox"]')]
+    .filter((field) => !drafts.includes(field));
+  const read = (field) => (field.type === 'checkbox' ? field.checked : field.value);
+  const initial = new Map(fields.map((field) => [field, read(field)]));
+  // A re-rendered page (rejected or failed request) holds unsaved work from the start.
   const unsavedOnLoad = form.hasAttribute('data-unsaved');
   let submitting = false;
-  const dirty = () => unsavedOnLoad || fields.some((field) => field.value !== initial.get(field));
+  const dirty = () => unsavedOnLoad
+    || drafts.some((draft) => draft.value.trim() !== '')
+    || fields.some((field) => read(field) !== initial.get(field));
 
   window.addEventListener('beforeunload', (event) => {
     if (submitting || !dirty()) return;
@@ -16,7 +24,7 @@
   });
   form.addEventListener('submit', () => { submitting = true; });
 
-  // The server limit is UTF-8 bytes after normalizing line endings, so count the same way.
+  // The server limits UTF-8 bytes after normalizing line endings, so count the same way.
   const encoder = new TextEncoder();
   form.querySelectorAll('[data-byte-count]').forEach((output) => {
     const box = document.getElementById(output.dataset.byteCount);
@@ -30,6 +38,4 @@
     box.addEventListener('input', update);
     update();
   });
-
-  document.getElementById('practice-alert')?.focus();
 })();

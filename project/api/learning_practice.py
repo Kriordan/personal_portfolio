@@ -12,6 +12,16 @@ from project.services import learning_service, practice_service as practice
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
+TURN_FIELDS = {"request_id", "body", "expected_sequence", "artifact_revisions", "brief_revision"}
+# What to tell a client when the database fails. Only POST and PUT carry a request_id.
+UNCONFIRMED = {
+    "POST": "The result could not be confirmed. Retry with the same request_id.",
+    "PUT": "The result could not be confirmed. Retry with the same request_id.",
+    "DELETE": "The result could not be confirmed. Repeat the request: a 404 then means the session was deleted.",
+    "GET": "The service is unavailable. Try again.",
+}
+FAILED = {"POST": "The request failed and was not saved.", "PUT": "The request failed and was not saved.",
+          "DELETE": "The request failed and nothing was deleted.", "GET": "The request failed. Try again."}
 STALE_MESSAGES = {
     "stale_artifact": "An artifact changed elsewhere. Nothing was saved.",
     "stale_brief": "The brief changed elsewhere. Nothing was saved.",
@@ -60,12 +70,12 @@ def _call(operation):
     except OperationalError as exc:
         db.session.rollback()
         current_app.logger.error("Practice API request could not be confirmed: %s", practice.describe_failure(exc))
-        return _error("The result could not be confirmed. Retry with the same request_id.", 503, "unavailable",
+        return _error(UNCONFIRMED.get(request.method, UNCONFIRMED["POST"]), 503, "unavailable",
                       retry_same_request=True)
     except SQLAlchemyError as exc:
         db.session.rollback()
         current_app.logger.error("Practice API request failed: %s", practice.describe_failure(exc))
-        return _error("The request failed and was not saved.", 503, "failed", retry_same_request=False)
+        return _error(FAILED.get(request.method, FAILED["POST"]), 503, "failed", retry_same_request=False)
 
 
 def _user_and_payload(*, body=True):
@@ -119,6 +129,72 @@ def save_artifact(session_id, artifact_id):
             "language": payload["language"], "body": payload["body"]}
     return _call(lambda: (jsonify(practice.save_work(
         user, session_id, edits=[edit], request_id=payload["request_id"])), 200))
+
+
+@practice_api_blueprint.put("/sessions/<session_id>/brief")
+@jwt_required()
+def save_brief(session_id):
+    """Replace the learner's brief (the detail's session_brief) with a full snapshot."""
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != {"request_id", "base_revision", "entries"}:
+        return _error("Send request_id, base_revision, and entries.", 400, "invalid_request")
+    brief = {"base_revision": payload["base_revision"], "entries": payload["entries"]}
+    return _call(lambda: (jsonify(practice.save_work(
+        user, session_id, brief=brief, request_id=payload["request_id"])), 200))
+
+
+@practice_api_blueprint.post("/sessions/<session_id>/turns")
+@jwt_required()
+def send_turn(session_id):
+    """Append a learner turn. Save first: the turn cites the revisions you are looking at."""
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != TURN_FIELDS:
+        return _error("Send request_id, body, expected_sequence, artifact_revisions, and brief_revision.", 400,
+                      "invalid_request")
+    return _call(lambda: (jsonify(practice.send_turn(
+        user, session_id, body=payload["body"], expected_sequence=payload["expected_sequence"],
+        artifact_revisions=payload["artifact_revisions"], brief_revision=payload["brief_revision"],
+        request_id=payload["request_id"])), 201))
+
+
+def _set_status(session_id, status):
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != {"request_id"}:
+        return _error("Send request_id.", 400, "invalid_request")
+    return _call(lambda: (jsonify(practice.set_status(
+        user, session_id, status=status, request_id=payload["request_id"])), 200))
+
+
+@practice_api_blueprint.post("/sessions/<session_id>/pause")
+@jwt_required()
+def pause_session(session_id):
+    return _set_status(session_id, "paused")
+
+
+@practice_api_blueprint.post("/sessions/<session_id>/resume")
+@jwt_required()
+def resume_session(session_id):
+    return _set_status(session_id, "active")
+
+
+@practice_api_blueprint.delete("/sessions/<session_id>")
+@jwt_required()
+def delete_session(session_id):
+    """Delete the session and everything in it. Repeating the request finds nothing: 404."""
+    user, _, failure = _user_and_payload(body=False)
+    if failure:
+        return failure
+
+    def delete():
+        practice.delete_session(user, session_id)
+        return "", 204
+    return _call(delete)
 
 
 @practice_api_blueprint.get("/sessions/<session_id>/artifacts/<artifact_id>/revisions")
