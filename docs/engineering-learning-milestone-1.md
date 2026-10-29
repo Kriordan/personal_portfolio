@@ -2,7 +2,7 @@
 
 Scope approved October 28, 2026: one complete **idempotency** concept on the existing Flask website. Preserve the Learning APIs, scheduler, progress, and legacy notes. The existing Flask/PostgreSQL architecture remains; Expo is Milestone 2 and needs separate approval. This log records implementation sequencing without replacing the approved architecture or the earlier Learning mobile modernization record.
 
-For the approved architecture, remaining work, local setup, and implementation gotchas, start with the [engineering handoff](engineering-learning-handoff.md).
+Read the [approved revised plan](engineering-learning-revised-plan.md) for the agreed architecture and milestone acceptance criteria. For current progress, remaining work, local setup, and implementation gotchas, start with the [engineering handoff](engineering-learning-handoff.md).
 
 | Checkpoint | Deliverable and acceptance gate | Status |
 | --- | --- | --- |

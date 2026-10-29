@@ -2,7 +2,7 @@
 
 As of October 28, 2026, **Milestone 1 is partially implemented: Learn and Review work on web; Discuss, Build, saved practice sessions, and AI feedback do not exist yet.** Continue on `feature/learning-content-foundation`. The next implementation checkpoint is the unified practice workspace.
 
-This handoff records the approved architecture and refinements, the implementation at `0c2848a`, and the remaining acceptance work. It complements the [checkpoint log](engineering-learning-milestone-1.md) and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; their relevant decisions are captured here so implementation does not depend on access to that chat. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation at `0c2848a`, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 ## Goal and scope
 
