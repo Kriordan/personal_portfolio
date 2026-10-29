@@ -42,6 +42,16 @@
     <section class="learning-study" aria-labelledby="concepts-heading">
       <h2 id="concepts-heading">Engineering concepts</h2>
       <p>Build understanding, then practise recalling and applying it.</p>
+      {% if practice_sessions %}
+        <div class="practice-continue">
+          <h3>Continue practising</h3>
+          <ul class="practice-sessions">
+            {% for session in practice_sessions %}
+              <li><a href="{{ url_for('learning.practice_workspace', session_id=session.id) }}">{{ session.exercise_title }}</a> · {{ 'Paused' if session.status == 'paused' else 'In progress' }} · updated {{ session.updated_at|practice_time }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
       {% for concept in concepts %}
         <article class="learning-reference-card">
           <div>

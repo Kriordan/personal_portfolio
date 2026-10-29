@@ -14,6 +14,7 @@ import re
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from flask import current_app
 from sqlalchemy import and_, select, update
 
 from project.curriculum_terms import ARTIFACT_LANGUAGES, FORMAT_LANGUAGES
@@ -23,8 +24,13 @@ from project.models import (
     ArtifactRevision, ContentRevision, CurriculumItem, PracticeReceipt, PracticeSession,
     SessionMessage, SessionMessageArtifact, User,
 )
-from project.services import curriculum_service
-from project.services.learning_service import ConflictError, NotFoundError, ValidationError, validate_request_id
+from project.services import curriculum_service, learning_service
+from project.services.learning_errors import ConflictError, NotFoundError, ValidationError
+
+
+def validate_request_id(value):
+    # learning_service may still be loading when this module is imported; look it up at call time.
+    return learning_service.validate_request_id(value)
 
 ARTIFACT_MAX_BYTES = 64 * 1024
 MAX_EDITS = 20
@@ -55,10 +61,16 @@ class StaleArtifactError(ConflictError):
 
     code = "stale_artifact"
 
-    def __init__(self, conflicts):
+    def __init__(self, conflicts, refresh=()):
         super().__init__("An artifact changed elsewhere.")
         # Each entry: artifact_id, base_revision, and the current revision, language and body.
         self.conflicts = conflicts
+        # Artifacts this view left untouched that changed elsewhere; show their current text.
+        self.refresh = list(refresh)
+
+
+def enabled():
+    return bool(current_app.config.get("LEARNING_PRACTICE_ENABLED"))
 
 
 def describe_failure(exc):
@@ -277,7 +289,7 @@ def _apply_edits(session, specs, edits, now):
     - submitted equals B: untouched in this view, keep the newer H;
     - otherwise: conflict.
     """
-    outcomes, writes, conflicts = {}, [], []
+    outcomes, writes, conflicts, refresh = {}, [], [], []
     for edit in edits:
         spec = specs.get(edit["artifact_id"])
         if spec is None:
@@ -299,11 +311,13 @@ def _apply_edits(session, specs, edits, now):
             raise PracticeValidationError("That artifact revision doesn't exist.", field=spec["id"])
         elif submitted == _state(_revision(session.id, spec["id"], edit["base_revision"]), spec):
             outcomes[spec["id"]] = {"revision": head_number, "changed": False}
+            refresh.append({"artifact_id": spec["id"], "revision": head_number,
+                            "language": head.language, "body": head.body})
         else:
             conflicts.append({"artifact_id": spec["id"], "base_revision": edit["base_revision"],
                               "revision": head_number, "language": head.language, "body": head.body})
     if conflicts:
-        raise StaleArtifactError(conflicts)
+        raise StaleArtifactError(conflicts, refresh)
     db.session.add_all(writes)
     db.session.flush()
     return outcomes

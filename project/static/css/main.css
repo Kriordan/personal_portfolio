@@ -2300,3 +2300,197 @@ li.drag-placeholder {
     position: static;
   }
 }
+.practice {
+  max-width: 1200px;
+  margin: 2rem auto 4rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.practice h1 {
+  font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+  line-height: 1.2;
+}
+.practice h2 {
+  line-height: 1.3;
+}
+.practice .button {
+  display: inline-block;
+  min-height: 44px;
+  box-sizing: border-box;
+  white-space: normal;
+  padding: 0.65rem 1rem;
+  border: 2px solid #17675a;
+  border-radius: 6px;
+  background: #17675a;
+  color: white;
+  font: inherit;
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+.practice :focus-visible {
+  outline: 3px solid #17675a;
+  outline-offset: 3px;
+}
+.practice label {
+  display: block;
+  margin: 0.75rem 0 0.35rem;
+  font-weight: bold;
+}
+.practice select {
+  max-width: 100%;
+  padding: 0.6rem;
+  min-height: 44px;
+}
+.practice summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.practice-narrow {
+  max-width: 800px;
+}
+
+.practice-layout {
+  display: grid;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .practice-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+}
+.practice-brief {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.practice-transcript {
+  list-style: none;
+  padding: 0;
+}
+
+.practice-turn {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #eaf3f0;
+  margin-bottom: 0.75rem;
+}
+
+.practice-turn--learner {
+  background: #f3f4f4;
+}
+
+.practice-speaker {
+  font-weight: bold;
+  margin: 0 0 0.25rem;
+}
+
+.practice-text {
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.practice-note {
+  color: #444;
+  border-left: 4px solid #bbb;
+  padding-left: 0.75rem;
+}
+
+.practice-artifact {
+  border: 1px solid #bbb;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 0 0 1.5rem;
+  min-width: 0;
+}
+
+.practice-artifact legend {
+  font-weight: bold;
+  padding: 0 0.25rem;
+}
+
+.practice-artifact.has-conflict {
+  border: 3px solid #a15c00;
+}
+
+.practice-instructions {
+  margin-top: 0;
+}
+
+.practice-editor {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 14rem;
+  padding: 0.75rem;
+  border: 1px solid #767676;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  tab-size: 4;
+  resize: vertical;
+}
+
+.practice-meta {
+  font-size: 0.9rem;
+  color: #444;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.practice-meta output.is-over {
+  color: #8a1f11;
+  font-weight: bold;
+}
+
+.practice-error {
+  color: #8a1f11;
+  font-weight: bold;
+}
+
+.practice-alert {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-left: 6px solid #8a1f11;
+  background: #fbeeee;
+}
+
+.practice-alert:focus {
+  outline: 3px solid #8a1f11;
+  outline-offset: 2px;
+}
+
+.practice-conflict {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-left: 4px solid #a15c00;
+  background: #fff4e5;
+}
+
+.practice-conflict h3 {
+  margin-top: 0;
+}
+
+.practice-conflict pre, .practice-revision {
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 24rem;
+  padding: 0.75rem;
+  background: #f3f4f4;
+}
+
+.practice-sessions {
+  padding-left: 1.25rem;
+}
+
+.practice-continue {
+  margin: 1rem 0;
+}

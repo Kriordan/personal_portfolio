@@ -26,6 +26,27 @@
     <p>{{ due_count }} question{{ 's' if due_count != 1 }} due. Reading this lesson does not change your review schedule.</p>
     <a class="button" href="{{ url_for('learning.concept_review', concept_id=concept.id) }}">{{ 'Review due questions' if due_count else 'Check review schedule' }}</a>
   </section>
+  {% if exercises %}
+    {% set status_labels = {'active': 'In progress', 'paused': 'Paused', 'completed': 'Completed'} %}
+    <section class="concept-next" aria-labelledby="practice-heading">
+      <h2 id="practice-heading">Apply it</h2>
+      {% for exercise in exercises %}
+        <h3>{{ exercise.title }}</h3>
+        <p>{{ exercise.scenario }}</p>
+        {% if exercise.sessions %}
+          <ul class="practice-sessions">
+            {% for session in exercise.sessions %}
+              <li><a href="{{ url_for('learning.practice_workspace', session_id=session.id) }}">Resume the session started {{ session.created_at|practice_time }}</a> · {{ status_labels[session.status] }} · updated {{ session.updated_at|practice_time }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <form method="post" action="{{ url_for('learning.practice_start') }}">
+          {{ exercise.start_form.csrf_token }}{{ exercise.start_form.exercise_id }}{{ exercise.start_form.concept_id }}{{ exercise.start_form.request_id }}
+          <button class="button{% if exercise.sessions %} button--secondary{% endif %}">Start a new practice session</button>
+        </form>
+      {% endfor %}
+    </section>
+  {% endif %}
   <details><summary>References</summary><ul>{% for reference in concept.content.references %}<li><a href="{{ reference.url }}" rel="noreferrer">{{ reference.title }}</a></li>{% endfor %}</ul></details>
 </main>
 {% endblock %}

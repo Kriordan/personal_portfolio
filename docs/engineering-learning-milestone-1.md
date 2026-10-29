@@ -8,7 +8,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | --- | --- | --- |
 | 1. Content foundation | Versioned catalog, draft lesson/four questions/one structured interview; audience projections; atomic import; additive migration verified on PostgreSQL; legacy Learning regression checks. | Committed as `1f344a5`; [REPL guide](learning-checkpoint-1-test-guide.md). |
 | 2. Learn and Review on web | Published lesson, retry visualization, safe Markdown, explicit answer reveal, four questions through the existing scheduler; unchanged old API behavior and progress. Human content review precedes publication. | Committed as `3b108bf`; [hands-on guide](learning-checkpoint-2-test-guide.md), refined in `0c2848a`. Production publication remains pending human content review. |
-| 3. Unified practice workspace | One session spanning Discuss/Build, API/SQL/pseudocode artifacts, immutable revisions, authorization, concurrent-edit conflict handling, save/resume. No IDE or execution sandbox. | Not started. |
+| 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) plus the following web workspace/API commit; [practice guide](learning-checkpoint-3-test-guide.md), part A. |
+| 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Not started. |
 | 4. Interview and continuity | Postgres-backed worker, owner-only AI use, approved disclosure, idempotent requests, budgets/reservations, configurable soft turn check-in, context compaction, durable recovery. | Not started. |
 | 5. Feedback and complete demonstration | Evidence-linked transcript/artifact feedback, remediation, pause/reopen/recover, one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
@@ -65,3 +66,64 @@ New concept routes use the existing login boundary and private/no-store response
 October 28 local validation: **326 backend tests run, 325 passed, one existing Linux-only test skipped on macOS**, with PostgreSQL 18.6 enabled. Twelve additional backend tests cover authenticated/CSRF flows, explicit reveal, independent user progress, suspended cards, version pinning, repeat/stale submissions, rollback, namespace conflicts, and four completed reviews. PostgreSQL tests cover the new schema through actual Alembic upgrade/downgrade and concurrent curriculum review saves. Root Node checks passed (13 tests plus dependency-integrity checks); browser checks passed (23 legacy flashcard, nine extraction, and 27 concept checks). Sass compiled successfully.
 
 The disposable browser preview verified lesson navigation, changing the retry key, answer reveal, and a saved rating leading to the next question. A 390-pixel layout check verified the stacked rating controls and readable question/answer. This is browser layout coverage, not Expo/native or a complete screen-reader audit. The fixture marks content as a demo only; it does not attest human technical review or publish to production.
+
+## Checkpoint 3a implementation and verification
+
+Decided with Keith on October 28, after reviewing the handoff, the approved revised plan, and the original vision against the code:
+
+- Checkpoint 3 is split into 3a (sessions, artifacts) and 3b (turns, brief, pause/resume, delete).
+- Learner turns and the brief come in 3b. The brief is stored as versioned snapshots in `SessionMessage`.
+- A JWT API ships now.
+- Any signed-in user may practise once `LEARNING_PRACTICE_ENABLED` is on.
+- Delete ships in 3b; export stays in checkpoint 5.
+
+The handoff records the reasons and the review's other findings.
+
+Migration `c6d7e8f9a0b1 → d7e8f9a0b1c2` adds five practice tables:
+
+- `practice_session` (pinned exercise revision, interaction style, status).
+- Immutable `artifact_revision` rows.
+- Ordered `session_message` records.
+- `session_message_artifact` citations, whose composite foreign keys cannot cross sessions.
+- Hash-only `practice_receipt` rows.
+
+Deletes cascade in the database. No catalog, review, or progress table changes. Downgrading drops all practice data.
+
+`practice_service` starts a session on the latest published exercise revision and records the authored opening prompt as the interviewer's first turn (`opening_view` is the one facilitator field a learner sees). It saves artifacts all-or-nothing:
+
+- Text equal to the saved head is unchanged, so no revision is written.
+- An edit on the current head becomes the next revision.
+- An untouched box keeps a revision saved elsewhere.
+- Anything else is a conflict, and nothing is written.
+
+Text is normalized to LF and limited to 64 KiB of UTF-8, with NUL rejected before the database. Every write takes the owner's user-row lock, checks its receipt, then reads owner-scoped rows fresh. SQL parameters are hidden in every environment, and practice logs use `describe_failure`, because PostgreSQL's DETAIL line quotes failing rows.
+
+The website workspace is one Flask-WTF form with a 24-hour CSRF token. Every rejected save re-renders the learner's text:
+
+- **400:** an expired token or invalid input.
+- **409:** a conflict, with both versions shown.
+- **503:** a database failure, on a standalone page that needs neither the database nor the shared layout. An unknown outcome keeps the request ID, so a retry replays.
+
+The lesson and the Learning index link to sessions only when the flag is on. With the flag off, they make no practice queries. The JWT API under `/api/v1/learning/practice` uses the same service with explicit response fields. The preview fixture enables practice and can simulate failures before or after a save commits.
+
+October 28 local validation: **371 backend tests run, 370 passed, one existing Linux-only test skipped on macOS**, with PostgreSQL 18.6 enabled. The 45 new tests cover:
+
+- **Projections:** `opening_view` leakage and the shared vocabulary.
+- **Service (SQLite with foreign keys on):** start/pinning/replay, unchanged saves, normalization, replay and request-ID reuse, stale and untouched artifacts, input limits, ownership, immutable history, hash-only receipts, cross-session citations, and hidden parameters.
+- **Web (CSRF on):** the flag, sign-in, start and resume, save/history, replayed POSTs, two-tab conflict, untouched refresh, CSRF and validation re-renders, newline round trips, and the rescue page with every further SQL statement refused, both unknown-outcome and definite errors. Also cross-account 404.
+- **API:** exact response fields, replay/unchanged/conflict/receipt, invalid input and 413, cross-account 404, and the website plus API acting as two devices.
+- **PostgreSQL:**
+  - Same-base and replay races, process death, and resume from a fresh process.
+  - Composite-key rejection, log-safe failure summaries, and NUL handling.
+  - The existing Alembic test now seeds practice rows before downgrade/upgrade, checks the catalog survives the practice downgrade, and verifies the migrated CHECK constraints by name and value.
+
+Root Node checks passed (13 tests plus dependency integrity). Browser checks passed: 23 legacy flashcard, nine extraction, 27 concept, and 11 practice checks. Sass compiled.
+
+The disposable fixture walkthrough covered:
+
+- starting from the lesson and saving;
+- a two-tab conflict (focused error summary, both texts kept);
+- a simulated database failure (rescue page, a retry that saved without a duplicate, a log line without learner text);
+- the 390-pixel layout.
+
+Not covered: a screen-reader audit; if the database is down before sign-in, the site's error page appears instead of the rescue page; 3b behaviour; anything involving AI. Nothing was pushed, deployed, migrated in production, or published.

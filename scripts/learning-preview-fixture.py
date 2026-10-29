@@ -1,9 +1,12 @@
 """Disposable Learning fixture on localhost:5057; never uses production data.
 
 POST /fixture/state with reads=success|failure|empty, rating=success|failure|lost,
-receipts=success|failure, delay=seconds. GET /fixture/results reports saved counts.
-The 10-second access token also exercises the real refresh flow. All notes and
-database files live in a temporary directory and are removed when stopped.
+receipts=success|failure, delay=seconds, practice=success|failure|lost. With --concept,
+practice sessions are enabled; practice=failure makes artifact saves fail before
+saving, and practice=lost saves and then reports an unconfirmed result.
+GET /fixture/results reports saved counts. The 10-second access token also exercises
+the real refresh flow. All notes and database files live in a temporary directory and
+are removed when stopped.
 """
 import json
 import argparse
@@ -26,9 +29,14 @@ from flask import jsonify, make_response, request  # noqa: E402
 from project import create_app  # noqa: E402
 from project.database import db  # noqa: E402
 from project.extensions import talisman  # noqa: E402
-from project.models import ContentRevision, CurriculumItem, Gift, Playlist, ReviewLog, ReviewProgress, ReviewReceipt, User  # noqa: E402
+from project.models import (  # noqa: E402
+    ArtifactRevision, ContentRevision, CurriculumItem, Gift, Playlist, PracticeReceipt, PracticeSession,
+    ReviewLog, ReviewProgress, ReviewReceipt, SessionMessage, User,
+)
 from project.learning.content_schema import load_catalog  # noqa: E402
+from project.services import practice_service  # noqa: E402
 from project.services.curriculum_service import content_checksum  # noqa: E402
+from sqlalchemy.exc import OperationalError  # noqa: E402
 
 
 def main():
@@ -65,10 +73,20 @@ def main():
             "SQLALCHEMY_TRACK_MODIFICATIONS": False,
             "JWT_ACCESS_TOKEN_EXPIRES": timedelta(seconds=10), "JWT_REFRESH_TOKEN_EXPIRES": timedelta(days=1),
             "WTF_CSRF_ENABLED": args.concept, "SESSION_COOKIE_SECURE": False, "RATELIMIT_ENABLED": False,
-            "LEARNING_PREVIEW_FIXTURE": args.concept,
+            "LEARNING_PREVIEW_FIXTURE": args.concept, "LEARNING_PRACTICE_ENABLED": args.concept,
         })
         talisman.force_https = False
-        mode = {"reads": "success", "rating": "success", "receipts": "success", "delay": 0}
+        mode = {"reads": "success", "rating": "success", "receipts": "success", "delay": 0, "practice": "success"}
+        real_save = practice_service.save_artifacts
+
+        def fixture_save(*save_args, **save_kwargs):
+            # Simulated database failures, so the rescue page and replay can be inspected.
+            if mode["practice"] == "failure":
+                raise OperationalError("fixture", {}, Exception("Fixture practice database unavailable"))
+            result = real_save(*save_args, **save_kwargs)
+            if mode["practice"] == "lost":
+                raise OperationalError("fixture", {}, Exception("Fixture lost the result after commit"))
+            return result
         now = datetime.now(timezone.utc)
         with app.app_context():
             db.create_all()
@@ -102,9 +120,18 @@ def main():
 
         @app.get("/fixture/results")
         def results():
+            def practice_counts(user_id):
+                sessions = [row.id for row in PracticeSession.query.filter_by(user_id=user_id).all()]
+                return {"sessions": len(sessions),
+                        "artifact_revisions": ArtifactRevision.query.filter(
+                            ArtifactRevision.practice_session_id.in_(sessions)).count(),
+                        "messages": SessionMessage.query.filter(
+                            SessionMessage.practice_session_id.in_(sessions)).count(),
+                        "receipts": PracticeReceipt.query.filter_by(user_id=user_id).count()}
             return jsonify({str(user.id): {"logs": ReviewLog.query.filter_by(user_id=user.id).count(),
                 "receipts": ReviewReceipt.query.filter_by(user_id=user.id).count(),
-                "ratings": [log.rating for log in ReviewLog.query.filter_by(user_id=user.id).order_by(ReviewLog.id).all()]}
+                "ratings": [log.rating for log in ReviewLog.query.filter_by(user_id=user.id).order_by(ReviewLog.id).all()],
+                "practice": practice_counts(user.id)}
                 for user in User.query.all()})
 
         @app.before_request
@@ -131,7 +158,8 @@ def main():
             return response
 
         print("Disposable logins: learning1@example.test or learning2@example.test / LearningPreview123!", flush=True)
-        with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir):
+        with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir), \
+                patch.object(practice_service, "save_artifacts", fixture_save):
             app.run(host="127.0.0.1", port=5057, use_reloader=False, threaded=True)
 
 

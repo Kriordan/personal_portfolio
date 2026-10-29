@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Practice · {{ detail.session.exercise_title }}{% endblock %}
+{% block body %}
+<main class="practice" aria-labelledby="practice-title">
+  <a href="{{ url_for('learning.concept', concept_id=detail.session.concept_id) }}">← Back to the lesson</a>
+  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable practice data · draft content for review</p>{% endif %}
+  <p class="learning-eyebrow">Practice · {{ status_label }} · Exercise version {{ detail.session.exercise_version }}</p>
+  <h1 id="practice-title">{{ detail.session.exercise_title }}</h1>
+  {% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+  {% if alert %}
+    <div class="practice-alert" id="practice-alert" role="alert" tabindex="-1">
+      <p>{{ alert }}</p>
+      {% if errors or conflicts %}
+        <ul>
+          {% for artifact_id, message in errors.items() %}
+            <li><a href="#artifact-{{ artifact_id }}">{{ artifacts[artifact_id].title if artifact_id in artifacts else 'Artifact' }}: {{ message }}</a></li>
+          {% endfor %}
+          {% for artifact_id in conflicts %}
+            <li><a href="#artifact-{{ artifact_id }}">{{ artifacts[artifact_id].title }} changed elsewhere</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="practice-layout">
+    <section class="practice-discuss" aria-labelledby="discuss-heading">
+      <h2 id="discuss-heading">Discuss</h2>
+      <details class="practice-brief" open>
+        <summary>Scenario and requirements</summary>
+        <p>{{ detail.brief.scenario }}</p>
+        <h3>Functional requirements</h3>
+        <ul>{% for requirement in detail.brief.functional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
+        <h3>Nonfunctional requirements</h3>
+        <ul>{% for requirement in detail.brief.nonfunctional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
+        <h3>What feedback will consider</h3>
+        <ul>{% for dimension in detail.brief.assessment_dimensions %}<li>{{ dimension.label }}</li>{% endfor %}</ul>
+      </details>
+      <h3>Conversation</h3>
+      <ol class="practice-transcript">
+        {% for message in detail.messages %}
+          <li class="practice-turn practice-turn--{{ message.role }}">
+            <p class="practice-speaker">{{ 'Interviewer' if message.role == 'interviewer' else 'You' }}</p>
+            <p class="practice-text">{{ message.body }}</p>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="practice-note">The AI interviewer isn't connected yet. Work through the brief in your artifacts; everything you save stays with this session.</p>
+    </section>
+
+    <section class="practice-build" aria-labelledby="build-heading">
+      <h2 id="build-heading">Build</h2>
+      <form method="post" action="{{ url_for('learning.practice_workspace', session_id=detail.session.id) }}" data-practice-form{% if unsaved %} data-unsaved{% endif %}>
+        {{ form.csrf_token }}{{ form.request_id }}
+        {% for entry in form.artifacts %}
+          {% set artifact = artifacts[entry.artifact_id.data] %}
+          {% set conflict = conflicts.get(artifact.artifact_id) %}
+          {% set error = errors.get(artifact.artifact_id) %}
+          {% set attributes = {"aria-describedby": entry.body.id ~ "-help " ~ entry.body.id ~ "-meta"} %}
+          {% if error or conflict %}{% set _ = attributes.update({"aria-invalid": "true"}) %}{% endif %}
+          <fieldset class="practice-artifact{% if conflict %} has-conflict{% endif %}" id="artifact-{{ artifact.artifact_id }}">
+            <legend>{{ artifact.title }}</legend>
+            <p class="practice-instructions" id="{{ entry.body.id }}-help">{{ artifact.instructions }}</p>
+            {{ entry.artifact_id }}{{ entry.base_revision }}
+            {% if artifact.languages|length > 1 %}
+              <label for="{{ entry.language.id }}">Notation</label>
+              {{ entry.language() }}
+            {% else %}
+              <input type="hidden" name="{{ entry.language.name }}" value="{{ artifact.languages[0] }}">
+              <p class="practice-meta">Notation: {{ language_labels[artifact.languages[0]] }}</p>
+            {% endif %}
+            <label for="{{ entry.body.id }}">{{ artifact.title }} draft</label>
+            {{ entry.body(rows=12, class="practice-editor", spellcheck="false", autocapitalize="off", **attributes) }}
+            <p class="practice-meta" id="{{ entry.body.id }}-meta">
+              {% if artifact.revision %}Saved revision {{ artifact.revision }}, {{ artifact.saved_at|practice_time }}{% else %}Not saved yet{% endif %}
+              <output data-byte-count="{{ entry.body.id }}" data-limit="{{ limit }}"></output>
+              {% if artifact.revision %}<a href="{{ url_for('learning.practice_history', session_id=detail.session.id, artifact_id=artifact.artifact_id) }}">History</a>{% endif %}
+            </p>
+            {% if error %}<p class="practice-error">{{ error }}</p>{% endif %}
+            {% if conflict %}
+              <div class="practice-conflict">
+                <h3>Saved elsewhere: revision {{ conflict.revision }} ({{ language_labels[conflict.language] }})</h3>
+                <p>Your text is still in the box above and is not saved. Saving again makes your text revision {{ conflict.revision + 1 }}; this version stays in the history.</p>
+                <pre>{{ conflict.body }}</pre>
+              </div>
+            {% endif %}
+          </fieldset>
+        {% endfor %}
+        <div class="concept-controls"><button class="button" name="action" value="save">Save work</button></div>
+      </form>
+    </section>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}

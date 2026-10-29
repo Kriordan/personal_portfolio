@@ -6,10 +6,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from project.database import db
 from project.models import CurriculumItem
-from project.services import curriculum_service, learning_service
+from project.services import curriculum_service, learning_service, practice_service
 
 from . import learning_blueprint
 from .forms import ConceptRatingForm
+from .practice_views import start_form
 
 
 @learning_blueprint.after_request
@@ -25,6 +26,7 @@ def private_study_response(response):
 def index():
     notes = []
     concepts = []
+    practice_sessions = []
     total_due = 0
     if current_user.is_authenticated:
         notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
@@ -36,11 +38,15 @@ def index():
         concepts = curriculum_service.published_concepts()
         for concept in concepts:
             concept["due_count"] = len(curriculum_service.concept_review_queue(concept, user_id=current_user.id))
+        # No practice query at all while the feature is off (e.g. before its migration).
+        if practice_service.enabled():
+            practice_sessions = practice_service.list_sessions(current_user.id)
     return render_template(
         "learning/index.html",
         notes=notes,
         total_due=total_due,
         concepts=concepts,
+        practice_sessions=practice_sessions,
     )
 
 
@@ -56,7 +62,10 @@ def _published_concept(concept_id):
 def concept(concept_id):
     item = _published_concept(concept_id)
     queue = curriculum_service.concept_review_queue(item, user_id=current_user.id)
-    return render_template("learning/concept.html", concept=item, due_count=len(queue))
+    exercises = practice_service.concept_exercises(item, user_id=current_user.id) if practice_service.enabled() else []
+    for exercise in exercises:
+        exercise["start_form"] = start_form(exercise["id"], item["id"])
+    return render_template("learning/concept.html", concept=item, due_count=len(queue), exercises=exercises)
 
 
 @learning_blueprint.route("/concepts/<concept_id>/review", methods=["GET", "POST"])

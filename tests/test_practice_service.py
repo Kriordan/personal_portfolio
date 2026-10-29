@@ -73,6 +73,7 @@ class PracticeServiceTests(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         event.remove(db.engine, "connect", enable_sqlite_foreign_keys)
+        db.engine.dispose()
         self.context.pop()
 
     def start(self, user=None, **kwargs):

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+{#- Standalone on purpose: no shared layout, no current_user, no database access. -#}
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Keith Riordan | Practice save not confirmed</title>
+    <link href="{{ url_for('static', filename='css/normalize.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet" />
+  </head>
+  <body class="learning-private">
+    <main class="practice practice-narrow" aria-labelledby="rescue-title">
+      <h1 id="rescue-title">Your save wasn't confirmed</h1>
+      <div class="practice-alert" role="alert">
+        <p>Something went wrong on our side, so we can't tell whether your work was saved. Your text is below.</p>
+        <p>Try saving again in a moment: if the earlier attempt did save, trying again won't create a duplicate. You can also copy your text somewhere safe first.</p>
+      </div>
+      <form method="post" action="{{ url_for('learning.practice_workspace', session_id=session_id) }}" data-practice-form data-unsaved>
+        {{ form.csrf_token }}{{ form.request_id }}
+        {% for entry in form.artifacts %}
+          <fieldset class="practice-artifact">
+            <legend>{{ entry.artifact_id.data }}</legend>
+            {{ entry.artifact_id }}{{ entry.base_revision }}
+            <input type="hidden" name="{{ entry.language.name }}" value="{{ entry.language.data or '' }}" />
+            <label for="{{ entry.body.id }}">Your text</label>
+            {{ entry.body(rows=10, class="practice-editor", spellcheck="false", autocapitalize="off") }}
+          </fieldset>
+        {% endfor %}
+        <button class="button">Try saving again</button>
+      </form>
+      <p><a href="{{ url_for('learning.practice_workspace', session_id=session_id) }}">Open the workspace</a> to see what is saved (your unsaved text above will be lost if you leave without copying it).</p>
+    </main>
+    <script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>
+  </body>
+</html>

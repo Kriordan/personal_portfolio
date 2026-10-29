@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}History · {{ history.artifact.title }}{% endblock %}
+{% block body %}
+<main class="practice practice-narrow" aria-labelledby="history-title">
+  <a href="{{ url_for('learning.practice_workspace', session_id=history.session.id) }}">← Back to the workspace</a>
+  <p class="learning-eyebrow">History · {{ history.session.exercise_title }}</p>
+  <h1 id="history-title">{{ history.artifact.title }}</h1>
+  {% if selected %}
+    {% set revision = selected.revision %}
+    <section aria-labelledby="revision-heading">
+      <h2 id="revision-heading">Revision {{ revision.revision }}{% if revision.revision == selected.current_revision %} (current){% else %} of {{ selected.current_revision }}{% endif %}</h2>
+      <p class="practice-meta">{{ language_labels[revision.language] }} · saved {{ revision.created_at|practice_time }} · {{ '%.1f'|format(revision.bytes / 1024) }} KiB</p>
+      <pre class="practice-revision">{{ revision.body }}</pre>
+    </section>
+  {% endif %}
+  <h2>All revisions</h2>
+  {% if history.revisions %}
+    <ol class="practice-history" reversed>
+      {% for entry in history.revisions %}
+        <li>
+          <a href="{{ url_for('learning.practice_revision', session_id=history.session.id, artifact_id=history.artifact.artifact_id, revision=entry.revision) }}"{% if selected and entry.revision == selected.revision.revision %} aria-current="page"{% endif %}>Revision {{ entry.revision }}</a>
+          · {{ language_labels[entry.language] }} · saved {{ entry.created_at|practice_time }} · {{ '%.1f'|format(entry.bytes / 1024) }} KiB
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p>Nothing saved yet.</p>
+  {% endif %}
+</main>
+{% endblock %}
