@@ -12,3 +12,5 @@ INTERACTION_STYLES = ("interviewer", "coach", "collaborative", "reviewer")
 ARTIFACT_LANGUAGES = ("text", "markdown", "pseudocode", "sql", "python", "typescript", "json", "yaml")
 FORMAT_LANGUAGES = {**{name: (name,) for name in ARTIFACT_FORMATS if name != "api-definition"},
                     "api-definition": ("text", "json", "yaml")}
+# Kinds of entry in a practice session's editable brief.
+BRIEF_ENTRY_TYPES = ("assumption", "question", "decision", "next_step")

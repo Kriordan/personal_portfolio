@@ -77,7 +77,7 @@ def main():
         })
         talisman.force_https = False
         mode = {"reads": "success", "rating": "success", "receipts": "success", "delay": 0, "practice": "success"}
-        real_save = practice_service.save_artifacts
+        real_save = practice_service.save_work
 
         def fixture_save(*save_args, **save_kwargs):
             # Simulated database failures, so the rescue page and replay can be inspected.
@@ -159,7 +159,7 @@ def main():
 
         print("Disposable logins: learning1@example.test or learning2@example.test / LearningPreview123!", flush=True)
         with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir), \
-                patch.object(practice_service, "save_artifacts", fixture_save):
+                patch.object(practice_service, "save_work", fixture_save):
             app.run(host="127.0.0.1", port=5057, use_reloader=False, threaded=True)
 
 

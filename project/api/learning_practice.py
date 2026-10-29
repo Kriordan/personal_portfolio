@@ -12,6 +12,12 @@ from project.services import learning_service, practice_service as practice
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
+STALE_MESSAGES = {
+    "stale_artifact": "An artifact changed elsewhere. Nothing was saved.",
+    "stale_brief": "The brief changed elsewhere. Nothing was saved.",
+    "stale_transcript": "New turns arrived after this view loaded. Nothing was saved.",
+    "out_of_date": "This view of the session is out of date. Nothing was saved.",
+}
 
 
 @practice_api_blueprint.before_request
@@ -44,12 +50,11 @@ def _call(operation):
     except learning_service.NotFoundError:
         return _error("Not found.", 404, "not_found")
     except practice.PracticeValidationError as exc:
-        return _error(exc.message, 400, "invalid_request", field=exc.field)
+        return _error(exc.message, 400, "invalid_request", field=exc.field, part=exc.part)
     except learning_service.ValidationError:
         return _error("Invalid request.", 400, "invalid_request")
-    except practice.StaleArtifactError as exc:
-        return _error("An artifact changed elsewhere. Nothing was saved.", 409, "stale_artifact",
-                      conflicts=exc.conflicts)
+    except practice.StaleViewError as exc:
+        return _error(STALE_MESSAGES[exc.code], 409, exc.code, **exc.details())
     except practice.RequestConflictError:
         return _error("This request ID was already used for a different change.", 409, "request_conflict")
     except OperationalError as exc:
@@ -112,7 +117,7 @@ def save_artifact(session_id, artifact_id):
         return _error("Send request_id, base_revision, language, and body.", 400, "invalid_request")
     edit = {"artifact_id": artifact_id, "base_revision": payload["base_revision"],
             "language": payload["language"], "body": payload["body"]}
-    return _call(lambda: (jsonify(practice.save_artifacts(
+    return _call(lambda: (jsonify(practice.save_work(
         user, session_id, edits=[edit], request_id=payload["request_id"])), 200))
 
 

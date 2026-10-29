@@ -56,7 +56,9 @@ SENTINELS = ("HIDDEN_SENTINEL", "HINT_SENTINEL", "INSTRUCTION_SENTINEL", "EVALUA
              "clarification_cues", "reference_reasoning", "permitted_hints")
 
 
-class PracticeServiceTests(unittest.TestCase):
+class PracticeServiceCase(unittest.TestCase):
+    """Shared fixtures for the practice service suites; no tests of its own."""
+
     def setUp(self):
         self.app = create_app(dict(TESTING=True, SECRET_KEY="fixture", SQLALCHEMY_DATABASE_URI="sqlite://"))
         self.context = self.app.app_context()
@@ -82,8 +84,8 @@ class PracticeServiceTests(unittest.TestCase):
                                      now=NOW, **kwargs)["session_id"]
 
     def save(self, session_id, edits, *, user=None, request_id=None):
-        return service.save_artifacts(user or self.user, session_id, edits=edits,
-                                      request_id=request_id or str(uuid4()), now=NOW)
+        return service.save_work(user or self.user, session_id, edits=edits,
+                                 request_id=request_id or str(uuid4()), now=NOW)
 
     @staticmethod
     def edit(artifact_id, body, base=0, language=None):
@@ -91,6 +93,8 @@ class PracticeServiceTests(unittest.TestCase):
         return {"artifact_id": artifact_id, "base_revision": base, "body": body,
                 "language": language or defaults[artifact_id]}
 
+
+class PracticeServiceTests(PracticeServiceCase):
     def test_foreign_keys_are_enforced_in_this_suite(self):
         self.assertEqual(db.session.execute(text("PRAGMA foreign_keys")).scalar(), 1)
 
@@ -102,7 +106,8 @@ class PracticeServiceTests(unittest.TestCase):
         self.assertEqual(detail["session"]["concept_id"], "idempotency")
         opening = self.catalog["items"][-1]["content"]["facilitator"]["opening_prompt"]
         self.assertEqual(detail["messages"], [{"sequence": 1, "role": "interviewer", "kind": "turn",
-            "body": opening, "created_at": NOW.isoformat(), "artifact_revisions": []}])
+            "body": opening, "created_at": NOW.isoformat(), "artifact_revisions": [], "brief_revision": None}])
+        self.assertEqual(detail["session_brief"], {"revision": 0, "entries": [], "saved_at": None})
         self.assertEqual([(a["artifact_id"], a["revision"], a["language"], a["body"]) for a in detail["artifacts"]],
                          [("api", 0, "text", ""), ("schema", 0, "sql", ""), ("algorithm", 0, "pseudocode", "")])
         self.assertEqual(detail["artifacts"][0]["languages"], ["text", "json", "yaml"])
@@ -191,7 +196,7 @@ class PracticeServiceTests(unittest.TestCase):
     def test_stale_edits_conflict_and_save_nothing(self):
         session_id = self.start()
         self.save(session_id, [self.edit("api", "tab A")])
-        with self.assertRaises(service.StaleArtifactError) as raised:
+        with self.assertRaises(service.StaleViewError) as raised:
             self.save(session_id, [self.edit("api", "tab B"), self.edit("schema", "tab B schema")])
         self.assertEqual(raised.exception.conflicts, [{"artifact_id": "api", "base_revision": 0, "revision": 1,
                                                        "language": "text", "body": "tab A"}])

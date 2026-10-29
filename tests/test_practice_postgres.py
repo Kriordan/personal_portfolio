@@ -60,9 +60,9 @@ class PracticePostgresTests(unittest.TestCase):
             if barrier:
                 barrier.wait(timeout=10)
             try:
-                return service.save_artifacts(user, session_id or self.session_id, request_id=request_id or str(uuid4()),
+                return service.save_work(user, session_id or self.session_id, request_id=request_id or str(uuid4()),
                     edits=[{"artifact_id": "api", "base_revision": 0, "language": "text", "body": body}])
-            except service.StaleArtifactError:
+            except service.StaleViewError:
                 return "stale"
 
     def count(self, table, where="TRUE"):
@@ -96,14 +96,14 @@ from unittest.mock import patch
 from project import create_app
 from project.database import db
 from project.models import User
-from project.services.practice_service import save_artifacts
+from project.services.practice_service import save_work
 with create_app({self.config!r}).app_context():
     def stop_before_commit():
         db.session.flush()
         print("READY", flush=True)
         input()
     with patch.object(db.session, "commit", stop_before_commit):
-        save_artifacts(db.session.get(User, 1), {self.session_id!r}, request_id={request_id!r},
+        save_work(db.session.get(User, 1), {self.session_id!r}, request_id={request_id!r},
             edits=[dict(artifact_id="api", base_revision=0, language="text", body="crash attempt")])
 '''
         child = subprocess.Popen([sys.executable, "-c", script], stdin=subprocess.PIPE,
@@ -163,6 +163,160 @@ with create_app({self.config!r}).app_context():
         with self.assertRaises(service.PracticeValidationError):
             self.save("before\x00after")
         self.assertEqual(self.count("artifact_revision"), 0)
+
+    # Checkpoint 3b: turns, the brief, pause/resume, and delete.
+
+    @staticmethod
+    def full_view(api=""):
+        return [{"artifact_id": "api", "base_revision": 0, "language": "text", "body": api},
+                {"artifact_id": "schema", "base_revision": 0, "language": "sql", "body": ""},
+                {"artifact_id": "algorithm", "base_revision": 0, "language": "pseudocode", "body": ""}]
+
+    def send(self, body, *, api="", barrier=None):
+        with self.app.app_context():
+            user = db.session.get(User, 1)
+            if barrier:
+                barrier.wait(timeout=10)
+            try:
+                return service.save_and_send(user, self.session_id, edits=self.full_view(api), body=body,
+                                             brief={"base_revision": 0, "entries": []}, expected_sequence=1,
+                                             request_id=str(uuid4()))
+            except service.StaleViewError as exc:
+                return exc.code
+
+    def populate(self, session_id, user_id=1):
+        """An artifact revision, a brief citing it, a turn citing it, and their receipts."""
+        with self.app.app_context():
+            user = db.session.get(User, user_id)
+            service.save_work(user, session_id, request_id=str(uuid4()),
+                              edits=[{"artifact_id": "api", "base_revision": 0, "language": "text", "body": "work"}])
+            service.save_work(user, session_id, request_id=str(uuid4()), brief={"base_revision": 0, "entries": [
+                {"id": "e1", "type": "decision", "text": "Keys are scoped per account", "pinned": True,
+                 "sources": [{"turn": 1}, {"artifact_id": "api", "revision": 1}]}]})
+            service.send_turn(user, session_id, body="Is a per-account key enough?", expected_sequence=1,
+                              artifact_revisions={"api": 1, "schema": 0, "algorithm": 0}, brief_revision=1,
+                              request_id=str(uuid4()))
+
+    def rows(self, session_id):
+        with db.engine.connect() as connection:
+            return {table: connection.execute(text(f"SELECT count(*) FROM {table} WHERE practice_session_id = :id"),
+                                              {"id": session_id}).scalar() for table in PRACTICE_TABLES}
+
+    def test_a_send_and_a_save_from_one_view_commit_in_one_order(self):
+        barrier = Barrier(2)
+        with ThreadPoolExecutor(2) as pool:
+            sent = pool.submit(self.send, "Is this safe to retry?", api="sent with the turn", barrier=barrier)
+            saved = pool.submit(self.save, "saved elsewhere", barrier=barrier)
+            results = (sent.result(timeout=15), saved.result(timeout=15))
+        self.assertEqual(self.count("artifact_revision"), 1)
+        with db.engine.connect() as connection:
+            cited = connection.execute(text("SELECT r.body FROM session_message_artifact c "
+                                            "JOIN artifact_revision r ON r.id = c.artifact_revision_id")).scalars().all()
+        if results[1] == "stale":  # the send committed first, citing its own revision
+            self.assertEqual(results[0]["artifact_revisions"], [{"artifact_id": "api", "revision": 1}])
+            self.assertEqual(cited, ["sent with the turn"])
+        else:  # the save committed first, so the send's view was out of date
+            self.assertEqual(results[0], "stale_artifact")
+            self.assertEqual(self.count("session_message", "role = 'learner'"), 0)
+            self.assertEqual(cited, [])
+
+    def test_two_sends_from_one_view_append_one_turn(self):
+        barrier = Barrier(2)
+        with ThreadPoolExecutor(2) as pool:
+            futures = [pool.submit(self.send, body, barrier=barrier) for body in ("first device", "second device")]
+            results = [future.result(timeout=15) for future in futures]
+        self.assertEqual(sorted(result if isinstance(result, str) else "sent" for result in results),
+                         ["sent", "stale_transcript"])
+        self.assertEqual(next(result for result in results if isinstance(result, dict))["sequence"], 2)
+        self.assertEqual(self.count("session_message", "role = 'learner'"), 1)
+
+    def test_brief_revisions_are_found_by_number(self):
+        user = db.session.get(User, 1)
+        for revision in range(3):
+            service.save_work(user, self.session_id, request_id=str(uuid4()), brief={"base_revision": revision,
+                "entries": [{"id": "e1", "type": "assumption", "text": f"take {revision + 1}", "pinned": False}]})
+        # A view still showing revision 1, with its brief untouched, keeps the newest brief.
+        untouched = service.save_work(user, self.session_id, request_id=str(uuid4()), edits=self.full_view("x")[:1],
+            brief={"base_revision": 1, "entries": [{"id": "e1", "type": "assumption", "text": "take 1",
+                                                    "pinned": False}]})
+        self.assertEqual(untouched["brief"], {"revision": 3, "changed": False})
+        with self.assertRaises(service.StaleViewError):
+            service.save_work(user, self.session_id, request_id=str(uuid4()), brief={"base_revision": 2,
+                "entries": [{"id": "e1", "type": "assumption", "text": "take 2, revised", "pinned": False}]})
+        self.assertEqual(self.count("session_message", "kind = 'brief'"), 3)
+
+    def test_a_fresh_process_resumes_a_paused_session_with_its_record(self):
+        self.populate(self.session_id)
+        service.set_status(db.session.get(User, 1), self.session_id, status="paused", request_id=str(uuid4()))
+        script = f'''
+import json
+from project import create_app
+from project.services.practice_service import session_detail
+with create_app({self.config!r}).app_context():
+    detail = session_detail(1, {self.session_id!r})
+    print(json.dumps([detail["session"]["status"], detail["session_brief"]["entries"],
+                      [[m["sequence"], m["role"], m["artifact_revisions"], m["brief_revision"]] for m in detail["messages"]],
+                      [[a["artifact_id"], a["revision"]] for a in detail["artifacts"]]]))
+'''
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=30, check=True)
+        status, entries, turns, artifacts = json.loads(result.stdout.strip().splitlines()[-1])
+        self.assertEqual(status, "paused")
+        self.assertEqual(entries, [{"id": "e1", "type": "decision", "basis": "learner",
+                                    "text": "Keys are scoped per account", "pinned": True,
+                                    "sources": [{"turn": 1}, {"artifact_id": "api", "revision": 1}]}])
+        self.assertEqual(turns, [[1, "interviewer", [], None], [3, "learner", [{"artifact_id": "api", "revision": 1}], 1]])
+        self.assertEqual(artifacts, [["api", 1], ["schema", 0], ["algorithm", 0]])
+
+    def test_deleting_a_session_removes_every_row_it_owns_and_nothing_else(self):
+        kept = self.start()
+        other = service.start_session(db.session.get(User, 2), exercise_id=EXERCISE,
+                                      request_id=str(uuid4()))["session_id"]
+        for session_id, user_id in ((self.session_id, 1), (kept, 1), (other, 2)):
+            self.populate(session_id, user_id)
+        before = {session_id: self.rows(session_id) for session_id in (kept, other)}
+        self.assertEqual(self.rows(self.session_id), {"artifact_revision": 1, "session_message": 3,
+                                                      "session_message_artifact": 1, "practice_receipt": 4})
+        service.delete_session(db.session.get(User, 1), self.session_id)
+        self.assertEqual(set(self.rows(self.session_id).values()), {0})
+        self.assertEqual(self.count("practice_session"), 2)
+        self.assertEqual({session_id: self.rows(session_id) for session_id in (kept, other)}, before)
+        self.assertEqual((self.count('"user"'), self.count("content_revision")), (2, 6))
+        with self.assertRaises(service.NotFoundError):
+            service.delete_session(db.session.get(User, 1), self.session_id)
+        with self.assertRaises(service.NotFoundError):
+            service.delete_session(db.session.get(User, 1), other)
+        self.assertEqual(self.count("practice_session"), 2)
+
+    def test_a_delete_during_a_save_leaves_no_orphans(self):
+        self.populate(self.session_id)
+        barrier = Barrier(2)
+
+        def delete():
+            with self.app.app_context():
+                user = db.session.get(User, 1)
+                barrier.wait(timeout=10)
+                return service.delete_session(user, self.session_id)
+
+        def save():
+            with self.app.app_context():
+                user = db.session.get(User, 1)
+                barrier.wait(timeout=10)
+                try:
+                    return service.save_work(user, self.session_id, request_id=str(uuid4()), edits=[
+                        {"artifact_id": "api", "base_revision": 1, "language": "text", "body": "racing the delete"}])
+                except service.NotFoundError:
+                    return "missing"
+        with ThreadPoolExecutor(2) as pool:
+            deleted, saved = pool.submit(delete), pool.submit(save)
+            results = (deleted.result(timeout=15), saved.result(timeout=15))
+        self.assertEqual(results[0]["session_id"], self.session_id)
+        self.assertTrue(results[1] == "missing" or results[1]["artifacts"]["api"] == {"revision": 2, "changed": True})
+        self.assertEqual(set(self.rows(self.session_id).values()), {0})
+        self.assertEqual(sum(self.count(table, "practice_session_id NOT IN (SELECT id FROM practice_session)")
+                             for table in PRACTICE_TABLES), 0)
+
+
+PRACTICE_TABLES = ("artifact_revision", "session_message", "session_message_artifact", "practice_receipt")
 
 
 if __name__ == "__main__":

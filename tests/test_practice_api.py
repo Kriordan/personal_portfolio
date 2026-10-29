@@ -18,7 +18,7 @@ SESSION_KEYS = {"id", "exercise_id", "exercise_version", "exercise_title", "conc
                 "status", "created_at", "updated_at"}
 ARTIFACT_KEYS = {"artifact_id", "title", "format", "instructions", "languages", "revision", "language", "body",
                  "saved_at"}
-MESSAGE_KEYS = {"sequence", "role", "kind", "body", "created_at", "artifact_revisions"}
+MESSAGE_KEYS = {"sequence", "role", "kind", "body", "created_at", "artifact_revisions", "brief_revision"}
 BRIEF_KEYS = {"scenario", "learning_objectives", "functional_requirements", "nonfunctional_requirements",
               "prerequisite_concept_ids", "expected_artifacts", "assessment_dimensions"}
 
@@ -77,7 +77,7 @@ class PracticeApiTests(unittest.TestCase):
         detail = self.call("GET", f"/sessions/{session_id}")
         self.assertEqual(detail.headers["Cache-Control"], "private, no-store")
         body = detail.get_json()
-        self.assertEqual(set(body), {"session", "brief", "artifacts", "messages"})
+        self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages"})
         self.assertEqual(set(body["session"]), SESSION_KEYS)
         self.assertEqual(set(body["brief"]), BRIEF_KEYS)
         self.assertTrue(all(set(artifact) == ARTIFACT_KEYS for artifact in body["artifacts"]))
@@ -90,7 +90,7 @@ class PracticeApiTests(unittest.TestCase):
         session_id = self.start()
         request_id = str(uuid4())
         first = self.put(session_id, "POST /orders", request_id=request_id)
-        self.assertEqual(first.get_json(), {"session_id": session_id,
+        self.assertEqual(first.get_json(), {"session_id": session_id, "status": "active",
                                             "artifacts": {"api": {"revision": 1, "changed": True}}})
         replay = self.put(session_id, "POST /orders", request_id=request_id)
         self.assertEqual((replay.status_code, replay.get_json()), (200, first.get_json()))

@@ -200,7 +200,7 @@ with create_app({self.config!r}).app_context():
         service.import_catalog(self.catalog, dry_run=False, **REVIEW)
         session_id = practice_service.start_session(user, exercise_id="idempotent-order-api",
                                                     request_id=str(uuid4()))["session_id"]
-        practice_service.save_artifacts(user, session_id, request_id=str(uuid4()), edits=[
+        practice_service.save_work(user, session_id, request_id=str(uuid4()), edits=[
             dict(artifact_id="api", base_revision=0, language="text", body="POST /orders")])
         db.session.remove()
         directory = str(ROOT / "migrations")

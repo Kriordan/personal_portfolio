@@ -262,7 +262,7 @@ class PracticeWebTests(unittest.TestCase):
 
         event.listen(db.engine, "before_cursor_execute", refuse)
         try:
-            with patch.object(practice_service, "save_artifacts", side_effect=fail), \
+            with patch.object(practice_service, "save_work", side_effect=fail), \
                     self.assertLogs("project", level="ERROR") as logs:
                 response = self.save(session_id, fields, api="RESCUE_SENTINEL text")
         finally:
@@ -281,7 +281,7 @@ class PracticeWebTests(unittest.TestCase):
         session_id = self.start()
         fields = self.fields(session_id)
         error = IntegrityError("INSERT", {}, sqlite3.IntegrityError("fixture"))
-        with patch.object(practice_service, "save_artifacts", side_effect=error), self.assertLogs("project", "ERROR"):
+        with patch.object(practice_service, "save_work", side_effect=error), self.assertLogs("project", "ERROR"):
             response = self.save(session_id, fields, api="kept text")
         rescued = FormFields(response.get_data(as_text=True)).values
         self.assertEqual((response.status_code, rescued["artifacts-0-body"]), (503, "kept text"))

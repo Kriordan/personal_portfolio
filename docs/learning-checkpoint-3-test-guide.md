@@ -48,10 +48,10 @@ The first message is the interviewer's authored opening line. Search the detail 
 ```python
 edit = dict(artifact_id="api", base_revision=0, language="text", body="POST /orders\r\n")
 request_id = str(uuid4())
-first = practice.save_artifacts(user, session_id, edits=[edit], request_id=request_id)
-first == practice.save_artifacts(user, session_id, edits=[edit], request_id=request_id)
+first = practice.save_work(user, session_id, edits=[edit], request_id=request_id)
+first == practice.save_work(user, session_id, edits=[edit], request_id=request_id)
 ArtifactRevision.query.one().body
-practice.save_artifacts(user, session_id, edits=[dict(edit, body="changed")], request_id=request_id)
+practice.save_work(user, session_id, edits=[dict(edit, body="changed")], request_id=request_id)
 ```
 
 Expect `True`, then `'POST /orders\n'`, then `RequestConflictError`. Why did `\r\n` become `\n`? Find `normalize_text`. Then inspect `PracticeReceipt.query.all()[-1].payload_sha256`: the receipt stores a hash of your text, not the text itself.
@@ -60,9 +60,9 @@ Expect `True`, then `'POST /orders\n'`, then `RequestConflictError`. Why did `\r
 
 ```python
 try:
-    practice.save_artifacts(user, session_id, request_id=str(uuid4()), edits=[
+    practice.save_work(user, session_id, request_id=str(uuid4()), edits=[
         dict(edit, body="another tab's design"), dict(artifact_id="schema", base_revision=0, language="sql", body="")])
-except practice.StaleArtifactError as exc:
+except practice.StaleViewError as exc:
     pprint(exc.conflicts)
 ```
 
@@ -72,11 +72,11 @@ The API edit conflicts because revision 1 now exists. The schema edit is empty a
 
 ```python
 import pdb
-pdb.runcall(practice.save_artifacts, user, session_id, request_id=str(uuid4()),
+pdb.runcall(practice.save_work, user, session_id, request_id=str(uuid4()),
             edits=[dict(edit, base_revision=1, body="POST /orders\n")])
 ```
 
-At `(Pdb)`, set `b _apply_edits` (the debugger starts inside `practice_service`), press `c`, then step with `n`. Inspect `head.revision`, `submitted`, and `_state(head, spec)`. Which branch runs, and why does the result say `"changed": False`?
+At `(Pdb)`, set `b _decide_edits` (the debugger starts inside `practice_service`), press `c`, then step with `n`. Inspect `head.revision`, `submitted`, and `_state(head, spec)`. Which branch runs, and why does the result say `"changed": False`?
 
 ### DevTools: follow a save in the browser
 

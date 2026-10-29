@@ -135,13 +135,13 @@ def _save(session_id):
                  if "csrf_token" in form.errors else "Nothing was saved. Your text is still here: press Save work again.")
         return _rerender(session_id, edits, status=400, alert=alert)
     try:
-        result = practice.save_artifacts(current_user, session_id, edits=edits, request_id=form.request_id.data)
+        result = practice.save_work(current_user, session_id, edits=edits, request_id=form.request_id.data)
     except learning_service.NotFoundError:
         abort(404)
     except practice.PracticeValidationError as exc:
         return _rerender(session_id, edits, status=400, alert="Nothing was saved. " + exc.message,
                          errors={exc.field: exc.message} if exc.field else None)
-    except practice.StaleArtifactError as exc:
+    except practice.StaleViewError as exc:
         return _rerender(session_id, edits, status=409, conflicts=exc.conflicts, refresh=exc.refresh,
                          alert="Nothing was saved: newer work was saved from another tab or device. "
                                "Compare each marked artifact, then save again.")
