@@ -2,7 +2,8 @@
 
 Every mutation follows one order: validate input, take the owner's user-row lock, check
 the request receipt, read owner-scoped rows fresh, write, record the receipt, commit.
-Deletion takes the same lock, and so must later writers (the AI worker).
+Deletion takes the same lock, and so does the AI worker when it writes a reply; its claim,
+sweep, and next-call check rely on row locks instead (see "AI replies" below).
 
 The ordered record holds conversation turns and snapshots of the learner's brief
 (kind='brief'). A learner turn cites the exact artifact revisions it was sent with.
@@ -13,22 +14,24 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from flask import current_app
 from sqlalchemy import and_, func, select, text, update
 
 from project.curriculum_terms import (
-    ARTIFACT_LANGUAGES, BRIEF_ENTRY_TYPES, BRIEF_MAX_ENTRIES, FORMAT_LANGUAGES, MAX_EXPECTED_ARTIFACTS,
+    ARTIFACT_LANGUAGES, BRIEF_ENTRY_TYPES, BRIEF_MAX_ENTRIES, CURRENT_PROFILES, FORMAT_LANGUAGES,
+    MAX_EXPECTED_ARTIFACTS,
 )
 from project.database import db
-from project.learning.content_schema import learner_view, opening_view
+from project.learning import interviewer
+from project.learning.content_schema import interviewer_view, learner_view, opening_view
 from project.models import (
-    ArtifactRevision, ContentRevision, CurriculumItem, PracticeReceipt, PracticeSession,
+    AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, PracticeReceipt, PracticeSession,
     SessionMessage, SessionMessageArtifact, User,
 )
-from project.services import curriculum_service, learning_service
+from project.services import curriculum_service, learning_service, practice_budget, practice_signals
 from project.services.learning_errors import ConflictError, NotFoundError, ValidationError
 
 
@@ -192,12 +195,17 @@ def _check_session_id(session_id):
 
 
 def _lock_owner(user_id):
-    """Serialize this owner's practice writes. The user row exists before any practice row."""
+    """Serialize this owner's practice writes. The user row exists before any practice row.
+
+    FOR NO KEY UPDATE rather than FOR UPDATE: inserting a row that references the user takes
+    FOR KEY SHARE on it, and the reply worker inserts ledger charges without this lock while
+    holding a request row. FOR UPDATE would make the worker wait on an owner waiting on it.
+    """
     if db.session.get_bind().dialect.name == "sqlite":
         # SELECT ... FOR UPDATE is a no-op on SQLite; a write takes its database lock.
         db.session.execute(update(User).where(User.id == user_id).values(id=User.id))
     else:
-        db.session.execute(select(User.id).where(User.id == user_id).with_for_update()).scalar_one()
+        db.session.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True)).scalar_one()
 
 
 def _replay(user_id, request_id, operation, digest):
@@ -314,6 +322,7 @@ def start_session(user, *, exercise_id, request_id, concept_id=None, now=None):
             raise PracticeValidationError("Only interviewer exercises are available.")
         session = PracticeSession(id=str(uuid4()), user_id=user.id, exercise_id=exercise.item_id,
                                   exercise_version=exercise.version, interaction_style=opening["interaction_style"],
+                                  profile_version=CURRENT_PROFILES[opening["interaction_style"]],
                                   status="active", created_at=now, updated_at=now)
         db.session.add(session)
         db.session.flush()
@@ -588,7 +597,7 @@ def _append_turn(session, specs, text, brief_revision, now):
                                                   practice_session_id=session.id))
             cited.append({"artifact_id": artifact_id, "revision": head.revision})
     db.session.flush()
-    return turn.sequence, cited
+    return turn, cited
 
 
 # Mutations.
@@ -614,6 +623,8 @@ def save_work(user, session_id, *, edits=None, brief=None, request_id, status="a
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
+        if status == "paused":
+            _cancel_pending_reply(session, now)
         specs = _artifact_specs(_pinned_exercise(session).payload)
         outcomes, rows, conflicts, refresh = _decide_edits(session, specs, normalized, now)
         brief_outcome = brief_entries = brief_conflict = brief_refresh = None
@@ -664,6 +675,8 @@ def save_and_send(user, session_id, *, edits, brief, body, expected_sequence, re
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
+        if _settle_stale_reply(session, now) is not None:
+            raise ReplyPendingError("The interviewer is still replying.")
         specs = _artifact_specs(_pinned_exercise(session).payload)
         if {edit["artifact_id"] for edit in normalized} != set(specs):
             raise PracticeValidationError("Send every artifact with the message.", part="turn")
@@ -674,15 +687,17 @@ def save_and_send(user, session_id, *, edits, brief, body, expected_sequence, re
             raise StaleViewError(conflicts=conflicts, refresh=refresh, brief_conflict=brief_conflict,
                                  brief_refresh=brief_refresh, latest_turn=None if latest == expected_sequence else latest)
         _write(session, rows, brief_outcome, brief_entries, now)
-        sequence, cited = _append_turn(session, specs, text, brief_outcome["revision"], now)
+        turn, cited = _append_turn(session, specs, text, brief_outcome["revision"], now)
         if session.status == "paused":
             _set_status(session, "active")
         session.updated_at = now
-        response = {"session_id": session.id, "sequence": sequence, "artifact_revisions": cited,
+        reply = _queue_reply(session, turn, now)
+        response = {"session_id": session.id, "sequence": turn.sequence, "artifact_revisions": cited,
                     "brief_revision": brief_outcome["revision"], "artifacts": outcomes, "brief": brief_outcome,
-                    "status": session.status}
+                    "status": session.status, "reply": reply, "latest_sequence": turn.sequence}
         _record(user.id, request_id, session.id, "send", digest, response, now)
         db.session.commit()
+        _wake_worker(reply)
         return response
     except Exception:
         db.session.rollback()
@@ -708,6 +723,8 @@ def send_turn(user, session_id, *, body, expected_sequence, artifact_revisions, 
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
+        if _settle_stale_reply(session, now) is not None:
+            raise ReplyPendingError("The interviewer is still replying.")
         specs = _artifact_specs(_pinned_exercise(session).payload)
         if set(cited_view) != set(specs):
             raise PracticeValidationError(f"Cite every artifact: {', '.join(sorted(specs))}.", part="turn")
@@ -729,14 +746,17 @@ def send_turn(user, session_id, *, body, expected_sequence, artifact_revisions, 
             raise StaleViewError(conflicts=conflicts,
                                  brief_conflict=_brief_dto(brief_head) if brief_revision < brief_number else None,
                                  latest_turn=None if latest == expected_sequence else latest)
-        sequence, cited = _append_turn(session, specs, text, brief_number, now)
+        turn, cited = _append_turn(session, specs, text, brief_number, now)
         if session.status == "paused":
             _set_status(session, "active")
         session.updated_at = now
-        response = {"session_id": session.id, "sequence": sequence, "artifact_revisions": cited,
-                    "brief_revision": brief_number, "status": session.status}
+        reply = _queue_reply(session, turn, now)
+        response = {"session_id": session.id, "sequence": turn.sequence, "artifact_revisions": cited,
+                    "brief_revision": brief_number, "status": session.status, "reply": reply,
+                    "latest_sequence": turn.sequence}
         _record(user.id, request_id, session.id, "send", digest, response, now)
         db.session.commit()
+        _wake_worker(reply)
         return response
     except Exception:
         db.session.rollback()
@@ -759,6 +779,8 @@ def set_status(user, session_id, *, status, request_id, now=None):
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
+        if status == "paused":
+            _cancel_pending_reply(session, now)
         changed = _set_status(session, status)
         if changed:
             session.updated_at = now
@@ -786,9 +808,514 @@ def delete_session(user, session_id):
         _lock_owner(user.id)
         session = _owned_session(user.id, session_id)
         concept_id = _pinned_exercise(session).payload["content"]["concept_id"]
+        # The live reply's row before the session's, in the lock order every writer uses: a
+        # worker about to make a paid call holds that row, then needs the session's.
+        _live_request(session.id)
         db.session.delete(session)
         db.session.commit()
         return {"session_id": session_id, "concept_id": concept_id}
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+# AI replies. A reply is an AIRequest row: queued with the learner's turn, claimed by the
+# worker, fenced before every paid call, and written under the owner lock. Lock order
+# everywhere: owner, request, session, budget, charge. The worker's claim, sweep, and
+# next-call check never take the owner lock; owner-side writes lock the live request row
+# before they change the session row, so the two sides take turns instead of deadlocking.
+
+PROVIDERS = ("fake",)  # the OpenAI call process arrives with the interviewer itself (checkpoint 4b)
+LIVE = ("pending", "running")
+REPLY_MAX_BYTES = 8 * 1024
+
+
+class ReplyPendingError(ConflictError):
+    """The interviewer is still replying; another turn now would race that reply."""
+
+    code = "reply_pending"
+
+
+class CallFenced(Exception):
+    """The reply is no longer wanted (cancelled, paused, deleted, or reclaimed). Make no paid call."""
+
+
+def ai_settings():
+    config = current_app.config
+    provider = config.get("LEARNING_AI_PROVIDER", "openai")
+    model = config.get("LEARNING_AI_MODEL") or ("fake-interviewer" if provider == "fake" else None)
+    return {
+        "enabled": bool(config.get("LEARNING_AI_ENABLED")), "provider": provider, "model": model,
+        "selector_model": config.get("LEARNING_AI_SELECTOR_MODEL") or model,
+        "tier": config.get("LEARNING_AI_SERVICE_TIER", "default"),
+        "start_seconds": int(config.get("LEARNING_AI_START_SECONDS", 120)),
+        "call_seconds": int(config.get("LEARNING_AI_CALL_SECONDS", 60)),
+        "lease_margin_seconds": int(config.get("LEARNING_AI_LEASE_MARGIN_SECONDS", 30)),
+        "max_output_tokens": int(config.get("LEARNING_AI_MAX_OUTPUT_TOKENS", 1200)),
+    }
+
+
+def ai_owner_id():
+    """The one verified account named by LEARNING_AI_OWNER_EMAIL, or None, which turns AI off."""
+    email = current_app.config.get("LEARNING_AI_OWNER_EMAIL")
+    if not isinstance(email, str) or not email.strip():
+        return None
+    ids = db.session.scalars(select(User.id).where(
+        func.lower(User.email) == email.strip().lower(), User.email_verified.is_(True)).limit(2)).all()
+    return ids[0] if len(ids) == 1 else None
+
+
+def reply_unavailable(user_id, now):
+    """Why the interviewer can't reply for this learner now, or None when it can."""
+    settings = ai_settings()
+    if (not settings["enabled"] or settings["provider"] not in PROVIDERS or not settings["model"]
+            or not practice_budget.priced(settings["provider"], settings["model"], settings["tier"])
+            or not practice_budget.priced(settings["provider"], settings["selector_model"], settings["tier"])):
+        return "disabled"
+    if ai_owner_id() != user_id:
+        return "owner_only"
+    if _month(now)["exhausted"]:
+        return "budget"
+    return None
+
+
+def _month(now):
+    """This month's spending. It reads as exhausted once not even the smallest reply would fit."""
+    settings = ai_settings()
+    smallest = practice_budget.worst_case(settings["provider"], settings["model"], settings["tier"],
+                                          input_bytes=0, max_output_tokens=settings["max_output_tokens"])
+    return practice_budget.month_status(now, smallest_microusd=smallest or 0)
+
+
+def ai_budget(user_id, now):
+    """The month's spending, shown only to the owner."""
+    return _month(now) if ai_owner_id() == user_id else None
+
+
+def _aware(value):
+    return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
+
+
+def _effective(request, now, unavailable):
+    """How a reply reads now. A stale live request reads as interrupted, so nothing waits on it forever."""
+    settings = ai_settings()
+    if request.status == "pending":
+        if unavailable:
+            return "interrupted", unavailable
+        if _aware(request.created_at) + timedelta(seconds=settings["start_seconds"]) < now:
+            return "interrupted", "not_started"
+    if request.status == "running" and request.lease_expires_at is not None and _aware(request.lease_expires_at) < now:
+        return "interrupted", "lease_expired"
+    return request.status, request.error_code
+
+
+def _live_request(session_id):
+    """Under the owner lock: the session's pending or running request, locked.
+
+    The lock makes this wait for a worker inside its next-call check, then read the lease that
+    check extended, so a reply about to make a paid call is never also marked interrupted.
+    """
+    return db.session.execute(select(AIRequest).where(
+        AIRequest.practice_session_id == session_id, AIRequest.status.in_(LIVE)
+    ).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
+
+
+def _settle_stale_reply(session, now):
+    """Under the owner lock: record a stale live request as interrupted. Returns any request still live."""
+    request = _live_request(session.id)
+    if request is None:
+        return None
+    status, code = _effective(request, now, reply_unavailable(session.user_id, now))
+    if status != "interrupted":
+        return request
+    request.status, request.error_code, request.finished_at, request.lease_expires_at = status, code, now, None
+    db.session.flush()
+    return None
+
+
+def _cancel_pending_reply(session, now):
+    """Pausing stops generation that hasn't started. A running reply's next-call check stops the rest."""
+    request = _settle_stale_reply(session, now)
+    if request is not None and request.status == "pending":
+        request.status, request.error_code, request.finished_at = "cancelled", "paused", now
+        db.session.flush()
+
+
+def _reply_dto(reply_id=None, status="unavailable", reason=None):
+    return {"id": reply_id, "status": status, "reason": reason}
+
+
+def _reply_fits(session, turn, now, *, context_from_sequence=1):
+    """Whether the most a reply to `turn` could cost still fits in this month's budget.
+
+    The worst case is priced from the request body the worker will send, built from the same
+    pinned inputs, so a reply that can't fit is neither queued nor offered again.
+    """
+    if session.profile_version not in interviewer.PROFILES:
+        return True  # a release that knows the profile runs it, and reserves before calling
+    settings = ai_settings()
+    context = {"profile_version": session.profile_version, "model": settings["model"],
+               **_reply_inputs(session, turn, context_from_sequence)}
+    body = interviewer.reply_request(context, settings)
+    worst = practice_budget.worst_case(settings["provider"], settings["model"], settings["tier"],
+                                       input_bytes=interviewer.body_bytes(body),
+                                       max_output_tokens=body["max_output_tokens"])
+    return worst is None or practice_budget.fits(worst, now)
+
+
+def _queue_reply(session, turn, now):
+    """Queue the interviewer's reply to `turn` when AI may reply for this learner and it fits the budget."""
+    unavailable = reply_unavailable(session.user_id, now)
+    if unavailable:
+        return _reply_dto(reason=unavailable)
+    if not _reply_fits(session, turn, now):
+        return _reply_dto(reason="budget")
+    settings = ai_settings()
+    request = AIRequest(id=str(uuid4()), practice_session_id=session.id, turn_message_id=turn.id, kind="reply",
+                        status="pending", profile_version=session.profile_version, provider=settings["provider"],
+                        model=settings["model"], selector_model=settings["selector_model"], created_at=now)
+    db.session.add(request)
+    db.session.flush()
+    return _reply_dto(request.id, "pending")
+
+
+def _wake_worker(reply):
+    if reply.get("status") == "pending":
+        practice_signals.reply_queued.set()
+
+
+def _latest_learner_turn(session_id):
+    return db.session.execute(select(SessionMessage).where(
+        SessionMessage.practice_session_id == session_id, SessionMessage.kind == "turn",
+        SessionMessage.role == "learner",
+    ).order_by(SessionMessage.sequence.desc()).limit(1)).scalar_one_or_none()
+
+
+def request_reply(user, session_id, *, request_id, edits=None, brief=None, now=None):
+    """Ask for a reply to the latest learner turn: a retry, or a turn saved while AI was unavailable.
+
+    The website also saves the page's artifacts and brief in the same transaction, so asking
+    never discards typing. Only the latest learner turn, without a reply, qualifies.
+    """
+    validate_request_id(request_id)
+    _check_session_id(session_id)
+    normalized = _normalize_edits([] if edits is None else edits, minimum=0)
+    normalized_brief = _normalize_brief(brief) if brief is not None else None
+    digest = _digest("reply", session_id, {"edits": normalized, "brief": normalized_brief})
+    now = now or _now()
+    try:
+        _lock_owner(user.id)
+        replay = _replay(user.id, request_id, "reply", digest)
+        if replay is not None:
+            db.session.commit()
+            return replay
+        session = _owned_session(user.id, session_id)
+        if _settle_stale_reply(session, now) is not None:
+            raise ReplyPendingError("The interviewer is already replying.")
+        changed = False
+        response = {"session_id": session.id}
+        if normalized or normalized_brief is not None:
+            specs = _artifact_specs(_pinned_exercise(session).payload)
+            outcomes, rows, conflicts, refresh = _decide_edits(session, specs, normalized, now)
+            brief_outcome = brief_entries = brief_conflict = brief_refresh = None
+            if normalized_brief is not None:
+                brief_outcome, brief_entries, brief_conflict, brief_refresh = _decide_brief(session, normalized_brief)
+            if conflicts or brief_conflict is not None:
+                raise StaleViewError(conflicts=conflicts, refresh=refresh, brief_conflict=brief_conflict,
+                                     brief_refresh=brief_refresh)
+            changed = _write(session, rows, brief_outcome, brief_entries, now)
+            if normalized:
+                response["artifacts"] = outcomes
+            if normalized_brief is not None:
+                response["brief"] = brief_outcome
+        turn = _latest_learner_turn(session.id)
+        if turn is None:
+            raise PracticeValidationError("Send a message first.", part="turn")
+        if _latest_turn(session.id) != turn.sequence:
+            raise PracticeValidationError("Your latest message already has a reply.", part="turn")
+        reply = _queue_reply(session, turn, now)
+        if session.status == "paused":
+            changed = _set_status(session, "active") or changed
+        if changed or reply["status"] == "pending":
+            session.updated_at = now
+        response.update(reply=reply, latest_sequence=turn.sequence, status=session.status)
+        _record(user.id, request_id, session.id, "reply", digest, response, now)
+        db.session.commit()
+        _wake_worker(reply)
+        return response
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def reply_summary(session, now):
+    """The latest learner turn's reply as the learner sees it, and whether a reply can be requested.
+
+    Asking needs AI available for this learner and room in this month's budget for the reply's worst case.
+    """
+    unavailable = reply_unavailable(session.user_id, now)
+    turn = _latest_learner_turn(session.id)
+    request = None
+    if turn is not None:
+        request = db.session.execute(select(AIRequest).where(AIRequest.turn_message_id == turn.id).order_by(
+            AIRequest.created_at.desc()).limit(1).execution_options(populate_existing=True)).scalar_one_or_none()
+    status, error = _effective(request, now, unavailable) if request is not None else ("none", None)
+    answered = turn is not None and _latest_turn(session.id) != turn.sequence
+    if unavailable is None and turn is not None and not answered and status not in LIVE \
+            and not _reply_fits(session, turn, now):
+        unavailable = "budget"
+    return {"id": request.id if request is not None else None, "status": status, "error": error,
+            "turn_sequence": turn.sequence if turn is not None else None, "answered": answered,
+            "can_request": turn is not None and not answered and status not in LIVE and unavailable is None,
+            "unavailable": unavailable}
+
+
+def reply_updates(user_id, session_id, *, after, now=None):
+    """What a polling page needs: the reply's state and every turn after `after`."""
+    if not _whole_number(after):
+        raise PracticeValidationError("after must be a whole number.")
+    session = _owned_session(user_id, session_id)
+    # The state first, as in session_detail; the latest sequence comes from the same read as
+    # the turns, so a client that advances to it never skips a turn it wasn't sent.
+    reply = reply_summary(session, now or _now())
+    turns = _turns(session.id)
+    return {"reply": reply, "turns": [turn for turn in turns if turn["sequence"] > after],
+            "latest_sequence": turns[-1]["sequence"] if turns else 0}
+
+
+def sweep_replies(now):
+    """Record stale live requests as interrupted. Reads already treat them so; this keeps rows honest."""
+    settings = ai_settings()
+    try:
+        started = db.session.execute(update(AIRequest).where(
+            AIRequest.status == "pending", AIRequest.created_at < now - timedelta(seconds=settings["start_seconds"]),
+        ).values(status="interrupted", error_code="not_started", finished_at=now).execution_options(
+            synchronize_session=False))
+        expired = db.session.execute(update(AIRequest).where(
+            AIRequest.status == "running", AIRequest.lease_expires_at < now,
+        ).values(status="interrupted", error_code="lease_expired", finished_at=now, lease_expires_at=None
+                 ).execution_options(synchronize_session=False))
+        db.session.commit()
+        return started.rowcount + expired.rowcount
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def claim_reply(now, *, known_profiles, worker_id):
+    """Claim the oldest pending reply by compare-and-swap. Returns (reply_id, claim_token) or None.
+
+    Requests for an interviewer version this code doesn't know are left for code that does,
+    which matters while an old and a new release overlap during a deploy.
+    """
+    settings = ai_settings()
+    lease = now + timedelta(seconds=settings["call_seconds"] + settings["lease_margin_seconds"])
+    try:
+        candidates = db.session.scalars(select(AIRequest.id).where(
+            AIRequest.status == "pending",
+            AIRequest.created_at >= now - timedelta(seconds=settings["start_seconds"]),
+            AIRequest.profile_version.in_(tuple(known_profiles)),
+        ).order_by(AIRequest.created_at).limit(5)).all()
+        for reply_id in candidates:
+            token = f"{worker_id[:24]}:{uuid4().hex}"
+            claimed = db.session.execute(update(AIRequest).where(
+                AIRequest.id == reply_id, AIRequest.status == "pending",
+            ).values(status="running", claim_token=token, started_at=now, lease_expires_at=lease).execution_options(
+                synchronize_session=False))
+            if claimed.rowcount == 1:
+                db.session.commit()
+                return reply_id, token
+        db.session.commit()
+        return None
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def reply_context(reply_id):
+    """The inputs pinned to a reply's turn, read without locks; None when the request or session is gone.
+
+    Server-side only: it holds the interviewer's instructions.
+    """
+    request = db.session.get(AIRequest, reply_id, populate_existing=True)
+    if request is None:
+        return None
+    session = db.session.get(PracticeSession, request.practice_session_id, populate_existing=True)
+    turn = db.session.get(SessionMessage, request.turn_message_id, populate_existing=True)
+    if session is None or turn is None:
+        return None
+    return {
+        "reply_id": request.id, "session_id": session.id, "user_id": session.user_id,
+        "profile_version": request.profile_version, "provider": request.provider, "model": request.model,
+        "selector_model": request.selector_model, "turn_sequence": turn.sequence,
+        "context_from_sequence": request.context_from_sequence,
+        **_reply_inputs(session, turn, request.context_from_sequence),
+    }
+
+
+def _reply_inputs(session, turn, context_from_sequence):
+    """What a reply to `turn` is built from. Later edits never leak in: artifacts are the
+    turn's cited revisions and the brief is the revision it was sent with."""
+    payload = _pinned_exercise(session).payload
+    specs = _artifact_specs(payload)
+    revision_ids = db.session.scalars(select(SessionMessageArtifact.artifact_revision_id).where(
+        SessionMessageArtifact.message_id == turn.id)).all()
+    revisions = db.session.scalars(select(ArtifactRevision).where(ArtifactRevision.id.in_(revision_ids)).order_by(
+        ArtifactRevision.artifact_id)).all() if revision_ids else []
+    brief_revision = (turn.data or {}).get("brief_revision", 0)
+    brief = _brief_record(session.id, brief_revision) if brief_revision else None
+    transcript = db.session.scalars(select(SessionMessage).where(
+        SessionMessage.practice_session_id == session.id, SessionMessage.kind == "turn",
+        SessionMessage.sequence >= context_from_sequence, SessionMessage.sequence <= turn.sequence,
+    ).order_by(SessionMessage.sequence)).all()
+    return {
+        "exercise": {"title": payload["title"], "brief": learner_view(payload)["content"]["brief"],
+                     "facilitator": interviewer_view(payload)},
+        "brief": {"revision": brief_revision, "entries": [_entry_dto(entry) for entry in brief.data["entries"]]
+                  if brief is not None else []},
+        "artifacts": [{"artifact_id": row.artifact_id, "title": specs.get(row.artifact_id, {}).get("title", row.title),
+                       "revision": row.revision, "language": row.language, "body": row.body} for row in revisions],
+        "transcript": [{"sequence": message.sequence, "role": message.role, "body": message.body}
+                       for message in transcript],
+    }
+
+
+def begin_call(reply_id, token, *, purpose, input_bytes, max_output_tokens, deadline_seconds, now):
+    """Before each paid call: fence the request, extend its lease, and reserve the worst case.
+
+    Returns the charge ID. Raises CallFenced when the reply is no longer wanted (no
+    reservation, no call), and practice_budget.BudgetExhausted when the cap would be exceeded.
+    """
+    settings = ai_settings()
+    lease = now + timedelta(seconds=deadline_seconds + settings["lease_margin_seconds"])
+    try:
+        # Locks the request row (on SQLite, the database) first. A lease that has run out
+        # already reads as interrupted, so it can't start a paid call either.
+        held = db.session.execute(update(AIRequest).where(
+            AIRequest.id == reply_id, AIRequest.status == "running", AIRequest.claim_token == token,
+            AIRequest.lease_expires_at >= now,
+        ).values(lease_expires_at=lease).execution_options(synchronize_session=False))
+        if held.rowcount != 1:
+            db.session.rollback()
+            raise CallFenced("fenced")
+        request = db.session.get(AIRequest, reply_id, populate_existing=True)
+        # Then the session row, shared: a pause has either committed (and is seen here) or waits
+        # until this call has started, and a call already in flight finishes with its reply kept.
+        session = db.session.execute(select(PracticeSession).where(
+            PracticeSession.id == request.practice_session_id).with_for_update(read=True)
+            .execution_options(populate_existing=True)).scalar_one_or_none()
+        if session is None:
+            db.session.rollback()
+            raise CallFenced("deleted")
+        if session.status != "active":
+            request.status, request.error_code, request.finished_at = "cancelled", "paused", now
+            db.session.commit()
+            raise CallFenced("paused")
+        unavailable = reply_unavailable(session.user_id, now)
+        if unavailable in ("disabled", "owner_only"):
+            request.status, request.error_code, request.finished_at = "cancelled", unavailable, now
+            db.session.commit()
+            raise CallFenced(unavailable)
+        model = request.selector_model if purpose == "select" else request.model
+        try:
+            charge_id = practice_budget.reserve(
+                user_id=session.user_id, reply_id=reply_id, purpose=purpose, provider=request.provider, model=model,
+                tier=settings["tier"], input_bytes=input_bytes, max_output_tokens=max_output_tokens,
+                expires_at=lease, now=now)
+        except practice_budget.BudgetExhausted as exc:
+            request.status, request.error_code, request.finished_at = "failed", exc.code, now
+            db.session.commit()
+            raise
+        db.session.commit()
+        return charge_id
+    except (CallFenced, practice_budget.BudgetExhausted):
+        raise
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def finish_call(charge_id, *, outcome, usage=None, now):
+    """Settle one call's charge in its own transaction.
+
+    "settled" records the cost from usage (or the reservation, without usage); "released"
+    means the provider refused before doing paid work; "uncertain" leaves the reservation,
+    which keeps counting against the month.
+    """
+    try:
+        if outcome == "settled":
+            practice_budget.settle(charge_id, usage=usage, now=now)
+        elif outcome == "released":
+            practice_budget.release(charge_id, now=now)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def fail_reply(reply_id, token, *, code, now):
+    """Record a definite failure, unless the request was already fenced."""
+    try:
+        db.session.execute(update(AIRequest).where(
+            AIRequest.id == reply_id, AIRequest.status == "running", AIRequest.claim_token == token,
+        ).values(status="failed", error_code=code, finished_at=now, lease_expires_at=None).execution_options(
+            synchronize_session=False))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def complete_reply(reply_id, token, *, body, now):
+    """Write the interviewer's reply. Returns "written", "fenced", or "invalid".
+
+    Fenced on status and claim token only, so a late reply that nothing has marked
+    interrupted is still kept. The reply cites the revisions the turn was sent with.
+    """
+    try:
+        found = db.session.get(AIRequest, reply_id, populate_existing=True)
+        if found is None:
+            return "fenced"
+        session = db.session.get(PracticeSession, found.practice_session_id, populate_existing=True)
+        if session is None:
+            return "fenced"
+        _lock_owner(session.user_id)
+        request = db.session.execute(select(AIRequest).where(AIRequest.id == reply_id).with_for_update()
+                                     .execution_options(populate_existing=True)).scalar_one_or_none()
+        if request is None:
+            db.session.rollback()
+            return "fenced"
+        if request.status == "completed" and request.claim_token == token:
+            db.session.rollback()
+            return "written"  # an earlier attempt committed before its connection failed
+        if request.status != "running" or request.claim_token != token:
+            db.session.rollback()
+            return "fenced"
+        try:
+            text_body = normalize_text(body, limit=REPLY_MAX_BYTES, label="The reply").strip()
+        except PracticeValidationError:
+            text_body = ""
+        if not text_body:
+            request.status, request.error_code, request.finished_at = "failed", "invalid_output", now
+            request.lease_expires_at = None
+            db.session.commit()
+            return "invalid"
+        turn = db.session.get(SessionMessage, request.turn_message_id)
+        reply = SessionMessage(practice_session_id=session.id, sequence=_next_sequence(session.id), role="interviewer",
+                               kind="turn", modality="text", body=text_body, created_at=now,
+                               data={"reply_id": request.id, "profile_version": request.profile_version,
+                                     "brief_revision": (turn.data or {}).get("brief_revision", 0)})
+        db.session.add(reply)
+        db.session.flush()
+        for revision_id in db.session.scalars(select(SessionMessageArtifact.artifact_revision_id).where(
+                SessionMessageArtifact.message_id == turn.id)).all():
+            db.session.add(SessionMessageArtifact(message_id=reply.id, artifact_revision_id=revision_id,
+                                                  practice_session_id=session.id))
+        request.status, request.reply_message_id, request.finished_at = "completed", reply.id, now
+        request.lease_expires_at = None
+        session.updated_at = now
+        db.session.commit()
+        return "written"
     except Exception:
         db.session.rollback()
         raise
@@ -813,8 +1340,8 @@ def _turns(session_id):
             for message in messages]
 
 
-def session_detail(user_id, session_id):
-    """The learner-safe view of a session: exercise brief, the learner's brief, artifacts, and transcript."""
+def session_detail(user_id, session_id, *, now=None):
+    """The learner-safe view of a session: exercise brief, the learner's brief, artifacts, transcript, and reply."""
     session = _owned_session(user_id, session_id)
     payload = _pinned_exercise(session).payload
     brief = learner_view(payload)["content"]["brief"]
@@ -828,9 +1355,13 @@ def session_detail(user_id, session_id):
             "revision": head.revision if head else 0, "language": language, "body": body,
             "saved_at": _iso(head.created_at) if head else None,
         })
+    now = now or _now()
+    # Read the reply's state before the transcript: if the reply lands between the two reads,
+    # the page shows it as still coming (and polls) rather than as arrived but missing.
+    reply = reply_summary(session, now)
     return {"session": _session_dto(session, payload), "brief": brief,
             "session_brief": _brief_dto(_brief_record(session.id)), "artifacts": artifacts,
-            "messages": _turns(session.id)}
+            "messages": _turns(session.id), "reply": reply, "ai_budget": ai_budget(session.user_id, now)}
 
 
 def session_counts(user_id, session_id):

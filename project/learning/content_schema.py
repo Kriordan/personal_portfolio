@@ -312,6 +312,29 @@ def opening_view(item):
     return {"interaction_style": body["interaction_style"], "opening_prompt": body["opening_prompt"]}
 
 
+def interviewer_view(item, *, revealed_constraint_ids=(), hint_index=None):
+    """What the conversational call may see: the authored instructions, the revealed facts, and
+    one permitted hint only when the learner asked for help.
+
+    Never clarification cues, unrevealed facts, other hints, or evaluation material.
+    """
+    body = item["content"]["facilitator"]
+    known = {constraint["id"] for constraint in body["hidden_constraints"]}
+    if not set(revealed_constraint_ids) <= known:
+        raise ValidationError("Unknown constraint disclosure.")
+    hints = body["permitted_hints"]
+    if hint_index is not None and not (type(hint_index) is int and 0 <= hint_index < len(hints)):
+        raise ValidationError("Unknown hint.")
+    return deepcopy({
+        "interaction_style": body["interaction_style"],
+        "instructions": list(body["instructions"]),
+        "revealed_constraints": [{"id": constraint["id"], "fact": constraint["fact"]}
+                                 for constraint in body["hidden_constraints"]
+                                 if constraint["id"] in revealed_constraint_ids],
+        "hint": hints[hint_index] if hint_index is not None else None,
+    })
+
+
 def evaluator_view(item):
     """Server use only; do not attach this to a learner or conversation response."""
     return deepcopy(AssessmentSchema().dump(item["content"]["assessment"]))

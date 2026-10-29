@@ -83,7 +83,10 @@ class PracticeApiTests(PracticeApiCase):
         detail = self.call("GET", f"/sessions/{session_id}")
         self.assertEqual(detail.headers["Cache-Control"], "private, no-store")
         body = detail.get_json()
-        self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages"})
+        self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages", "reply", "ai_budget"})
+        self.assertEqual(body["reply"], {"id": None, "status": "none", "error": None, "turn_sequence": None,
+                                         "answered": False, "can_request": False, "unavailable": "disabled"})
+        self.assertIsNone(body["ai_budget"])
         self.assertEqual(set(body["session"]), SESSION_KEYS)
         self.assertEqual(set(body["brief"]), BRIEF_KEYS)
         self.assertEqual(set(body["session_brief"]), SESSION_BRIEF_KEYS)

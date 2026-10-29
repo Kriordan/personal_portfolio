@@ -17,3 +17,6 @@ BRIEF_ENTRY_TYPES = ("assumption", "question", "decision", "next_step")
 BRIEF_MAX_ENTRIES = 50
 # Every artifact an exercise expects must fit one workspace form and one save.
 MAX_EXPECTED_ARTIFACTS = 20
+# The interviewer behaviour a new practice session pins. Versions are immutable once released:
+# a prompt change makes a new version, and sessions keep the version they started with.
+CURRENT_PROFILES = {"interviewer": "interviewer-1"}

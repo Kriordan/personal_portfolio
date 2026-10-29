@@ -165,6 +165,8 @@ def register_commands(app):
     from project.lottery.commands import import_ny_metadata, refresh_lottery
     app.cli.add_command(import_ny_metadata)
     app.cli.add_command(refresh_lottery)
+    from project.services.practice_worker import learning_worker_command
+    app.cli.add_command(learning_worker_command)
 
 
 def register_jinja_env(app):

@@ -10,8 +10,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 2. Learn and Review on web | Published lesson, retry visualization, safe Markdown, explicit answer reveal, four questions through the existing scheduler; unchanged old API behavior and progress. Human content review precedes publication. | Committed as `3b108bf`; [hands-on guide](learning-checkpoint-2-test-guide.md), refined in `0c2848a`. Production publication remains pending human content review. |
 | 3a. Practice sessions and artifacts | Sessions pinned to a published exercise; API/SQL/pseudocode artifacts with immutable revisions; idempotent saves; per-artifact conflicts without data loss; ownership; failure recovery; web workspace; JWT API; feature flag. Migration and concurrency verified on PostgreSQL. No IDE or execution sandbox. | Committed as `fe91fe2` (persistence and service) and `709658b` (web workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part A. |
 | 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) plus the following workspace/API commit; [practice guide](learning-checkpoint-3-test-guide.md), part B. |
-| 4. Interview and continuity | Postgres-backed worker, owner-only AI use, approved disclosure, idempotent requests, budgets/reservations, configurable soft turn check-in, context compaction, durable recovery. | Not started. |
-| 5. Feedback and complete demonstration | Evidence-linked transcript/artifact feedback, remediation, pause/reopen/recover, one full Learn → Review → Discuss → Build walkthrough. | Not started. |
+| 4. Interview and continuity | PostgreSQL-backed worker (a thread in the web process), owner-only AI use through Learning's own OpenAI key, approved disclosure, idempotent requests, budgets/reservations, configurable soft turn check-in, a context allowance with a specific stop (compaction deferred), durable recovery. | Not started; decisions made October 29. |
+| 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -185,3 +185,16 @@ The disposable fixture walkthrough covered:
 - delete, ending with zero rows, receipts included.
 
 Not covered: a screen-reader audit; Firefox and Safari (the walkthrough used Chromium, where Enter on a Pin box submitted the form and the hidden Save button kept the message unsent); AI. A tab open on a session deleted elsewhere gets "not found" on its next save. Sources on brief entries can be added through the API only (the website shows and preserves them). There is no brief history page. Nothing was pushed, deployed, migrated in production, or published.
+
+## Decisions for checkpoints 4 and 5 (October 29)
+
+Keith decided the open questions before checkpoint 4; the handoff's decisions table records the reasons.
+
+- **Worker:** a thread in the web process, using the PostgreSQL job table and leases. Moving it to a `worker:` dyno later is a one-line Procfile change.
+- **Provider:** OpenAI, as approved, through Learning's own project and key rather than JobWizard's. The model is chosen during the reviewed live evaluations.
+- **Interviewer behaviour:** versioned in code, pinned when a session starts and recorded on every AI request; no content change.
+- **Compaction:** deferred out of Milestone 1. Sessions send the whole transcript within a larger configurable allowance and stop with a specific explanation when essential context cannot fit. The long-session acceptance test keeps more than 24 turns, a restart, a revised assumption, and multiple artifact revisions, without forced compactions.
+- **Misconceptions:** content schema 2 and exercise version 2 at the start of checkpoint 5, before the human content review. Accepted findings offer their linked questions as an extra, labelled review.
+- **Deterministic checks:** JSON/YAML parse errors in API definitions are reported as confirmed findings before AI judgment.
+
+The other three vision-review proposals (milestone order, progress model, richer lesson schema) wait for Milestone 1's completion. Checkpoint 4 needs a detailed plan and approval before implementation.

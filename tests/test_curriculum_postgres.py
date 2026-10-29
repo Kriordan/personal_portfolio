@@ -27,7 +27,7 @@ from project.database import db
 from project.learning.content_schema import load_catalog
 from project.models import ContentRevision, CurriculumItem, ReviewLog, ReviewProgress, ReviewReceipt, User
 from project.services import curriculum_service as service
-from project.services import practice_service
+from project.services import practice_service, practice_worker
 from project.services.learning_service import rate_card_for_user
 
 URL = os.environ.get("LIBRARY_TEST_POSTGRES_URL")
@@ -202,9 +202,33 @@ with create_app({self.config!r}).app_context():
                                                     request_id=str(uuid4()))["session_id"]
         practice_service.save_work(user, session_id, request_id=str(uuid4()), edits=[
             dict(artifact_id="api", base_revision=0, language="text", body="POST /orders")])
+        # And AI replies: a failed reply, a retried one that completed, its charges, and a 'reply' receipt.
+        self.app.config.update(LEARNING_AI_ENABLED=True, LEARNING_AI_PROVIDER="fake",
+                               LEARNING_AI_OWNER_EMAIL="fixture@example.test")
+        user.email_verified = True
+        db.session.commit()
+        practice_service.send_turn(user, session_id, body="Do keys expire?", expected_sequence=1,
+                                   artifact_revisions={"api": 1, "schema": 0, "algorithm": 0}, brief_revision=0,
+                                   request_id=str(uuid4()))
+        with self.assertLogs("project", "WARNING"):
+            practice_worker.run_once(practice_worker.FakeProvider("fail"))
+        practice_service.request_reply(user, session_id, request_id=str(uuid4()))
+        self.assertTrue(practice_worker.run_once(practice_worker.FakeProvider()))
         db.session.remove()
         directory = str(ROOT / "migrations")
         stamp(directory=directory, revision="head")
+        downgrade(directory=directory, revision="d7e8f9a0b1c2")
+        with db.engine.connect() as connection:
+            for table in ("ai_request", "learning_ai_charge"):
+                self.assertIsNone(connection.execute(text(f"SELECT to_regclass('{table}')")).scalar())
+            self.assertEqual(connection.execute(text(
+                "SELECT operation, count(*) FROM practice_receipt GROUP BY operation ORDER BY operation")).all(),
+                [("save", 1), ("send", 1), ("start", 1)])
+            # The conversation itself stays: the opening turn, the learner's turn, and the reply.
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM session_message")).scalar(), 3)
+            self.assertIsNone(connection.execute(text(
+                "SELECT 1 FROM information_schema.columns WHERE table_name = 'practice_session' "
+                "AND column_name = 'profile_version'")).scalar())
         downgrade(directory=directory, revision="c6d7e8f9a0b1")
         with db.engine.connect() as connection:
             self.assertIsNone(connection.execute(text("SELECT to_regclass('practice_session')")).scalar())
@@ -221,12 +245,20 @@ with create_app({self.config!r}).app_context():
             checks = dict(connection.execute(text(
                 "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE contype = 'c' AND "
                 "conrelid::regclass::text IN ('practice_session', 'artifact_revision', 'session_message', "
-                "'practice_receipt')")).all())
+                "'practice_receipt', 'ai_request', 'learning_ai_charge')")).all())
+            # compare_metadata doesn't compare partial-index predicates either.
+            indexes = dict(connection.execute(text(
+                "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'ai_request'")).all())
         self.assertEqual(sorted(checks), sorted([
             "ck_practice_session_style", "ck_practice_session_status", "ck_artifact_revision_revision",
             "ck_artifact_revision_format", "ck_artifact_revision_language", "ck_session_message_sequence",
             "ck_session_message_role", "ck_session_message_kind", "ck_session_message_modality",
-            "ck_practice_receipt_operation"]))
+            "ck_practice_receipt_operation", "ck_ai_request_kind", "ck_ai_request_status", "ck_ai_request_context_from",
+            "ck_learning_ai_charge_purpose", "ck_learning_ai_charge_state", "ck_learning_ai_charge_amounts"]))
+        self.assertIn("'reply'", checks["ck_practice_receipt_operation"])
+        self.assertIn("WHERE", indexes["uq_ai_request_live"])
+        self.assertIn("'pending'", indexes["uq_ai_request_live"])
+        self.assertIn("'completed'", indexes["uq_ai_request_completed_turn"])
         for name, values in (("ck_artifact_revision_format", ARTIFACT_FORMATS),
                              ("ck_artifact_revision_language", ARTIFACT_LANGUAGES),
                              ("ck_practice_session_style", INTERACTION_STYLES)):

@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import BigInteger, Boolean, Column, Float, ForeignKey, Integer, String, Table, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -628,6 +628,8 @@ class PracticeSession(db.Model):
     exercise_version: Mapped[int] = mapped_column(Integer)
     interaction_style: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(16))
+    # The interviewer behaviour this session uses, pinned at start. Versions are immutable.
+    profile_version: Mapped[str] = mapped_column(String(32), default="interviewer-1", server_default="interviewer-1")
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
 
@@ -707,7 +709,7 @@ class PracticeReceipt(db.Model):
 
     __tablename__ = "practice_receipt"
     __table_args__ = (db.CheckConstraint(
-        "operation IN ('start', 'save', 'send', 'pause', 'resume')", name="ck_practice_receipt_operation"),)
+        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply')", name="ck_practice_receipt_operation"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_receipt_user"), primary_key=True)
     request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -717,3 +719,90 @@ class PracticeReceipt(db.Model):
     payload_sha256: Mapped[str] = mapped_column(String(64))
     response: Mapped[dict] = mapped_column(db.JSON)
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+REPLY_STATUSES = ("pending", "running", "completed", "failed", "interrupted", "cancelled")
+LIVE_REPLY = "status IN ('pending', 'running')"
+
+
+class AIRequest(db.Model):
+    """One generation for a practice session, tracked in the database so it survives restarts.
+
+    The id is the public reply ID. Its inputs are pinned to the learner turn it answers
+    (that turn's cited revisions and brief revision). A claim token and lease fence late
+    writers; nothing here ever holds learner text or model output.
+    """
+
+    __tablename__ = "ai_request"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["practice_session_id", "turn_message_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_ai_request_turn"),
+        db.ForeignKeyConstraint(["practice_session_id", "reply_message_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_ai_request_reply"),
+        db.CheckConstraint("kind IN ('reply', 'feedback')", name="ck_ai_request_kind"),
+        db.CheckConstraint(_one_of("status", REPLY_STATUSES), name="ck_ai_request_status"),
+        db.CheckConstraint("context_from_sequence > 0", name="ck_ai_request_context_from"),
+        # One live generation per session, and at most one completed reply per turn.
+        db.Index("uq_ai_request_live", "practice_session_id", unique=True,
+                 postgresql_where=text(LIVE_REPLY), sqlite_where=text(LIVE_REPLY)),
+        db.Index("uq_ai_request_completed_turn", "turn_message_id", unique=True,
+                 postgresql_where=text("status = 'completed'"), sqlite_where=text("status = 'completed'")),
+        db.Index("ix_ai_request_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(
+        ForeignKey("practice_session.id", ondelete="CASCADE", name="fk_ai_request_session"))
+    turn_message_id: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(16))
+    error_code: Mapped[Optional[str]] = mapped_column(String(32))
+    context_from_sequence: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    profile_version: Mapped[str] = mapped_column(String(32))
+    provider: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(64))
+    selector_model: Mapped[str] = mapped_column(String(64))
+    claim_token: Mapped[Optional[str]] = mapped_column(String(64))
+    lease_expires_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    reply_message_id: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+
+
+class LearningAICharge(db.Model):
+    """What a Learning AI call cost, or may have cost. Content-free.
+
+    No foreign key to sessions or requests: deleting practice work keeps the accounting.
+    A reservation still unsettled after `expires_at` is an uncertain charge and keeps counting.
+    """
+
+    __tablename__ = "learning_ai_charge"
+    __table_args__ = (
+        db.CheckConstraint("purpose IN ('select', 'reply', 'feedback')", name="ck_learning_ai_charge_purpose"),
+        db.CheckConstraint("state IN ('reserved', 'settled', 'released')", name="ck_learning_ai_charge_state"),
+        db.CheckConstraint("reserved_microusd >= 0 AND (cost_microusd IS NULL OR cost_microusd >= 0)",
+                           name="ck_learning_ai_charge_amounts"),
+        db.Index("ix_learning_ai_charge_period", "period"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_learning_ai_charge_user"))
+    reply_id: Mapped[str] = mapped_column(String(36))
+    purpose: Mapped[str] = mapped_column(String(16))
+    period: Mapped[str] = mapped_column(String(7))
+    provider: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(64))
+    service_tier: Mapped[str] = mapped_column(String(16))
+    pricing_version: Mapped[str] = mapped_column(String(32))
+    state: Mapped[str] = mapped_column(String(16))
+    reserved_microusd: Mapped[int] = mapped_column(BigInteger)
+    cost_microusd: Mapped[Optional[int]] = mapped_column(BigInteger)
+    input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    cached_input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    output_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    settled_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))

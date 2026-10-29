@@ -6,6 +6,10 @@ from uuid import UUID, uuid4
 from flask import g, has_request_context, request
 
 SAFE_CODES = {"invalid_request", "invalid_request_id", "provider_auth", "provider_quota", "invalid_summary", "failed"}
+# Fixed codes a Learning reply may report. Never learner text, model output, or provider bodies.
+LEARNING_CODES = {"provider", "provider_auth", "provider_quota", "timeout", "refused", "incomplete", "invalid_output",
+                  "too_large", "worker", "store", "failed"}
+OPERATIONS = {"jobwizard.extraction": "Jobwizard extraction failed", "learning.reply": "Learning reply failed"}
 
 
 def valid_request_id(value):
@@ -23,11 +27,11 @@ def scrub_event(event, hint):
     incoming, tags = event.get("tags", {}), {}
     if valid_request_id(incoming.get("request_id")):
         tags["request_id"] = incoming["request_id"]
-    if incoming.get("operation") == "jobwizard.extraction":
-        tags["operation"] = "jobwizard.extraction"
+    if incoming.get("operation") in OPERATIONS:
+        tags["operation"] = incoming["operation"]
     if incoming.get("phase") in {"read", "summary", "status"}:
         tags["phase"] = incoming["phase"]
-    if incoming.get("code") in SAFE_CODES:
+    if incoming.get("code") in SAFE_CODES | LEARNING_CODES:
         tags["code"] = incoming["code"]
     clean["tags"] = tags
     exceptions = []
@@ -47,7 +51,7 @@ def scrub_event(event, hint):
     if exceptions:
         clean["exception"] = {"values": exceptions}
     else:
-        clean["message"] = "Jobwizard extraction failed" if tags.get("operation") else "Application error"
+        clean["message"] = OPERATIONS.get(tags.get("operation"), "Application error")
     return clean
 
 
@@ -135,3 +139,20 @@ def report_extraction_failure(phase, code, *, attempt_id=None, exception=None):
                 sentry_sdk.capture_message("Jobwizard extraction failed", level="error")
     except Exception:
         pass  # Never retry provider work or change an API result for telemetry.
+
+
+def report_learning_failure(code, *, reply_id=None):
+    """Report a Learning reply that didn't complete. The worker is a thread, so nothing is captured automatically."""
+    from flask import current_app
+    if not current_app.extensions.get("error_reporting_enabled") or code not in LEARNING_CODES:
+        return
+    import sentry_sdk
+    try:
+        with sentry_sdk.new_scope() as scope:
+            scope.set_tag("operation", "learning.reply")
+            scope.set_tag("code", code)
+            if valid_request_id(reply_id):
+                scope.set_tag("request_id", reply_id)
+            sentry_sdk.capture_message("Learning reply failed", level="error")
+    except Exception:
+        pass  # Telemetry never changes a reply's outcome.

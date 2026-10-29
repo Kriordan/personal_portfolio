@@ -60,7 +60,8 @@ class PracticeApiDiscussionTests(PracticeApiCase):
         sent = self.turn(session_id, dict(CURRENT, api=1), request_id=request_id)
         self.assertEqual((sent.status_code, sent.get_json()), (201, {
             "session_id": session_id, "sequence": 2, "artifact_revisions": [{"artifact_id": "api", "revision": 1}],
-            "brief_revision": 0, "status": "active"}))
+            "brief_revision": 0, "status": "active", "latest_sequence": 2,
+            "reply": {"id": None, "status": "unavailable", "reason": "disabled"}}))
         self.assertEqual(self.turn(session_id, dict(CURRENT, api=1), request_id=request_id).get_json(), sent.get_json())
         self.put(session_id, "v2", base=1)
         stale = self.turn(session_id, dict(CURRENT, api=1), expected=2)
