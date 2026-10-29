@@ -18,7 +18,7 @@ The exercise brief describes scenario, objectives, initial functional/nonfunctio
 
 Schemas reject unknown fields recursively, unsupported versions, duplicate IDs/JSON keys, missing or mismatched references, missing rubric dimensions, and prerequisite cycles. A manifest must include the full reference closure of its items; it need not include unrelated catalog items. Markdown paths must resolve inside the manifest directory, including through symlinks. Only Markdown text is snapshotted; path names are not part of runtime content. HTML safety is a rendering responsibility for checkpoint 2: do not render this raw text as trusted HTML.
 
-`learner_view` is the only learner DTO. `facilitator_view` includes only server-approved disclosed facts and excludes evaluation material. `evaluator_view` is server-only. Future route handlers must use these projections, never serialize `ContentRevision.payload` directly. Session and feedback records will pin `(item_id, version)` and artifact revisions in later checkpoints.
+`learner_view` is the learner DTO for catalog items. `opening_view` is the one deliberate exception: it gives the learner exactly one facilitator field, the exercise's authored `opening_prompt` (with its `interaction_style`), which a practice session shows as the interviewer's first turn. **Review the opening prompt as learner-facing text.** `facilitator_view` includes only server-approved disclosed facts and excludes evaluation material. `evaluator_view` is server-only. Route handlers must use these projections, never serialize `ContentRevision.payload` directly. Practice sessions pin the exercise's `(item_id, version)`; feedback records will also pin the artifact revisions they evaluate.
 
 ## Validation and import
 

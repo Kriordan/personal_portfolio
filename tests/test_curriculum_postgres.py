@@ -22,10 +22,12 @@ from sqlalchemy import text
 from sqlalchemy.engine import make_url
 
 from project import create_app
+from project.curriculum_terms import ARTIFACT_FORMATS, ARTIFACT_LANGUAGES, INTERACTION_STYLES
 from project.database import db
 from project.learning.content_schema import load_catalog
 from project.models import ContentRevision, CurriculumItem, ReviewLog, ReviewProgress, ReviewReceipt, User
 from project.services import curriculum_service as service
+from project.services import practice_service
 from project.services.learning_service import rate_card_for_user
 
 URL = os.environ.get("LIBRARY_TEST_POSTGRES_URL")
@@ -194,9 +196,19 @@ with create_app({self.config!r}).app_context():
                 request_id=str(uuid4()), expected_revision=0)
         before = {model.__tablename__: [dict(row) for row in db.session.execute(
             model.__table__.select()).mappings()] for model in (ReviewProgress, ReviewLog, ReviewReceipt)}
+        # Populated practice tables must downgrade cleanly without touching catalog or review rows.
+        service.import_catalog(self.catalog, dry_run=False, **REVIEW)
+        session_id = practice_service.start_session(user, exercise_id="idempotent-order-api",
+                                                    request_id=str(uuid4()))["session_id"]
+        practice_service.save_artifacts(user, session_id, request_id=str(uuid4()), edits=[
+            dict(artifact_id="api", base_revision=0, language="text", body="POST /orders")])
         db.session.remove()
         directory = str(ROOT / "migrations")
         stamp(directory=directory, revision="head")
+        downgrade(directory=directory, revision="c6d7e8f9a0b1")
+        with db.engine.connect() as connection:
+            self.assertIsNone(connection.execute(text("SELECT to_regclass('practice_session')")).scalar())
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM content_revision")).scalar(), 6)
         downgrade(directory=directory, revision="a4b5c6d7e8f9")
         upgrade(directory=directory, revision="head")
         for model in (ReviewProgress, ReviewLog, ReviewReceipt):
@@ -205,6 +217,21 @@ with create_app({self.config!r}).app_context():
         with db.engine.connect() as connection:
             changes = compare_metadata(MigrationContext.configure(connection), db.metadata)
             self.assertEqual(changes, [])
+            # compare_metadata ignores CHECK constraints; verify the migrated ones directly.
+            checks = dict(connection.execute(text(
+                "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE contype = 'c' AND "
+                "conrelid::regclass::text IN ('practice_session', 'artifact_revision', 'session_message', "
+                "'practice_receipt')")).all())
+        self.assertEqual(sorted(checks), sorted([
+            "ck_practice_session_style", "ck_practice_session_status", "ck_artifact_revision_revision",
+            "ck_artifact_revision_format", "ck_artifact_revision_language", "ck_session_message_sequence",
+            "ck_session_message_role", "ck_session_message_kind", "ck_session_message_modality",
+            "ck_practice_receipt_operation"]))
+        for name, values in (("ck_artifact_revision_format", ARTIFACT_FORMATS),
+                             ("ck_artifact_revision_language", ARTIFACT_LANGUAGES),
+                             ("ck_practice_session_style", INTERACTION_STYLES)):
+            for value in values:
+                self.assertIn(f"'{value}'", checks[name])
         db.session.remove()
         downgrade(directory=directory, revision="a4b5c6d7e8f9")
         # The current ORM contains columns absent in this historical schema.

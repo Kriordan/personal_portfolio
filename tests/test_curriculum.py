@@ -9,7 +9,7 @@ from marshmallow import ValidationError
 
 from project import create_app
 from project.learning.content_schema import (
-    evaluator_view, facilitator_view, learner_view, load_catalog, validate_catalog,
+    evaluator_view, facilitator_view, learner_view, load_catalog, opening_view, validate_catalog,
 )
 from project.services.curriculum_service import content_checksum
 
@@ -111,6 +111,29 @@ class CurriculumSchemaTests(unittest.TestCase):
             facilitator_view(exercise, revealed_constraint_ids=["invented"])
         self.assertIn("reference_reasoning", evaluator_view(exercise))
         self.assertEqual(disclosed["interaction_style"], "interviewer")
+
+    def test_opening_view_exposes_only_the_authored_first_line(self):
+        exercise = deepcopy(self.catalog["items"][-1])
+        facilitator = exercise["content"]["facilitator"]
+        facilitator["instructions"] = ["INSTRUCTION_SENTINEL"]
+        facilitator["permitted_hints"] = ["HINT_SENTINEL"]
+        facilitator["hidden_constraints"][0].update(fact="HIDDEN_SENTINEL", clarification_cues=["CUE_SENTINEL"])
+        exercise["content"]["assessment"]["reference_reasoning"] = ["EVALUATOR_SENTINEL"]
+        opening = opening_view(exercise)
+        self.assertEqual(opening, {"interaction_style": "interviewer",
+                                   "opening_prompt": facilitator["opening_prompt"]})
+        serialized = json.dumps(opening)
+        for secret in ("INSTRUCTION_SENTINEL", "HINT_SENTINEL", "HIDDEN_SENTINEL", "CUE_SENTINEL", "EVALUATOR_SENTINEL"):
+            self.assertNotIn(secret, serialized)
+
+    def test_shared_terms_match_the_content_schema(self):
+        from project.curriculum_terms import ARTIFACT_FORMATS, ARTIFACT_LANGUAGES, FORMAT_LANGUAGES
+        self.assertEqual(set(FORMAT_LANGUAGES), set(ARTIFACT_FORMATS))
+        self.assertTrue(all(set(languages) <= set(ARTIFACT_LANGUAGES) for languages in FORMAT_LANGUAGES.values()))
+        draft = deepcopy(self.catalog)
+        draft["items"][-1]["content"]["brief"]["expected_artifacts"][0]["format"] = "yaml"
+        with self.assertRaises(ValidationError):
+            validate_catalog(draft)
 
     def test_review_answer_requires_explicit_reveal(self):
         question = self.catalog["items"][1]

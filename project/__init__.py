@@ -68,6 +68,9 @@ def create_app(test_config=None):
         app.config.from_pyfile("_config.py")
     else:
         app.config.from_mapping(test_config)
+    # SQL parameters can contain private text (learner work, lists, jobs). Keep
+    # them out of exception messages and logs in every environment.
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {}).setdefault("hide_parameters", True)
 
     from .monitoring import configure_monitoring
     configure_monitoring(app)

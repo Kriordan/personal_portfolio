@@ -17,6 +17,9 @@ SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 RATELIMIT_STORAGE_URI = "memory://"
 
+# Practice sessions stay off until explicitly enabled; migrations run on deploy regardless.
+LEARNING_PRACTICE_ENABLED = os.getenv("LEARNING_PRACTICE_ENABLED") == "1"
+
 MAILERSEND_API_KEY = os.getenv("MAILERSEND_API_KEY")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 

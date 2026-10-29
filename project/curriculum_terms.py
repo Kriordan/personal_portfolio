@@ -1,0 +1,14 @@
+"""Vocabulary shared by curriculum schemas and practice models.
+
+This lives outside the ``project.learning`` package, whose import loads its views,
+so models can use it without a circular import. Migrations copy these values
+rather than importing them, because a migration must describe its own point in time.
+"""
+
+ARTIFACT_FORMATS = ("text", "markdown", "pseudocode", "sql", "typescript", "python", "api-definition")
+INTERACTION_STYLES = ("interviewer", "coach", "collaborative", "reviewer")
+# The notation a learner writes an artifact in. An API definition may be prose or
+# structured; every other format is its own notation.
+ARTIFACT_LANGUAGES = ("text", "markdown", "pseudocode", "sql", "python", "typescript", "json", "yaml")
+FORMAT_LANGUAGES = {**{name: (name,) for name in ARTIFACT_FORMATS if name != "api-definition"},
+                    "api-definition": ("text", "json", "yaml")}

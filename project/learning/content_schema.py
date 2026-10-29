@@ -5,6 +5,8 @@ import json
 
 from marshmallow import Schema, ValidationError, fields, validate
 
+from project.curriculum_terms import ARTIFACT_FORMATS, INTERACTION_STYLES
+
 
 def text_field():
     return fields.String(required=True, validate=validate.Length(min=1, max=50000))
@@ -68,8 +70,7 @@ class QuestionSchema(Schema):
 class ArtifactSchema(Schema):
     id = identifier()
     title = text_field()
-    format = fields.String(required=True, validate=validate.OneOf(
-        ["text", "markdown", "pseudocode", "sql", "typescript", "python", "api-definition"]))
+    format = fields.String(required=True, validate=validate.OneOf(ARTIFACT_FORMATS))
     instructions = text_field()
 
 
@@ -97,8 +98,7 @@ class ConstraintSchema(Schema):
 
 
 class FacilitatorSchema(Schema):
-    interaction_style = fields.String(required=True, validate=validate.OneOf(
-        ["interviewer", "coach", "collaborative", "reviewer"]))
+    interaction_style = fields.String(required=True, validate=validate.OneOf(INTERACTION_STYLES))
     opening_prompt = text_field()
     instructions = texts()
     hidden_constraints = fields.List(fields.Nested(ConstraintSchema), required=True)
@@ -300,6 +300,16 @@ def facilitator_view(item, *, revealed_constraint_ids=()):
     result["revealed_constraints"] = [ConstraintSchema(only=("id", "fact")).dump(constraint)
         for constraint in body["hidden_constraints"] if constraint["id"] in revealed_constraint_ids]
     return deepcopy(result)
+
+
+def opening_view(item):
+    """The interviewer's authored first line, which the learner is meant to see.
+
+    It is the only facilitator field a learner receives; hints, instructions and
+    hidden facts stay server-side.
+    """
+    body = item["content"]["facilitator"]
+    return {"interaction_style": body["interaction_style"], "opening_prompt": body["opening_prompt"]}
 
 
 def evaluator_view(item):
