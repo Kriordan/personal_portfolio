@@ -842,10 +842,15 @@ class CallFenced(Exception):
     """The reply is no longer wanted (cancelled, paused, deleted, or reclaimed). Make no paid call."""
 
 
+# Chosen at activation, October 30, 2026 (the handoff has the evidence). Configuration overrides both.
+DEFAULT_MODELS = {"openai": "gpt-6.1-sol", "fake": "fake-interviewer"}
+DEFAULT_REASONING_EFFORT = {"openai": "low"}
+
+
 def ai_settings():
     config = current_app.config
     provider = config.get("LEARNING_AI_PROVIDER", "openai")
-    model = config.get("LEARNING_AI_MODEL") or ("fake-interviewer" if provider == "fake" else None)
+    model = config.get("LEARNING_AI_MODEL") or DEFAULT_MODELS.get(provider)
     return {
         "enabled": bool(config.get("LEARNING_AI_ENABLED")), "provider": provider, "model": model,
         "selector_model": config.get("LEARNING_AI_SELECTOR_MODEL") or model,
@@ -855,7 +860,7 @@ def ai_settings():
         "lease_margin_seconds": int(config.get("LEARNING_AI_LEASE_MARGIN_SECONDS", 30)),
         "max_output_tokens": int(config.get("LEARNING_AI_MAX_OUTPUT_TOKENS", 1200)),
         "selector_max_output_tokens": int(config.get("LEARNING_AI_SELECTOR_MAX_OUTPUT_TOKENS", 200)),
-        "reasoning_effort": config.get("LEARNING_AI_REASONING_EFFORT") or None,
+        "reasoning_effort": config.get("LEARNING_AI_REASONING_EFFORT") or DEFAULT_REASONING_EFFORT.get(provider),
         # What the model may read per reply, in UTF-8 bytes (a token is at least one byte). The
         # default fits the bounded essential context; activation sizes it to the chosen model.
         "context_bytes": int(config.get("LEARNING_AI_CONTEXT_BYTES", 524_288)),

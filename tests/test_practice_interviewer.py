@@ -342,7 +342,8 @@ class ResponsesAPI(BaseHTTPRequestHandler):
                   else {"reply": "Each tenant has its own key space. Where will you enforce that?"})
         payload = json.dumps({"status": "completed", "output": [
             {"type": "message", "content": [{"type": "output_text", "text": json.dumps(output)}]}],
-            "usage": {"input_tokens": 100, "input_tokens_details": {"cached_tokens": 40}, "output_tokens": 20}}).encode()
+            "usage": {"input_tokens": 100, "input_tokens_details": {"cached_tokens": 40, "cache_write_tokens": 30},
+                      "output_tokens": 20}}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -360,7 +361,8 @@ class OpenAIReplyTests(PracticeReplyCase):
         server = ThreadingHTTPServer(("127.0.0.1", 0), ResponsesAPI)
         server.requests = []
         threading.Thread(target=server.serve_forever, daemon=True).start()
-        prices = {("test-model", "default"): {"input": 1_000_000, "cached_input": 100_000, "output": 4_000_000}}
+        prices = {("test-model", "default"): {"input": 1_000_000, "cached_input": 100_000, "cache_write": 1_250_000,
+                                              "output": 4_000_000}}
         try:
             with patch.dict(os.environ, {"LEARNING_OPENAI_API_KEY": "learning-test-key"}), \
                     patch.dict(practice_budget.PRICES, prices), \
@@ -383,9 +385,12 @@ class OpenAIReplyTests(PracticeReplyCase):
                           for name in (interviewer.SELECTOR_SCHEMA_NAME, interviewer.REPLY_SCHEMA_NAME)])
         self.assertIn("HIDDEN_SENTINEL", server.requests[1]["body"]["input"])  # revealed by the selector's answer
         charges = LearningAICharge.query.order_by(LearningAICharge.id).all()
-        self.assertEqual([(charge.purpose, charge.state, charge.input_tokens, charge.cached_input_tokens)
-                          for charge in charges], [("select", "settled", 100, 40), ("reply", "settled", 100, 40)])
-        self.assertEqual([charge.cost_microusd for charge in charges], [60 * 1 + 40 // 10 + 20 * 4] * 2)
+        self.assertEqual([(charge.purpose, charge.state, charge.input_tokens, charge.cached_input_tokens,
+                           charge.cache_write_tokens) for charge in charges],
+                         [("select", "settled", 100, 40, 30), ("reply", "settled", 100, 40, 30)])
+        # 30 uncached tokens at 1, 40 cached at 0.1, 30 written to the cache at 1.25, and 20 output at 4:
+        # 151.5 micro-dollars, rounded up.
+        self.assertEqual([charge.cost_microusd for charge in charges], [152] * 2)
 
 
 class InterviewerRequestTests(unittest.TestCase):

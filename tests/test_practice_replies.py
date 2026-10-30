@@ -132,6 +132,19 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertEqual(service.reply_unavailable(1, self.clock()), "owner_only")
         self.assertEqual(AIRequest.query.count(), 1)
 
+    def test_openai_defaults_to_the_model_chosen_at_activation(self):
+        with patch.dict(self.app.config, LEARNING_AI_PROVIDER="openai", LEARNING_AI_MODEL=None,
+                        LEARNING_AI_SELECTOR_MODEL=None, LEARNING_AI_REASONING_EFFORT=None):
+            settings = service.ai_settings()
+            self.assertEqual((settings["model"], settings["selector_model"], settings["reasoning_effort"]),
+                             ("gpt-6.1-sol", "gpt-6.1-sol", "low"))
+            self.assertIsNotNone(practice_budget._rates("openai", settings["model"], settings["tier"])[0])
+            with patch.dict(self.app.config, LEARNING_AI_MODEL="gpt-6-astra", LEARNING_AI_REASONING_EFFORT="medium"):
+                self.assertEqual((service.ai_settings()["model"], service.ai_settings()["reasoning_effort"]),
+                                 ("gpt-6-astra", "medium"))
+        settings = service.ai_settings()  # the fake keeps its own model, and no reasoning setting
+        self.assertEqual((settings["model"], settings["reasoning_effort"]), ("fake-interviewer", None))
+
     def test_the_worker_writes_a_reply_from_the_inputs_pinned_to_the_turn(self):
         session_id = self.start()
         self.save(session_id, [self.edit("api", "PINNED_V1 POST /orders")])

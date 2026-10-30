@@ -103,7 +103,8 @@ class FakeProvider:
             output = {"reply": text}
         size = len(json.dumps(body, ensure_ascii=False).encode("utf-8"))
         return {"output": output,
-                "usage": {"input_tokens": size // 4, "cached_input_tokens": 0, "output_tokens": max(len(text) // 4, 1)}}
+                "usage": {"input_tokens": size // 4, "cached_input_tokens": 0, "cache_write_tokens": 0,
+                          "output_tokens": max(len(text) // 4, 1)}}
 
     def reply_calls(self):
         return [body for body in self.calls if body["text"]["format"]["name"] == interviewer.REPLY_SCHEMA_NAME]

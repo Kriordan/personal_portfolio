@@ -16,6 +16,7 @@ the outputs, latency, tokens, and cost.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import time
@@ -246,9 +247,9 @@ def learning_eval_command(provider_name, case_ids, output):
         settings.update(model="fake-interviewer", selector_model="fake-interviewer")
         provider_for_case = scripted_provider
     else:
-        from project.services.learning_ai_provider import OpenAIProvider
-        if not settings["model"]:
-            raise click.ClickException("Set LEARNING_AI_MODEL (and optionally LEARNING_AI_SELECTOR_MODEL) first.")
+        from project.services.learning_ai_provider import KEY_VARIABLE, OpenAIProvider
+        if not os.environ.get(KEY_VARIABLE):
+            raise click.ClickException(f"Set {KEY_VARIABLE} first.")
         provider = OpenAIProvider(base_url=settings["base_url"])
         provider_for_case = lambda case: provider  # noqa: E731
     results = run(provider_for_case, cases, exercise(data["exercise_id"]), settings)

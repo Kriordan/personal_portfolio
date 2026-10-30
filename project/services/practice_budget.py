@@ -184,6 +184,7 @@ def settle(charge_id, *, usage, now):
         charge.cost_microusd = cost(rates, **tokens)
         charge.input_tokens = tokens["input_tokens"]
         charge.cached_input_tokens = tokens["cached_input_tokens"]
+        charge.cache_write_tokens = tokens["cache_write_tokens"]
         charge.output_tokens = tokens["output_tokens"]
     charge.state, charge.settled_at = "settled", now
 

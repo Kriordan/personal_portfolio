@@ -802,6 +802,7 @@ class LearningAICharge(db.Model):
     cost_microusd: Mapped[Optional[int]] = mapped_column(BigInteger)
     input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     cached_input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    cache_write_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     output_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))

@@ -1,5 +1,6 @@
 """The interviewer evaluation harness: the reviewed cases, its checks, and the learning-eval command."""
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -152,9 +153,11 @@ class InterviewerEvaluationTests(unittest.TestCase):
         typo = app.test_cli_runner().invoke(args=["learning-eval", "--case", "no-such-case"])
         self.assertNotEqual(typo.exit_code, 0)
         self.assertIn("No such case: no-such-case", typo.output)
-        refused = app.test_cli_runner().invoke(args=["learning-eval", "--provider", "openai"])
-        self.assertNotEqual(refused.exit_code, 0)  # no model configured, so nothing is called
-        self.assertIn("LEARNING_AI_MODEL", refused.output)
+        with patch.dict(os.environ):
+            os.environ.pop("LEARNING_OPENAI_API_KEY", None)
+            refused = app.test_cli_runner().invoke(args=["learning-eval", "--provider", "openai"])
+        self.assertNotEqual(refused.exit_code, 0)  # no key, so nothing is called or written
+        self.assertIn("LEARNING_OPENAI_API_KEY", refused.output)
 
 
 if __name__ == "__main__":
