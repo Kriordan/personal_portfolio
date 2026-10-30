@@ -1,0 +1,746 @@
+{
+  "profile_version": "interviewer-2",
+  "provider": "openai",
+  "model": "gpt-6-astra",
+  "selector_model": "gpt-6-astra",
+  "service_tier": "default",
+  "reasoning_effort": "low",
+  "run_at": "2026-10-30T12:02:33.882378+00:00",
+  "summary": {
+    "reply_carries_what_was_earned": {
+      "passed": 10,
+      "of": 10
+    },
+    "reply_reveals_nothing_unearned": {
+      "passed": 10,
+      "of": 10
+    },
+    "reply_sees_only_what_it_may": {
+      "passed": 10,
+      "of": 10
+    },
+    "reply_shares_no_reference_reasoning": {
+      "passed": 10,
+      "of": 10
+    },
+    "reply_valid": {
+      "passed": 10,
+      "of": 10
+    },
+    "selector_matches": {
+      "passed": 10,
+      "of": 10
+    },
+    "selector_offers_what_is_hidden": {
+      "passed": 10,
+      "of": 10
+    },
+    "selector_sees_cues_only": {
+      "passed": 10,
+      "of": 10
+    },
+    "selector_valid": {
+      "passed": 10,
+      "of": 10
+    }
+  },
+  "passed": true,
+  "cost_microusd": 124039,
+  "tokens": {
+    "input_tokens": 18491,
+    "cached_input_tokens": 14919,
+    "cache_write_tokens": 0,
+    "output_tokens": 1468
+  },
+  "cases": [
+    {
+      "id": "check-then-insert",
+      "message": "Here's my first full pass at the database design and the algorithm. A retry finds the receipt and gets the original response, and the order and receipt commit together. Does this handle retries correctly?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 1.876,
+          "usage": {
+            "input_tokens": 369,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.09,
+          "cost_microusd": 4640
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.712,
+          "usage": {
+            "input_tokens": 1369,
+            "cached_input_tokens": 1366,
+            "cache_write_tokens": 0,
+            "output_tokens": 125
+          },
+          "spawn_seconds": 0.091,
+          "cost_microusd": 7646
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Partially. In Request and recovery algorithm revision 1, committing the order and receipt together supports the crash cases you describe, and a retry after commit can recover the saved response. But simultaneous retries can create duplicate orders: Database design revision 1 has a non-unique index on (tenant_id, idempotency_key), so both requests can miss the initial lookup and then commit separate orders and receipts.\n\nHow would you change your design to handle two requests with the same tenant and key that both find no receipt, including what response each caller receives?",
+      "inputs": {
+        "kind": "planted flaw",
+        "artifacts": {
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint NOT NULL REFERENCES orders (id),\n  response        jsonb NOT NULL,\n  created_at      timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE INDEX receipts_by_key ON receipts (tenant_id, idempotency_key);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  r = SELECT request_hash, response FROM receipts\n      WHERE tenant_id = tenant AND idempotency_key = key\n  if r:\n    if r.request_hash != h: return 409 key_reused\n    return r.response                  -- a retry gets the original answer\n\n  BEGIN\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    INSERT INTO receipts (tenant_id, idempotency_key, request_hash, order_id, response)\n      VALUES (tenant, key, h, order.id, {201, order})\n  COMMIT\n  return 201 order\n\nCrash before COMMIT: nothing is saved, so the retry creates the order.\nCrash after COMMIT: the retry finds the receipt and gets the original answer."
+        },
+        "flaw": "Two simultaneous requests with the same key can both find no receipt, since the lookup runs before the transaction and the index isn't unique, so both create an order.",
+        "caught_if": "Says, or asks precisely, what happens when two requests with the same key run at the same time and both find no receipt.",
+        "partial_if": "Raises concurrency or the index only vaguely, without the two-requests-both-miss case."
+      }
+    },
+    {
+      "id": "transaction-isnt-enough",
+      "message": "Good catch. In revision 2 I moved the lookup inside the transaction, so the check and the inserts happen atomically. That closes the race, right?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 1.523,
+          "usage": {
+            "input_tokens": 363,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.086,
+          "cost_microusd": 4580
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.169,
+          "usage": {
+            "input_tokens": 1425,
+            "cached_input_tokens": 1422,
+            "cache_write_tokens": 0,
+            "output_tokens": 109
+          },
+          "spawn_seconds": 0.073,
+          "cost_microusd": 6902
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "No—not by itself. Moving the lookup inside the transaction makes each request’s writes atomic, but does not necessarily prevent both transactions from reading “no receipt.” In Database design (revision 1), receipts_by_key is a non-unique index, so it permits both receipts to be inserted.\n\nFor Request and recovery algorithm (revision 2), what PostgreSQL isolation level are you assuming, and under that level, what happens if both transactions find no receipt before either inserts?",
+      "inputs": {
+        "kind": "several turns: a fix that doesn't work",
+        "transcript": [
+          {
+            "role": "learner",
+            "body": "I'll assume PostgreSQL. My algorithm looks up the receipt, and if there isn't one it creates the order and the receipt in one transaction."
+          },
+          {
+            "role": "interviewer",
+            "body": "In your Request and recovery algorithm (revision 1), the receipt lookup runs before the transaction begins. What happens if two requests with the same key both run that lookup before either one commits?"
+          }
+        ],
+        "artifacts": {
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint NOT NULL REFERENCES orders (id),\n  response        jsonb NOT NULL,\n  created_at      timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE INDEX receipts_by_key ON receipts (tenant_id, idempotency_key);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  BEGIN\n    r = SELECT request_hash, response FROM receipts\n        WHERE tenant_id = tenant AND idempotency_key = key\n    if r:\n      COMMIT\n      if r.request_hash != h: return 409 key_reused\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    INSERT INTO receipts (tenant_id, idempotency_key, request_hash, order_id, response)\n      VALUES (tenant, key, h, order.id, {201, order})\n  COMMIT\n  return 201 order"
+        },
+        "artifact_revisions": {
+          "algorithm": 2
+        },
+        "flaw": "A transaction alone doesn't serialize the two lookups: at PostgreSQL's default isolation (read committed) both transactions can still see no receipt and both insert, and no unique constraint or lock stops the second.",
+        "caught_if": "Says the transaction alone doesn't close the race, or asks precisely whether two concurrent transactions can both see no receipt, or what would make one of them wait or fail.",
+        "partial_if": "Asks about the isolation level without connecting it to both lookups seeing nothing."
+      }
+    },
+    {
+      "id": "timeout-pushback",
+      "message": "I don't think that can happen in practice. Clients wait 30 seconds before they time out and retry, and creating an order takes about 50 ms, so a retry always arrives long after the first attempt has finished. I'd rather keep the check-then-insert simple.",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 2.926,
+          "usage": {
+            "input_tokens": 386,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.079,
+          "cost_microusd": 4810
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 4.459,
+          "usage": {
+            "input_tokens": 1597,
+            "cached_input_tokens": 1594,
+            "cache_write_tokens": 0,
+            "output_tokens": 135
+          },
+          "spawn_seconds": 0.079,
+          "cost_microusd": 8374
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "The 50 ms processing time doesn’t establish that every attempt finishes before a retry arrives. Your API contract (revision 1) promises no new order for the same key and body, while Database design (revision 1) has only a non-unique index on that key.\n\nConsider a process that pauses after the receipt lookup in Request and recovery algorithm (revision 1). After 30 seconds, a retry finds no receipt, creates an order, and commits. The original process then resumes. Trace what it does next: what, in your current design, prevents it from committing a second order?",
+      "inputs": {
+        "kind": "several turns: a wrong argument",
+        "transcript": [
+          {
+            "role": "learner",
+            "body": "My algorithm checks for a receipt first and only creates the order when there isn't one."
+          },
+          {
+            "role": "interviewer",
+            "body": "In your Request and recovery algorithm (revision 1), what happens if two requests with the same key both look for the receipt before either one has saved it?"
+          }
+        ],
+        "artifacts": {
+          "api": "POST /orders\nAuthorization: Bearer <customer token>\nIdempotency-Key: <client-generated, one per order>\nBody: {\"items\": [...]}\n\n201 Created: {\"order_id\": ..., \"items\": [...]}\nSame key, same body: the original response, and no new order.\nSame key, different body: 409 key_reused.\nClients time out after 30 s and retry with the same key.",
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint NOT NULL REFERENCES orders (id),\n  response        jsonb NOT NULL,\n  created_at      timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE INDEX receipts_by_key ON receipts (tenant_id, idempotency_key);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  r = SELECT request_hash, response FROM receipts\n      WHERE tenant_id = tenant AND idempotency_key = key\n  if r:\n    if r.request_hash != h: return 409 key_reused\n    return r.response                  -- a retry gets the original answer\n\n  BEGIN\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    INSERT INTO receipts (tenant_id, idempotency_key, request_hash, order_id, response)\n      VALUES (tenant, key, h, order.id, {201, order})\n  COMMIT\n  return 201 order\n\nCrash before COMMIT: nothing is saved, so the retry creates the order.\nCrash after COMMIT: the retry finds the receipt and gets the original answer."
+        },
+        "flaw": "The argument is wrong: a retry is sent exactly when the first attempt hasn't answered within 30 s, so the first attempt may still be running (a slow query, a lock wait, a pause) when the retry arrives. Duplicates can also come from proxies or client bugs, and 50 ms is typical, not worst case.",
+        "caught_if": "Doesn't accept the argument, and gives a concrete reason overlap still happens (strongest: the timeout fires because the first attempt is slow, so it may still be in progress), or asks the learner to trace that case.",
+        "partial_if": "Disagrees only generically, with no concrete way the requests overlap."
+      }
+    },
+    {
+      "id": "split-commit",
+      "message": "The primary key on receipts makes duplicates impossible: if two requests race, the second receipt insert fails and that request returns the first one's response. I think concurrency is covered now. Agree?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 3.728,
+          "usage": {
+            "input_tokens": 368,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.075,
+          "cost_microusd": 4630
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.792,
+          "usage": {
+            "input_tokens": 1370,
+            "cached_input_tokens": 1367,
+            "cache_write_tokens": 0,
+            "output_tokens": 117
+          },
+          "spawn_seconds": 0.092,
+          "cost_microusd": 7247
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "No—not for duplicate order creation. In Database design revision 1, the receipts primary key prevents duplicate receipts, but in Request and recovery algorithm revision 1, each request commits its order before attempting the receipt insert. Returning the winning receipt’s response does not undo the other committed order.\n\nTrace two requests with the same tenant, key, and body: both SELECTs find no receipt, then both order INSERTs commit before either receipt INSERT runs. After one receipt insert fails, what rows remain in each table?",
+      "inputs": {
+        "kind": "planted flaw",
+        "artifacts": {
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint NOT NULL REFERENCES orders (id),\n  response        jsonb NOT NULL,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  r = SELECT request_hash, response FROM receipts\n      WHERE tenant_id = tenant AND idempotency_key = key\n  if r: return r.request_hash = h ? r.response : 409 key_reused\n\n  order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *   -- autocommit\n  try:\n    INSERT INTO receipts (tenant_id, idempotency_key, request_hash, order_id, response)\n      VALUES (tenant, key, h, order.id, {201, order})                                    -- autocommit\n  on unique_violation:\n    r = SELECT request_hash, response FROM receipts\n        WHERE tenant_id = tenant AND idempotency_key = key\n    return r.request_hash = h ? r.response : 409 key_reused\n  return 201 order"
+        },
+        "flaw": "The order commits on its own before the receipt, so the request that loses the race has already created a second order with no receipt, and a crash between the two writes leaves an order with no receipt, so the retry creates another.",
+        "caught_if": "Points out that the losing request's order already exists, or asks what happens to the order written before the receipt insert fails or before a crash.",
+        "partial_if": "Asks about crashes or the transaction boundary only generally."
+      }
+    },
+    {
+      "id": "stuck-claim",
+      "message": "I went with a claim row: the first request inserts a 'processing' receipt, so a simultaneous duplicate gets 409 in_progress until the first one finishes. Two requests can never both create an order. What do you think?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 1.755,
+          "usage": {
+            "input_tokens": 377,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.089,
+          "cost_microusd": 4720
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.955,
+          "usage": {
+            "input_tokens": 1535,
+            "cached_input_tokens": 1532,
+            "cache_write_tokens": 0,
+            "output_tokens": 122
+          },
+          "spawn_seconds": 0.09,
+          "cost_microusd": 7662
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Your claim row and the composite primary key in Database design revision 1 prevent simultaneous requests for the same tenant and key from both creating an order. However, Request and recovery algorithm revision 1 has a recovery gap: the claim commits separately, so a crash can leave a receipt permanently marked 'processing'. That conflicts with API contract revision 1 telling callers to retry after a few seconds.\n\nSuppose the process crashes immediately after committing the claim, before beginning the order transaction. How would a retry eventually complete the order without risking duplicate creation?",
+      "inputs": {
+        "kind": "planted flaw",
+        "artifacts": {
+          "api": "POST /orders\nAuthorization: Bearer <customer token>\nIdempotency-Key: <client-generated, one per order>\nBody: {\"items\": [...]}\n\n201 Created: {\"order_id\": ..., \"items\": [...]}\nSame key, same body: the original response, and no new order.\nSame key, different body: 409 key_reused.\n409 in_progress: an earlier request with this key is still being processed; retry after a few seconds.",
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  status          text NOT NULL CHECK (status IN ('processing', 'done')),\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  claimed = INSERT INTO receipts (tenant_id, idempotency_key, request_hash, status)\n            VALUES (tenant, key, h, 'processing') ON CONFLICT DO NOTHING      -- commits on its own\n  if not claimed:\n    r = SELECT request_hash, status, response FROM receipts\n        WHERE tenant_id = tenant AND idempotency_key = key\n    if r.request_hash != h: return 409 key_reused\n    if r.status = 'processing': return 409 in_progress\n    return r.response\n\n  BEGIN\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET status = 'done', order_id = order.id, response = {201, order}\n      WHERE tenant_id = tenant AND idempotency_key = key\n  COMMIT\n  return 201 order"
+        },
+        "flaw": "If the process crashes, or the order transaction fails, after the claim commits and before the order commits, the receipt stays 'processing' forever: every retry gets 409 in_progress and the order is never created. Nothing recovers or expires a stale claim.",
+        "caught_if": "Asks what happens after a crash or failure between the claim and the order's commit, or notes that a claim can stay 'processing' forever.",
+        "partial_if": "Asks about crashes only generally, without placing one after the claim."
+      }
+    },
+    {
+      "id": "payload-replay",
+      "message": "I think this one is solid: a simultaneous duplicate waits on the receipt insert until the first commits, and a crash rolls everything back. Is there anything it gets wrong?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 2.434,
+          "usage": {
+            "input_tokens": 365,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.083,
+          "cost_microusd": 4600
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 5.828,
+          "usage": {
+            "input_tokens": 1450,
+            "cached_input_tokens": 1447,
+            "cache_write_tokens": 0,
+            "output_tokens": 165
+          },
+          "spawn_seconds": 0.077,
+          "cost_microusd": 9727
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Your transaction-based approach can work: in Database design revision 1, the composite primary key arbitrates competing claims, and Request and recovery algorithm revision 1 commits the order and stored response together. A crash before commit leaves neither; a crash after commit leaves both. The duplicate’s subsequent read must use isolation semantics that let it see the committed receipt.\n\nOne contract gap is in API contract revision 1: “a retry never creates a second order” depends on reusing the same tenant and key and retaining the receipt.\n\nConsider a concrete case: the same customer submits the same key twice, but the second request contains different items. Your algorithm returns the first order’s response without examining that difference. What should the API promise in that case?",
+      "inputs": {
+        "kind": "planted flaw",
+        "artifacts": {
+          "api": "POST /orders\nAuthorization: Bearer <customer token>\nIdempotency-Key: <client-generated, one per order>\nBody: {\"items\": [...]}\n\n201 Created: {\"order_id\": ..., \"items\": [...]}\nA request with a key that was seen before gets the stored response, so a retry never creates a second order.",
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  BEGIN\n    claimed = INSERT INTO receipts (tenant_id, idempotency_key)\n              VALUES (tenant, key) ON CONFLICT DO NOTHING\n              -- a simultaneous duplicate waits here until the first transaction commits or rolls back\n    if not claimed:\n      r = SELECT response FROM receipts WHERE tenant_id = tenant AND idempotency_key = key\n      COMMIT\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET order_id = order.id, response = {201, order}\n      WHERE tenant_id = tenant AND idempotency_key = key\n  COMMIT\n  return 201 order\n\nCrash before COMMIT: everything rolls back, and the retry starts over.\nCrash after COMMIT: the retry gets the stored response."
+        },
+        "flaw": "A repeated key is matched without comparing the request: a request that reuses a key with a different body (a client bug) silently gets the earlier order's success, so the new order is never created and the client believes it was.",
+        "caught_if": "Asks or says what happens when the same key arrives with a different body.",
+        "partial_if": "Mentions validating requests only vaguely."
+      }
+    },
+    {
+      "id": "global-key",
+      "message": "Simultaneous duplicates and reused keys are both handled now, I think. What would you push on?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 2.106,
+          "usage": {
+            "input_tokens": 352,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.083,
+          "cost_microusd": 4470
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.849,
+          "usage": {
+            "input_tokens": 1437,
+            "cached_input_tokens": 1434,
+            "cache_write_tokens": 0,
+            "output_tokens": 132
+          },
+          "spawn_seconds": 0.083,
+          "cost_microusd": 8064
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Your single-transaction approach can handle simultaneous duplicates and detect changed bodies for a given key. I’d push on customer isolation: in Database design revision 1, the receipt primary key is just `idempotency_key`; in Request and recovery algorithm revision 1, the receipt lookup also filters only by that key, despite deriving the tenant from authentication.\n\nSuppose customer A successfully submits key `order-1042`, then customer B submits the same key with an identical body. Trace what B receives under your current algorithm and whether that satisfies the requirement to protect each customer’s order data.",
+      "inputs": {
+        "kind": "planted flaw",
+        "artifacts": {
+          "api": "POST /orders\nAuthorization: Bearer <customer token>\nIdempotency-Key: <client-generated, one per order, e.g. order-1042>\nBody: {\"items\": [...]}\n\n201 Created: {\"order_id\": ..., \"items\": [...]}\nSame key, same body: the original response, and no new order.\nSame key, different body: 409 key_reused.",
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  idempotency_key text PRIMARY KEY,\n  tenant_id       bigint NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now()\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  BEGIN\n    claimed = INSERT INTO receipts (idempotency_key, tenant_id, request_hash)\n              VALUES (key, tenant, h) ON CONFLICT DO NOTHING\n              -- a simultaneous duplicate waits here until the first transaction commits or rolls back\n    if not claimed:\n      r = SELECT request_hash, response FROM receipts WHERE idempotency_key = key\n      COMMIT\n      if r.request_hash != h: return 409 key_reused\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET order_id = order.id, response = {201, order} WHERE idempotency_key = key\n  COMMIT\n  return 201 order"
+        },
+        "flaw": "Keys are global, not per customer: two customers who generate the same key (say order-1042) collide, so the second customer gets a spurious 409 or, with an identical body, the first customer's stored response and order data.",
+        "caught_if": "Asks what happens when two different customers send the same key, or notes that the receipt lookup ignores the customer.",
+        "partial_if": "Asks about authorizing receipt lookups only vaguely."
+      }
+    },
+    {
+      "id": "publish-after-commit",
+      "message": "The warehouse publish happens after the commit, so the warehouse never hears about an order that rolled back, and its deduplication by event ID covers repeats. I think delivery is done. Do you agree?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 2.049,
+          "usage": {
+            "input_tokens": 335,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.082,
+          "cost_microusd": 4300
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 4.37,
+          "usage": {
+            "input_tokens": 1516,
+            "cached_input_tokens": 1513,
+            "cache_write_tokens": 0,
+            "output_tokens": 115
+          },
+          "spawn_seconds": 0.087,
+          "cost_microusd": 7293
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Not fully. Publishing after commit avoids sending rolled-back orders, and warehouse deduplication handles repeats, but neither guarantees that a committed order is eventually sent.\n\nIn Request and recovery algorithm revision 1, suppose the process crashes immediately after COMMIT and before warehouse.publish. A client retry returns the stored response without publishing. Database design revision 1 stores the order and receipt, but your algorithm shows no recovery path for that missed delivery.\n\nHow would your design recover delivery in this specific crash case?",
+      "inputs": {
+        "kind": "planted flaw",
+        "transcript": [
+          {
+            "role": "learner",
+            "body": "Does anything outside our service need to hear about an accepted order?"
+          },
+          {
+            "role": "interviewer",
+            "body": "Yes. A warehouse receives accepted orders asynchronously and supports deduplication by an order event ID. Delivery may be repeated. A committed order must not permanently lose its delivery intent. How does that fit into your algorithm?"
+          }
+        ],
+        "revealed_before": [
+          "delivery"
+        ],
+        "artifacts": {
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  BEGIN\n    claimed = INSERT INTO receipts (tenant_id, idempotency_key, request_hash)\n              VALUES (tenant, key, h) ON CONFLICT DO NOTHING\n              -- a simultaneous duplicate waits here until the first transaction commits or rolls back\n    if not claimed:\n      r = SELECT request_hash, response FROM receipts\n          WHERE tenant_id = tenant AND idempotency_key = key\n      COMMIT\n      if r.request_hash != h: return 409 key_reused\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET order_id = order.id, response = {201, order}\n      WHERE tenant_id = tenant AND idempotency_key = key\n  COMMIT\n  warehouse.publish(event_id = order.id, order)   -- after COMMIT; the warehouse drops repeated event IDs\n  return 201 order"
+        },
+        "flaw": "If the process crashes, or the publish fails, after the commit and before the warehouse gets the event, the order is committed but never delivered; a retry just returns the stored receipt, so nothing publishes it again.",
+        "caught_if": "Asks what happens if the process crashes or the publish fails after the commit, or notes that a retry wouldn't publish again.",
+        "partial_if": "Asks about publish failures without connecting them to the order never being delivered."
+      }
+    },
+    {
+      "id": "warehouse-in-transaction",
+      "message": "Right, that order would never reach the warehouse. In revision 2 I moved the publish inside the transaction, just before COMMIT, so the order and its delivery happen together. That fixes it, doesn't it?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 1.871,
+          "usage": {
+            "input_tokens": 337,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.091,
+          "cost_microusd": 4320
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 3.02,
+          "usage": {
+            "input_tokens": 1595,
+            "cached_input_tokens": 1592,
+            "cache_write_tokens": 0,
+            "output_tokens": 88
+          },
+          "spawn_seconds": 0.092,
+          "cost_microusd": 6022
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "No—not as written. In Request and recovery algorithm (revision 2), placing warehouse.publish before COMMIT does not make the warehouse delivery atomic with the database transaction.\n\nSuppose the warehouse accepts the event, then your process crashes before COMMIT and the database rolls back. When the client retries, what happens to the order and to what the warehouse has already received?",
+      "inputs": {
+        "kind": "several turns: a fix that adds a bug",
+        "transcript": [
+          {
+            "role": "learner",
+            "body": "Does anything outside our service need to hear about an accepted order?"
+          },
+          {
+            "role": "interviewer",
+            "body": "Yes. A warehouse receives accepted orders asynchronously and supports deduplication by an order event ID. Delivery may be repeated. A committed order must not permanently lose its delivery intent. How does that fit into your algorithm?"
+          },
+          {
+            "role": "learner",
+            "body": "OK. Revision 1 of my algorithm publishes to the warehouse right after the commit."
+          },
+          {
+            "role": "interviewer",
+            "body": "In your Request and recovery algorithm (revision 1), what happens if the process crashes after the commit but before the publish?"
+          }
+        ],
+        "revealed_before": [
+          "delivery"
+        ],
+        "artifacts": {
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  BEGIN\n    claimed = INSERT INTO receipts (tenant_id, idempotency_key, request_hash)\n              VALUES (tenant, key, h) ON CONFLICT DO NOTHING\n              -- a simultaneous duplicate waits here until the first transaction commits or rolls back\n    if not claimed:\n      r = SELECT request_hash, response FROM receipts\n          WHERE tenant_id = tenant AND idempotency_key = key\n      COMMIT\n      if r.request_hash != h: return 409 key_reused\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET order_id = order.id, response = {201, order}\n      WHERE tenant_id = tenant AND idempotency_key = key\n    warehouse.publish(event_id = order.id, order)   -- now inside the transaction, just before COMMIT\n  COMMIT\n  return 201 order"
+        },
+        "artifact_revisions": {
+          "algorithm": 2
+        },
+        "flaw": "The publish still isn't atomic with the commit; it only moves the gap. If the commit fails or the process crashes after publishing, the warehouse has an order that rolled back, and the retry creates a new order with a new ID, so event-ID deduplication doesn't catch the second delivery. The transaction also stays open during a network call.",
+        "caught_if": "Notes that the warehouse can receive an order that then rolls back (a crash or failure between the publish and the commit), or that the publish and the commit still aren't one atomic step.",
+        "partial_if": "Only raises holding the transaction open during the network call."
+      }
+    },
+    {
+      "id": "sound-design",
+      "message": "Here's my full design. I believe it handles simultaneous retries, crashes, and reused keys. Does it hold up?",
+      "expect": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "checks": {
+        "selector_offers_what_is_hidden": true,
+        "selector_sees_cues_only": true,
+        "selector_valid": true,
+        "selector_matches": true,
+        "reply_sees_only_what_it_may": true,
+        "reply_carries_what_was_earned": true,
+        "reply_valid": true,
+        "reply_reveals_nothing_unearned": true,
+        "reply_shares_no_reference_reasoning": true
+      },
+      "calls": [
+        {
+          "schema": "interviewer_selector",
+          "model": "gpt-6-astra",
+          "seconds": 1.913,
+          "usage": {
+            "input_tokens": 290,
+            "cached_input_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 19
+          },
+          "spawn_seconds": 0.092,
+          "cost_microusd": 3850
+        },
+        {
+          "schema": "interviewer_reply",
+          "model": "gpt-6-astra",
+          "seconds": 4.414,
+          "usage": {
+            "input_tokens": 1655,
+            "cached_input_tokens": 1652,
+            "cache_write_tokens": 0,
+            "output_tokens": 170
+          },
+          "spawn_seconds": 0.092,
+          "cost_microusd": 10182
+        }
+      ],
+      "selection": {
+        "constraint_ids": [],
+        "hint_requested": false
+      },
+      "reply": "Your transactional core can work: the receipt claim, order creation, and stored response commit together, so a crash cannot leave a committed order without its receipt. Tenant-scoped keys and the hash check also support your isolation and conflict behavior. The concurrent retry trace depends on database isolation and visibility semantics that you should make explicit.\n\nThere is an expiry discrepancy to resolve. API contract revision 1 promises the original response within 72 hours and a new order after that, but Database design revision 1 uses a periodic cleanup job, while Request and recovery algorithm revision 1 never checks receipt age.\n\nTrace a same-key, same-body request arriving 73 hours later, before cleanup has deleted the receipt: what happens, and how would you reconcile that behavior with your public contract?",
+      "inputs": {
+        "kind": "control: no planted flaw",
+        "revealed_before": [
+          "scope",
+          "window"
+        ],
+        "artifacts": {
+          "api": "POST /orders\nAuthorization: Bearer <customer token>\nIdempotency-Key: <client-generated, one per order>\nKeys are scoped to the authenticated customer.\nBody: {\"items\": [...]}\n\n201 Created: {\"order_id\": ..., \"items\": [...]}\nSame key, same body, within 72 hours: the original response, and no new order.\nSame key, different body: 409 key_reused, with no details of the earlier order.\nAfter 72 hours a key is forgotten, and a request with it creates a new order. Clients must stop retrying after 24 hours.",
+          "schema": "CREATE TABLE orders (\n  id         bigserial PRIMARY KEY,\n  tenant_id  bigint NOT NULL,\n  items      jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n\nCREATE TABLE receipts (\n  tenant_id       bigint NOT NULL,\n  idempotency_key text NOT NULL,\n  request_hash    text NOT NULL,\n  order_id        bigint REFERENCES orders (id),\n  response        jsonb,\n  created_at      timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, idempotency_key)\n);\n-- A job deletes receipts older than 72 hours.",
+          "algorithm": "POST /orders (tenant from the auth token, key, body):\n  h = sha256(canonical(body))\n  BEGIN\n    claimed = INSERT INTO receipts (tenant_id, idempotency_key, request_hash)\n              VALUES (tenant, key, h) ON CONFLICT DO NOTHING\n              -- a simultaneous duplicate waits here until the first transaction commits or rolls back\n    if not claimed:\n      r = SELECT request_hash, response FROM receipts\n          WHERE tenant_id = tenant AND idempotency_key = key\n      COMMIT\n      if r.request_hash != h: return 409 key_reused\n      return r.response\n    order = INSERT INTO orders (tenant_id, items) VALUES (tenant, body.items) RETURNING *\n    UPDATE receipts SET order_id = order.id, response = {201, order}\n      WHERE tenant_id = tenant AND idempotency_key = key\n  COMMIT\n  return 201 order\n\nTwo at once: the second waits on the receipt insert, then reads the committed response.\nThe first attempt rolls back: the waiting insert succeeds, and that request creates the order.\nCrash before COMMIT: everything rolls back, and the retry starts over.\nCrash after COMMIT, before the reply: the retry gets the stored response."
+        },
+        "flaw": null,
+        "pass_if": "Says plainly that the design holds up (or can work) for the cases shown, then probes an open area (an isolation assumption, lock waits under load, an untraced case) without claiming a flaw the design already handles.",
+        "fail_if": "Claims a flaw the design handles: both requests creating orders, a crash losing the receipt, a different body replaying the success, or customers colliding."
+      }
+    }
+  ]
+}

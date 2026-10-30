@@ -12,7 +12,7 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 3b. Discussion record | Learner turns citing exact artifact revisions, editable session brief, pause/resume, delete; resume elsewhere with transcript, brief, and revisions intact. | Committed as `b7ae1e2` (service) and `bcb0f40` (workspace and API); [practice guide](learning-checkpoint-3-test-guide.md), part B. |
 | 4a. Durable replies | Replies as tracked PostgreSQL requests, run by a worker thread in the web process against a scripted fake provider: owner-only access, fencing, budgets and reservations, interruption and explicit retry, polling on the website and API. | Committed as `81312c8` (service and worker) and `27af973` (website and API); [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part A. |
 | 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Committed as `216d394` (the interviewer, its service and API) plus the following website commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part B. |
-| 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Needs Keith. |
+| 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning, after three rounds of live evaluations. Production enablement waits for content review. |
 | 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
@@ -370,3 +370,25 @@ The disposable fixture walkthrough covered:
 - the 390-pixel layout.
 
 Not covered: the live model (activation); the check-in in the browser (tests only); a screen-reader audit; Firefox and Safari. Nothing was pushed, deployed, migrated in production, or published.
+
+## Activation (October 29 and 30)
+
+Keith created Learning's OpenAI project and key and set a $50 hard limit on the project. The key lives only in the local `.env` and reaches the call process at call time.
+
+Three rounds of live evaluations, each case three times at low reasoning, cost about $1.73 in all. The handoff's Recommended next checkpoint has the full results, and `docs/evaluations/` holds every reply.
+
+1. **`interviewer-1`, Sol and Terra (October 29).** Every privacy and disclosure check passed, but both models called hidden requirements "unspecified", as that profile's rules told them to.
+2. **`interviewer-2`, Sol, Terra, and Astra (October 29).** The revised rules fixed that. Every check passed in all 39 turns for each model. Terra misread a revealed fact in all three runs.
+3. **Catching flaws, Sol and Astra (October 30).** Ten scratch cases: nine designs or arguments with one planted flaw each, three of them after earlier turns, and a sound control. A separate grader scored the 60 replies blind. Both models caught all 27 flaws, and neither agreed with a flaw, gave away a fix, or invented one. Their replies were nearly identical; Astra costs five times as much.
+
+Keith chose `gpt-6.1-sol` at low reasoning (October 30). It is now the `openai` provider's default for both calls (`practice_service.DEFAULT_MODELS`), and configuration overrides it.
+
+What changed for activation:
+
+- `interviewer-2` is released and is the profile for new sessions; a test pins each released profile's text by hash.
+- Cache writes are priced: `PRICES` has a `cache_write` rate, `cost()` bills cached reads and writes separately, and the worst case prices every input byte as a write.
+- Migration `f9a0b1c2d3e4` adds `learning_ai_charge.cache_write_tokens`, so each charge's tokens explain its cost.
+- `flask learning-eval --provider openai` refuses to start without `LEARNING_OPENAI_API_KEY`, since a model is always configured now.
+- The defaults for deadlines, output caps, and the context allowance were checked against 216 live Sol calls and kept.
+
+Verification: the full suite passed with PostgreSQL (515 tests, one skipped), including the migration round trip and the comparison of the migrated schema with the models. One live session ran through the app on a disposable database: three turns through Send, the worker, the call process, and the ledger, with Sol as the default, for $0.013. No front-end code changed, so the Node and browser suites weren't rerun. Nothing was pushed, deployed, migrated in production, or published.
