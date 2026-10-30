@@ -14,6 +14,7 @@ from uuid import uuid4
 from sqlalchemy import event
 
 from project import create_app
+from project.curriculum_terms import CURRENT_PROFILES
 from project.database import db
 from project.learning import interviewer
 from project.models import AIRequest, LearningAICharge, PracticeReceipt, SessionMessage, User
@@ -107,7 +108,7 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertTrue(practice_signals.reply_queued.is_set())
         request = self.request(sent["reply"]["id"])
         self.assertEqual((request.status, request.kind, request.profile_version, request.provider, request.model),
-                         ("pending", "reply", "interviewer-1", "fake", "fake-interviewer"))
+                         ("pending", "reply", CURRENT_PROFILES["interviewer"], "fake", "fake-interviewer"))
         others = self.start(self.other)
         self.assertEqual(self.send(others, user=self.other)["reply"],
                          {"id": None, "status": "unavailable", "reason": "owner_only"})

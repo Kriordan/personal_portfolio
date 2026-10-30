@@ -19,4 +19,4 @@ BRIEF_MAX_ENTRIES = 50
 MAX_EXPECTED_ARTIFACTS = 20
 # The interviewer behaviour a new practice session pins. Versions are immutable once released:
 # a prompt change makes a new version, and sessions keep the version they started with.
-CURRENT_PROFILES = {"interviewer": "interviewer-1"}
+CURRENT_PROFILES = {"interviewer": "interviewer-2"}

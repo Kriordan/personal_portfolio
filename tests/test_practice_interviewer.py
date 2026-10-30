@@ -4,6 +4,7 @@ SQLite with foreign keys on, an injected clock, and the scripted provider. The t
 plants sentinels: the "scope" requirement's fact is HIDDEN_SENTINEL, the one permitted hint is
 HINT_SENTINEL, the instructions are INSTRUCTION_SENTINEL, and the reference is EVALUATOR_SENTINEL.
 """
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -12,6 +13,7 @@ import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
+from project.curriculum_terms import CURRENT_PROFILES
 from project.database import db
 from project.learning import interviewer
 from project.models import ArtifactRevision, LearningAICharge, SessionMessage
@@ -420,6 +422,27 @@ class InterviewerRequestTests(unittest.TestCase):
                     {"constraint_ids": [], "hint_requested": 1}, {"constraint_ids": [], "hint_requested": False, "x": 1}):
             with self.subTest(bad=bad), self.assertRaises(interviewer.InvalidOutput):
                 interviewer.parse_selection(bad, self.context)
+
+    # Released profiles, by the SHA-256 of their rules. Evaluation results and sessions name a
+    # version, so its text must never change: a prompt change is a new version.
+    RELEASED = {"interviewer-1": "afeb26170a5b6560b65c10cfe77fd189d697672a75ba9792a175a9695ed6a68e",
+                "interviewer-2": "32b67a7c9bdabd9a08198543ecc93ecfe293cf2644b2d0ba7cb07eb1af550abd"}
+
+    def test_released_profiles_never_change(self):
+        for version, digest in self.RELEASED.items():
+            rules = json.dumps(interviewer.PROFILES[version], sort_keys=True).encode()
+            self.assertEqual(hashlib.sha256(rules).hexdigest(), digest, f"{version} changed: add a new version instead")
+        self.assertIn(CURRENT_PROFILES["interviewer"], self.RELEASED)
+
+    def test_each_session_gets_the_rules_of_the_profile_it_pinned(self):
+        facilitator = {"instructions": ["Be fair."], "revealed": [], "newly_revealed": [], "hint": None}
+        for version, profile in interviewer.PROFILES.items():
+            with self.subTest(version=version):
+                context = {**self.context, "profile_version": version}
+                self.assertEqual(interviewer.selector_request(context, self.settings)["instructions"],
+                                 "\n".join(profile["selector_rules"]))
+                self.assertEqual(interviewer.reply_request(context, facilitator, self.settings)["instructions"],
+                                 "\n".join([*profile["reply_rules"], "", "Exercise instructions:", "Be fair."]))
 
     def test_the_reply_notes_omitted_messages(self):
         facilitator = {"instructions": ["Be fair."], "revealed": [], "newly_revealed": [], "hint": None}

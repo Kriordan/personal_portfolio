@@ -82,7 +82,7 @@ practice.set_status(user, session_id, status="paused", request_id=str(uuid4()))
 AIRequest.query.order_by(AIRequest.created_at.desc()).first().status
 ```
 
-Expect `'cancelled'`: the reply hadn't started. Now resume with `practice.request_reply(...)`, claim it with `practice.claim_reply(datetime.now(timezone.utc), known_profiles=("interviewer-1",), worker_id="me")`, pause again, and call `practice.begin_call(...)` with the returned ID and token. Why does it raise `CallFenced` even though the reply was already running?
+Expect `'cancelled'`: the reply hadn't started. Now resume with `practice.request_reply(...)`, claim it with `practice.claim_reply(datetime.now(timezone.utc), known_profiles=("interviewer-2",), worker_id="me")`, pause again, and call `practice.begin_call(...)` with the returned ID and token. Why does it raise `CallFenced` even though the reply was already running?
 
 **Step through a whole reply:**
 
@@ -321,7 +321,7 @@ cases = interviewer_eval.load_cases()
 item = interviewer_eval.exercise(cases["exercise_id"])
 case = next(case for case in cases["cases"] if case["id"] == "unrelated")
 leaky = practice_worker.FakeProvider(selections=[case["expect"]], replies=["Peak traffic is 2,000 order attempts per second."])
-interviewer_eval.run_case(leaky, item, case, dict(settings, model="fake-interviewer"), profile_version="interviewer-1")["checks"]
+interviewer_eval.run_case(leaky, item, case, dict(settings, model="fake-interviewer"), profile_version="interviewer-2")["checks"]
 ```
 
 `reply_reveals_nothing_unearned` is now `False`. Read `run_case`: which checks look at the requests, and which at the reply? At activation the same command runs with `--provider openai` and Learning's key, and writes `docs/evaluations/learning-interviewer-<date>.json`.
