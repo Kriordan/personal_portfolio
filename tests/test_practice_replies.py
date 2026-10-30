@@ -24,6 +24,16 @@ from tests.test_practice_service import EXERCISE, SENTINELS, PracticeServiceCase
 
 ALL_AT_ZERO = {"api": 0, "schema": 0, "algorithm": 0}
 AI_CONFIG = dict(LEARNING_AI_ENABLED=True, LEARNING_AI_PROVIDER="fake", LEARNING_AI_OWNER_EMAIL="Fixture1@Example.test")
+OPENAI_CONFIG = dict(LEARNING_AI_PROVIDER="openai", LEARNING_AI_MODEL="test-model")
+OPENAI_PRICES = {("test-model", "default"): {"input": 1_000_000, "cached_input": 100_000, "output": 4_000_000}}
+
+
+@contextlib.contextmanager
+def without_learning_key():
+    """No Learning key, whatever the developer's .env holds: importing the app loads .env."""
+    with patch.dict(os.environ):
+        os.environ.pop("LEARNING_OPENAI_API_KEY", None)
+        yield
 
 
 class Clock:
@@ -102,11 +112,15 @@ class PracticeReplyTests(PracticeReplyCase):
         self.assertEqual(self.send(others, user=self.other)["reply"],
                          {"id": None, "status": "unavailable", "reason": "owner_only"})
         for change, reason in ((dict(LEARNING_AI_ENABLED=False), "disabled"),
-                               (dict(LEARNING_AI_PROVIDER="openai"), "disabled"),  # without LEARNING_OPENAI_API_KEY
+                               (OPENAI_CONFIG, "disabled"),  # priced, but without LEARNING_OPENAI_API_KEY
                                (dict(LEARNING_AI_MODEL="unpriced-model"), "disabled"),
                                (dict(LEARNING_AI_OWNER_EMAIL=""), "owner_only")):
-            with self.subTest(change=change), patch.dict(self.app.config, change):
+            with self.subTest(change=change), patch.dict(self.app.config, change), \
+                    patch.dict(practice_budget.PRICES, OPENAI_PRICES), without_learning_key():
                 self.assertEqual(self.send(self.start())["reply"]["reason"], reason)
+        with patch.dict(self.app.config, OPENAI_CONFIG), patch.dict(practice_budget.PRICES, OPENAI_PRICES), \
+                patch.dict(os.environ, {"LEARNING_OPENAI_API_KEY": "learning-test-key"}):
+            self.assertIsNone(service.reply_unavailable(1, self.clock()))  # the key was all that was missing
         # An unverified owner, or an address that matches two accounts in different case, turns AI off.
         self.user.email_verified = False
         db.session.commit()
@@ -402,8 +416,8 @@ class PracticeWorkerStartTests(unittest.TestCase):
         with patch.dict(os.environ, {"WERKZEUG_RUN_MAIN": "true"}):
             self.assertTrue(practice_worker.should_start(app))
         app.debug = False
-        for change in (dict(LEARNING_AI_ENABLED=False), dict(LEARNING_AI_PROVIDER="openai")):
-            with self.subTest(change=change), patch.dict(app.config, change):
+        for change in (dict(LEARNING_AI_ENABLED=False), dict(LEARNING_AI_PROVIDER="openai")):  # OpenAI without its key
+            with self.subTest(change=change), patch.dict(app.config, change), without_learning_key():
                 self.assertFalse(practice_worker.should_start(app))
 
     def test_run_py_starts_the_worker_only_when_allowed(self):
@@ -419,7 +433,8 @@ class PracticeWorkerStartTests(unittest.TestCase):
 
     def test_the_command_refuses_without_a_provider(self):
         app = self.make_app(LEARNING_AI_PROVIDER="openai")
-        result = app.test_cli_runner().invoke(args=["learning-worker"])
+        with without_learning_key():  # with a key, the command would start the worker loop
+            result = app.test_cli_runner().invoke(args=["learning-worker"])
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("No Learning AI provider", result.output)
 

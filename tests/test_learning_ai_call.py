@@ -36,7 +36,7 @@ BODY = {
 }
 USAGE = {"input_tokens": 120, "input_tokens_details": {"cached_tokens": 64}, "output_tokens": 30,
          "output_tokens_details": {"reasoning_tokens": 8}, "total_tokens": 150}
-LEDGER_USAGE = {"input_tokens": 120, "cached_input_tokens": 64, "output_tokens": 30}
+LEDGER_USAGE = {"input_tokens": 120, "cached_input_tokens": 64, "cache_write_tokens": 0, "output_tokens": 30}
 
 
 def response(text=None, *, status="completed", parts=None):
@@ -316,6 +316,13 @@ class LearningAICallTests(unittest.TestCase):
             (finished(1, json.dumps(reported)), ("refused", "yes", LEDGER_USAGE)),
             (finished(1, json.dumps({"error": "novel", "charged": "maybe", "usage": {"input_tokens": -1}})),
              ("failed", "unknown", None)),
+            # Usage from an older child, without cache writes, isn't trusted: the reservation stands.
+            (finished(1, json.dumps({**reported, "usage": {"input_tokens": 120, "cached_input_tokens": 64,
+                                                           "output_tokens": 30}})), ("refused", "yes", None)),
+            (finished(1, json.dumps({**reported, "usage": {**LEDGER_USAGE, "cache_write_tokens": 57}})),
+             ("refused", "yes", None)),  # 64 cached + 57 written > 120 input
+            (finished(1, json.dumps({**reported, "usage": {**LEDGER_USAGE, "cache_write_tokens": 56}})),
+             ("refused", "yes", {**LEDGER_USAGE, "cache_write_tokens": 56})),
             (finished(1, json.dumps({"error": ["refused"], "charged": {"no": 1}})), ("failed", "unknown", None)),
             (finished(1, json.dumps({"output": {"reply": "x"}, "usage": None, "seconds": 0.1})),
              ("failed", "unknown", None)),
@@ -333,8 +340,17 @@ class LearningAICallTests(unittest.TestCase):
 
     def test_the_child_reads_usage_and_exceptions_conservatively(self):
         self.assertEqual(child.usage_of({"usage": {"input_tokens": 5, "output_tokens": 2}}),
-                         {"input_tokens": 5, "cached_input_tokens": 0, "output_tokens": 2})
+                         {"input_tokens": 5, "cached_input_tokens": 0, "cache_write_tokens": 0, "output_tokens": 2})
+        # Cached reads and cache writes are separate parts of the input.
+        written = {"input_tokens": 9, "input_tokens_details": {"cached_tokens": 3, "cache_write_tokens": 6},
+                   "output_tokens": 2}
+        self.assertEqual(child.usage_of({"usage": written}),
+                         {"input_tokens": 9, "cached_input_tokens": 3, "cache_write_tokens": 6, "output_tokens": 2})
         for usage in ({"input_tokens": 5, "input_tokens_details": {"cached_tokens": 6}, "output_tokens": 2},
+                      {"input_tokens": 9, "input_tokens_details": {"cached_tokens": 4, "cache_write_tokens": 6},
+                       "output_tokens": 2},
+                      {"input_tokens": 9, "input_tokens_details": {"cache_write_tokens": -1}, "output_tokens": 2},
+                      {"input_tokens": 9, "input_tokens_details": {"cache_write_tokens": "6"}, "output_tokens": 2},
                       {"input_tokens": 5, "output_tokens": -1}, {"input_tokens": 5.0, "output_tokens": 2},
                       {"input_tokens": True, "output_tokens": 2}, {"output_tokens": 2}, None, "lots"):
             self.assertIsNone(child.usage_of({"usage": usage}), usage)

@@ -19,7 +19,7 @@ CA_VARIABLES = ("SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE")
 CODES = ("provider", "provider_auth", "provider_quota", "provider_request", "timeout", "too_large",
          "refused", "incomplete", "invalid_output", "failed")
 CHARGED = ("no", "yes", "unknown")
-USAGE_KEYS = ("input_tokens", "cached_input_tokens", "output_tokens")
+USAGE_KEYS = ("input_tokens", "cached_input_tokens", "cache_write_tokens", "output_tokens")
 
 
 class ProviderError(Exception):
@@ -44,7 +44,8 @@ def _usage(value):
     """Usage in the ledger's terms, or None when it isn't well formed."""
     if not isinstance(value, dict) or not all(type(value.get(key)) is int and value[key] >= 0 for key in USAGE_KEYS):
         return None
-    return {key: value[key] for key in USAGE_KEYS} if value["cached_input_tokens"] <= value["input_tokens"] else None
+    parts = value["cached_input_tokens"] + value["cache_write_tokens"]
+    return {key: value[key] for key in USAGE_KEYS} if parts <= value["input_tokens"] else None
 
 
 class OpenAIProvider:

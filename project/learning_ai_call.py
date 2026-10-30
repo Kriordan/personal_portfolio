@@ -93,10 +93,14 @@ def _list(value):
 def usage_of(data):
     """Token counts in the ledger's terms, or None when they can't be trusted."""
     usage = _dict(data.get("usage"))
+    details = _dict(usage.get("input_tokens_details"))
+    # Cached reads and cache writes are separate parts of the input, each billed at its own rate.
     tokens = {"input_tokens": usage.get("input_tokens"), "output_tokens": usage.get("output_tokens"),
-              "cached_input_tokens": _dict(usage.get("input_tokens_details")).get("cached_tokens", 0)}
-    trusted = all(type(value) is int and value >= 0 for value in tokens.values())
-    return tokens if trusted and tokens["cached_input_tokens"] <= tokens["input_tokens"] else None
+              "cached_input_tokens": details.get("cached_tokens", 0),
+              "cache_write_tokens": details.get("cache_write_tokens", 0)}
+    if not all(type(value) is int and value >= 0 for value in tokens.values()):
+        return None
+    return tokens if tokens["cached_input_tokens"] + tokens["cache_write_tokens"] <= tokens["input_tokens"] else None
 
 
 def output_of(data):

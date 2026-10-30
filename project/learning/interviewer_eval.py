@@ -212,11 +212,12 @@ def run(provider_for_case, cases, item, settings, *, profile_version=CURRENT_PRO
     calls = [call for result in results for call in result["calls"]]
     return {"profile_version": profile_version, "provider": settings["provider"], "model": settings["model"],
             "selector_model": settings["selector_model"], "service_tier": settings["tier"],
+            "reasoning_effort": settings.get("reasoning_effort"),
             "run_at": datetime.now(timezone.utc).isoformat(), "summary": summary,
             "passed": all(all(result["checks"].values()) for result in results),
             "cost_microusd": sum(call.get("cost_microusd") or 0 for call in calls),
             "tokens": {key: sum((call.get("usage") or {}).get(key) or 0 for call in calls)
-                       for key in ("input_tokens", "cached_input_tokens", "output_tokens")},
+                       for key in ("input_tokens", "cached_input_tokens", "cache_write_tokens", "output_tokens")},
             "cases": results}
 
 
