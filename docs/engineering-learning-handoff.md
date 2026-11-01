@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of October 30, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. Activation is done locally: `gpt-6.1-sol` at low reasoning answers by default (October 30), chosen after three rounds of live evaluations, and one live session has run through the app on a disposable database. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: Keith practises locally with live replies, and the checkpoint 5 plan (see Recommended next checkpoint).
+As of November 1, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. Activation is done locally: `gpt-6.1-sol` at low reasoning answers by default (October 30), chosen after three rounds of live evaluations, and one live session has run through the app on a disposable database. The tabbed workspace and conversation-continuity checkpoint is implemented locally (November 1): Discuss/Build share the form, artifacts use tabs, and native saves/sends restore position and focus. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: Keith practises locally with live replies, and the checkpoint 5 plan (see Recommended next checkpoint).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 4b, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the workspace follow-up, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -46,6 +46,7 @@ Within Milestone 1:
 | 4a | Durable replies: tracked requests, a worker thread, owner-only access, fencing, budgets and reservations, interruption and explicit retry, and polling, all against a scripted fake provider. | `81312c8` (service and worker) and `27af973` (website and API) — complete locally. |
 | 4b | The interviewer: the OpenAI call process, the `interviewer-1` profile, disclosure and hints, revealed requirements, the context allowance, the check-in, and an evaluation harness. | `216d394` (the interviewer, its service and API) plus the following website commit — complete locally. |
 | 4 activation | Learning's OpenAI project and key (Keith), live evaluations, model choice, verified prices. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning. Production enablement waits for content review. |
+| Workspace follow-up | Compact practice shell, shared Discuss/Build views, artifact/reference tabs, native POST continuity, and integrated browser recovery checks. | Implemented locally November 1; separate checkpoint commit. |
 | 5 | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started. |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
@@ -63,6 +64,7 @@ No push, PR, deployment, production migration, or production publication was per
 | Human review before publication. | Schema checks cannot establish educational accuracy. Architecture approval does not attest review of lesson content, hidden constraints, alternatives, or rubrics. |
 | Explicit learner/facilitator/evaluator projections. | Prevent answer/reference leakage through accidental serialization or overly broad prompts. Application privacy does not make the public Git repository secret. |
 | One practice session with conversation and multiple evolving artifacts. | Discuss and Build are complementary views of the same work. Avoid duplicated sessions and disconnected feedback. |
+| Progressive enhancement for the tabbed workspace. | Keep native Flask form POSTs and their existing CSRF, receipt, conflict, and rescue behavior. Tabs hide panels without removing fields. Local storage holds only per-session view/scroll preferences; session storage temporarily holds focus/caret metadata across a submission. No learner text or server revisions are cached. Without JavaScript, every field remains visible and native saving still works. |
 | Immutable artifact revisions without a separate artifact identity table. | Group revisions by stable artifact ID; this supports history, conflicts, and evidence references with a small model. |
 | One PostgreSQL-backed worker and foreground polling. | Save work before generation, survive web-request timeouts/restarts, and avoid Redis/Celery or streaming infrastructure for the pilot. |
 | Soft check-in at 24 learner turns, not a hard ending. | Substantial scoping/design conversations need continuation without losing decisions, requirements, or artifacts. Context and spending still have hard bounds. |
@@ -299,7 +301,9 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | [Legacy JSON API](../project/api/learning.py) | Compatibility surface; no concept API. |
 | [Shared terms](../project/curriculum_terms.py), [learning errors](../project/services/learning_errors.py) | Constants and exceptions kept free of imports, to avoid the cycle described under gotchas. |
 | [Lesson JavaScript](../project/static/js/learning-concept.js) and [SCSS](../project/static/scss/learning-concept.scss); [practice script](../project/static/js/learning-practice.js) and [SCSS](../project/static/scss/learning-practice.scss) | Rendering and retry simulation; unsaved-change prompt and byte counter. Rebuild generated `main.css` after style changes. |
-| [Base template](../project/templates/base.html) | Private Learning analytics exclusion. |
+| [Workspace UI](../project/static/js/learning-workspace.js), [styles](../project/static/scss/learning-workspace.scss) | Accessible view/work tabs, focus and scroll continuity, hidden-error reveal, and presentation-only browser storage. Native form writes remain unchanged. |
+| [Integrated practice browser test](../tests/test_practice_browser.py), [browser assertions](../tests/browser/practice-workspace-checks.js) | Real templates, CSRF forms, redirects, polling, conflict/rescue/retry paths, responsive layout, and no-JS saves with a fake provider. Included in backend unittest discovery; requires Chrome (or CHROME_BIN), including in CI. |
+| [Base template](../project/templates/base.html) | Private Learning analytics exclusion and a container-class override for the compact practice shell. |
 | [JobWizard provider integration](../project/services/jobwizard_extraction.py) | Existing bounded-call/validation patterns to study, not the Learning worker. |
 | [Content tests](../tests/test_curriculum.py), [PostgreSQL import tests](../tests/test_curriculum_postgres.py) | Schemas, leakage, imports, process death, migrations. |
 | [Web concept tests](../tests/test_concept_web.py), [PostgreSQL review tests](../tests/test_learning_postgres.py) | Auth/CSRF, reveal/version pinning, rollback/replay, scheduling and concurrency. |
@@ -332,7 +336,14 @@ Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections
 
 ## Verification evidence and commands
 
-Latest full application verification, recorded October 29 after checkpoint 4b:
+Latest verification, November 1, for the tabbed workspace checkpoint:
+
+- **516 backend tests run: 515 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with an isolated **PostgreSQL 18.6** cluster. Migration, concurrency, budget, and recovery coverage ran against PostgreSQL.
+- After the final UI refinements, **41 focused web/browser tests passed**, including **97 integrated browser assertions** against real Flask forms and a deterministic fake interviewer. These cover native saves/sends, focus and scroll continuity, note reindexing, conflicts, lost-response replay, failed-send recovery, mobile layouts, blocked browser storage, and saving without JavaScript.
+- The existing **102 browser checks**, **13 root Node tests**, dependency integrity checks, and Sass build passed. Desktop and 390-pixel views were inspected in the disposable fixture.
+- No service, API, model, migration, review scheduling, or AI behavior changed. The full PostgreSQL run preceded the last UI-only refinements; the focused checks were rerun afterward. This is not a Safari/Firefox or screen-reader audit.
+
+Earlier verification, recorded October 29 after checkpoint 4b:
 
 - **503 backend tests run: 502 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with PostgreSQL **18.6** enabled.
   - 4b added 49: 19 interviewer, 17 call-process, 8 harness, 4 web, and 1 API test.
@@ -362,7 +373,7 @@ npm test
 npm run test:browser
 ```
 
-Browser checks need Chrome; use `CHROME_BIN` when its executable is not in the expected location. They test the real JavaScript with local dependencies but are not a complete HTTP application walkthrough. Use `npm run sass` after SCSS changes and commit the generated CSS.
+Browser checks need Chrome; use `CHROME_BIN` when its executable is not in the expected location. The npm checks exercise JavaScript with local dependencies. `poetry run python -m unittest tests.test_practice_browser` additionally drives actual Flask pages and native HTTP submissions using a temporary localhost database and fake AI; it is also included in backend discovery. Use `npm run sass` after SCSS changes and commit the generated CSS.
 
 For migrations/concurrency, provision an **isolated PostgreSQL 18 database named `library_sync_test` on localhost**. The previous local cluster used role `library_test` and port `55439`; it is not a service dependency. The [backend CI workflow](../.github/workflows/backend.yml) documents equivalent PostgreSQL provisioning on port 5432. Adjust only the disposable test connection below:
 
@@ -375,6 +386,9 @@ PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
 These fixtures drop tables and reset migration state. Never use a database containing useful data, and do not run independent suites concurrently against the same fixture database. Without `LIBRARY_TEST_POSTGRES_URL`, PostgreSQL tests skip: a green SQLite-only run is not migration/concurrency acceptance. Preserve the environment guards so tests do not load real `.env` credentials or probe cloud metadata. The older general [verification runbook](verification-runbook.md) is useful for app setup, but its historical test counts and SQLite-only description predate this work.
 
 ## Gotchas encountered
+
+- **Hidden panels must remain recoverable.** Errors and conflict links reveal their work panel before focus moves. Form fields remain enabled and in the original form, including inactive artifacts and notes. Background replies only follow when the learner is already at the newest exchange.
+- **View persistence is not draft persistence.** Browser storage contains only view/scroll preferences and temporary focus metadata. Unsaved text still depends on the form and leave-page warning; confirmed text remains on the server. See the [workspace inspection guide](learning-workspace-test-guide.md).
 
 - **Alembic logging leaked across tests.** Its logging configuration disabled unrelated application loggers, causing later log assertions to fail. The curriculum migration test patches `logging.config.fileConfig` around the actual PostgreSQL upgrade/downgrade; it does not mock the migration itself.
 - **Authentication leaked inside a test fixture.** Two initial web-test failures came from retaining a login across requests. Use deliberately isolated clients/session state when asserting anonymous versus authenticated behavior.

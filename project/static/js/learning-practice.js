@@ -23,6 +23,21 @@
     event.returnValue = '';
   });
   form.addEventListener('submit', () => { submitting = true; });
+  // Back/forward cache may restore this document after a submission. Its unsaved
+  // draft guard must become active again when the learner returns.
+  window.addEventListener('pageshow', () => { submitting = false; });
+  const saveState = document.getElementById('practice-save-state');
+  const showSaveState = () => {
+    if (!saveState) return;
+    const work = unsavedOnLoad || fields.some((field) => read(field) !== initial.get(field));
+    const draft = drafts.some((field) => field.value.trim() !== '');
+    const message = work ? `Unsaved work${draft ? ' · unsent message' : ''}`
+      : draft ? 'Unsent message' : 'No unsaved changes.';
+    if (saveState.textContent !== message) saveState.textContent = message;
+  };
+  form.addEventListener('input', showSaveState);
+  form.addEventListener('change', showSaveState);
+  showSaveState();
 
   // While the interviewer is replying, fetch every newer turn so this page's view stays current:
   // insert missing turns, advance expected_sequence, and announce changes without moving focus.
@@ -62,16 +77,23 @@
         .then((data) => {
           failures = 0;
           const transcript = document.getElementById('transcript');
+          form.dispatchEvent(new Event('practice:before-turns'));
+          let added = false;
           data.turns.forEach((turn) => {
-            if (!document.getElementById(`turn-${turn.sequence}`)) transcript.insertAdjacentHTML('beforeend', turn.html);
+            if (!document.getElementById(`turn-${turn.sequence}`)) {
+              transcript.insertAdjacentHTML('beforeend', turn.html);
+              added = true;
+            }
           });
           if (data.latest_sequence > Number(expected.value)) expected.value = String(data.latest_sequence);
           if (!sameWords(status, data.status_html)) status.innerHTML = data.status_html;
           if (revealed && typeof data.revealed_html === 'string' && !sameWords(revealed, data.revealed_html)) {
             revealed.innerHTML = data.revealed_html;
+            form.dispatchEvent(new Event('practice:requirements'));
           }
           status.toggleAttribute('data-reply-live', data.reply.live);
           sendButtons.forEach((button) => { button.disabled = data.reply.live; });
+          if (added) form.dispatchEvent(new Event('practice:turns'));
           if (data.reply.live) setTimeout(poll, Date.now() - started < 30000 ? 1500 : 5000);
         })
         .catch((error) => {
@@ -93,6 +115,7 @@
       const bytes = encoder.encode(box.value.replace(/\r\n?/g, '\n')).length;
       output.textContent = `${(bytes / 1024).toFixed(1)} of ${limit / 1024} KiB`;
       output.classList.toggle('is-over', bytes > limit);
+      output.classList.toggle('is-near', bytes >= limit * 0.8);
     };
     box.addEventListener('input', update);
     update();

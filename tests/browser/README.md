@@ -32,10 +32,27 @@ links, remote-media removal, missing-sanitizer fallback, all six combinations of
 failure position/key reuse, and reset/end states. Dependencies load locally; no
 AI service or external website is contacted by these fixtures.
 
-`run-practice-check.cjs` runs the practice workspace script on five small pages
-(19 checks): the leave-page prompt appears only for unsaved changes (text,
+`run-practice-check.cjs` runs the practice workspace script on small isolated pages
+(43 checks, including polling, retries, and reply states): the leave-page prompt appears only for unsaved changes (text,
 notation, ticked boxes, and an unsent message, including one kept after saving
 or re-rendered after a rejected or failed request) and not while saving; byte
 counts use UTF-8 like the server limit; and the error summary receives focus,
 with or without the workspace form. Saving, sending, conflicts, and recovery do
 not depend on this script.
+
+## Full practice workspace regression
+
+```sh
+PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
+  poetry run python -m unittest tests.test_practice_browser
+```
+
+This test runs the real Flask templates and native forms inside headless Chrome,
+with a temporary localhost server, disposable SQLite data, CSRF enabled, and a
+scripted AI provider. It checks shared tabs/drafts, focus and scroll continuity,
+keyboard operation, pause/resume, hidden-panel conflicts, an unconfirmed save and
+receipt replay, failed-send recovery, mobile layout, blocked browser storage, and
+saving without JavaScript. External resources are blocked by the fixture CSP.
+It is discovered by the backend CI suite. Chrome is required in CI; local runs
+without Chrome skip with an explicit reason. Set `CHROME_BIN` to override its path.
+No new npm dependency is needed. PostgreSQL races/migrations have separate tests.

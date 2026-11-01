@@ -54,7 +54,7 @@
   <body{% if request.blueprint == 'learning' and current_user.is_authenticated %} class="learning-private"{% endif %}>
     {% block header %}{% include "_header.html" %}{% endblock header %}
     
-    <div class="container">{% block body %}{% endblock body %}</div>
+    <div class="container{% block container_class %}{% endblock %}">{% block body %}{% endblock body %}</div>
     
     {% block footer %}{% include "_footer.html" %}{% endblock footer %}
     

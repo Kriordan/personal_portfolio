@@ -2682,3 +2682,402 @@ li.drag-placeholder {
   padding: 0;
   margin: -1px;
 }
+
+.practice-shell-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: 1440px;
+  margin: auto;
+  padding: 0.75rem 1.5rem;
+  font: 0.875rem/1.5 system-ui, sans-serif;
+  color: #52645d;
+}
+.practice-shell-header a {
+  color: #165448;
+  text-decoration: none;
+}
+
+.container.practice-container {
+  max-width: 1440px;
+  padding: 0 1.5rem 1rem;
+}
+
+.practice-workspace {
+  max-width: none;
+  margin: 0;
+  font: 1rem/1.5 system-ui, sans-serif;
+  color: #1e3028;
+}
+.practice-workspace [hidden] {
+  display: none !important;
+}
+.practice-workspace p, .practice-workspace li, .practice-workspace a, .practice-workspace label, .practice-workspace h1, .practice-workspace h2, .practice-workspace h3, .practice-workspace button {
+  font-family: inherit;
+}
+.practice-workspace h1, .practice-workspace h2, .practice-workspace h3 {
+  font-weight: 600;
+}
+.practice-workspace h1 {
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  margin: 0.25rem 0 0.75rem;
+}
+.practice-workspace h2 {
+  font-size: 1.1rem;
+}
+.practice-workspace h3 {
+  font-size: 1rem;
+}
+.practice-workspace .learning-eyebrow {
+  font-size: 0.8rem;
+  margin: 0.25rem 0;
+}
+.practice-workspace .button {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.875rem;
+  border-width: 1px;
+}
+.practice-workspace .button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.practice-workspace .concept-notice, .practice-workspace .practice-paused, .practice-workspace .practice-budget {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+.practice-workspace .practice-alert {
+  margin: 0.75rem 0;
+}
+.practice-workspace .practice-alert p, .practice-workspace .practice-alert ul {
+  margin: 0.5rem 0;
+}
+.practice-workspace .practice-demo {
+  margin: 0.4rem 0;
+  font-size: 0.75rem;
+  color: #52645d;
+}
+.practice-workspace .practice-layout {
+  margin-top: 0.75rem;
+  gap: 1.5rem;
+}
+.practice-workspace .practice-build, .practice-workspace .practice-discuss {
+  min-width: 0;
+}
+.practice-workspace .practice-pane-heading {
+  margin: 0 0 0.75rem;
+}
+.practice-workspace .practice-conversation-heading h2 {
+  margin: 0;
+}
+.practice-workspace .practice-conversation-heading span {
+  color: #52645d;
+  font-size: 0.8rem;
+}
+.practice-workspace .practice-work-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #d5dfda;
+}
+.practice-workspace .practice-work-tabs button, .practice-workspace .practice-new-messages {
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #43594f;
+  cursor: pointer;
+  min-height: 44px;
+}
+.practice-workspace .practice-work-tabs [aria-selected=true] {
+  background: #eaf3f0;
+  border-color: #c8dcd3;
+  color: #165448;
+  font-weight: 600;
+}
+.practice-workspace .practice-work-tabs .has-attention::after {
+  content: " · !";
+  color: #8a4511;
+}
+.practice-workspace .practice-work-panels {
+  min-width: 0;
+}
+.practice-workspace .practice-brief, .practice-workspace .practice-artifact, .practice-workspace .practice-notes {
+  margin: 0 0 1rem;
+}
+.practice-workspace .practice-artifact-tools {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.practice-workspace .practice-artifact-help {
+  font-size: 0.875rem;
+  flex: 1;
+  min-width: 9rem;
+}
+.practice-workspace .practice-artifact-help summary {
+  min-height: 44px;
+  padding-top: 0.65rem;
+}
+.practice-workspace label.practice-notation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+.practice-workspace .practice-notation select {
+  font-size: 0.875rem;
+}
+.practice-workspace .practice-artifact-help p {
+  margin: 0.5rem 0;
+}
+.practice-workspace .practice-brief h2 {
+  margin-top: 0;
+}
+.practice-workspace .practice-revealed {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0;
+}
+.practice-workspace .practice-editor {
+  font-size: 1rem;
+  min-height: 12rem;
+}
+.practice-workspace .practice-message {
+  min-height: 5rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.practice-workspace .practice-meta, .practice-workspace .practice-cited {
+  font-size: 0.8rem;
+}
+.practice-workspace .practice-artifact .practice-meta {
+  margin: 0.6rem 0 0;
+}
+.practice-workspace .practice-transcript {
+  margin: 1rem 0;
+}
+.practice-workspace .practice-turn {
+  font-size: 0.9375rem;
+  padding: 0.75rem;
+}
+.practice-workspace .practice-speaker {
+  font-size: 0.8rem;
+  color: #43594f;
+}
+.practice-workspace .practice-composer label {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+}
+.practice-workspace .practice-composer .concept-controls {
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: nowrap;
+}
+.practice-workspace .practice-composer .concept-controls .button {
+  flex-shrink: 0;
+}
+.practice-workspace .practice-composer .practice-note {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #52645d;
+}
+.practice-workspace .practice-composer .practice-meta {
+  margin: 0.25rem 0;
+}
+.practice-workspace .practice-reply:has(p) {
+  font-size: 0.875rem;
+  padding: 0.4rem 0.6rem;
+  margin: 0 0 0.5rem;
+}
+.practice-workspace .practice-new-messages {
+  background: #eaf3f0;
+  color: #165448;
+  border-color: #c8dcd3;
+  margin-bottom: 0.5rem;
+}
+.practice-workspace .practice-checkin {
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+}
+.practice-workspace .practice-entry label {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.practice-workspace .practice-work-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+}
+.practice-workspace #practice-save-state {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #52645d;
+}
+.practice-workspace .practice-session-details {
+  font-size: 0.8rem;
+  color: #52645d;
+  padding: 0.5rem 0 1rem;
+}
+.practice-workspace .practice-delete {
+  margin-top: 0.75rem;
+}
+
+.practice-views {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-bottom: 1px solid #d5dfda;
+}
+.practice-views [data-view-tabs] {
+  display: flex;
+  gap: 1.5rem;
+}
+.practice-views a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.6rem 0;
+  color: #52645d;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+.practice-views [aria-selected=true] {
+  color: #17675a;
+  border-bottom-color: #17675a;
+  font-weight: 600;
+}
+.practice-views .practice-shared-session {
+  margin-left: auto;
+  color: #52645d;
+  font-size: 0.8rem;
+}
+
+.practice-workspace.is-enhanced .practice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 0;
+  height: var(--workspace-height, max(31rem, 100dvh - 17rem));
+  border: 1px solid #d5dfda;
+  border-radius: 8px;
+  overflow: hidden;
+  align-items: stretch;
+}
+.practice-workspace.is-enhanced[data-view=build] .practice-layout {
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+}
+.practice-workspace.is-enhanced .practice-build {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.practice-workspace.is-enhanced .practice-pane-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.practice-workspace.is-enhanced .practice-work-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.practice-workspace.is-enhanced .practice-brief, .practice-workspace.is-enhanced .practice-artifact, .practice-workspace.is-enhanced .practice-notes {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.practice-workspace.is-enhanced .practice-artifact.has-conflict, .practice-workspace.is-enhanced .practice-notes.has-conflict {
+  border: 0;
+}
+.practice-workspace.is-enhanced .practice-artifact .practice-editor {
+  height: clamp(12rem, var(--workspace-height) - 14rem, 32rem);
+}
+.practice-workspace.is-enhanced .practice-editor-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.practice-workspace.is-enhanced .practice-discuss {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #d5dfda;
+}
+.practice-workspace.is-enhanced .practice-conversation-heading {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #d5dfda;
+}
+.practice-workspace.is-enhanced .practice-transcript {
+  flex: 1;
+  min-height: 5rem;
+  overflow-y: auto;
+  padding: 0.75rem 1rem 0;
+  margin: 0;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.practice-workspace.is-enhanced .practice-turn:last-child {
+  margin-bottom: 0.5rem;
+}
+.practice-workspace.is-enhanced .practice-composer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #d5dfda;
+  max-height: 65%;
+  overflow-y: auto;
+}
+.practice-workspace.is-enhanced .practice-meta output:not(.is-near):not(.is-over) {
+  display: none;
+}
+.practice-workspace.is-enhanced #message-meta:has(output:not(.is-near):not(.is-over)) {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .practice-shell-header {
+    padding: 0.5rem 1rem;
+  }
+  .container.practice-container {
+    padding: 0 1rem 1rem;
+  }
+  .practice-views, .practice-views [data-view-tabs] {
+    gap: 1.25rem;
+  }
+  .practice-views .practice-shared-session {
+    display: none;
+  }
+  .practice-workspace.is-enhanced .practice-layout, .practice-workspace.is-enhanced[data-view=build] .practice-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .practice-workspace.is-enhanced .practice-build, .practice-workspace.is-enhanced .practice-discuss {
+    height: 100%;
+    flex: 1;
+  }
+  .practice-workspace.is-enhanced[data-view=discuss] .practice-build, .practice-workspace.is-enhanced[data-view=build] .practice-discuss {
+    display: none;
+  }
+  .practice-workspace.is-enhanced .practice-discuss {
+    border-left: 0;
+  }
+}

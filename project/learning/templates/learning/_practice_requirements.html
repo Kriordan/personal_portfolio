@@ -1,0 +1,14 @@
+<section class="practice-brief" id="requirements" data-work-panel="requirements" aria-labelledby="requirements-heading">
+  <h2 id="requirements-heading">Scenario and requirements</h2>
+  <p>{{ detail.brief.scenario }}</p>
+  <h3>Functional requirements</h3>
+  <ul>{% for requirement in detail.brief.functional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
+  <h3>Nonfunctional requirements</h3>
+  <ul>{% for requirement in detail.brief.nonfunctional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
+  <h3>What feedback will consider</h3>
+  <ul>{% for dimension in detail.brief.assessment_dimensions %}<li>{{ dimension.label }}</li>{% endfor %}</ul>
+<section class="practice-revealed" aria-labelledby="revealed-heading">
+  <h3 id="revealed-heading">Revealed requirements</h3>
+  <div id="revealed-requirements">{% with revealed=detail.revealed_requirements %}{% include "learning/_practice_revealed.html" %}{% endwith %}</div>
+</section>
+</section>

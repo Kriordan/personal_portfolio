@@ -392,3 +392,33 @@ What changed for activation:
 - The defaults for deadlines, output caps, and the context allowance were checked against 216 live Sol calls and kept.
 
 Verification: the full suite passed with PostgreSQL (515 tests, one skipped), including the migration round trip and the comparison of the migrated schema with the models. One live session ran through the app on a disposable database: three turns through Send, the worker, the call process, and the ledger, with Sol as the default, for $0.013. No front-end code changed, so the Node and browser suites weren't rerun. Nothing was pushed, deployed, migrated in production, or published.
+
+## Workspace checkpoint: tabs and conversation continuity (November 1)
+
+Keith approved this UI checkpoint after reviewing the practice workspace. It keeps Milestone 1 on web and does not start feedback, Expo, or content expansion.
+
+The practice page now has **Learn / Review / Discuss / Build** navigation. Learn and Review open the existing lesson and review pages. Discuss and Build share one session and one native form: both panes remain visible on desktop, with more room for the selected activity; small screens show the selected pane. **Brief / API / Schema / Pseudocode / Notes** tabs expose one work area at a time. Instructions and session details use disclosure controls, and new note fields appear on demand. The compact header applies only to practice.
+
+The implementation deliberately keeps native POST/redirect behavior instead of adding a second write protocol. Hidden panels retain their enabled form controls, so Save, Send, Pause, and reply recovery actions still submit every artifact and note with the existing CSRF token, request UUID, expected sequence, and revisions. The server's conflict and standalone rescue pages remain authoritative. There are no service, API, schema, migration, review-scheduling, or AI-prompt changes.
+
+The UI restores the selected work tab, transcript position, and editing focus after native navigation. Send returns focus to the composer and the latest exchange. Save restores the editor's selection, identifying notes by their stable entry ID when removing another entry changes their form indices. Incoming replies preserve an unsent message and do not pull a reader away from earlier turns; a New messages button offers a jump, and mobile Build shows a new-reply indicator on Discuss. Error-summary links reveal the relevant hidden panel. Byte-limit warnings, leave-page protection, and all existing recovery controls remain available.
+
+Browser storage contains only view/scroll preferences and temporary focus/caret metadata. It never contains learner text, session content, server revisions, or tokens. This is not draft autosave: unsaved text still needs Save or Send before leaving. If storage is blocked, tabs still work and the URL carries the view. Without JavaScript, all work fields remain visible and native saving works.
+
+Implementation is in `practice.html` and its five extracted partials, `learning-workspace.js`, scoped `learning-workspace.scss`, and small event/save-indicator additions in `learning-practice.js`. `base.html` only adds an overridable container-class block. Generated CSS is committed. No new runtime or test dependency was added.
+
+Verification:
+
+- **516 backend tests run, 515 passed, one existing Linux-only test skipped on macOS**, using an isolated PostgreSQL **18.6** cluster. This includes migration, concurrency, budget, and recovery coverage.
+- **41 focused web/browser tests passed after the final UI refinements**, including **97 integrated browser assertions**. The new `tests/test_practice_browser.py` serves actual Flask pages with CSRF and a deterministic fake interviewer; Chrome drives native submissions, redirects, and polling. It exercises hidden-field saves, keyboard tabs, focus/selection and scroll continuity, note reindexing, Pause/Resume, stale conflicts from another tab, lost-response receipt replay, failed writes, mobile 390/320-pixel layouts, blocked storage, and no-JavaScript saves. It also checks that reference/evaluation sentinels and analytics are absent from the page. It runs in normal backend unittest discovery; Chrome is required in CI.
+- Existing root checks: **13 Node tests**, dependency integrity, and **102 browser checks** passed; Sass compiled. The full PostgreSQL run preceded the final UI-only refinements; the focused suite was rerun afterward.
+- The disposable fixture was inspected on desktop and at 390 pixels. The final pass fixed a clipped Send control and focus restoration when a note's form index changes. Safari, Firefox, and a screen-reader audit remain outstanding.
+
+For the new targeted check:
+
+```sh
+PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
+  poetry run python -m unittest tests.test_practice_browser
+```
+
+The [hands-on workspace guide](learning-workspace-test-guide.md) walks through Elements, Console, Network, HTTPie failure simulation, and a short Performance recording. Use the disposable fake-provider fixture; it does not load paid AI credentials or write to real progress. Nothing was pushed, deployed, or migrated in production.

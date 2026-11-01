@@ -1,182 +1,67 @@
 {% extends 'base.html' %}
 {% block title %}Practice · {{ detail.session.exercise_title }}{% endblock %}
+{% block container_class %} practice-container{% endblock %}
+{% block header %}
+<header class="practice-shell-header"><a href="{{ url_for('learning.index') }}">← Learning</a><span>Engineering practice</span></header>
+{% endblock %}
+{% block footer %}{% endblock %}
 {% block body %}
-<main class="practice" aria-labelledby="practice-title">
-  <a href="{{ url_for('learning.concept', concept_id=detail.session.concept_id) }}">← Back to the lesson</a>
-  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable practice data · draft content for review</p>{% endif %}
-  <p class="learning-eyebrow">Practice · {{ status_label }} · Exercise version {{ detail.session.exercise_version }}</p>
-  <h1 id="practice-title">{{ detail.session.exercise_title }}</h1>
-  {% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
-  {% if notice %}<p class="concept-notice" role="status">{{ notice }}</p>{% endif %}
-  {% if detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
-    <p class="practice-budget">{% if detail.ai_budget.exhausted %}This month's AI budget is used up: replies resume next month. Reading, saving, and sending still work.{% else %}AI spending this month: {{ money(detail.ai_budget.spent_microusd) }} of {{ money(detail.ai_budget.cap_microusd) }}.{% endif %}</p>
-  {% endif %}
-  {% if paused %}<p class="practice-paused">This session is paused. Saving, sending, or resuming picks it up again.</p>{% endif %}
-  {% if alert %}
-    <div class="practice-alert" id="practice-alert" role="alert" tabindex="-1">
-      <p>{{ alert }}</p>
-      {% if errors or conflicts or brief_conflict or refreshed or brief_refreshed or new_after is not none %}
-        <ul>
-          {% for artifact_id, message in (errors.artifacts or {}).items() %}
-            <li><a href="#artifact-{{ artifact_id }}">{{ artifacts[artifact_id].title if artifact_id in artifacts else 'Artifact' }}: {{ message }}</a></li>
-          {% endfor %}
-          {% if errors.brief %}<li><a href="#session-brief">Your brief: {{ errors.brief }}</a></li>{% endif %}
-          {% if errors.message %}<li><a href="#message">Your message: {{ errors.message }}</a></li>{% endif %}
-          {% for artifact in detail.artifacts if artifact.artifact_id in conflicts %}
-            <li><a href="#artifact-{{ artifact.artifact_id }}">{{ artifact.title }} changed elsewhere</a></li>
-          {% endfor %}
-          {% if brief_conflict %}<li><a href="#session-brief">Your brief changed elsewhere</a></li>{% endif %}
-          {% for artifact in detail.artifacts if artifact.artifact_id in refreshed %}
-            <li><a href="#artifact-{{ artifact.artifact_id }}">{{ artifact.title }} was updated elsewhere and is now shown</a></li>
-          {% endfor %}
-          {% if brief_refreshed %}<li><a href="#session-brief">Your brief was updated elsewhere and is now shown</a></li>{% endif %}
-          {% if new_after is not none %}<li><a href="#conversation">New messages arrived</a></li>{% endif %}
-        </ul>
-      {% endif %}
+<main class="practice practice-workspace" aria-labelledby="practice-title" data-practice-workspace>
+  <div class="practice-heading">
+    <p class="learning-eyebrow">Practice · {{ status_label }}</p>
+    <h1 id="practice-title">{{ detail.session.exercise_title }}</h1>
+  </div>
+  <nav class="practice-views" aria-label="Concept views">
+    <a href="{{ url_for('learning.concept', concept_id=detail.session.concept_id) }}">Learn</a>
+    <a href="{{ url_for('learning.concept_review', concept_id=detail.session.concept_id) }}">Review</a>
+    <div data-view-tabs>
+      <a href="#conversation" id="practice-view-discuss" data-practice-view="discuss">Discuss<span data-discussion-new hidden> · new</span></a>
+      <a href="#work" id="practice-view-build" data-practice-view="build">Build</a>
     </div>
-  {% endif %}
+    <span class="practice-shared-session">One shared session</span>
+  </nav>
+  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="practice-demo">Local demo · disposable practice data · draft content for review</p>{% endif %}
+  {% include 'learning/_practice_notices.html' %}
 
   <form method="post" action="{{ url_for('learning.practice_workspace', session_id=detail.session.id) }}" data-practice-form{% if unsaved %} data-unsaved{% endif %}>
     {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_sequence }}{{ form.brief_revision }}
-    {#- The first submit button is what Enter in a field presses (some browsers do this from a checkbox): make it Save, never Send. #}
+    {# Enter in a non-message field must still Save, never Send. #}
     <button class="practice-default-action" name="action" value="save" tabindex="-1" aria-hidden="true">Save work</button>
-    <div class="practice-layout">
-      <section class="practice-discuss" aria-labelledby="discuss-heading">
-        <h2 id="discuss-heading">Discuss</h2>
-        <details class="practice-brief" open>
-          <summary>Scenario and requirements</summary>
-          <p>{{ detail.brief.scenario }}</p>
-          <h3>Functional requirements</h3>
-          <ul>{% for requirement in detail.brief.functional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
-          <h3>Nonfunctional requirements</h3>
-          <ul>{% for requirement in detail.brief.nonfunctional_requirements %}<li>{{ requirement }}</li>{% endfor %}</ul>
-          <h3>What feedback will consider</h3>
-          <ul>{% for dimension in detail.brief.assessment_dimensions %}<li>{{ dimension.label }}</li>{% endfor %}</ul>
-        </details>
-        <section class="practice-revealed" aria-labelledby="revealed-heading">
-          <h3 id="revealed-heading">Revealed requirements</h3>
-          <div id="revealed-requirements">{% with revealed=detail.revealed_requirements %}{% include "learning/_practice_revealed.html" %}{% endwith %}</div>
-        </section>
-
-        <h3 id="conversation">Conversation</h3>
-        {% set reads_from = detail.context_choices[-1].from_sequence if detail.context_choices else none %}
-        <ol class="practice-transcript" id="transcript" aria-labelledby="conversation">
-          {% for message in detail.messages %}
-            {% if message.sequence == reads_from %}
-              <li class="practice-reads-from" id="reads-from">The interviewer reads from here on: you chose to continue with recent messages. Earlier messages stay in this record.</li>
-            {% endif %}
-            {% with is_new=(new_after is not none and message.sequence > new_after), session_id=detail.session.id %}{% include "learning/_practice_turn.html" %}{% endwith %}
+    <div class="practice-layout" id="practice-layout">
+      <section class="practice-build" id="work" aria-labelledby="build-heading">
+        <h2 id="build-heading" class="practice-pane-heading">Your work</h2>
+        <div class="practice-work-tabs" data-work-tabs hidden>
+          <button type="button" id="work-tab-requirements" data-work-target="requirements">Brief <span data-requirements-new hidden>· new</span></button>
+          {% for artifact in detail.artifacts %}
+            <button type="button" id="work-tab-{{ artifact.artifact_id }}" data-work-target="artifact-{{ artifact.artifact_id }}">{{ {'api': 'API', 'schema': 'Schema', 'algorithm': 'Pseudocode'}.get(artifact.artifact_id, artifact.title) }}</button>
           {% endfor %}
-        </ol>
-        <div class="practice-reply" id="reply-status" role="status" data-reply-poll="{{ url_for('learning.practice_reply', session_id=detail.session.id) }}"{% if reply_live %} data-reply-live{% endif %}>
-          {% with reply=detail.reply, polled=False %}{% include "learning/_practice_reply_status.html" %}{% endwith %}
+          <button type="button" id="work-tab-notes" data-work-target="session-brief">Notes</button>
         </div>
-        {% if detail.check_in_due %}
-          <p class="practice-checkin">You've sent {{ detail.learner_turns }} messages in this session. Keep going while it helps, or pause and pick it up later.</p>
-        {% endif %}
-        {% set message_attributes = {"aria-describedby": "message-help message-meta"} %}
-        {% if errors.message %}{% set _ = message_attributes.update({"aria-invalid": "true"}) %}{% endif %}
-        <label for="{{ form.message.id }}">Your message</label>
-        {{ form.message(rows=4, class="practice-editor practice-message", spellcheck="true", data_draft=True, **message_attributes) }}
-        <p class="practice-meta" id="message-meta"><output data-byte-count="{{ form.message.id }}" data-limit="{{ limits.turn }}"></output></p>
-        {% if errors.message %}<p class="practice-error">{{ errors.message }}</p>{% endif %}
-        <p class="practice-note" id="message-help">Sending also saves your artifacts and brief, and records the revisions you sent with.{% if reply_live %} You can send again once the interviewer has replied.{% endif %}</p>
-        <div class="concept-controls"><button class="button" name="action" value="send"{% if reply_live %} disabled{% endif %}>Send message</button></div>
-
-        <fieldset class="practice-notes{% if brief_conflict %} has-conflict{% endif %}" id="session-brief" aria-describedby="brief-help">
-          <legend>Your brief</legend>
-          <p class="practice-instructions" id="brief-help">Track your assumptions, open questions, decisions, and next step. Pin the entries that matter most. To drop an entry, clear its text or tick Remove.</p>
-          <p class="practice-meta">{% if detail.session_brief.revision %}Saved revision {{ detail.session_brief.revision }}, {{ detail.session_brief.saved_at|practice_time }}{% else %}Not saved yet{% endif %}</p>
-          {% if brief_refreshed %}<p class="practice-refreshed">Updated elsewhere: these entries are the latest saved brief.</p>{% endif %}
-          {% if errors.brief %}<p class="practice-error">{{ errors.brief }}</p>{% endif %}
-          {% for row in form.brief %}
-            {% set filled = row.text.data and row.text.data.strip() %}
-            {% set text_attributes = {} %}
-            {% if errors.brief and errors.brief_entry and errors.brief_entry == row.entry_id.data %}{% set _ = text_attributes.update({"aria-invalid": "true"}) %}{% endif %}
-            <fieldset class="practice-entry" id="brief-entry-{{ row.entry_id.data }}">
-              <legend>{% if filled %}Entry {{ loop.index }}{% else %}New entry{% endif %}{% if row.pinned.data %} · pinned{% endif %}</legend>
-              {{ row.entry_id }}{{ row.sources }}
-              <label for="{{ row.kind.id }}">Kind</label>
-              {{ row.kind() }}
-              <label for="{{ row.text.id }}">Text</label>
-              {{ row.text(rows=2, class="practice-entry-text", **text_attributes) }}
-              {% if sources[row.entry_id.data] %}
-                <p class="practice-cited">From
-                  {% for source in sources[row.entry_id.data] %}
-                    {%- if source.turn is defined %}<a href="#turn-{{ source.turn }}">turn {{ source.turn }}</a>
-                    {%- elif source.artifact_id in artifacts %}<a href="{{ url_for('learning.practice_revision', session_id=detail.session.id, artifact_id=source.artifact_id, revision=source.revision) }}">{{ artifacts[source.artifact_id].title }} revision {{ source.revision }}</a>
-                    {%- endif %}{% if not loop.last %}, {% endif %}
-                  {%- endfor %}
-                </p>
-              {% endif %}
-              <div class="practice-checks">
-                <label class="practice-check">{{ row.pinned() }} Pin</label>
-                {% if filled %}<label class="practice-check">{{ row.remove() }} Remove</label>{% endif %}
-              </div>
-            </fieldset>
-          {% endfor %}
-          {% if brief_conflict %}
-            <div class="practice-conflict">
-              <h3>Saved elsewhere: brief revision {{ brief_conflict.revision }}</h3>
-              <p>Your entries above are not saved. Saving again makes them revision {{ brief_conflict.revision + 1 }}; the version below stays in the session record.</p>
-              {% if brief_conflict.entries %}
-                <ul class="practice-conflict-entries">{% for item in brief_conflict.entries %}<li><strong>{{ type_labels[item.type] }}{% if item.pinned %} (pinned){% endif %}:</strong> {{ item.text }}</li>{% endfor %}</ul>
-              {% else %}<p>That version has no entries.</p>{% endif %}
-            </div>
-          {% endif %}
-          <div class="concept-controls"><button class="button button--secondary" name="action" value="save">Save work</button></div>
-        </fieldset>
+        <div class="practice-work-panels">
+          {% include 'learning/_practice_requirements.html' %}
+          {% include 'learning/_practice_artifacts.html' %}
+          {% include 'learning/_practice_notes.html' %}
+        </div>
       </section>
-
-      <section class="practice-build" aria-labelledby="build-heading">
-        <h2 id="build-heading">Build</h2>
-        {% for entry in form.artifacts %}
-          {% set artifact = artifacts[entry.artifact_id.data] %}
-          {% set conflict = conflicts.get(artifact.artifact_id) %}
-          {% set error = (errors.artifacts or {}).get(artifact.artifact_id) %}
-          {% set attributes = {"aria-describedby": entry.body.id ~ "-help " ~ entry.body.id ~ "-meta"} %}
-          {% if error or conflict %}{% set _ = attributes.update({"aria-invalid": "true"}) %}{% endif %}
-          <fieldset class="practice-artifact{% if conflict %} has-conflict{% endif %}" id="artifact-{{ artifact.artifact_id }}">
-            <legend>{{ artifact.title }}</legend>
-            <p class="practice-instructions" id="{{ entry.body.id }}-help">{{ artifact.instructions }}</p>
-            {{ entry.artifact_id }}{{ entry.base_revision }}
-            {% if artifact.languages|length > 1 %}
-              <label for="{{ entry.language.id }}">Notation</label>
-              {{ entry.language() }}
-            {% else %}
-              <input type="hidden" name="{{ entry.language.name }}" value="{{ artifact.languages[0] }}">
-              <p class="practice-meta">Notation: {{ language_labels[artifact.languages[0]] }}</p>
-            {% endif %}
-            {% if artifact.artifact_id in refreshed %}<p class="practice-refreshed">Updated elsewhere: this box now shows saved revision {{ artifact.revision }}.</p>{% endif %}
-            <label for="{{ entry.body.id }}">{{ artifact.title }} draft</label>
-            {{ entry.body(rows=12, class="practice-editor", spellcheck="false", autocapitalize="off", **attributes) }}
-            <p class="practice-meta" id="{{ entry.body.id }}-meta">
-              {% if artifact.revision %}Saved revision {{ artifact.revision }}, {{ artifact.saved_at|practice_time }}{% else %}Not saved yet{% endif %}
-              <output data-byte-count="{{ entry.body.id }}" data-limit="{{ limits.artifact }}"></output>
-              {% if artifact.revision %}<a href="{{ url_for('learning.practice_history', session_id=detail.session.id, artifact_id=artifact.artifact_id) }}">History</a>{% endif %}
-            </p>
-            {% if error %}<p class="practice-error">{{ error }}</p>{% endif %}
-            {% if conflict %}
-              <div class="practice-conflict">
-                <h3>Saved elsewhere: revision {{ conflict.revision }} ({{ language_labels[conflict.language] }})</h3>
-                <p>Your text is still in the box above and is not saved. Saving again makes your text revision {{ conflict.revision + 1 }}; this version stays in the history.</p>
-                <pre>{{ conflict.body }}</pre>
-              </div>
-            {% endif %}
-          </fieldset>
-        {% endfor %}
-        <div class="concept-controls">
-          <button class="button" name="action" value="save">Save work</button>
-          {% if paused %}
-            <button class="button button--secondary" name="action" value="resume">Resume session</button>
-          {% else %}
-            <button class="button button--secondary" name="action" value="pause">Save and pause</button>
-          {% endif %}
-        </div>
+      <section class="practice-discuss" aria-labelledby="conversation">
+        <div class="practice-conversation-heading"><h2 id="conversation">Interviewer</h2><span>Explain your reasoning. Ask to clarify.</span></div>
+        {% include 'learning/_practice_conversation.html' %}
       </section>
     </div>
+    <div class="practice-work-actions">
+      <p id="practice-save-state" role="status">{% if unsaved %}Your work needs attention.{% else %}No unsaved changes.{% endif %}</p>
+      <div class="concept-controls">
+        <button class="button button--secondary" name="action" value="save">Save work</button>
+        {% if paused %}<button class="button button--secondary" name="action" value="resume">Resume session</button>
+        {% else %}<button class="button button--secondary" name="action" value="pause">Save and pause</button>{% endif %}
+      </div>
+    </div>
   </form>
-  <p class="practice-delete"><a href="{{ url_for('learning.practice_delete', session_id=detail.session.id) }}">Delete this practice session</a></p>
+  <details class="practice-session-details"><summary>Session details</summary>
+    <p>Exercise version {{ detail.session.exercise_version }} · {{ status_label }}</p>
+    <p>Discuss and Build use the same conversation, artifacts, and notes. Saving and sending record your work; switching views does not send a message.</p>
+    <p class="practice-delete"><a href="{{ url_for('learning.practice_delete', session_id=detail.session.id) }}">Delete this practice session</a></p>
+  </details>
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/learning-workspace.js') }}"></script><script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}
