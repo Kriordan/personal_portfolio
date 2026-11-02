@@ -16,7 +16,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | UI follow-up 1. Learning home | Compact home with one continuation action; dedicated reference and personal-flashcard catalogs; preserve existing review and practice behavior. | Implemented November 2; see Learning home checkpoint below. |
 | Login boundary | Require login for every Learning website route; retain JWT API authentication and private cache headers. | `e1a90bc`, November 2. |
 | UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Implemented November 2; see Shared concept workspace below. |
-| 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
+| 5a. Feedback foundation | Content schema 2 and exercise revision 2 with evaluator-only misconception mappings; validate remediation links; preserve v1 sessions and review history. | Implemented November 2; see Checkpoint 5a below. |
+| 5b onward. Feedback and complete demonstration | Deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started; next checkpoint requires approval. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -561,3 +562,59 @@ Use the [hands-on concept guide](learning-concept-workspace-test-guide.md) to
 inspect links, requests, forms, and the navigation helper. Safari, Firefox, and
 a screen-reader audit remain outstanding. Feedback/export and Milestone 2 have
 not started. No paid AI call, push, deployment, or production migration occurred.
+
+
+## Checkpoint 5a: feedback content foundation (November 2)
+
+Keith approved the feedback foundation as a separate checkpoint. The new
+`curriculum/idempotency/catalog-v2.json` contains the same concept, four questions,
+and exercise, with four evaluator-only misconception mappings. Each connects a
+mistaken reasoning pattern to an assessment dimension, evidence guidance, a
+lesson section, existing review questions, and a suggested next step. The
+guidance distinguishes demonstrated errors from missing evidence and valid
+alternatives. The material remains a draft requiring human technical review.
+
+Catalog/spec pairs 1/1 and 2/2 are validated explicitly. Version 2 requires
+1–100 mappings and 1–100 unique review targets per mapping; unknown fields,
+duplicate IDs, missing or wrong-kind references, invalid sections/dimensions,
+and questions from the wrong remediation concept are rejected. The evaluator
+projection selects the contract for the pinned spec. Other audience projections
+remain unchanged and exclude all mappings.
+
+The original catalog and Markdown are preserved. All six v2 item revisions
+advance because the existing checksum includes the catalog schema version.
+Their stable IDs and all prior lesson, question, brief, facilitator, and
+assessment content remain unchanged. The importer, storage schema, scheduler,
+practice writes, prompts, budgets, and recovery behavior need no changes. Drafts
+do not replace published content; older sessions and review attempts stay pinned
+after v2 publication. No content was published in the application database.
+
+Sixteen new tests cover:
+
+- Ten content-contract tests: strict versions/fields, bounds/duplicates,
+  reference closure, valid remediation to another concept, immutable checksums,
+  unchanged v1 content, projection copies/privacy, CLI validation without tables,
+  and blocked source URLs.
+- Three integration tests: old/new session rendering, existing JWT API saves,
+  and both versions completing real worker flows with a scripted fake provider.
+  Private sentinels are present in the evaluator snapshot but absent from HTML,
+  learner DTOs, and selector/interviewer requests.
+- Three PostgreSQL tests: dry run/drafts/publication/replay, unchanged saved
+  sessions and review rows, a pinned old review finishing after publication,
+  immutable mapping conflicts with full-batch rollback, and conflicting
+  concurrent v2 publishers producing one consistent snapshot.
+
+The 36-test focused suite passed on PostgreSQL 18.6, including the existing
+migration round trip and schema comparison. The [5a REPL guide](learning-checkpoint-5a-test-guide.md)
+provides hands-on inspection, reference failures, and debugger stepping.
+
+Final verification: **554 backend tests run, 553 passed, one existing Linux-only
+JobWizard test skipped on macOS**, with PostgreSQL **18.6**. The complete run
+includes migration/schema, concurrency, budget, recovery, and the 70 concept,
+60 hub, and 97 practice browser checks. Front-end files did not change; the
+separate Node/renderer suite was not repeated. `git diff --check` passed.
+
+The preview still uses v1; there is no new UI in this checkpoint. Submission
+snapshots, deterministic artifact checks, generated feedback, learner acceptance,
+targeted review, and export remain for subsequent checkpoints. No new dependency,
+infrastructure, migration, paid AI call, push, or deployment was introduced.

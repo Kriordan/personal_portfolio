@@ -1,6 +1,6 @@
 # Engineering Learning Platform Handoff
 
-As of November 2, 2026, **Milestone 1 is partially implemented. Learn, Review, Discuss, and Build now share one concept workspace. Practice sessions hold artifacts with history/conflict recovery, cited discussion turns, an editable brief, and pause/resume/delete (checkpoints 3a/3b). The interviewer has durable requests, owner-only paid access, budget/context limits, clarification-based disclosure, and explicit continuation/retry (4a/4b). Local activation selected `gpt-6.1-sol` at low reasoning on October 30 after live evaluations. The Learning home has one continuation card and separate reference/flashcard catalogs. Every Learning website route now requires login. Navigation through the lesson and reviews preserves the selected practice session, including an older session. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: review the completed UI checkpoint with Keith, then agree the first small checkpoint 5 implementation (see Recommended next checkpoint).
+As of November 2, 2026, **Milestone 1 is partially implemented. Learn, Review, Discuss, and Build now share one concept workspace. Practice sessions hold artifacts with history/conflict recovery, cited discussion turns, an editable brief, and pause/resume/delete (checkpoints 3a/3b). The interviewer has durable requests, owner-only paid access, budget/context limits, clarification-based disclosure, and explicit continuation/retry (4a/4b). Local activation selected `gpt-6.1-sol` at low reasoning on October 30 after live evaluations. The Learning home has one continuation card and separate reference/flashcard catalogs. Every Learning website route now requires login. Navigation through the lesson and reviews preserves the selected practice session, including an older session. Checkpoint 5a adds version-2 evaluator-only misconception mappings with v1 compatibility; it does not generate feedback yet. Nothing is deployed. Feedback generation and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: review 5a and agree the next feedback checkpoint (see Recommended next checkpoint).
 
 This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the Learning UI/login follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
@@ -48,7 +48,8 @@ Within Milestone 1:
 | 4 activation | Learning's OpenAI project and key (Keith), live evaluations, model choice, verified prices. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning. Production enablement waits for content review. |
 | Workspace follow-up | Compact practice shell, shared Discuss/Build views, artifact/reference tabs, native POST continuity, and integrated browser recovery checks. | Implemented locally November 1; separate checkpoint commit. |
 | Learning UI/login follow-ups | Compact home and library catalogs; all Learning behind login; shared four-mode concept workspace with exact-session continuity. | Implemented locally November 2. Home: `30aea19`; login: `e1a90bc`; shared workspace in a separate checkpoint commit. |
-| 5 | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started. |
+| 5a | Feedback content foundation: v2 misconception mappings and backward compatibility. | Implemented locally November 2; separate checkpoint commit. |
+| 5b onward | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started; next checkpoint requires approval. |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
 
@@ -96,13 +97,45 @@ No push, PR, deployment, production migration, or production publication was per
 
 The exercise expects `api`, `schema`, and `algorithm` artifacts; an exercise may expect at most 20, so they fit one practice form and one save. Its schema separates `brief`, `facilitator`, and `assessment`. The brief contains scenario, objectives, functional/nonfunctional requirements, prerequisites, artifact expectations, and public assessment dimensions. Server-side content contains disclosure cues/facts, interviewer instructions, allowed hints, alternative approaches, anchored rubrics, and remediation links. Do not copy those private packets into future UI fixtures, HTML, bundles, or session exports.
 
-`schema_version: 1` versions the catalog; exercise `spec_version: 1` versions the simulation contract; each item's integer `version` versions its content. Strict schemas reject unknown fields, invalid or duplicate IDs, duplicate JSON keys, invalid references, prerequisite cycles, and invalid versions, including booleans masquerading as integers. Markdown paths cannot escape the package, including through symlinks. Resolved Markdown text participates in the checksum.
+`schema_version` versions the catalog; exercise `spec_version` versions the simulation contract; each item's integer `version` versions its content. Supported catalog/spec pairs are 1/1 and 2/2. Strict schemas reject unknown fields, invalid or duplicate IDs, duplicate JSON keys, invalid references, prerequisite cycles, and invalid versions, including booleans masquerading as integers. Markdown paths cannot escape the package, including through symlinks. Resolved Markdown text participates in the checksum.
 
 `CurriculumItem` stores stable ID and kind. `ContentRevision` uses `(item_id, version)` as its primary key and stores schema version, checksum, resolved JSON payload, import timestamp, and publication attestation. Content immutability is enforced by application import paths; it is not a database permission boundary against administrators.
 
 `validate-curriculum` validates files without accessing database tables. `import-curriculum` requires PostgreSQL and defaults to rollback. `--apply` saves drafts. Publication additionally requires `--publish`, a real `--reviewed-by`, and actual `--reviewed-on` date. The importer owns a separate transaction, uses a PostgreSQL advisory transaction lock to serialize rare catalog writes, and atomically imports/publishes the batch. Ordinary review operations do not acquire that lock.
 
 Repeating identical content is safe. Changing a payload under the same ID/version fails. Publishing behind a newer published revision fails. Omitting items does not delete or retire them. There is no startup/migration content seed, retirement workflow, or content administration UI.
+
+### Feedback content foundation (checkpoint 5a)
+
+[The version-2 draft](../curriculum/idempotency/catalog-v2.json) retains the same
+six stable IDs and adds four `assessment.misconceptions` mappings: uncertain
+outcomes, simultaneous absence checks, operation identity, and remote effects.
+Each has a stable ID within the exercise, rubric dimension, description,
+evidence guidance, remediation concept/section, review question IDs, and a
+suggested next step. Guidance requires evidence and allows valid alternatives;
+the mappings themselves are not diagnoses or executable checks.
+
+The validator checks dimensions and the full reference closure. Linked questions
+must belong to the remediation concept. Duplicate mapping/question IDs, unknown
+fields, empty or oversized collections, unsupported versions, and invalid
+targets fail closed. `evaluator_view` dispatches by the pinned exercise's spec
+version; v1 keeps its old projection. No mapping reaches learner HTML/API DTOs,
+opening prompts, disclosure selectors, or interviewer calls. The public source
+repository remains inspectable.
+
+The original catalog and Markdown are unchanged. All six v2 item revisions
+advance because the existing immutable checksum includes the catalog schema
+version. Lesson/question content, stable review IDs, the learner brief,
+facilitator, and prior assessment text are unchanged. No importer/checksum
+rewrite, database migration, automatic publication, progress reset, or session
+backfill was needed. Draft v2 does not hide published v1; after explicit
+publication, new sessions use v2 while older sessions and open review attempts
+stay pinned. Publication and review coexistence are tested on PostgreSQL.
+
+This checkpoint does not add submission messages, feedback generation/storage,
+deterministic artifact checks, accepted findings, or follow-up review. The
+disposable preview still loads v1. Use the [5a REPL guide](learning-checkpoint-5a-test-guide.md)
+and [curriculum contract](../curriculum/README.md) to inspect the new content.
 
 ### Web Learn and Review
 
@@ -281,7 +314,7 @@ Required deterministic recovery case: more than 24 learner turns, a worker resta
 
 Distinguish confirmed errors, concerns requiring review, defensible trade-offs, and “not observed.” Accept valid alternatives. Record assistance, allow feedback annotations/disputes, and suggest remediation from accepted gaps without modifying review history. Avoid authoritative ability scores. Milestone 1 must demonstrate a meaningful strength, an evidenced concern when present, and a useful next step.
 
-Two additions, decided October 29: deterministic checks come first, so a JSON or YAML API definition that fails to parse is a confirmed finding; and content schema 2 adds misconception mappings, so a finding the learner accepts can offer its linked questions as an extra, labelled review.
+Two additions, decided October 29: deterministic checks come first, so a JSON or YAML API definition that fails to parse is a confirmed finding; and a finding the learner accepts can offer its linked questions as an extra, labelled review. Checkpoint 5a now supplies the versioned misconception mappings; artifact checks, feedback, acceptance, and follow-up review remain to be implemented.
 
 Use reviewed, versioned evaluation fixtures for correct alternatives, clear errors, missing evidence, assisted answers, and adversarial instructions embedded in learner work. Reject fabricated evidence; require no critical technical misgrading in the reviewed release set. The original pilot targets are conversational p95 completion under 15 seconds and final-feedback p95 under 45 seconds. Measure these with the chosen configuration; they are acceptance targets, not achieved performance.
 
@@ -293,6 +326,7 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | --- | --- |
 | [Content schema](../project/learning/content_schema.py) | Strict validation, Markdown resolution, audience projections. |
 | [Curriculum service](../project/services/curriculum_service.py) | Checksums, atomic PostgreSQL import/publication, published reads, review adapter. |
+| [V2 catalog](../curriculum/idempotency/catalog-v2.json), [v2 contract tests](../tests/test_curriculum_v2.py), [boundary tests](../tests/test_feedback_foundation_boundaries.py) | Misconception mappings, strict reference checks, v1 compatibility, and learner/interviewer privacy. Publication/progress/concurrency coverage is in `test_curriculum_postgres.py`. |
 | [Learning service](../project/services/learning_service.py) | Existing queues, scheduler integration, revision checks, user lock, rating/receipt transaction. Preserve these guarantees. |
 | [Models](../project/models.py) and [migrations](../migrations/versions/) | Catalog, review, and practice persistence. |
 | [Practice service](../project/services/practice_service.py) | The only practice writer: sessions, artifact saves and conflicts, turns, the brief, replies (queueing, the call check, completion), receipts, owner-scoped reads, log-safe failure summaries. |
@@ -342,7 +376,13 @@ Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections
 
 ## Verification evidence and commands
 
-Latest verification, November 2, for the login and shared concept workspace:
+Latest verification, November 2, for checkpoint 5a:
+
+- **554 backend tests run: 553 passed, one existing Linux-only JobWizard test skipped on macOS**, using isolated **PostgreSQL 18.6**. The full run includes migrations/schema comparison, publication concurrency, budget, failure recovery, and all three browser walkthroughs (70 concept, 60 hub, 97 practice checks).
+- **16 new tests** cover versioned content/validation, learner and interviewer boundaries with a scripted provider, immutable v2 publication/conflicts, unchanged v1 sessions and progress, and an old review completing after v2 publication. The 36-test focused suite also passed against PostgreSQL.
+- No front-end files changed, so the separate Node/renderer suite was not repeated. No paid provider, preview reset, application publication, migration, push, or deployment was performed. The new content remains a draft.
+
+Earlier verification, November 2, for the login and shared concept workspace:
 
 - **538 backend tests run: 537 passed, one existing Linux-only JobWizard test skipped on macOS**, using isolated **PostgreSQL 18.6**. Migration/schema, concurrency, budget, and recovery tests ran against PostgreSQL.
 - Included browser walkthroughs: **70 shared concept checks**, **60 Learning hub checks**, and **97 practice recovery checks**. New route tests cover selected-session ownership, no navigation writes, CSRF, review receipt replay, stale/failed ratings, and the practice flag. All use disposable data and deterministic providers.
@@ -434,17 +474,18 @@ These fixtures drop tables and reset migration state. Never use a database conta
 - **A check must not trust what it checks.** The evaluation harness first took "what the reply may reveal" from the facilitator it was checking, so a facilitator that revealed everything looked consistent. It now derives that from the selection. `tests/test_interviewer_eval.py` breaks each check on purpose.
 - **Bytes bound tokens, but escaping inflates bytes.** Reservations price the whole request as sent, where the material is JSON inside JSON and a newline costs three bytes. The allowance measures only what the model reads (instructions and input). Both are safe upper bounds.
 - **Template text isn't escaped; values are.** A literal apostrophe in a template stays `'`, while one inside an inserted value becomes `&#39;`. Tests asserting page text must match which it is.
+- **Schema version participates in content identity.** Do not put unchanged v1 item versions into a schema-2 catalog and expect import to replay: the checksum changes. The v2 draft explicitly advances all six revisions while preserving stable IDs. Keep the old catalog/Markdown intact; future lesson edits need their own source revision too.
 
 ## Open items and decisions to revisit
 
-1. **Human content review and rollout owner:** the exact lesson/questions/exercise/reference packet still need review. Confirm the reviewer and actual review date before publication; schedule the review after exercise version 2 (the start of checkpoint 5), so the reviewer sees the whole exercise once. Migration and deployment haven't happened. Paid-provider activation is done locally (October 30); production enablement waits for this review.
+1. **Human content review and rollout owner:** the exact lesson/questions/exercise/reference packet still need review. Version 2 is now authored in 5a, so the packet includes the misconception mappings. Confirm the reviewer and actual review date before publication. Production migration/deployment haven't happened. Paid-provider activation is done locally (October 30); production enablement waits for this review.
 2. **Enrollment and reading progress:** the original plan includes explicit concept enrollment, reading position, self-assessment, and avoiding automatic due-queue expansion. `UserConceptProgress` does not exist. Currently, visiting a concept's review route offers its four eligible questions, while the legacy API queue is unchanged. Carry this forward as unfinished product work; do not claim enrollment is delivered. Settle its placement before Milestone 1 acceptance, and implement it before content expansion.
 3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
 4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. The `Procfile` runs only `web`, and `run.py` uses Flask's built-in server, so the worker thread starts there and nowhere else.
 5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). Structured AI outputs, feedback annotations, and evidence/coverage validation still need implementation and evaluation. Do not invent a hidden solution-disclosure path when adding these.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
 7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. 4b covered disclosure, hints, the context allowance with oversized essential context, the long-session recovery case, and reviewed interviewer fixtures, all against the fake, and the live interviewer evaluations ran at activation (October 29 and 30). Still outstanding: export, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion.
-8. **Content-schema gaps against the approved plan:** decided October 29. The behaviour profile/version lives in code (item 5), so the facilitator schema stays as it is. Misconception mappings arrive with content schema 2 and exercise version 2 at the start of checkpoint 5.
+8. **Content-schema gaps against the approved plan:** the misconception mapping gap is closed in 5a through catalog/spec version 2 and exercise revision 2. The behaviour profile/version remains in code (item 5); the facilitator schema is unchanged. Feedback evidence/coverage and learner acceptance are still pending.
 9. **Third-party scripts on private pages:** Marked (no SRI) and Alpine (no SRI, in the base template) load from jsDelivr, and the CSP allows `ws:`/`wss:` to any host. The practice workspace loads no Markdown library. Site-wide SRI and a narrower CSP are follow-ups.
 10. **Proposals from the October 28 vision review.** Keith accepted three on October 29 (see Decisions): defer compaction out of Milestone 1, close the misconception loop, and report deterministic JSON/YAML checks first. Three wait for Milestone 1's completion:
     - After Milestone 1, expand content on web and give Expo concept Learn/Review before porting Discuss/Build.
@@ -482,12 +523,15 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** Keith has reviewed the improved UI. Agree a small first
-checkpoint 5 change: content schema 2 and misconception mappings, followed by
-deterministic artifact checks and evidence-linked feedback. The broader
-checkpoint 5 decisions and remaining acceptance work below still apply. Feedback,
-export, Expo, additional personalities, and content expansion have not started.
-Continue using separate commits and approval at meaningful checkpoints.
+**Next:** review the completed 5a content foundation with Keith, then agree the
+next small feedback checkpoint. It should pin submitted transcript/brief/artifact
+revisions and report deterministic JSON/YAML findings before AI judgment. Before
+implementation, settle what requesting feedback means for session completion and
+continued editing; that lifecycle remains open. Evidence-linked AI feedback,
+learner acceptance/targeted review, and export follow in separate checkpoints.
+No feedback UI or provider call is added in 5a. Expo, additional personalities,
+and content expansion remain out of scope. Continue with separate commits and
+approval at meaningful checkpoints.
 
 ### Activation record
 
@@ -521,4 +565,4 @@ Activation (see Durable AI requests and spending), done locally on October 30 ap
 
 Production enablement waits for content review and a separate approval. Production then needs its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
 
-Then checkpoint 5: content schema 2 with misconception mappings, feedback with deterministic checks first, the follow-up review, export, and the full demonstration. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.
+Checkpoint 5a's content schema and misconception mappings are implemented. Remaining checkpoint 5 work is feedback with deterministic checks first, the follow-up review, export, and the full demonstration. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.

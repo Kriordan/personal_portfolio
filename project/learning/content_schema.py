@@ -1,4 +1,4 @@
-"""Version 1 curriculum contracts. Unknown fields fail closed, including nested fields."""
+"""Versioned curriculum contracts. Unknown fields fail closed, including nested fields."""
 from copy import deepcopy
 from pathlib import Path
 import json
@@ -138,12 +138,30 @@ class AssessmentSchema(Schema):
         validate=validate.Length(min=1))
 
 
+class MisconceptionSchema(RemediationSchema):
+    """Evaluator-only evidence guidance and authored targets for a later accepted finding."""
+    id = identifier()
+    description = text_field()
+    evidence_guidance = text_field()
+    review_question_ids = fields.List(identifier(), required=True, validate=validate.Length(min=1, max=100))
+
+
+class AssessmentV2Schema(AssessmentSchema):
+    misconceptions = fields.List(fields.Nested(MisconceptionSchema), required=True,
+        validate=validate.Length(min=1, max=100))
+
+
 class ExerciseSchema(Schema):
     spec_version = PositiveInteger(required=True, validate=validate.Equal(1))
     concept_id = identifier()
     brief = fields.Nested(BriefSchema, required=True)
     facilitator = fields.Nested(FacilitatorSchema, required=True)
     assessment = fields.Nested(AssessmentSchema, required=True)
+
+
+class ExerciseV2Schema(ExerciseSchema):
+    spec_version = PositiveInteger(required=True, validate=validate.Equal(2))
+    assessment = fields.Nested(AssessmentV2Schema, required=True)
 
 
 class ItemSchema(Schema):
@@ -155,7 +173,7 @@ class ItemSchema(Schema):
 
 
 class CatalogSchema(Schema):
-    schema_version = PositiveInteger(required=True, validate=validate.Equal(1))
+    schema_version = PositiveInteger(required=True, validate=validate.OneOf([1, 2]))
     items = fields.List(fields.Nested(ItemSchema), required=True, validate=validate.Length(min=1, max=2000))
 
 
@@ -176,7 +194,9 @@ def validate_catalog(document):
     for item in items:
         if len(item["id"]) > 128:
             raise ValidationError("Item ID exceeds 128 characters.")
-        item["content"] = CONTENT_SCHEMAS[item["kind"]]().load(item["content"])
+        schema = (ExerciseV2Schema if result["schema_version"] == 2 and item["kind"] == "exercise"
+                  else CONTENT_SCHEMAS[item["kind"]])
+        item["content"] = schema().load(item["content"])
 
     def linked(item_id, kind):
         target = by_id.get(item_id)
@@ -222,6 +242,17 @@ def validate_catalog(document):
                 if remedy["dimension_id"] not in dimensions:
                     raise ValidationError("Remediation references an unknown dimension.")
                 section(remedy["concept_id"], remedy["section_id"])
+            misconceptions = assessment.get("misconceptions", [])
+            _unique([entry["id"] for entry in misconceptions], "misconception ID")
+            for misconception in misconceptions:
+                if misconception["dimension_id"] not in dimensions:
+                    raise ValidationError("Misconception references an unknown dimension.")
+                section(misconception["concept_id"], misconception["section_id"])
+                _unique(misconception["review_question_ids"], "misconception review question")
+                for question_id in misconception["review_question_ids"]:
+                    question = linked(question_id, "question")
+                    if question["concept_id"] != misconception["concept_id"]:
+                        raise ValidationError("Misconception review question must belong to its remediation concept.")
 
     visited, visiting = set(), set()
 
@@ -351,4 +382,9 @@ def interviewer_view(item, *, revealed_constraint_ids=(), hint_index=None):
 
 def evaluator_view(item):
     """Server use only; do not attach this to a learner or conversation response."""
-    return deepcopy(AssessmentSchema().dump(item["content"]["assessment"]))
+    body = item["content"]
+    version = body["spec_version"]
+    if type(version) is not int or version not in (1, 2):
+        raise ValidationError("Unsupported exercise specification version.")
+    schema = AssessmentV2Schema if version == 2 else AssessmentSchema
+    return deepcopy(schema().dump(body["assessment"]))

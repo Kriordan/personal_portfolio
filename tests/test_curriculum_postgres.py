@@ -29,6 +29,7 @@ from project.models import ContentRevision, CurriculumItem, ReviewLog, ReviewPro
 from project.services import curriculum_service as service
 from project.services import practice_service, practice_worker
 from project.services.learning_service import rate_card_for_user
+from tests.curriculum_v2_fixtures import CATALOG_V2
 
 URL = os.environ.get("LIBRARY_TEST_POSTGRES_URL")
 ROOT = Path(__file__).resolve().parents[1]
@@ -100,6 +101,106 @@ class CurriculumPostgresTests(unittest.TestCase):
         self.assertEqual(CurriculumItem.query.count(), 6)
         self.assertEqual(ContentRevision.query.filter(ContentRevision.published_at.is_not(None)).count(), 0)
         self.assertIsNone(db.session.get(CurriculumItem, "aaa-extra"))
+
+    def test_v2_publication_keeps_pinned_sessions_progress_and_old_review_attempts(self):
+        service.import_catalog(self.catalog, dry_run=False, **REVIEW)
+        user = User(id=1, username="fixture", email="fixture@example.test")
+        db.session.add(user)
+        db.session.commit()
+        start_id = str(uuid4())
+        old = practice_service.start_session(user, exercise_id="idempotent-order-api", request_id=start_id)
+        session_id = old["session_id"]
+        practice_service.save_work(user, session_id, request_id=str(uuid4()), edits=[
+            dict(artifact_id="api", base_revision=0, language="text", body="My original API outline")])
+        practice_service.send_turn(user, session_id, body="What happens if I lose the reply?",
+            expected_sequence=1, artifact_revisions={"api": 1, "schema": 0, "algorithm": 0},
+            brief_revision=0, request_id=str(uuid4()))
+        practice_service.set_status(user, session_id, status="paused", request_id=str(uuid4()))
+        old_detail = practice_service.session_detail(user.id, session_id)
+        checksums = {(row.item_id, row.version): row.checksum for row in ContentRevision.query.all()}
+        # One committed rating, plus a different still-open v1 attempt when v2 is published.
+        rate_card_for_user(user=user, notes_dir=ROOT / "notes", card_id="idempotency:timeout", rating=4,
+            request_id=str(uuid4()), expected_revision=0, content_version=1)
+        before = {model.__tablename__: [dict(row) for row in db.session.execute(
+            model.__table__.select()).mappings()] for model in (ReviewProgress, ReviewLog, ReviewReceipt)}
+        open_attempt = dict(user=user, notes_dir=ROOT / "notes", card_id="idempotency:scope", rating=4,
+                            request_id=str(uuid4()), expected_revision=0, content_version=1)
+        newer = load_catalog(CATALOG_V2)
+        self.assertEqual(service.import_catalog(newer)["inserted"], 6)
+        self.assertEqual(ContentRevision.query.count(), 6)  # dry run
+        service.import_catalog(newer, dry_run=False)
+        self.assertEqual(service.published_learner_item("idempotent-order-api")["version"], 1)
+        self.assertEqual(service.import_catalog(newer, dry_run=False, **REVIEW)["published"], 6)
+        replay = service.import_catalog(newer, dry_run=False, **REVIEW)
+        self.assertEqual((replay["inserted"], replay["published"]), (0, 0))
+        db.session.expire_all()
+        for key, checksum in checksums.items():
+            self.assertEqual(db.session.get(ContentRevision, key).checksum, checksum)
+        self.assertEqual({row.schema_version for row in ContentRevision.query.filter_by(version=2)}, {2})
+        for model in (ReviewProgress, ReviewLog, ReviewReceipt):
+            self.assertEqual([dict(row) for row in db.session.execute(model.__table__.select()).mappings()],
+                             before[model.__tablename__])
+        self.assertEqual(practice_service.session_detail(user.id, session_id), old_detail)
+        self.assertEqual(practice_service.start_session(user, exercise_id="idempotent-order-api", request_id=start_id), old)
+        latest = practice_service.start_session(user, exercise_id="idempotent-order-api", request_id=str(uuid4()))
+        self.assertEqual(latest["exercise_version"], 2)
+        first_rating = rate_card_for_user(**open_attempt)
+        self.assertEqual(rate_card_for_user(**open_attempt), first_rating)
+        self.assertEqual(ReviewLog.query.filter_by(card_id="idempotency:scope").one().content_version, 1)
+        self.assertEqual(ReviewReceipt.query.count(), 2)
+        current_concept = service.published_learner_item("idempotency")
+        self.assertEqual(current_concept["version"], 2)
+        self.assertEqual(len(service.concept_review_queue(current_concept, user_id=user.id)), 2)
+
+    def test_v2_mapping_conflict_rolls_back_and_schema_upgrade_cannot_reuse_v1_snapshots(self):
+        service.import_catalog(self.catalog, dry_run=False, **REVIEW)
+        newer = load_catalog(CATALOG_V2)
+        reused = deepcopy(newer)
+        reused["items"][0]["version"] = 1
+        with self.assertRaisesRegex(service.ContentConflict, "increment its version"):
+            service.import_catalog(reused, dry_run=False)
+        self.assertEqual(ContentRevision.query.count(), 6)
+        service.import_catalog(newer, dry_run=False)
+        changed = deepcopy(newer)
+        changed["items"][-1]["content"]["assessment"]["misconceptions"][0]["description"] = "Changed mapping"
+        extra = deepcopy(changed["items"][0])
+        extra["id"] = "aaa-extra"
+        extra["content"].update(review_question_ids=[], exercise_ids=[])
+        changed["items"].append(extra)
+        with self.assertRaisesRegex(service.ContentConflict, "increment its version"):
+            service.import_catalog(changed, dry_run=False, **REVIEW)
+        self.assertIsNone(db.session.get(CurriculumItem, "aaa-extra"))
+        self.assertEqual(ContentRevision.query.count(), 12)
+        self.assertEqual(ContentRevision.query.filter(ContentRevision.published_at.is_not(None)).count(), 6)
+        stored = db.session.get(ContentRevision, ("idempotent-order-api", 2))
+        self.assertEqual(stored.payload, newer["items"][-1])
+
+    def test_simultaneous_v2_publications_cannot_mix_misconception_mappings(self):
+        service.import_catalog(self.catalog, dry_run=False, **REVIEW)
+        barrier = Barrier(2)
+
+        def publish(label):
+            with self.app.app_context():
+                catalog = load_catalog(CATALOG_V2)
+                for mapping in catalog["items"][-1]["content"]["assessment"]["misconceptions"]:
+                    mapping["description"] = label
+                barrier.wait(timeout=10)
+                try:
+                    service.import_catalog(catalog, dry_run=False, **REVIEW)
+                    return label
+                except service.ContentConflict:
+                    return "conflict"
+
+        with ThreadPoolExecutor(2) as pool:
+            results = [future.result(timeout=15) for future in
+                       [pool.submit(publish, label) for label in ("First", "Second")]]
+        self.assertEqual(results.count("conflict"), 1)
+        winner = next(result for result in results if result != "conflict")
+        stored = db.session.get(ContentRevision, ("idempotent-order-api", 2))
+        self.assertEqual({entry["description"] for entry in stored.payload["content"]["assessment"]["misconceptions"]},
+                         {winner})
+        self.assertEqual(ContentRevision.query.count(), 12)
+        self.assertEqual(service.published_learner_item("idempotent-order-api", version=1)["version"], 1)
 
     def test_omission_does_not_delete_an_existing_identity_or_revision(self):
         service.import_catalog(self.catalog, dry_run=False, **REVIEW)
