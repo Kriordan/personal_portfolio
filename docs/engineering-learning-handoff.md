@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of November 1, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. Activation is done locally: `gpt-6.1-sol` at low reasoning answers by default (October 30), chosen after three rounds of live evaluations, and one live session has run through the app on a disposable database. The tabbed workspace and conversation-continuity checkpoint is implemented locally (November 1): Discuss/Build share the form, artifacts use tabs, and native saves/sends restore position and focus. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: Keith practises locally with live replies, and the checkpoint 5 plan (see Recommended next checkpoint).
+As of November 2, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. Activation is done locally: `gpt-6.1-sol` at low reasoning answers by default (October 30), chosen after three rounds of live evaluations, and one live session has run through the app on a disposable database. The tabbed workspace and conversation-continuity checkpoint is implemented locally (November 1): Discuss/Build share the form, artifacts use tabs, and native saves/sends restore position and focus. The Learning home checkpoint is also implemented locally (November 2): one continuation card, separate reference and personal-flashcard pages, and compact library navigation. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: bring Learn and concept Review into the shared four-mode workspace, then return to the checkpoint 5 plan (see Recommended next checkpoint).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the workspace follow-up, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the workspace and Learning home follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -118,7 +118,7 @@ Personal Learning responses use `Cache-Control: private, no-store`. The shared b
 
 ### Practice sessions (checkpoints 3a and 3b)
 
-`LEARNING_PRACTICE_ENABLED` (default off) gates every practice route and query. With it on, a concept page's **Apply it** section starts a session for a published exercise (`POST /learning/practice`), and the Learning index lists open sessions under **Continue practising**.
+`LEARNING_PRACTICE_ENABLED` (default off) gates every practice route and query. With it on, a concept page's **Apply it** section starts a session for a published exercise (`POST /learning/practice`), and the Learning home features the newest open session under **Continue practice**. Opening that link is read-only; a paused session stays paused until an explicit workspace action. The concept page still provides its existing session list.
 
 A `PracticeSession` pins the exercise's `(item_id, version)` and records the interviewer's authored `opening_prompt` as turn 1. That comes from `opening_view`, the only facilitator field a learner ever receives. `ArtifactRevision` rows are immutable: each changed save adds revision N+1 with title, format, notation (`language`), text, and SHA-256. `SessionMessage` is the ordered record of turns and brief snapshots, `SessionMessageArtifact` holds each turn's citations, and `PracticeReceipt` holds mutation results. Composite foreign keys keep citations inside one session, and receipts store a payload hash, never text. Deletes cascade from the session in the database.
 
@@ -450,6 +450,39 @@ These fixtures drop tables and reset migration state. Never use a database conta
     - The fake selector, used by the fixture, reveals a requirement only when a message repeats a cue or shares two distinctive words with one. Paraphrases are the live model's job.
 
 ## Recommended next checkpoint
+
+Keith approved a Learning UI sequence before feedback work. The first working
+checkpoint is complete: the Learning home prioritizes engineering practice;
+`/learning/references` is public; `/learning/flashcards` requires sign-in and
+provides title search plus 25 notes per page. The original article, note, review,
+and API URLs remain available. The compact `learning/shell.html` wraps these
+library pages; concept Learn/Review still use their previous layouts until the
+next checkpoint. Existing personal-flashcard Back/Done links now return to their
+catalog, and the article breadcrumb returns to References.
+
+Continuation uses the existing owned-session projection with `limit=1`, falling
+back to a published lesson when no open session exists. A pinned session remains
+reachable when its concept is unpublished. The home no longer loads the entire
+note library; the flashcard page still calculates due counts with the existing
+service before filtering/pagination, so searching does not narrow the review
+queue. All new navigation is native HTML. No new JavaScript, dependency, schema,
+AI behavior, or write operation was introduced. Private cache headers and
+analytics exclusion cover the new authenticated pages. The original approved
+planning snapshot remains unchanged.
+
+**Next UI checkpoint:** unify the concept header and Learn / Review / Discuss /
+Build navigation, improve lesson section navigation and focused review, and
+preserve the same practice session/artifacts when moving between modes. Use a
+separate commit and browser coverage. Do not start Expo or expand content.
+
+The [hands-on Learning home guide](learning-home-test-guide.md) covers DevTools,
+HTTPie, and a Python REPL. New route tests are in `tests/test_learning_hub.py`;
+`tests/test_learning_hub_browser.py` runs 56 checks on real pages with a seeded
+review queue and disposable data. See the [checkpoint log](engineering-learning-milestone-1.md)
+for verification results. Remaining cross-browser/screen-reader validation and
+feedback/export acceptance are still outstanding.
+
+### Activation record
 
 Activation (see Durable AI requests and spending), done locally on October 30 apart from production enablement:
 

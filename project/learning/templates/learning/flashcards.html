@@ -1,0 +1,36 @@
+{% extends 'learning/shell.html' %}
+{% block title %}My flashcards{% endblock %}
+{% block learning_content %}
+<div class="learning-hub">
+  <a class="learning-breadcrumb" href="{{ url_for('learning.index') }}">← Learning</a>
+  <header class="learning-page-heading"><h1>My flashcards</h1><p>Your personal notes and recall practice.</p></header>
+  <section class="learning-review-entry" aria-labelledby="flashcard-due-heading">
+    <div><h2 id="flashcard-due-heading">{{ total_due }} card{{ 's' if total_due != 1 }} due</h2><p>{{ 'Pick up your scheduled review.' if total_due else 'You’re caught up. You can still browse your notes below.' }}</p></div>
+    {% if total_due %}<a class="learning-primary" href="{{ url_for('learning.review') }}">Start review <span aria-hidden="true">→</span></a>{% endif %}
+  </section>
+  <section aria-labelledby="flashcard-notes-heading">
+    <h2 class="learning-section-label" id="flashcard-notes-heading">Your notes</h2>
+    {% if note_count %}
+      <form class="learning-note-search" method="get" action="{{ url_for('learning.flashcards') }}" role="search">
+        <label for="note-query">Find a note by title</label>
+        <div><input type="search" id="note-query" name="q" value="{{ query }}" maxlength="200" autocomplete="off"><button type="submit">Search</button>{% if query %}<a href="{{ url_for('learning.flashcards') }}">Clear</a>{% endif %}</div>
+      </form>
+      <p class="learning-entry-meta">{{ match_count }} note{{ 's' if match_count != 1 }}{% if query %} matching “{{ query }}”{% endif %}</p>
+    {% endif %}
+    <ul class="learning-hub-notes">
+      {% for note in notes %}
+        <li><a href="{{ url_for('learning.note', note_id=note.id) }}">{{ note.title }}<span>{{ note.flashcard_count }} card{{ 's' if note.flashcard_count != 1 }}{% if note.due_count %} · {{ note.due_count }} due{% endif %}</span></a></li>
+      {% else %}
+        <li class="learning-empty">{{ 'No matching notes. Try another title or clear your search.' if query else 'No flashcard notes yet.' }}</li>
+      {% endfor %}
+    </ul>
+    {% if pages > 1 %}
+      <nav class="learning-pagination" aria-label="Flashcard notes pages">
+        {% if page > 1 %}<a rel="prev" href="{{ url_for('learning.flashcards', q=query, page=page-1) }}">← Previous</a>{% endif %}
+        <span>Page {{ page }} of {{ pages }}</span>
+        {% if page < pages %}<a rel="next" href="{{ url_for('learning.flashcards', q=query, page=page+1) }}">Next →</a>{% endif %}
+      </nav>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

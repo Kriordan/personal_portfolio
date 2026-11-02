@@ -16,7 +16,7 @@ from .practice_views import start_form
 @learning_blueprint.after_request
 def private_study_response(response):
     if current_user.is_authenticated or request.endpoint in {
-        "learning.rate_card", "learning.rating_receipt", "learning.review", "learning.note"
+        "learning.rate_card", "learning.rating_receipt", "learning.review", "learning.note", "learning.flashcards"
     }:
         response.headers["Cache-Control"] = "private, no-store"
     return response
@@ -24,30 +24,51 @@ def private_study_response(response):
 
 @learning_blueprint.route("/", strict_slashes=False)
 def index():
-    notes = []
     concepts = []
-    practice_sessions = []
-    total_due = 0
+    continue_session = None
     if current_user.is_authenticated:
-        notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
-        notes = learning_service.load_notes(notes_dir)
-        notes, total_due = learning_service.summarize_notes_for_user(
-            notes,
-            user_id=current_user.id,
-        )
         concepts = curriculum_service.published_concepts()
         for concept in concepts:
             concept["due_count"] = len(curriculum_service.concept_review_queue(concept, user_id=current_user.id))
         # No practice query at all while the feature is off (e.g. before its migration).
         if practice_service.enabled():
-            practice_sessions = practice_service.list_sessions(current_user.id)
+            sessions = practice_service.list_sessions(current_user.id, limit=1)
+            continue_session = sessions[0] if sessions else None
+    # A pinned session remains resumable even if its concept is no longer published.
+    featured_concept = next((item for item in concepts
+        if continue_session and item["id"] == continue_session["concept_id"]), None)
+    if not continue_session and concepts:
+        featured_concept = concepts[0]
     return render_template(
         "learning/index.html",
-        notes=notes,
-        total_due=total_due,
         concepts=concepts,
-        practice_sessions=practice_sessions,
+        featured_concept=featured_concept,
+        continue_session=continue_session,
     )
+
+
+@learning_blueprint.get("/references")
+def references():
+    return render_template("learning/references.html")
+
+
+@learning_blueprint.get("/flashcards")
+@login_required
+def flashcards():
+    notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    notes, total_due = learning_service.summarize_notes_for_user(
+        learning_service.load_notes(notes_dir), user_id=current_user.id)
+    query = request.args.get("q", "").strip()
+    if len(query) > 200:
+        abort(400)
+    matches = [note for note in notes if query.casefold() in note["title"].casefold()]
+    # Bound the rendered list without introducing a new catalog or client-side state.
+    page_size = 25
+    pages = max(1, (len(matches) + page_size - 1) // page_size)
+    page = max(1, min(request.args.get("page", 1, type=int), pages))
+    return render_template("learning/flashcards.html", total_due=total_due,
+        notes=matches[(page - 1) * page_size:page * page_size], query=query,
+        match_count=len(matches), note_count=len(notes), page=page, pages=pages)
 
 
 def _published_concept(concept_id):

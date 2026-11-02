@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends "learning/shell.html" %}
 
 {% block title %}Review{% endblock title %}
 
-{% block body %}
+{% block learning_content %}
   <section class="learning-review">
-    <a class="learning-back" href="{{ url_for('learning.index') }}">← Back to notes</a>
+    <a class="learning-back" href="{{ url_for('learning.flashcards') }}">← My flashcards</a>
     <h1>Review Session</h1>
     {% if cards %}
       <div class="flashcard-toast" id="flashcard-toast" role="status" aria-live="polite"></div>
@@ -36,13 +36,13 @@
         <p id="review-summary-text"></p>
         <div class="review-stats" id="review-summary-stats"></div>
         <div class="review-weak-areas" id="review-summary-weak"></div>
-        <a class="button" id="review-summary-done" href="{{ url_for('learning.index') }}">Done</a>
+        <a class="button" id="review-summary-done" href="{{ url_for('learning.flashcards') }}">Done</a>
       </div>
     {% else %}
       <p>You're all caught up. No cards due right now.</p>
     {% endif %}
   </section>
-{% endblock body %}
+{% endblock learning_content %}
 
 {% block scripts %}
   <script type="application/json" id="review-cards-data">{{ cards|tojson }}</script>

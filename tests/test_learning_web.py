@@ -20,16 +20,24 @@ class LearningWebTests(unittest.TestCase):
     def _get(self, path: str):
         return self.client.get(path, base_url="https://localhost")
 
-    def test_learning_index_is_public_and_links_to_reference(self):
+    def test_learning_index_is_public_and_links_to_dedicated_destinations(self):
         response = self._get("/learning")
 
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Engineering learning', response.data)
+        self.assertIn(b'href="/learning/references"', response.data)
+        self.assertIn(b'href="/learning/flashcards"', response.data)
+        self.assertNotIn(b"Private study area", response.data)
+        self.assertNotIn(b"data-learning-continue", response.data)
+
+    def test_reference_catalog_is_public_and_preserves_the_article_link(self):
+        response = self._get("/learning/references")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Web Performance", response.data)
         self.assertIn(
             b"/learning/web-performance/modern-images-video-lazy-loading-responsive-media",
             response.data,
         )
-        self.assertNotIn(b"Private study area", response.data)
 
     def test_web_performance_reference_is_public_and_has_review_metadata(self):
         response = self._get(
@@ -54,7 +62,7 @@ class LearningWebTests(unittest.TestCase):
                 "card_id": "fixture:1", "prompt": "</script><script>alert(1)</script>",
                 "response": "javascript:alert(1)", "progress_revision": 0,
             }])
-            expected = url_for("learning.index")
+            expected = url_for("learning.flashcards")
         self.assertIn(f'id="review-summary-done" href="{expected}">Done</a>', html)
         self.assertNotIn('"doneUrl"', html)
         self.assertNotIn("</script><script>alert(1)</script>", html)

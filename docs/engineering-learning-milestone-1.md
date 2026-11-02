@@ -13,6 +13,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 4a. Durable replies | Replies as tracked PostgreSQL requests, run by a worker thread in the web process against a scripted fake provider: owner-only access, fencing, budgets and reservations, interruption and explicit retry, polling on the website and API. | Committed as `81312c8` (service and worker) and `27af973` (website and API); [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part A. |
 | 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Committed as `216d394` (the interviewer, its service and API) plus the following website commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part B. |
 | 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning, after three rounds of live evaluations. Production enablement waits for content review. |
+| UI follow-up 1. Learning home | Compact home with one continuation action; dedicated reference and personal-flashcard catalogs; preserve existing review and practice behavior. | Implemented November 2; see Learning home checkpoint below. |
+| UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Next; not started. |
 | 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
@@ -422,3 +424,58 @@ PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
 ```
 
 The [hands-on workspace guide](learning-workspace-test-guide.md) walks through Elements, Console, Network, HTTPie failure simulation, and a short Performance recording. Use the disposable fake-provider fixture; it does not load paid AI credentials or write to real progress. Nothing was pushed, deployed, or migrated in production.
+
+
+## Learning home checkpoint (November 2)
+
+The approved preview is now implemented for the Learning home and library
+navigation. Engineering learning has the primary card and one Continue practice
+link to the user's newest active or paused session. Without an open session, the
+card links to the published lesson. A pinned session stays reachable even if its
+concept is unpublished; opening it never starts or resumes a session implicitly.
+Practice queries still remain entirely disabled when the feature flag is off.
+
+Reference articles and My flashcards have smaller links to dedicated pages:
+`/learning/references` is public and `/learning/flashcards` requires sign-in.
+The latter uses a native GET search by title, reloadable pagination, and 25 notes
+per page. Its due count and Start review always cover the full personal review
+queue. Home no longer reads or summarizes all note files. The new compact shell
+also wraps the existing article, note, and personal-review pages; Back/Done links
+lead to their respective catalogs. The original URLs and article content remain
+available. The idempotency Learn and Review layouts are reserved for the next
+checkpoint.
+
+This is a presentation/read-path change: no model, migration, service/API
+contract, scheduler, practice write, budget, context, prompt, or recovery logic
+changed. There is no new runtime JavaScript or infrastructure. Existing owner
+checks, CSRF/revisions/receipts, analytics exclusion, and private cache headers
+remain in force. Reference/evaluation-only material never enters the new pages.
+The repository remains public as previously acknowledged.
+
+Automated coverage adds 12 tests, including a 56-assertion Chrome walkthrough of
+real Flask pages. It checks saved-session/tab continuity, public/private
+navigation, the legacy rating endpoint and receipt, scheduling after reload,
+search and pagination, hostile/long titles, 390/320-pixel layouts, keyboard skip
+focus, and navigation with scripts blocked. The review queue's existing
+randomness is seeded in the browser fixture. The separate 97-assertion practice
+browser regression still covers save conflicts, unconfirmed writes, replay,
+failed sends, polling, and recovery. Two old assertions were updated for the
+moved destinations and one for the new status layout; their security and
+pause/resume expectations remain covered.
+
+For DevTools, HTTPie, and REPL exercises, use the
+[Learning home guide](learning-home-test-guide.md). The dedicated flashcard page
+still reads all legacy notes to calculate due counts; pagination bounds rendering,
+not the underlying filesystem scan. That existing service remains sufficient
+for this pilot. Chrome and the in-app browser were inspected; Firefox, Safari,
+and a screen-reader audit are not yet covered.
+
+Final verification: **528 backend tests run, 527 passed, one existing Linux-only
+JobWizard test skipped on macOS**, with the isolated PostgreSQL **18.6** cluster.
+This includes the migrations/schema comparison, concurrency, budget, recovery,
+and both integrated browser regressions. The first full run found an old
+punctuation-dependent paused-status assertion; after updating it to assert the
+status and session link, the entire suite passed. The existing **13 Node tests**,
+dependency integrity check, and **102 browser renderer checks** passed; Sass
+compiled with its existing deprecation warnings. No production migration or
+paid AI call was needed. Nothing was pushed or deployed.
