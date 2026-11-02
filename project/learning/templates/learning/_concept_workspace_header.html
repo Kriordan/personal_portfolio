@@ -1,0 +1,22 @@
+<header class="concept-workspace-heading">
+  <h1 id="concept-workspace-title">{{ workspace.title }}</h1>
+  {% if workspace.session %}
+    <p class="concept-session-caption">Practice · {{ {'active': 'In progress', 'paused': 'Paused', 'completed': 'Completed'}[workspace.session.status] }} · {{ workspace.session.exercise_title }}</p>
+  {% else %}<p>Build understanding, test your recall, and put it to work.</p>{% endif %}
+</header>
+<nav class="practice-views concept-mode-nav" aria-label="Concept views">
+  <a href="{{ workspace.learn_url }}"{% if workspace.mode == 'learn' %} aria-current="page"{% endif %}>Learn</a>
+  <a href="{{ workspace.review_url }}"{% if workspace.mode == 'review' %} aria-current="page"{% endif %}>Review</a>
+  {% if workspace.mode == 'practice' %}
+    <div data-view-tabs>
+      <a href="#conversation" id="practice-view-discuss" data-practice-view="discuss">Discuss<span data-discussion-new hidden> · new</span></a>
+      <a href="#work" id="practice-view-build" data-practice-view="build">Build</a>
+    </div>
+  {% elif workspace.practice_enabled %}
+    <a href="{{ workspace.discuss_url }}"{% if workspace.mode == 'discuss' %} aria-current="page"{% endif %}>Discuss</a>
+    <a href="{{ workspace.build_url }}"{% if workspace.mode == 'build' %} aria-current="page"{% endif %}>Build</a>
+  {% else %}
+    <span aria-disabled="true">Discuss</span><span aria-disabled="true">Build</span>
+  {% endif %}
+  {% if workspace.session %}<span class="practice-shared-session">One shared session</span>{% endif %}
+</nav>

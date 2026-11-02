@@ -14,7 +14,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 4b. The interviewer | The OpenAI call in a child process through Learning's own key, the `interviewer-1` profile, approved disclosure and hints on request, a read-only revealed-requirements list, a context allowance with **Continue with recent messages** and a specific stop (compaction deferred), the 24-turn check-in, and an evaluation harness. | Committed as `216d394` (the interviewer, its service and API) plus the following website commit; [checkpoint 4 guide](learning-checkpoint-4-test-guide.md), part B. |
 | 4. Activation | Keith creates Learning's OpenAI project and key; live evaluations choose the model; verified prices recorded. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning, after three rounds of live evaluations. Production enablement waits for content review. |
 | UI follow-up 1. Learning home | Compact home with one continuation action; dedicated reference and personal-flashcard catalogs; preserve existing review and practice behavior. | Implemented November 2; see Learning home checkpoint below. |
-| UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Next; not started. |
+| Login boundary | Require login for every Learning website route; retain JWT API authentication and private cache headers. | `e1a90bc`, November 2. |
+| UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Implemented November 2; see Shared concept workspace below. |
 | 5. Feedback and complete demonstration | Content schema 2 with misconception mappings; deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
@@ -436,14 +437,15 @@ concept is unpublished; opening it never starts or resumes a session implicitly.
 Practice queries still remain entirely disabled when the feature flag is off.
 
 Reference articles and My flashcards have smaller links to dedicated pages:
-`/learning/references` is public and `/learning/flashcards` requires sign-in.
+At this checkpoint, `/learning/references` was public and `/learning/flashcards`
+required sign-in; the later login checkpoint below protects both.
 The latter uses a native GET search by title, reloadable pagination, and 25 notes
 per page. Its due count and Start review always cover the full personal review
 queue. Home no longer reads or summarizes all note files. The new compact shell
 also wraps the existing article, note, and personal-review pages; Back/Done links
 lead to their respective catalogs. The original URLs and article content remain
-available. The idempotency Learn and Review layouts are reserved for the next
-checkpoint.
+available. The idempotency Learn and Review layouts were reserved for the shared
+workspace checkpoint below.
 
 This is a presentation/read-path change: no model, migration, service/API
 contract, scheduler, practice write, budget, context, prompt, or recovery logic
@@ -498,3 +500,59 @@ The real-browser hub regression passed all 60 checks, including signed-out
 redirects for home, references, flashcards, and the article. No schema, scheduler,
 AI, budget, or recovery operation changed. This is a separate commit before the
 shared concept-workspace checkpoint.
+
+
+## Shared concept workspace (November 2)
+
+Learn, Review, Discuss, and Build now share the same compact concept heading and
+mode navigation. The lesson shows one section at a time, with section links on
+desktop and a native picker on mobile. The existing retry simulation sits inside
+the retry explanation and retains its state when sections change. Supporting
+goals, prerequisites, references, and session options use disclosure controls.
+Without JavaScript, the whole lesson remains readable. Review presents one
+question, the existing explicit answer reveal, and the existing rating/retry
+flow. Its completion screen leads back to the same conversation.
+
+`practice_session` carries the selected session through Learn/Review links,
+hidden reveal/rating fields, remediation, and completion. An explicit UUID must
+be owned and match the concept; otherwise the server returns 404. Without one,
+navigation selects the newest open session for the concept's exercises. A new
+read-only `session_summary` projection avoids loading the transcript/artifacts.
+The practice renderer builds navigation from its existing data, keeping extra
+reads out of recovery paths. A first-time Discuss/Build click opens a start page;
+the existing CSRF-protected POST alone creates a session. Opening a paused
+session leaves it paused. Disabling practice still disables all practice queries.
+
+Saving remains explicit. Discuss/Build keep their shared native form and unsaved
+text warning; leaving for Learn/Review requires Save or Send to preserve edits.
+No new storage model, dependency, infrastructure, migration, write protocol,
+review scheduler, AI prompt, budget, or context behavior was introduced. Hidden
+constraints and evaluator/reference material remain outside learner responses
+and bundles; the repository remains public.
+
+Verification:
+
+- **538 backend tests run, 537 passed, one existing Linux-only JobWizard test
+  skipped on macOS**, with isolated PostgreSQL **18.6**, including migration/schema,
+  concurrency, budget, and recovery coverage.
+- Eight new route tests cover exact older-session selection, ownership, read-only
+  navigation, CSRF/start replay, stale/failed review recovery, rating receipts, and
+  feature-off behavior. A new **70-check browser walkthrough** follows saved work
+  and a conversation through all four modes, all four reviews, remediation,
+  completion, mobile 390/320-pixel layouts, and no-JavaScript reading.
+- The **60-check hub** and **97-check practice** browser regressions passed,
+  including conflicts, lost-response replay, failed sends, and composer geometry.
+  Existing **13 Node tests**, dependency integrity, **102 renderer checks**, and
+  Sass compilation passed. Desktop and 390-pixel screens were inspected manually.
+
+The browser tests caught a clipped Send button caused by shared line-height/flex
+rules; practice now retains its line height and a nonshrinking composer. The
+fixture CSP was also being overwritten by Talisman's response hook: both browser
+fixtures now apply their local-only policy last and assert it. GET form actions
+discard their query string, so the selected session must be a hidden input during
+answer reveal. These cases have regression coverage.
+
+Use the [hands-on concept guide](learning-concept-workspace-test-guide.md) to
+inspect links, requests, forms, and the navigation helper. Safari, Firefox, and
+a screen-reader audit remain outstanding. Feedback/export and Milestone 2 have
+not started. No paid AI call, push, deployment, or production migration occurred.

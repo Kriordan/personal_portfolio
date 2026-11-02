@@ -1605,6 +1605,12 @@ def session_counts(user_id, session_id):
             "artifact_revisions": count(ArtifactRevision)}
 
 
+def session_summary(user_id, session_id):
+    """Owned, pinned metadata for navigation without loading the conversation/work."""
+    session = _owned_session(user_id, session_id)
+    return _session_dto(session, _pinned_exercise(session).payload)
+
+
 def list_sessions(user_id, *, exercise_ids=None, statuses=OPEN_STATUSES, limit=LISTED_SESSIONS):
     query = select(PracticeSession, ContentRevision.payload).join(ContentRevision, and_(
         ContentRevision.item_id == PracticeSession.exercise_id,

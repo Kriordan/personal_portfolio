@@ -20,6 +20,7 @@ from project.services import learning_service, practice_service as practice
 
 from . import learning_blueprint
 from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, PracticeWorkspaceForm, StartPracticeForm
+from .navigation import workspace_navigation
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
 STATUS_LABELS = {"active": "In progress", "paused": "Paused", "completed": "Completed"}
@@ -51,6 +52,9 @@ def start_form(exercise_id, concept_id):
 @learning_blueprint.post("/practice")
 @login_required
 def practice_start():
+    view = request.args.get("view")
+    if view is not None and view not in {"discuss", "build"}:
+        abort(400)
     form = StartPracticeForm()
     if not form.validate_on_submit():
         abort(400)
@@ -67,7 +71,8 @@ def practice_start():
         db.session.rollback()
         current_app.logger.error("Practice session could not be started: %s", practice.describe_failure(exc))
         abort(503)
-    return redirect(url_for("learning.practice_workspace", session_id=result["session_id"]), code=303)
+    return redirect(url_for("learning.practice_workspace", session_id=result["session_id"],
+                            **({"view": view} if view else {})), code=303)
 
 
 def _saved_rows(entries):
@@ -134,6 +139,7 @@ def _render(detail, form, *, status=200, alert=None, notice=None, errors=None, s
             brief_refreshed=False, new_after=None, unsaved=False):
     return render_template(
         "learning/practice.html", detail=detail, form=form, alert=alert, notice=notice, errors=errors or {},
+        workspace=workspace_navigation(detail["session"]["concept_id"], mode="practice", session=detail["session"]),
         artifacts={artifact["artifact_id"]: artifact for artifact in detail["artifacts"]},
         titles={artifact["artifact_id"]: artifact["title"] for artifact in detail["artifacts"]},
         reply_live=detail["reply"]["status"] in LIVE, money=_money,

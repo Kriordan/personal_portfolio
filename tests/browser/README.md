@@ -59,8 +59,9 @@ No new npm dependency is needed. PostgreSQL races/migrations have separate tests
 
 ## Learning home and library navigation
 
-`poetry run python -m unittest tests.test_learning_hub_browser` runs 60 checks
-against real Flask pages in Chrome. It covers the continuation link and saved
+`poetry run python -m unittest tests.test_learning_hub_browser` runs two
+walkthroughs against real Flask pages in Chrome. The first has 60 checks covering
+the continuation link and saved
 artifact, practice tab restoration, authenticated articles and flashcards,
 search/pagination, escaped note titles, the existing rating endpoint and receipt,
 progress after reload, independent concept review counts, 390/320-pixel layouts,
@@ -70,3 +71,18 @@ disposable database/browser approach as the practice regression and runs in
 backend unittest discovery. Route and isolation checks live in
 `tests/test_learning_hub.py`; interactive developer exercises are in the
 [Learning home guide](../../docs/learning-home-test-guide.md).
+
+The second, `concept-workspace-checks.js`, has **70 checks** for the shared
+Learn/Review/Discuss/Build workspace. It deliberately selects an older session,
+then checks lesson section links/focus, the colocated retry simulation, reveal
+and remediation, unsaved-work protection, an artifact save, a discussion turn,
+all four ratings and their receipts, completion, mobile layouts, and no-JavaScript
+reading. It confirms that reading/revealing does not write progress or start a
+session, and that evaluator sentinels never enter the page. Route-level ownership,
+failed/stale rating, and start replay coverage lives in `test_concept_workspace.py`.
+The [concept guide](../../docs/learning-concept-workspace-test-guide.md) provides
+interactive developer exercises.
+
+Both integrated browser fixtures apply their local-only CSP after Talisman's
+response hook and assert the resulting header. This keeps external assets out
+of the walkthroughs; the separate renderer fixtures use local sanitizer bundles.

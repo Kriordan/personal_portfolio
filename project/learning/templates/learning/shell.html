@@ -2,7 +2,7 @@
 {% block container_class %} learning-container{% endblock %}
 {% block header %}
 <a class="learning-skip" href="#learning-main">Skip to content</a>
-<header class="learning-shell-header">
+<header class="learning-shell-header{% block learning_header_class %}{% endblock %}">
   <a class="learning-brand" href="{{ url_for('learning.index') }}"{% if request.endpoint == 'learning.index' %} aria-current="page"{% endif %}>Learning</a>
   <nav aria-label="Account and portfolio">
     <a href="{{ url_for('foyer.home') }}">Portfolio</a>

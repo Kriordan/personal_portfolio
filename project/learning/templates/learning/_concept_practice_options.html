@@ -1,0 +1,18 @@
+{% set status_labels = {'active': 'In progress', 'paused': 'Paused', 'completed': 'Completed'} %}
+{% for exercise in exercises %}
+  <article class="concept-practice-option">
+    <h3>{{ exercise.title }}</h3>
+    <p>{{ exercise.scenario }}</p>
+    {% if exercise.sessions %}
+      <ul class="practice-sessions">
+        {% for session in exercise.sessions %}
+          <li><a href="{{ url_for('learning.practice_workspace', session_id=session.id) }}">Resume the session started {{ session.created_at|practice_time }}</a> · {{ status_labels[session.status] }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <form method="post" action="{{ url_for('learning.practice_start', **({'view': workspace.mode} if workspace.mode in ['discuss', 'build'] else {})) }}">
+      {{ exercise.start_form.csrf_token }}{{ exercise.start_form.exercise_id }}{{ exercise.start_form.concept_id }}{{ exercise.start_form.request_id }}
+      <button class="button{% if exercise.sessions %} button--secondary{% endif %}">Start a new practice session</button>
+    </form>
+  </article>
+{% else %}<p>No practice exercise is available for this concept yet. You can continue with Learn and Review.</p>{% endfor %}

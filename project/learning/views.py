@@ -10,6 +10,7 @@ from project.services import curriculum_service, learning_service, practice_serv
 
 from . import learning_blueprint
 from .forms import ConceptRatingForm
+from .navigation import selected_session, workspace_navigation
 from .practice_views import start_form
 
 
@@ -83,13 +84,36 @@ def concept(concept_id):
     exercises = practice_service.concept_exercises(item, user_id=current_user.id) if practice_service.enabled() else []
     for exercise in exercises:
         exercise["start_form"] = start_form(exercise["id"], item["id"])
-    return render_template("learning/concept.html", concept=item, due_count=len(queue), exercises=exercises)
+    workspace = workspace_navigation(concept_id, mode="learn", session=selected_session(item))
+    return render_template("learning/concept.html", concept=item, due_count=len(queue),
+                           exercises=exercises, workspace=workspace)
+
+
+@learning_blueprint.get("/concepts/<concept_id>/practice")
+@login_required
+def concept_practice(concept_id):
+    """Opening a mode is a read; starting practice still requires a CSRF-protected POST."""
+    if not practice_service.enabled():
+        abort(404)
+    mode = request.args.get("view", "discuss")
+    if mode not in {"discuss", "build"}:
+        abort(400)
+    item = _published_concept(concept_id)
+    selected = selected_session(item)
+    workspace = workspace_navigation(concept_id, mode=mode, session=selected)
+    if selected:
+        return redirect(workspace[f"{mode}_url"])
+    exercises = practice_service.concept_exercises(item, user_id=current_user.id)
+    for exercise in exercises:
+        exercise["start_form"] = start_form(exercise["id"], item["id"])
+    return render_template("learning/concept_practice.html", concept=item, workspace=workspace, exercises=exercises)
 
 
 @learning_blueprint.route("/concepts/<concept_id>/review", methods=["GET", "POST"])
 @login_required
 def concept_review(concept_id):
     item = _published_concept(concept_id)
+    workspace = workspace_navigation(concept_id, mode="review", session=selected_session(item))
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
     form = ConceptRatingForm()
     error, status, card, revealed = None, 200, None, False
@@ -114,8 +138,8 @@ def concept_review(concept_id):
             error, status, revealed = "Your save could not be confirmed. Retry the same rating below.", 503, True
         else:
             flash("Review saved. " + result["next_review_display"], "concept-review")
-            return redirect(url_for("learning.concept_review", concept_id=concept_id), code=303)
-    elif request.args:
+            return redirect(workspace["review_url"], code=303)
+    elif any(key != "practice_session" for key in request.args):
         # A reveal URL pins the original question and progress revision. It does
         # not write progress, even on refresh, back navigation, or link preview.
         try:
@@ -148,7 +172,7 @@ def concept_review(concept_id):
             form = ConceptRatingForm(card_id=card["card_id"], content_version=card["content_version"],
                 expected_revision=card["progress_revision"], request_id=str(uuid4()))
     return render_template("learning/concept_review.html", concept=item, card=card, form=form,
-        revealed=revealed, error=error, retry_same=status == 503, stale=status == 409), status
+        revealed=revealed, error=error, retry_same=status == 503, stale=status == 409, workspace=workspace), status
 
 
 @learning_blueprint.route(

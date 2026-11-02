@@ -1,26 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'learning/concept_shell.html' %}
 {% block title %}Practice · {{ detail.session.exercise_title }}{% endblock %}
-{% block container_class %} practice-container{% endblock %}
-{% block header %}
-<header class="practice-shell-header"><a href="{{ url_for('learning.index') }}">← Learning</a><span>Engineering practice</span></header>
-{% endblock %}
-{% block footer %}{% endblock %}
-{% block body %}
-<main class="practice practice-workspace" aria-labelledby="practice-title" data-practice-workspace>
-  <div class="practice-heading">
-    <p class="learning-eyebrow">Practice · {{ status_label }}</p>
-    <h1 id="practice-title">{{ detail.session.exercise_title }}</h1>
-  </div>
-  <nav class="practice-views" aria-label="Concept views">
-    <a href="{{ url_for('learning.concept', concept_id=detail.session.concept_id) }}">Learn</a>
-    <a href="{{ url_for('learning.concept_review', concept_id=detail.session.concept_id) }}">Review</a>
-    <div data-view-tabs>
-      <a href="#conversation" id="practice-view-discuss" data-practice-view="discuss">Discuss<span data-discussion-new hidden> · new</span></a>
-      <a href="#work" id="practice-view-build" data-practice-view="build">Build</a>
-    </div>
-    <span class="practice-shared-session">One shared session</span>
-  </nav>
-  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="practice-demo">Local demo · disposable practice data · draft content for review</p>{% endif %}
+{% block workspace_classes %}practice practice-workspace{% endblock %}
+{% block workspace_attributes %}aria-labelledby="concept-workspace-title" data-practice-workspace{% endblock %}
+{% block concept_content %}
   {% include 'learning/_practice_notices.html' %}
 
   <form method="post" action="{{ url_for('learning.practice_workspace', session_id=detail.session.id) }}" data-practice-form{% if unsaved %} data-unsaved{% endif %}>
@@ -62,6 +44,5 @@
     <p>Discuss and Build use the same conversation, artifacts, and notes. Saving and sending record your work; switching views does not send a message.</p>
     <p class="practice-delete"><a href="{{ url_for('learning.practice_delete', session_id=detail.session.id) }}">Delete this practice session</a></p>
   </details>
-</main>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/learning-workspace.js') }}"></script><script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}

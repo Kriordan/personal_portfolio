@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of November 2, 2026, **Milestone 1 is partially implemented. Learn and Review work on web. Practice sessions hold Build artifacts with history, conflicts, and recovery (checkpoint 3a) and the discussion record: learner turns citing exact revisions, an editable brief, pause/resume, and delete (checkpoint 3b). Replies are durable (checkpoint 4a): a learner turn can queue an interviewer reply that a worker thread runs, with owner-only access, a monthly budget, interruption, and explicit retry. The interviewer exists (checkpoint 4b): it reveals hidden requirements when the learner asks about them, gives permitted hints on request, and keeps within a context allowance, with Continue with recent messages when a conversation grows too long. Activation is done locally: `gpt-6.1-sol` at low reasoning answers by default (October 30), chosen after three rounds of live evaluations, and one live session has run through the app on a disposable database. The tabbed workspace and conversation-continuity checkpoint is implemented locally (November 1): Discuss/Build share the form, artifacts use tabs, and native saves/sends restore position and focus. The Learning home checkpoint is also implemented locally (November 2): one continuation card, separate reference and personal-flashcard pages, and compact library navigation. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: bring Learn and concept Review into the shared four-mode workspace, then return to the checkpoint 5 plan (see Recommended next checkpoint).
+As of November 2, 2026, **Milestone 1 is partially implemented. Learn, Review, Discuss, and Build now share one concept workspace. Practice sessions hold artifacts with history/conflict recovery, cited discussion turns, an editable brief, and pause/resume/delete (checkpoints 3a/3b). The interviewer has durable requests, owner-only paid access, budget/context limits, clarification-based disclosure, and explicit continuation/retry (4a/4b). Local activation selected `gpt-6.1-sol` at low reasoning on October 30 after live evaluations. The Learning home has one continuation card and separate reference/flashcard catalogs. Every Learning website route now requires login. Navigation through the lesson and reviews preserves the selected practice session, including an older session. Nothing is deployed. Feedback and export do not exist yet.** Continue on `feature/learning-content-foundation`. Next: review the completed UI checkpoint with Keith, then agree the first small checkpoint 5 implementation (see Recommended next checkpoint).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the workspace and Learning home follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 4b and the Learning UI/login follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -47,6 +47,7 @@ Within Milestone 1:
 | 4b | The interviewer: the OpenAI call process, the `interviewer-1` profile, disclosure and hints, revealed requirements, the context allowance, the check-in, and an evaluation harness. | `216d394` (the interviewer, its service and API) plus the following website commit — complete locally. |
 | 4 activation | Learning's OpenAI project and key (Keith), live evaluations, model choice, verified prices. No production enablement. | Done locally October 30: `gpt-6.1-sol` at low reasoning. Production enablement waits for content review. |
 | Workspace follow-up | Compact practice shell, shared Discuss/Build views, artifact/reference tabs, native POST continuity, and integrated browser recovery checks. | Implemented locally November 1; separate checkpoint commit. |
+| Learning UI/login follow-ups | Compact home and library catalogs; all Learning behind login; shared four-mode concept workspace with exact-session continuity. | Implemented locally November 2. Home: `30aea19`; login: `e1a90bc`; shared workspace in a separate checkpoint commit. |
 | 5 | Evidence-linked feedback, remediation, export/delete, complete recovery demonstration and milestone acceptance. | Not started. |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
@@ -64,6 +65,7 @@ No push, PR, deployment, production migration, or production publication was per
 | Human review before publication. | Schema checks cannot establish educational accuracy. Architecture approval does not attest review of lesson content, hidden constraints, alternatives, or rubrics. |
 | Explicit learner/facilitator/evaluator projections. | Prevent answer/reference leakage through accidental serialization or overly broad prompts. Application privacy does not make the public Git repository secret. |
 | One practice session with conversation and multiple evolving artifacts. | Discuss and Build are complementary views of the same work. Avoid duplicated sessions and disconnected feedback. |
+| Carry `practice_session` through lesson/review navigation. | Keep the exact selected session rather than silently substituting a newer one. Validate ownership and concept on the server; use a read-only summary, without loading work or starting/resuming a session. No new persistence model is needed. |
 | Progressive enhancement for the tabbed workspace. | Keep native Flask form POSTs and their existing CSRF, receipt, conflict, and rescue behavior. Tabs hide panels without removing fields. Local storage holds only per-session view/scroll preferences; session storage temporarily holds focus/caret metadata across a submission. No learner text or server revisions are cached. Without JavaScript, every field remains visible and native saving still works. |
 | Immutable artifact revisions without a separate artifact identity table. | Group revisions by stable artifact ID; this supports history, conflicts, and evidence references with a small model. |
 | One PostgreSQL-backed worker and foreground polling. | Save work before generation, survive web-request timeouts/restarts, and avoid Redis/Celery or streaming infrastructure for the pilot. |
@@ -104,17 +106,19 @@ Repeating identical content is safe. Changing a payload under the same ID/versio
 
 ### Web Learn and Review
 
-Authenticated `/learning/` lists published concepts alongside legacy notes. `/learning/concepts/idempotency` renders expandable lesson sections and the retry simulation. The simulation is reviewed application JavaScript; curriculum files cannot inject executable code. Markdown uses Marked and DOMPurify at the locked versions, loaded from jsDelivr, with a restrictive allowlist; only the DOMPurify tag carries a checked SRI hash. If they fail to load, escaped source text remains readable.
+All Learning website routes require Flask-Login through the blueprint's `before_request` guard, including home, references, and the long-form article. The separate JSON APIs retain JWT authentication. `/learning/` prioritizes continuation; references and personal flashcards have dedicated catalogs. `/learning/concepts/idempotency` shows one lesson section at a time, with native hash links, a mobile section picker, and the retry simulation beside the retry explanation. Without JavaScript, every section is readable. The simulation is reviewed application JavaScript; curriculum files cannot inject executable code. Markdown uses Marked and DOMPurify at the locked versions, loaded from jsDelivr, with a restrictive allowlist; only the DOMPurify tag carries a checked SRI hash. If they fail to load, escaped source text remains readable.
+
+Learn, Review, Discuss, and Build share `concept_shell.html` and `_concept_workspace_header.html`. `navigation.py` carries an optional `practice_session` UUID through lesson/review URLs, reveal/rating forms, remediation links, and completion links. An explicit session must belong to the current user and concept or returns 404; otherwise navigation chooses the newest open session for the concept's exercises. `practice_service.session_summary` reads only owned, pinned metadata. Practice rendering builds links from its existing session data, without another database query on recovery paths. When practice is disabled, Learn/Review make no practice queries. A first-use mode opens a read-only start page; only the existing CSRF-protected POST creates a session.
 
 `GET /learning/concepts/idempotency/review` selects a due question. **Show answer** performs another GET carrying `card_id`, `content_version`, `expected_revision`, and `request_id`. The initial learner response omits the answer and explanation. Ratings are `Again=0`, `Hard=3`, `Good=4`, `Easy=5`.
 
 POSTing the CSRF-protected form calls the existing `rate_card_for_user`. On PostgreSQL, a user-row lock serializes saves; progress, review log, and durable receipt commit together. A replay with the same UUID/payload returns the recorded result; reusing the UUID with a different payload or submitting stale progress produces a conflict. Successful saves return 303 then a fresh queue GET. Save failures preserve the attempt for explicit retry. Version pinning allows an already-open question to finish against its original content revision.
 
-Committed reviews survive navigation and reopening because the queue derives from database progress. This is not yet recovery for a practice conversation or unsaved artifact. There is no new browser-side review queue or client storage.
+Committed reviews survive navigation and reopening because the queue derives from database progress. Navigation preserves the practice session and its confirmed work, not unsaved drafts or an unfinished review attempt across arbitrary mode changes. The pinned reveal URL still restores its original attempt. There is no new browser-side review queue or client storage; Save/Send and the existing leave-page warning protect unsaved practice text.
 
 The JSON API under `/api/v1/learning` remains the legacy notes/review/rating/receipt surface and does not expose concepts; practice sessions have their own API (below). The concept web adapter feeds the shared scheduler without changing that API's due queue. Curriculum and legacy note namespaces are checked to prevent accidental sharing of progress identities.
 
-Personal Learning responses use `Cache-Control: private, no-store`. The shared base template omits Google Analytics and Hotjar on authenticated Learning pages. Sentry reporting is strictly allowlisted in `project/monitoring.py`. Practice routes and AI replies have their own leakage checks (below); provider errors get theirs with the provider call in 4b.
+All Learning responses, including login redirects, use `Cache-Control: private, no-store`. The shared base template omits Google Analytics and Hotjar on authenticated Learning pages. Sentry reporting is strictly allowlisted in `project/monitoring.py`. Practice routes and AI replies have their own leakage checks (below); provider errors get theirs with the provider call in 4b. Static assets and the source repository remain public.
 
 ### Practice sessions (checkpoints 3a and 3b)
 
@@ -302,6 +306,8 @@ Retain work until the owner deletes it. Export portable JSON and readable Markdo
 | [Shared terms](../project/curriculum_terms.py), [learning errors](../project/services/learning_errors.py) | Constants and exceptions kept free of imports, to avoid the cycle described under gotchas. |
 | [Lesson JavaScript](../project/static/js/learning-concept.js) and [SCSS](../project/static/scss/learning-concept.scss); [practice script](../project/static/js/learning-practice.js) and [SCSS](../project/static/scss/learning-practice.scss) | Rendering and retry simulation; unsaved-change prompt and byte counter. Rebuild generated `main.css` after style changes. |
 | [Workspace UI](../project/static/js/learning-workspace.js), [styles](../project/static/scss/learning-workspace.scss) | Accessible view/work tabs, focus and scroll continuity, hidden-error reveal, and presentation-only browser storage. Native form writes remain unchanged. |
+| [Concept navigation](../project/learning/navigation.py), [shared shell](../project/learning/templates/learning/concept_shell.html), [concept styles](../project/static/scss/learning-concept-workspace.scss) | Four-mode identity, owned-session selection, focused lesson/review presentation. Lesson section enhancement is in `learning-concept.js`. |
+| [Concept navigation tests](../tests/test_concept_workspace.py), [browser walkthrough](../tests/browser/concept-workspace-checks.js) | Exact older-session continuity, ownership, read-only navigation, rating retries/replays, feature-off behavior, mobile and no-JS access. Runs through `test_learning_hub_browser.py`. |
 | [Integrated practice browser test](../tests/test_practice_browser.py), [browser assertions](../tests/browser/practice-workspace-checks.js) | Real templates, CSRF forms, redirects, polling, conflict/rescue/retry paths, responsive layout, and no-JS saves with a fake provider. Included in backend unittest discovery; requires Chrome (or CHROME_BIN), including in CI. |
 | [Base template](../project/templates/base.html) | Private Learning analytics exclusion and a container-class override for the compact practice shell. |
 | [JobWizard provider integration](../project/services/jobwizard_extraction.py) | Existing bounded-call/validation patterns to study, not the Learning worker. |
@@ -336,7 +342,14 @@ Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections
 
 ## Verification evidence and commands
 
-Latest verification, November 1, for the tabbed workspace checkpoint:
+Latest verification, November 2, for the login and shared concept workspace:
+
+- **538 backend tests run: 537 passed, one existing Linux-only JobWizard test skipped on macOS**, using isolated **PostgreSQL 18.6**. Migration/schema, concurrency, budget, and recovery tests ran against PostgreSQL.
+- Included browser walkthroughs: **70 shared concept checks**, **60 Learning hub checks**, and **97 practice recovery checks**. New route tests cover selected-session ownership, no navigation writes, CSRF, review receipt replay, stale/failed ratings, and the practice flag. All use disposable data and deterministic providers.
+- **13 Node tests**, dependency integrity, **102 browser renderer checks**, and Sass compilation passed. Desktop and 390-pixel screens were inspected; browser assertions also cover 320 pixels.
+- No migration or write protocol changed; the added service operation is a read-only session summary. No paid AI, production mutation, push, or deployment. Safari, Firefox, and screen-reader validation remain outstanding.
+
+Earlier verification, November 1, for the tabbed workspace checkpoint:
 
 - **516 backend tests run: 515 passed, one existing Linux-only JobWizard signal test skipped on macOS**, with an isolated **PostgreSQL 18.6** cluster. Migration, concurrency, budget, and recovery coverage ran against PostgreSQL.
 - After the final UI refinements, **41 focused web/browser tests passed**, including **97 integrated browser assertions** against real Flask forms and a deterministic fake interviewer. These cover native saves/sends, focus and scroll continuity, note reindexing, conflicts, lost-response replay, failed-send recovery, mobile layouts, blocked browser storage, and saving without JavaScript.
@@ -389,6 +402,9 @@ These fixtures drop tables and reset migration state. Never use a database conta
 
 - **Hidden panels must remain recoverable.** Errors and conflict links reveal their work panel before focus moves. Form fields remain enabled and in the original form, including inactive artifacts and notes. Background replies only follow when the learner is already at the newest exchange.
 - **View persistence is not draft persistence.** Browser storage contains only view/scroll preferences and temporary focus metadata. Unsaved text still depends on the form and leave-page warning; confirmed text remains on the server. See the [workspace inspection guide](learning-workspace-test-guide.md).
+- **GET form submission replaces the action's query.** Keep `practice_session` as a hidden input on Show answer as well as in navigation URLs; otherwise an older session can be lost during reveal. Rating/retry forms carry it too. Review receipts remain independent of this navigation parameter.
+- **Shared styles can clip practice controls.** The lesson's taller line height and flex shrinking initially clipped Send. Practice keeps its previous line height and a nonshrinking composer; retain the browser geometry assertion when changing the header.
+- **Test CSP must run after Talisman.** Flask runs response hooks in reverse registration order. Both integrated browser fixtures explicitly put their local-only policy last and assert the resulting header; otherwise Talisman silently replaces it and external scripts can load during tests.
 
 - **Alembic logging leaked across tests.** Its logging configuration disabled unrelated application loggers, causing later log assertions to fail. The curriculum migration test patches `logging.config.fileConfig` around the actual PostgreSQL upgrade/downgrade; it does not mock the migration itself.
 - **Authentication leaked inside a test fixture.** Two initial web-test failures came from retaining a login across requests. Use deliberately isolated clients/session state when asserting anonymous versus authenticated behavior.
@@ -451,37 +467,26 @@ These fixtures drop tables and reset migration state. Never use a database conta
 
 ## Recommended next checkpoint
 
-Keith approved a Learning UI sequence before feedback work. The first working
-checkpoint is complete: the Learning home prioritizes engineering practice;
-All Learning routes now require sign-in, including the home, references, and
-article. `/learning/flashcards`
-provides title search plus 25 notes per page. The original article, note, review,
-and API URLs remain available. The compact `learning/shell.html` wraps these
-library pages; concept Learn/Review still use their previous layouts until the
-next checkpoint. Existing personal-flashcard Back/Done links now return to their
-catalog, and the article breadcrumb returns to References.
+Keith's approved Learning UI sequence is complete locally: a compact home,
+dedicated reference/flashcard catalogs, and a shared Learn / Review / Discuss /
+Build workspace. The selected practice session survives lesson navigation,
+answer reveal, rating, remediation, and return to practice. Reading or opening
+a mode never starts/resumes a session. Every Learning website route requires
+login. The original approved planning snapshot remains unchanged.
 
-Continuation uses the existing owned-session projection with `limit=1`, falling
-back to a published lesson when no open session exists. A pinned session remains
-reachable when its concept is unpublished. The home no longer loads the entire
-note library; the flashcard page still calculates due counts with the existing
-service before filtering/pagination, so searching does not narrow the review
-queue. All new navigation is native HTML. No new JavaScript, dependency, schema,
-AI behavior, or write operation was introduced. Private cache headers and
-analytics exclusion cover the new authenticated pages. The original approved
-planning snapshot remains unchanged.
+The [concept workspace guide](learning-concept-workspace-test-guide.md) provides
+a short DevTools, HTTPie, and REPL walkthrough. The [home guide](learning-home-test-guide.md)
+covers the library; the [practice guide](learning-workspace-test-guide.md) covers
+unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separate
+60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
+verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next UI checkpoint:** unify the concept header and Learn / Review / Discuss /
-Build navigation, improve lesson section navigation and focused review, and
-preserve the same practice session/artifacts when moving between modes. Use a
-separate commit and browser coverage. Do not start Expo or expand content.
-
-The [hands-on Learning home guide](learning-home-test-guide.md) covers DevTools,
-HTTPie, and a Python REPL. New route tests are in `tests/test_learning_hub.py`;
-`tests/test_learning_hub_browser.py` runs 60 checks on real pages with a seeded
-review queue and disposable data. See the [checkpoint log](engineering-learning-milestone-1.md)
-for verification results. Remaining cross-browser/screen-reader validation and
-feedback/export acceptance are still outstanding.
+**Next:** get Keith's review of this UI checkpoint, then agree a small first
+checkpoint 5 change: content schema 2 and misconception mappings, followed by
+deterministic artifact checks and evidence-linked feedback. The broader
+checkpoint 5 decisions and remaining acceptance work below still apply. Feedback,
+export, Expo, additional personalities, and content expansion have not started.
+Continue using separate commits and approval at meaningful checkpoints.
 
 ### Activation record
 

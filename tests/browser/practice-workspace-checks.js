@@ -56,7 +56,7 @@
     check(get('[data-work-tabs]').getAttribute('role') === 'tablist', 'work tabs expose their semantics');
     check(doc().querySelectorAll('[data-work-panel]:not([hidden])').length === 1, 'one work panel is shown');
     check(get('#requirements').hidden === false, 'a new session starts with its brief');
-    check(get('.practice-shell-header') && !get('.Header'), 'workspace uses compact navigation');
+    check(get('.learning-shell-header') && !get('.Header'), 'workspace uses compact navigation');
     const html = doc().documentElement.outerHTML;
     ['HIDDEN_SENTINEL', 'HINT_SENTINEL', 'INSTRUCTION_SENTINEL', 'EVALUATOR_SENTINEL',
       'clarification_cues', 'reference_reasoning', 'permitted_hints', 'hotjar', 'googletagmanager'].forEach(
@@ -84,7 +84,7 @@
     check(get('#artifacts-0-body').getBoundingClientRect().bottom < 720, 'active artifact is within the desktop viewport');
     check(get('#message').getBoundingClientRect().bottom < 720, 'composer is within the desktop viewport');
     check(get('button[value="send"]').getBoundingClientRect().bottom <= get('.practice-composer').getBoundingClientRect().bottom,
-      'Send is not clipped inside the composer');
+      `Send is not clipped inside the composer (send: ${get('button[value="send"]').getBoundingClientRect().bottom}, composer: ${get('.practice-composer').getBoundingClientRect().bottom})`);
     const schemaTab = get('[data-work-target="artifact-schema"]');
     schemaTab.focus();
     schemaTab.dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
@@ -156,7 +156,7 @@
     await submit('pause');
     await ready();
     check(get('.practice-paused') && get('button[value="resume"]'), 'pause keeps its existing semantics');
-    await load(frame, () => click('.practice-views a[href$="/concepts/idempotency"]'));
+    await load(frame, () => click('.practice-views a[href*="/concepts/idempotency?practice_session="]'));
     check(get('.concept-study'), 'Learn still opens the existing lesson');
     await load(frame, () => { frame.src = sessionURL; });
     await ready();
@@ -285,6 +285,6 @@
     document.body.dataset.testResult = 'pass';
     result.textContent = `PASS: ${checks} integrated practice browser checks`;
   } catch (error) {
-    result.textContent = `FAIL: ${error.message}`;
+    result.textContent = `FAIL: ${step}: ${error.message}\n${error.stack}`;
   }
 })();

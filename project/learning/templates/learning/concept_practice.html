@@ -1,0 +1,10 @@
+{% extends 'learning/concept_shell.html' %}
+{% block title %}{{ workspace.mode|capitalize }} · {{ concept.title }}{% endblock %}
+{% block concept_content %}
+<section class="concept-study concept-practice-entry" aria-labelledby="practice-entry-title">
+  <p class="learning-eyebrow">{{ workspace.mode|capitalize }}</p>
+  <h2 id="practice-entry-title">Put the concept to work</h2>
+  <p>Discuss your reasoning with an interviewer and develop your design in Build. Both views share one conversation and saved work.</p>
+  {% include 'learning/_concept_practice_options.html' %}
+</section>
+{% endblock %}

@@ -21,7 +21,7 @@ from werkzeug.serving import make_server
 from project import create_app
 from project.database import db
 from project.extensions import talisman
-from project.models import ArtifactRevision, PracticeSession, ReviewLog, ReviewReceipt, User
+from project.models import ArtifactRevision, PracticeSession, ReviewLog, ReviewReceipt, SessionMessage, User
 from project.services import learning_service, practice_service
 from tests.learning_hub_fixtures import seed_notes
 from tests.test_practice_browser import CHROME, QuietHandler, ROOT
@@ -30,6 +30,12 @@ from tests.test_practice_service import enable_sqlite_foreign_keys, seed_catalog
 
 class LearningHubBrowserTests(unittest.TestCase):
     def test_destinations_resume_review_and_responsive_navigation(self):
+        self.run_browser_checks("learning-hub-checks.js")
+
+    def test_concept_modes_keep_the_selected_session_and_review_attempt(self):
+        self.run_browser_checks("concept-workspace-checks.js")
+
+    def run_browser_checks(self, script_name):
         if not CHROME:
             if os.environ.get("CI"):
                 self.fail("Chrome is required for the Learning hub regression in CI")
@@ -57,23 +63,29 @@ class LearningHubBrowserTests(unittest.TestCase):
                     request_id=str(uuid4()))["session_id"]
                 practice_service.save_work(user, session_id, status="paused", request_id=str(uuid4()),
                     edits=[dict(artifact_id="api", language="text", body="POST /orders — saved work", base_revision=0)])
+                if script_name == "concept-workspace-checks.js":
+                    # Navigation must keep this older session, even with a newer one available.
+                    practice_service.start_session(user, exercise_id="idempotent-order-api", request_id=str(uuid4()))
 
             @app.get("/__hub_checks__")
             def checks():
                 login_user(db.session.get(User, 1))
+                initial = (f"/learning/concepts/idempotency?practice_session={session_id}"
+                           if script_name == "concept-workspace-checks.js" else "/learning/")
                 return ('<!doctype html><meta charset="utf-8"><title>Learning hub checks</title>'
                         '<pre id="result">Running</pre><iframe id="hub" title="Learning pages" '
-                        'style="width:1280px;height:800px;border:0" src="/learning/"></iframe>'
+                        f'style="width:1280px;height:800px;border:0" src="{initial}"></iframe>'
                         '<script src="/__hub_script__"></script>')
 
             @app.get("/__hub_script__")
             def script():
-                return send_file(ROOT / "tests/browser/learning-hub-checks.js", mimetype="application/javascript")
+                return send_file(ROOT / "tests/browser" / script_name, mimetype="application/javascript")
 
             @app.get("/__hub_counts__")
             def counts():
                 return jsonify(sessions=PracticeSession.query.count(), artifacts=ArtifactRevision.query.count(),
-                    ratings=ReviewLog.query.count(), receipts=ReviewReceipt.query.count())
+                    ratings=ReviewLog.query.count(), receipts=ReviewReceipt.query.count(),
+                    turns=SessionMessage.query.filter_by(kind="turn").count())
 
             @app.after_request
             def local_only(response):
@@ -81,6 +93,13 @@ class LearningHubBrowserTests(unittest.TestCase):
                 response.headers["Content-Security-Policy"] = (
                     f"default-src 'self'; script-src {scripts}; style-src 'self' 'unsafe-inline'")
                 return response
+
+            # Flask runs after_request handlers in reverse registration order.
+            # Apply the fixture CSP after Talisman, which otherwise replaces it.
+            app.after_request_funcs[None].remove(local_only)
+            app.after_request_funcs[None].insert(0, local_only)
+            self.assertEqual(app.test_client().get("/learning/?fixture_scripts=off").headers["Content-Security-Policy"],
+                "default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'")
 
             server = make_server("127.0.0.1", 0, app, threaded=True, request_handler=QuietHandler)
             thread = Thread(target=server.serve_forever, daemon=True)

@@ -122,6 +122,12 @@ class PracticeBrowserTests(unittest.TestCase):
                         'Object.defineProperty(window,key,{get(){throw new Error("Storage blocked");}});</script></head>'))
                 return response
 
+            # Run after Talisman so the local-only policy is actually enforced.
+            app.after_request_funcs[None].remove(local_only)
+            app.after_request_funcs[None].insert(0, local_only)
+            self.assertEqual(app.test_client().get("/learning/").headers["Content-Security-Policy"],
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'")
+
             server = make_server("127.0.0.1", 0, app, threaded=True, request_handler=QuietHandler)
             thread = Thread(target=server.serve_forever, daemon=True)
             thread.start()

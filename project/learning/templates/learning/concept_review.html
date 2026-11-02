@@ -1,25 +1,26 @@
-{% extends 'base.html' %}
+{% extends 'learning/concept_shell.html' %}
 {% block title %}Review · {{ concept.title }}{% endblock %}
-{% block body %}
-<main class="concept-study">
-  <a href="{{ url_for('learning.concept', concept_id=concept.id) }}">← Back to lesson</a>
-  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable progress · draft content for review</p>{% endif %}
-  <p class="learning-eyebrow">Review</p><h1>{{ concept.title }}</h1>
+{% block concept_content %}
+<div class="concept-study concept-review-panel">
   {% for message in get_flashed_messages(category_filter=['concept-review']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
   {% if error %}<p class="concept-notice" role="alert">{{ error }}</p>{% endif %}
   {% if stale %}
-    <a class="button" href="{{ url_for('learning.concept_review', concept_id=concept.id) }}">Load current questions</a>
+    <a class="button" href="{{ workspace.review_url }}">Load current questions</a>
   {% elif card %}
     <section class="concept-question" aria-labelledby="question-heading">
+      <p class="learning-eyebrow">Recall before you reveal</p>
       <h2 id="question-heading">{{ card.note_title }}</h2>
       <div class="concept-markdown" data-concept-markdown>{{ card.prompt }}</div>
       {% if revealed %}
-        <h3>Compare your answer</h3>
-        <div class="concept-markdown" id="concept-answer" data-concept-markdown>{{ card.answer }}</div>
-        <p>{{ card.explanation }}</p>
-        <a href="{{ url_for('learning.concept', concept_id=concept.id) }}#{{ card.remediation_section_id }}">Revisit the explanation</a>
-        <form method="post" action="{{ url_for('learning.concept_review', concept_id=concept.id) }}">
+        <div class="concept-answer">
+          <h3>Compare your answer</h3>
+          <div class="concept-markdown" id="concept-answer" data-concept-markdown>{{ card.answer }}</div>
+          <p>{{ card.explanation }}</p>
+          <a href="{{ workspace.learn_url }}#{{ card.remediation_section_id }}">Revisit the explanation</a>
+        </div>
+        <form method="post" action="{{ workspace.review_url }}">
           {{ form.csrf_token }}{{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
+          {% if workspace.session %}<input type="hidden" name="practice_session" value="{{ workspace.session.id }}">{% endif %}
           <fieldset><legend>How well did you recall it?</legend><div class="concept-ratings">
           {% if retry_same %}<button class="button" name="rating" value="{{ form.rating.data }}">Retry the same rating</button>
           {% else %}
@@ -30,18 +31,25 @@
           {% endif %}</div></fieldset>
         </form>
       {% else %}
-        <p>Explain your reasoning before revealing the answer.</p>
-        <form method="get" action="{{ url_for('learning.concept_review', concept_id=concept.id) }}">
+        <p class="concept-recall-prompt">Explain your reasoning before revealing the answer.</p>
+        <form method="get" action="{{ workspace.review_url }}">
           {{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
+          {% if workspace.session %}<input type="hidden" name="practice_session" value="{{ workspace.session.id }}">{% endif %}
           <button class="button">Show answer</button>
         </form>
       {% endif %}
     </section>
   {% else %}
-    <h2>No questions due right now</h2>
-    <p>Your saved ratings determine when these questions return. Completing reviews is practice, not a measurement of mastery.</p>
-    <a class="button" href="{{ url_for('learning.index') }}">Back to Learning</a>
+    <section class="concept-review-complete">
+      <p class="learning-eyebrow">Review complete for now</p>
+      <h2>No questions due right now</h2>
+      <p>Your saved ratings determine when these questions return. Completing reviews is practice, not a measurement of mastery.</p>
+      <div class="concept-controls">
+        {% if workspace.practice_enabled %}<a class="button" href="{{ workspace.discuss_url }}">{{ 'Return to your conversation' if workspace.session else 'Put it into practice' }}</a>{% endif %}
+        <a class="button button--secondary" href="{{ workspace.learn_url }}">Revisit the lesson</a>
+      </div>
+    </section>
   {% endif %}
-</main>
+</div>
 {% endblock %}
 {% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

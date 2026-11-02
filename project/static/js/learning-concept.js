@@ -11,13 +11,43 @@
     element.querySelectorAll('a').forEach((link) => link.setAttribute('rel', 'noreferrer'));
   });
 
-  // A remediation anchor should open its containing lesson section.
+  // Section links remain ordinary anchors. Enhancement focuses one section at a
+  // time; with scripts blocked the entire lesson and navigation remain readable.
+  const lesson = document.querySelector('[data-concept-lesson]');
+  const sections = lesson ? [...lesson.querySelectorAll('[data-lesson-section]')] : [];
+  const picker = lesson?.querySelector('#lesson-section');
+  const hashTarget = () => {
+    try { return document.getElementById(decodeURIComponent(location.hash.slice(1))); }
+    catch { return null; }
+  };
   const revealSection = () => {
-    const target = document.getElementById(window.location.hash.slice(1));
+    const target = hashTarget();
+    const section = target?.closest('[data-lesson-section]') || sections[0];
+    if (section) {
+      sections.forEach((item) => { item.hidden = item !== section; });
+      lesson.querySelectorAll('[data-lesson-link]').forEach((link) => {
+        if (link.dataset.lessonLink === section.id) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      });
+      picker.value = section.id;
+    }
     if (target?.matches('details')) target.open = true;
   };
+  if (sections.length) {
+    lesson.classList.add('is-sectioned');
+    lesson.querySelector('[data-lesson-picker]').hidden = false;
+    picker.addEventListener('change', () => { location.hash = picker.value; });
+  }
   revealSection();
-  window.addEventListener('hashchange', revealSection);
+  window.addEventListener('hashchange', () => {
+    revealSection();
+    const target = hashTarget();
+    const heading = target?.matches('[data-lesson-section]') ? target.querySelector('h2') : null;
+    if (heading) {
+      heading.focus({ preventScroll: true });
+      heading.scrollIntoView({ block: 'start' });
+    }
+  });
 
   const lab = document.querySelector('[data-retry-lab]');
   if (!lab) return;

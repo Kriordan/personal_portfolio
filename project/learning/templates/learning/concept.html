@@ -1,54 +1,47 @@
-{% extends 'base.html' %}
+{% extends 'learning/concept_shell.html' %}
 {% block title %}{{ concept.title }}{% endblock %}
-{% block body %}
-<main class="concept-study">
-  <a href="{{ url_for('learning.index') }}">← Learning</a>
-  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-notice">Local demo · disposable progress · draft content for review</p>{% endif %}
-  <p class="learning-eyebrow">Learn · Version {{ concept.version }}</p>
-  <h1>{{ concept.title }}</h1>
-  {% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
-  <p class="concept-lead">{{ concept.content.summary }}</p>
-  <section aria-labelledby="objectives"><h2 id="objectives">What you'll be able to explain</h2>
-    <ul>{% for objective in concept.content.learning_objectives %}<li>{{ objective }}</li>{% endfor %}</ul>
-  </section>
-  <details><summary>Before you start</summary>
-    <ul>{% for prerequisite in concept.content.prerequisite_knowledge %}<li>{{ prerequisite }}</li>{% endfor %}</ul>
-  </details>
-  {% for section in concept.content.sections %}
-    {% if loop.first %}
-      <section id="{{ section.id }}"><h2>{{ section.title }}</h2><div class="concept-markdown" data-concept-markdown>{{ section.markdown }}</div></section>
-    {% else %}
-      <details id="{{ section.id }}"><summary>{{ section.title }}</summary><div class="concept-markdown" data-concept-markdown>{{ section.markdown }}</div></details>
+{% block concept_content %}
+{% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
+<div class="concept-study concept-lesson" data-concept-lesson>
+  <aside class="lesson-outline">
+    <nav aria-label="Lesson sections" class="lesson-section-nav">
+      <h2>In this lesson</h2>
+      <ol>{% for section in concept.content.sections %}<li><a href="#{{ section.id }}" data-lesson-link="{{ section.id }}"><span aria-hidden="true">{{ '%02d'|format(loop.index) }}</span> {{ section.title }}</a></li>{% endfor %}</ol>
+    </nav>
+    <details><summary>Learning goals</summary><ul>{% for objective in concept.content.learning_objectives %}<li>{{ objective }}</li>{% endfor %}</ul></details>
+    <details><summary>Before you start</summary><ul>{% for prerequisite in concept.content.prerequisite_knowledge %}<li>{{ prerequisite }}</li>{% endfor %}</ul></details>
+    <details><summary>References</summary><ul>{% for reference in concept.content.references %}<li><a href="{{ reference.url }}" rel="noreferrer">{{ reference.title }}</a></li>{% endfor %}</ul></details>
+  </aside>
+  <div class="lesson-reading">
+    <div class="lesson-mobile-nav" data-lesson-picker hidden>
+      <label for="lesson-section">Lesson section</label>
+      <select id="lesson-section">{% for section in concept.content.sections %}<option value="{{ section.id }}">{{ loop.index }}. {{ section.title }}</option>{% endfor %}</select>
+    </div>
+    {% for section in concept.content.sections %}
+      <section id="{{ section.id }}" data-lesson-section aria-labelledby="lesson-heading-{{ section.id }}">
+        <p class="learning-eyebrow">Learn · {{ loop.index }} of {{ loop.length }}</p>
+        <h2 id="lesson-heading-{{ section.id }}" tabindex="-1">{{ section.title }}</h2>
+        <div class="concept-markdown" data-concept-markdown>{{ section.markdown }}</div>
+        {% if concept.id == 'idempotency' and section.id == 'retries' %}{% include 'learning/_retry_visualization.html' %}{% endif %}
+        <nav class="lesson-pagination" aria-label="{{ section.title }} navigation">
+          {% if not loop.first %}<a href="#{{ concept.content.sections[loop.index0 - 1].id }}" data-lesson-link="{{ concept.content.sections[loop.index0 - 1].id }}">← Previous section</a>{% endif %}
+          {% if not loop.last %}<a class="button" href="#{{ concept.content.sections[loop.index0 + 1].id }}" data-lesson-link="{{ concept.content.sections[loop.index0 + 1].id }}">Next: {{ concept.content.sections[loop.index0 + 1].title }} →</a>
+          {% else %}<a class="button" href="{{ workspace.review_url }}">Try recalling it →</a>{% endif %}
+        </nav>
+      </section>
+    {% endfor %}
+    <div class="lesson-next">
+      <p>{{ due_count }} question{{ 's' if due_count != 1 }} due. Reading this lesson does not change your review schedule.</p>
+      <a href="{{ workspace.review_url }}">{{ 'Review due questions' if due_count else 'Check review schedule' }}</a>
+      {% if workspace.session %}<a href="{{ workspace.discuss_url }}">Return to your conversation</a>{% endif %}
+    </div>
+    {% if exercises %}
+      <details class="lesson-practice-options" id="practice-heading"><summary>Apply it · practice sessions</summary>
+        {% include 'learning/_concept_practice_options.html' %}
+      </details>
     {% endif %}
-  {% endfor %}
-  {% if concept.id == 'idempotency' %}{% include 'learning/_retry_visualization.html' %}{% endif %}
-  <section class="concept-next" aria-labelledby="review-heading">
-    <h2 id="review-heading">Try recalling it</h2>
-    <p>{{ due_count }} question{{ 's' if due_count != 1 }} due. Reading this lesson does not change your review schedule.</p>
-    <a class="button" href="{{ url_for('learning.concept_review', concept_id=concept.id) }}">{{ 'Review due questions' if due_count else 'Check review schedule' }}</a>
-  </section>
-  {% if exercises %}
-    {% set status_labels = {'active': 'In progress', 'paused': 'Paused', 'completed': 'Completed'} %}
-    <section class="concept-next" aria-labelledby="practice-heading">
-      <h2 id="practice-heading">Apply it</h2>
-      {% for exercise in exercises %}
-        <h3>{{ exercise.title }}</h3>
-        <p>{{ exercise.scenario }}</p>
-        {% if exercise.sessions %}
-          <ul class="practice-sessions">
-            {% for session in exercise.sessions %}
-              <li><a href="{{ url_for('learning.practice_workspace', session_id=session.id) }}">Resume the session started {{ session.created_at|practice_time }}</a> · {{ status_labels[session.status] }} · updated {{ session.updated_at|practice_time }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-        <form method="post" action="{{ url_for('learning.practice_start') }}">
-          {{ exercise.start_form.csrf_token }}{{ exercise.start_form.exercise_id }}{{ exercise.start_form.concept_id }}{{ exercise.start_form.request_id }}
-          <button class="button{% if exercise.sessions %} button--secondary{% endif %}">Start a new practice session</button>
-        </form>
-      {% endfor %}
-    </section>
-  {% endif %}
-  <details><summary>References</summary><ul>{% for reference in concept.content.references %}<li><a href="{{ reference.url }}" rel="noreferrer">{{ reference.title }}</a></li>{% endfor %}</ul></details>
-</main>
+    <p class="concept-version">Lesson version {{ concept.version }}</p>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

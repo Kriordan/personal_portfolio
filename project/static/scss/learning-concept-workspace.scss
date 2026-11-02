@@ -1,0 +1,90 @@
+// Shared concept identity and navigation across lessons, review, and practice.
+.learning-shell-header.concept-shell-header { max-width: 1440px; padding: .6rem 1.5rem; }
+.container.concept-container { max-width: 1440px; padding: 0 1.5rem 2rem; }
+.concept-workspace {
+  color: #1e3028; font: 1rem/1.65 system-ui, sans-serif;
+  [hidden] { display: none !important; }
+  p, li, a, label, h1, h2, h3, button, select, legend { font-family: inherit; }
+  h1, h2, h3 { font-weight: 600; text-wrap: balance; }
+  a { color: #165448; text-underline-offset: .2em; }
+  a:hover { text-decoration: underline; }
+  a, button { touch-action: manipulation; }
+  :focus-visible { outline: 3px solid #17675a; outline-offset: 3px; }
+  .concept-workspace-heading { padding: 1.1rem 0 .75rem; }
+  .concept-workspace-heading h1 { font-size: clamp(1.5rem, 4vw, 1.85rem); margin: 0 0 .25rem; line-height: 1.3; }
+  .concept-workspace-heading p { margin: 0; font-size: .85rem; color: #52645d; }
+  .concept-mode-nav { margin-bottom: 1.5rem; gap: 1.5rem; }
+  .concept-mode-nav [aria-current='page'] { font-weight: 600; color: #17675a; border-bottom-color: #17675a; }
+  .concept-mode-nav > [aria-disabled] { color: #748279; font-size: .9rem; }
+  .concept-demo { margin: -.75rem 0 .75rem; color: #52645d; font-size: .75rem; }
+  .concept-study { font: inherit; }
+  .concept-study .button { border-width: 1px; font-size: .9rem; }
+  .concept-study h2 { font-size: clamp(1.3rem, 3vw, 1.6rem); }
+  .concept-study h3 { font-size: 1.1rem; }
+  .concept-study details { border-color: #d5dfda; }
+  .concept-study summary { min-height: 44px; display: list-item; padding: .4rem 0; font-weight: 550; }
+  .concept-study ul { padding-left: 1.25rem; }
+  .concept-study li { margin: .4rem 0; }
+  .concept-study select { color: #1e3028; background: #fff; border: 1px solid #8ba197; border-radius: 5px; font-size: 1rem; }
+  .concept-study .learning-eyebrow { color: #52645d; font-size: .75rem; }
+  .concept-lesson {
+    display: grid; grid-template-columns: 14rem minmax(0, 46rem); gap: clamp(1.5rem, 4vw, 4rem);
+    max-width: 72rem; margin: 0 auto 3rem;
+  }
+  .lesson-outline { font-size: .875rem; min-width: 0; }
+  .lesson-outline h2 { font-size: .875rem; margin: .5rem 0 .75rem; }
+  .lesson-outline ol { padding: 0; list-style: none; }
+  .lesson-outline li { margin: .15rem 0; }
+  .lesson-outline a { display: block; padding: .65rem .75rem; border-radius: 5px; min-height: 44px; }
+  .lesson-outline a span { color: #52645d; font-size: .75rem; margin-right: .3rem; }
+  .lesson-outline a[aria-current] { background: #eaf3f0; font-weight: 600; }
+  .lesson-outline details { padding: .25rem .75rem; margin-top: .75rem; }
+  .lesson-outline details a { padding: .35rem 0; }
+  .lesson-outline details li { margin: .5rem 0; }
+  .lesson-reading { min-width: 0; }
+  .lesson-reading > section { margin-top: 0; scroll-margin-top: 1rem; }
+  .lesson-reading > section > h2 { margin-bottom: 1.25rem; scroll-margin-top: 1rem; }
+  .lesson-reading p, .concept-question p { line-height: 1.75; }
+  .lesson-mobile-nav { display: none; }
+  .lesson-pagination { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+  .lesson-pagination a { display: inline-flex; align-items: center; min-height: 44px; font-size: .9rem; }
+  .lesson-next { border-top: 1px solid #d5dfda; padding-top: 1rem; margin-top: 1.5rem; }
+  .lesson-next p { color: #52645d; font-size: .85rem; margin-bottom: .25rem; }
+  .lesson-next a { display: inline-flex; align-items: center; min-height: 44px; margin-right: 1.25rem; font-size: .875rem; }
+  .concept-version { color: #52645d; font-size: .75rem; margin-top: 1rem; }
+  .retry-lab { border-color: #c9dcd3; background: #f7faf8; }
+  .retry-lab p { font-size: .9rem; }
+  .concept-practice-option { margin: 1rem 0; }
+  .concept-practice-option p, .practice-sessions { font-size: .9rem; }
+  .concept-review-panel, .concept-practice-entry { margin: 1.5rem auto 3rem; max-width: 48rem; }
+  .concept-question { margin-top: 0; padding: clamp(1.25rem, 4vw, 2rem); border-color: #d5dfda; }
+  .concept-question h2 { margin-bottom: 1.25rem; }
+  .concept-answer { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #d5dfda; }
+  .concept-answer > a { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; }
+  .concept-recall-prompt { color: #52645d; font-size: .875rem; margin-top: 1.5rem; }
+  .concept-review-complete { border: 1px solid #c9dcd3; border-radius: 10px; background: #f2f7f4; padding: 1.5rem; }
+  .concept-ratings { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .concept-ratings span { font-size: .75rem; margin-top: .25rem; }
+  .concept-ratings .button { padding: .65rem .5rem; }
+  .concept-notice { font-size: .875rem; }
+  &.practice-workspace { line-height: 1.5; }
+  &.practice-workspace .concept-mode-nav { margin-bottom: .75rem; }
+  &.practice-workspace .concept-demo { margin: 0 0 .5rem; }
+  &.practice-workspace.is-enhanced .practice-composer { flex-shrink: 0; max-height: 75%; }
+}
+@media (max-width: 760px) {
+  .learning-shell-header.concept-shell-header { padding: .5rem 1rem; }
+  .container.concept-container { padding: 0 1rem 1.5rem; }
+  .concept-workspace {
+    .concept-mode-nav, .concept-mode-nav [data-view-tabs] { gap: 1.1rem; }
+    .concept-mode-nav { margin-bottom: 1rem; }
+    .concept-lesson { display: flex; flex-direction: column; gap: 1rem; }
+    .is-sectioned .lesson-section-nav { display: none; }
+    .is-sectioned .lesson-mobile-nav { display: block; margin-bottom: 1.25rem; }
+    .lesson-mobile-nav label { font-size: .85rem; margin: 0 0 .4rem; }
+    .lesson-mobile-nav select { width: 100%; }
+    .is-sectioned .lesson-outline { order: 2; }
+    .concept-ratings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .concept-question { padding: 1.25rem; }
+  }
+}
