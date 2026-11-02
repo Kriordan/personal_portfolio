@@ -29,10 +29,10 @@
     <a
       {% if request.path == '/contact' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.contact' )}}">Contact</a>
-    <a
-      {% if request.path.startswith('/learning') %}class="active"{% endif %}
-      href="{{ url_for( 'learning.index' )}}">Learning</a>
     {% if not current_user.is_anonymous %}
+      <a
+        {% if request.path.startswith('/learning') %}class="active"{% endif %}
+        href="{{ url_for( 'learning.index' )}}">Learning</a>
       <a
         {% if request.blueprint == 'lottery' %}class="active"{% endif %}
         href="{{ url_for('lottery.index') }}">Scratch-offs</a>

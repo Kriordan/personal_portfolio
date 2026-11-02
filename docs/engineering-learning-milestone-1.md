@@ -490,6 +490,7 @@ login, including home, the reference catalog, and the long-form article. The
 blueprint checks authentication before route/feature logic, so future Learning
 pages inherit the same rule. Login retains the requested destination. Every
 Learning response, including a sign-in redirect, uses `private, no-store`.
+The portfolio's Learning navigation link is also shown only after sign-in.
 The separate JSON APIs retain their existing JWT authentication. Static assets
 and the public source repository are unchanged; this is application access
 control, not repository confidentiality.
@@ -500,6 +501,10 @@ The real-browser hub regression passed all 60 checks, including signed-out
 redirects for home, references, flashcards, and the article. No schema, scheduler,
 AI, budget, or recovery operation changed. This is a separate commit before the
 shared concept-workspace checkpoint.
+
+Navigation follow-up: moved Learning into the existing signed-in portfolio
+navigation group. All five Learning web tests pass, including authenticated and
+anonymous header checks and the existing route-wide login checks.
 
 
 ## Shared concept workspace (November 2)

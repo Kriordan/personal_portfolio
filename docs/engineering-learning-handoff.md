@@ -472,7 +472,8 @@ dedicated reference/flashcard catalogs, and a shared Learn / Review / Discuss /
 Build workspace. The selected practice session survives lesson navigation,
 answer reveal, rating, remediation, and return to practice. Reading or opening
 a mode never starts/resumes a session. Every Learning website route requires
-login. The original approved planning snapshot remains unchanged.
+login, and the portfolio navigation shows Learning only to signed-in users.
+The original approved planning snapshot remains unchanged.
 
 The [concept workspace guide](learning-concept-workspace-test-guide.md) provides
 a short DevTools, HTTPie, and REPL walkthrough. The [home guide](learning-home-test-guide.md)
@@ -481,7 +482,7 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** get Keith's review of this UI checkpoint, then agree a small first
+**Next:** Keith has reviewed the improved UI. Agree a small first
 checkpoint 5 change: content schema 2 and misconception mappings, followed by
 deterministic artifact checks and evidence-linked feedback. The broader
 checkpoint 5 decisions and remaining acceptance work below still apply. Feedback,

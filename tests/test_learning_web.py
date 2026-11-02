@@ -39,6 +39,9 @@ class LearningWebTests(unittest.TestCase):
         return self.client.get(path, base_url="https://localhost")
 
     def test_learning_index_links_to_dedicated_destinations_after_login(self):
+        navigation = self._get("/resume")
+        self.assertEqual(navigation.status_code, 200)
+        self.assertIn(b'href="/learning/">Learning</a>', navigation.data)
         response = self._get("/learning")
 
         self.assertEqual(response.status_code, 200)
@@ -74,6 +77,9 @@ class LearningWebTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             session.clear()
         g.pop("_login_user", None)
+        navigation = self._get("/resume")
+        self.assertEqual(navigation.status_code, 200)
+        self.assertNotIn(b'href="/learning/"', navigation.data)
         for rule in self.app.url_map.iter_rules():
             if not rule.endpoint.startswith("learning."):
                 continue
