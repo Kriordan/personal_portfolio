@@ -59,9 +59,9 @@ No new npm dependency is needed. PostgreSQL races/migrations have separate tests
 
 ## Learning home and library navigation
 
-`poetry run python -m unittest tests.test_learning_hub_browser` runs 56 checks
+`poetry run python -m unittest tests.test_learning_hub_browser` runs 60 checks
 against real Flask pages in Chrome. It covers the continuation link and saved
-artifact, practice tab restoration, public articles, private flashcards,
+artifact, practice tab restoration, authenticated articles and flashcards,
 search/pagination, escaped note titles, the existing rating endpoint and receipt,
 progress after reload, independent concept review counts, 390/320-pixel layouts,
 skip-link focus, and navigation with scripts blocked. The fixture seeds the

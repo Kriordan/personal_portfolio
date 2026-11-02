@@ -453,7 +453,8 @@ These fixtures drop tables and reset migration state. Never use a database conta
 
 Keith approved a Learning UI sequence before feedback work. The first working
 checkpoint is complete: the Learning home prioritizes engineering practice;
-`/learning/references` is public; `/learning/flashcards` requires sign-in and
+All Learning routes now require sign-in, including the home, references, and
+article. `/learning/flashcards`
 provides title search plus 25 notes per page. The original article, note, review,
 and API URLs remain available. The compact `learning/shell.html` wraps these
 library pages; concept Learn/Review still use their previous layouts until the
@@ -477,7 +478,7 @@ separate commit and browser coverage. Do not start Expo or expand content.
 
 The [hands-on Learning home guide](learning-home-test-guide.md) covers DevTools,
 HTTPie, and a Python REPL. New route tests are in `tests/test_learning_hub.py`;
-`tests/test_learning_hub_browser.py` runs 56 checks on real pages with a seeded
+`tests/test_learning_hub_browser.py` runs 60 checks on real pages with a seeded
 review queue and disposable data. See the [checkpoint log](engineering-learning-milestone-1.md)
 for verification results. Remaining cross-browser/screen-reader validation and
 feedback/export acceptance are still outstanding.

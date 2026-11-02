@@ -84,17 +84,16 @@ class LearningHubTests(PracticeWebCase):
             for hidden in SENTINELS + ("Private answer", "hotjar", "googletagmanager"):
                 self.assertNotIn(hidden, response.get_data(as_text=True))
 
-    def test_signed_out_flashcards_require_login_but_references_remain_public(self):
+    def test_signed_out_learning_destinations_all_require_login(self):
         with self.client.session_transaction() as session:
             session.clear()
         g.pop("_login_user", None)
         with patch.object(learning_service, "load_notes", side_effect=AssertionError("private notes read")):
-            response = self.get("/learning/flashcards")
-            self.assertEqual(response.status_code, 302)
-            self.assertIn("/login?next=", response.headers["Location"])
-            self.assertEqual(response.headers["Cache-Control"], "private, no-store")
-            self.assertEqual(self.get("/learning/references").status_code, 200)
-            self.assertEqual(self.get("/learning/").status_code, 200)
+            for path in ("/learning/flashcards", "/learning/references", "/learning/"):
+                response = self.get(path)
+                self.assertEqual(response.status_code, 302)
+                self.assertIn("/login?next=", response.headers["Location"])
+                self.assertEqual(response.headers["Cache-Control"], "private, no-store")
 
     def test_pagination_and_search_do_not_change_review_scope_or_progress(self):
         before = self.counts()

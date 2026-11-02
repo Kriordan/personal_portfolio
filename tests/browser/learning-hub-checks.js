@@ -125,14 +125,12 @@
 
     step = 'signed out';
     await follow('a[href="/logout"]');
-    await load(() => { frame.src = '/learning/'; });
-    check(!get('[data-learning-continue]'), 'anonymous home has no private continuation');
-    await follow('a[href="/learning/references"]');
-    check(get('h1').textContent === 'Reference articles', 'references remain public');
-    await home();
-    await follow('a[href="/learning/flashcards"]');
-    check(frame.contentWindow.location.pathname === '/login', 'private flashcards require sign-in');
-    check(frame.contentWindow.location.search.includes('next='), 'login preserves the flashcard destination');
+    for (const path of ['/learning/', '/learning/references', '/learning/flashcards',
+      '/learning/web-performance/modern-images-video-lazy-loading-responsive-media']) {
+      await load(() => { frame.src = path; });
+      check(frame.contentWindow.location.pathname === '/login', `${path} requires sign-in`);
+      check(new URLSearchParams(frame.contentWindow.location.search).get('next').endsWith(path), 'login preserves the destination');
+    }
     check(JSON.stringify(await counts()) === JSON.stringify(rated), 'later navigation adds no writes');
     result.textContent = `PASS: ${checks} Learning hub browser checks`;
     document.documentElement.dataset.testResult = 'pass';

@@ -15,10 +15,7 @@ from .practice_views import start_form
 
 @learning_blueprint.after_request
 def private_study_response(response):
-    if current_user.is_authenticated or request.endpoint in {
-        "learning.rate_card", "learning.rating_receipt", "learning.review", "learning.note", "learning.flashcards"
-    }:
-        response.headers["Cache-Control"] = "private, no-store"
+    response.headers["Cache-Control"] = "private, no-store"
     return response
 
 

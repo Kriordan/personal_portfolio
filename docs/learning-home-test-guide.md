@@ -46,7 +46,7 @@ http --headers :5057/learning/references
 http --headers :5057/learning/flashcards
 ```
 
-Without a login cookie, expect 200 for references and 302 to login for flashcards.
+Without a login cookie, expect 302 to login for both. All Learning pages now require sign-in.
 For an authenticated request, use Network → **Copy as cURL** on your flashcard
 GET and run it locally; compare the headers and HTML with the browser response.
 

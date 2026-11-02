@@ -479,3 +479,22 @@ status and session link, the entire suite passed. The existing **13 Node tests**
 dependency integrity check, and **102 browser renderer checks** passed; Sass
 compiled with its existing deprecation warnings. No production migration or
 paid AI call was needed. Nothing was pushed or deployed.
+
+
+## Learning login boundary (November 2)
+
+At Keith's request, every route in the Learning website now requires an existing
+login, including home, the reference catalog, and the long-form article. The
+blueprint checks authentication before route/feature logic, so future Learning
+pages inherit the same rule. Login retains the requested destination. Every
+Learning response, including a sign-in redirect, uses `private, no-store`.
+The separate JSON APIs retain their existing JWT authentication. Static assets
+and the public source repository are unchanged; this is application access
+control, not repository confidentiality.
+
+Verification: 63 focused route/API tests passed, including a test that enumerates
+every registered Learning route and rejects unauthenticated reads and writes.
+The real-browser hub regression passed all 60 checks, including signed-out
+redirects for home, references, flashcards, and the article. No schema, scheduler,
+AI, budget, or recovery operation changed. This is a separate commit before the
+shared concept-workspace checkpoint.
