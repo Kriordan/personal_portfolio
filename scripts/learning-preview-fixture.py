@@ -22,6 +22,7 @@ import signal
 import sys
 import tempfile
 import time
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -37,11 +38,11 @@ from project import create_app  # noqa: E402
 from project.database import db  # noqa: E402
 from project.extensions import talisman  # noqa: E402
 from project.models import (  # noqa: E402
-    AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, Gift, Playlist, PracticeReceipt,
+    AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, Gift, Playlist, PracticeFeedback, PracticeReceipt,
     PracticeSession, ReviewLog, ReviewProgress, ReviewReceipt, SessionMessage, User,
 )
 from project.learning.content_schema import load_catalog  # noqa: E402
-from project.services import practice_budget, practice_service, practice_worker  # noqa: E402
+from project.services import feedback_service, practice_budget, practice_service, practice_worker  # noqa: E402
 from project.services.curriculum_service import content_checksum  # noqa: E402
 from sqlalchemy import event  # noqa: E402
 from sqlalchemy.exc import OperationalError  # noqa: E402
@@ -51,6 +52,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--concept', action='store_true', help='Include the idempotency web demo with CSRF enabled.')
     parser.add_argument('--port', type=int, default=5057, help='Use another port to preserve an existing demo.')
+    parser.add_argument('--feedback-example', action='store_true', help='With --concept, seed one clearly labelled scripted feedback example.')
     args = parser.parse_args()
     email_validator.TEST_ENVIRONMENT = True
     # Stopping with SIGTERM (as preview tools do) exits like Ctrl+C, so the temporary database is removed.
@@ -133,6 +135,22 @@ def main():
             db.session.add(Playlist(id="learning-regression", title="A saved playlist for Library regression", description="Sort and pin this disposable playlist.", published_at=now, updated_at=now))
             db.session.commit()
 
+            if args.concept and args.feedback_example:
+                from tests.feedback_fixtures import DISCOVERY, RACE, scripted_feedback
+                from tests.test_practice_submissions import submission_input
+                user = db.session.query(User).filter_by(email='learning1@example.test').one()
+                sid = practice_service.start_session(user, exercise_id='idempotent-order-api', request_id=str(uuid4()))['session_id']
+                values = submission_input(practice_service.session_detail(user.id, sid))
+                values['edits'][0]['body'] = 'Scripted preview example.\n' + DISCOVERY + '\n' + RACE
+                seq = practice_service.save_and_submit(user, sid, **values)['submission']['sequence']
+                feedback_service.request_feedback(user, sid, seq, request_id=str(uuid4()))
+                def demo_feedback(body):
+                    result = scripted_feedback(body)
+                    result['summary'] = 'Scripted example, not a live AI assessment. Use these findings to explore evidence links and saved feedback.'
+                    return result
+                practice_worker.run_once(practice_worker.FakeProvider(feedbacks=[demo_feedback]))
+                print(f'Scripted feedback example: http://127.0.0.1:{args.port}/learning/practice/{sid}/submissions/{seq}', flush=True)
+
         @app.post("/fixture/state")
         def state():
             values = request.get_json()
@@ -159,6 +177,7 @@ def main():
                         "submissions": SessionMessage.query.filter(
                             SessionMessage.practice_session_id.in_(sessions), SessionMessage.kind == "submission").count(),
                         "receipts": PracticeReceipt.query.filter_by(user_id=user_id).count(),
+                        "feedback": PracticeFeedback.query.filter(PracticeFeedback.practice_session_id.in_(sessions)).count(),
                         "replies": dict(db.session.query(AIRequest.status, db.func.count()).filter(
                             AIRequest.practice_session_id.in_(sessions)).group_by(AIRequest.status).all())}
             return jsonify({str(user.id): {"logs": ReviewLog.query.filter_by(user_id=user.id).count(),
@@ -200,7 +219,8 @@ def main():
                 patch.object(practice_service, "save_and_send", simulate_failures(practice_service.save_and_send)), \
                 patch.object(practice_service, "save_and_submit", simulate_failures(practice_service.save_and_submit)), \
                 patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)), \
-                patch.object(practice_service, "request_reply", simulate_failures(practice_service.request_reply)):
+                patch.object(practice_service, "request_reply", simulate_failures(practice_service.request_reply)), \
+                patch.object(feedback_service, "request_feedback", simulate_failures(feedback_service.request_feedback)):
             app.run(host="127.0.0.1", port=args.port, use_reloader=False, threaded=True)
 
 

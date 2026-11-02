@@ -627,8 +627,9 @@ def save_and_submit(user, session_id, *, edits, brief, expected_sequence, reques
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
-        if _settle_stale_reply(session, now) is not None:
-            raise ReplyPendingError("The interviewer is still replying.")
+        live = _settle_stale_reply(session, now)
+        if live is not None:
+            _raise_pending(live)
         if session.status not in OPEN_STATUSES:
             raise PracticeValidationError("A completed session can't be submitted.")
         payload = _pinned_exercise(session).payload
@@ -788,8 +789,9 @@ def save_and_send(user, session_id, *, edits, brief, body, expected_sequence, re
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
-        if _settle_stale_reply(session, now) is not None:
-            raise ReplyPendingError("The interviewer is still replying.")
+        live = _settle_stale_reply(session, now)
+        if live is not None:
+            _raise_pending(live)
         specs = _artifact_specs(_pinned_exercise(session).payload)
         if {edit["artifact_id"] for edit in normalized} != set(specs):
             raise PracticeValidationError("Send every artifact with the message.", part="turn")
@@ -836,8 +838,9 @@ def send_turn(user, session_id, *, body, expected_sequence, artifact_revisions, 
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
-        if _settle_stale_reply(session, now) is not None:
-            raise ReplyPendingError("The interviewer is still replying.")
+        live = _settle_stale_reply(session, now)
+        if live is not None:
+            _raise_pending(live)
         specs = _artifact_specs(_pinned_exercise(session).payload)
         if set(cited_view) != set(specs):
             raise PracticeValidationError(f"Cite every artifact: {', '.join(sorted(specs))}.", part="turn")
@@ -950,6 +953,23 @@ class ReplyPendingError(ConflictError):
     code = "reply_pending"
 
 
+class FeedbackPendingError(ReplyPendingError):
+    code = "feedback_pending"
+
+
+def _raise_pending(request):
+    if request.kind == "feedback":
+        raise FeedbackPendingError("Feedback is being prepared. You can still save edits.")
+    raise ReplyPendingError("The interviewer is still replying.")
+
+
+def _request_unavailable(request, user_id, now):
+    if request.kind == "feedback":
+        from project.services import feedback_service
+        return feedback_service.unavailable(user_id, now)
+    return reply_unavailable(user_id, now)
+
+
 class CallFenced(Exception):
     """The reply is no longer wanted (cancelled, paused, deleted, or reclaimed). Make no paid call."""
 
@@ -1059,7 +1079,7 @@ def _settle_stale_reply(session, now):
     request = _live_request(session.id)
     if request is None:
         return None
-    status, code = _effective(request, now, reply_unavailable(session.user_id, now))
+    status, code = _effective(request, now, _request_unavailable(request, session.user_id, now))
     if status != "interrupted":
         return request
     request.status, request.error_code, request.finished_at, request.lease_expires_at = status, code, now, None
@@ -1143,8 +1163,9 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, conte
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
-        if _settle_stale_reply(session, now) is not None:
-            raise ReplyPendingError("The interviewer is already replying.")
+        live = _settle_stale_reply(session, now)
+        if live is not None:
+            _raise_pending(live)
         changed = False
         response = {"session_id": session.id}
         if normalized or normalized_brief is not None:
@@ -1302,7 +1323,7 @@ def reply_context(reply_id):
     Server-side only: it holds the interviewer's instructions.
     """
     request = db.session.get(AIRequest, reply_id, populate_existing=True)
-    if request is None:
+    if request is None or request.kind != "reply":
         return None
     session = db.session.get(PracticeSession, request.practice_session_id, populate_existing=True)
     turn = db.session.get(SessionMessage, request.turn_message_id, populate_existing=True)
@@ -1486,6 +1507,9 @@ def begin_call(reply_id, token, *, purpose, input_bytes, max_output_tokens, dead
             db.session.rollback()
             raise CallFenced("fenced")
         request = db.session.get(AIRequest, reply_id, populate_existing=True)
+        if (request.kind == "feedback" and purpose != "feedback") or (request.kind == "reply" and purpose not in ("select", "reply")):
+            db.session.rollback()
+            raise CallFenced("kind")
         # Then the session row, shared: a pause has either committed (and is seen here) or waits
         # until this call has started, and a call already in flight finishes with its reply kept.
         session = db.session.execute(select(PracticeSession).where(
@@ -1498,7 +1522,7 @@ def begin_call(reply_id, token, *, purpose, input_bytes, max_output_tokens, dead
             request.status, request.error_code, request.finished_at = "cancelled", "paused", now
             db.session.commit()
             raise CallFenced("paused")
-        unavailable = reply_unavailable(session.user_id, now)
+        unavailable = _request_unavailable(request, session.user_id, now)
         if unavailable in ("disabled", "owner_only"):
             request.status, request.error_code, request.finished_at = "cancelled", unavailable, now
             db.session.commit()
@@ -1566,7 +1590,7 @@ def complete_reply(reply_id, token, *, body, now, disclosure=None):
     hint_index = (disclosure or {}).get("hint_index")
     try:
         found = db.session.get(AIRequest, reply_id, populate_existing=True)
-        if found is None:
+        if found is None or found.kind != "reply":
             return "fenced"
         session = db.session.get(PracticeSession, found.practice_session_id, populate_existing=True)
         if session is None:
@@ -1674,6 +1698,7 @@ def _context_choices(records):
 
 def session_detail(user_id, session_id, *, now=None):
     """The learner-safe view of a session: exercise brief, the learner's brief, artifacts, transcript, and reply."""
+    from project.services import feedback_service
     session = _owned_session(user_id, session_id)
     payload = _pinned_exercise(session).payload
     brief = learner_view(payload)["content"]["brief"]
@@ -1699,6 +1724,7 @@ def session_detail(user_id, session_id, *, now=None):
     return {"session": _session_dto(session, payload), "brief": brief,
             "session_brief": _brief_dto(_brief_record(session.id)), "artifacts": artifacts,
             "messages": messages, "reply": reply, "ai_budget": ai_budget(session.user_id, now),
+            "feedback_pending": feedback_service.pending(session, now),
             "revealed_requirements": _revealed_requirements(payload, records),
             "context_choices": _context_choices(records), "submissions": _submissions(session.id),
             "learner_turns": learner_turns, "check_in_due": check_in > 0 and learner_turns >= check_in}

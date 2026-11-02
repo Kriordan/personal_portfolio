@@ -1,20 +1,27 @@
-{% extends 'base.html' %}
-{% block title %}Saved check · {{ detail.session.exercise_title }}{% endblock %}
+{% extends 'learning/shell.html' %}
+{% block title %}Saved work & feedback · {{ detail.session.exercise_title }}{% endblock %}
 {% block body %}
 {% set snapshot = detail.submission %}
-<main class="practice practice-narrow" aria-labelledby="snapshot-title">
+<main id="learning-main" tabindex="-1" class="practice practice-narrow learning-hub practice-feedback-page" aria-labelledby="snapshot-title">
   <a href="{{ url_for('learning.practice_workspace', session_id=detail.session.id, view='build', work='work-checks') }}">← Back to the workspace</a>
   <p class="learning-eyebrow">{{ detail.session.exercise_title }}</p>
-  <h1 id="snapshot-title">Saved syntax check</h1>
+  <h1 id="snapshot-title">Saved work & feedback</h1>
   <p>Snapshot {{ snapshot.sequence }} · {{ snapshot.created_at|practice_time }}</p>
   <p>This snapshot stays as it was. You can keep editing the session and save another check.</p>
+  {% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+  <h2>Syntax checks</h2>
   {% include 'learning/_practice_check_results.html' %}
   <details><summary>What this snapshot includes</summary>
     <p>Exercise version {{ snapshot.exercise_version }} · Conversation through <a href="{{ url_for('learning.practice_workspace', session_id=detail.session.id, _anchor='turn-' ~ snapshot.turn_sequence) }}">turn {{ snapshot.turn_sequence }}</a> · Notes revision {{ snapshot.brief_revision }}</p>
     {% if detail.session_brief.entries %}
-      <ul>{% for entry in detail.session_brief.entries %}<li><strong>{{ type_labels[entry.type] }}:</strong> {{ entry.text }}</li>{% endfor %}</ul>
+      <ul>{% for entry in detail.session_brief.entries %}<li id="note-{{ entry.id }}"><strong>{{ type_labels[entry.type] }}:</strong> {{ entry.text }}</li>{% endfor %}</ul>
     {% else %}<p>No notes were saved in this snapshot.</p>{% endif %}
     <p class="practice-meta">Checker {{ snapshot.checker_version }}. Syntax checks do not assess the design or change your review schedule.</p>
   </details>
+  <p data-feedback-announcement role="status" class="practice-meta"></p>
+  <div id="feedback" data-feedback-panel data-status-url="{{ url_for('learning.practice_feedback', session_id=detail.session.id, sequence=snapshot.sequence) }}">
+    {% include 'learning/_practice_feedback.html' %}
+  </div>
 </main>
 {% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static', filename='js/learning-feedback.js') }}"></script>{% endblock %}

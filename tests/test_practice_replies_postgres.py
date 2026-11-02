@@ -18,10 +18,10 @@ from sqlalchemy.engine import make_url
 
 from project import create_app
 from project.database import db
-from project.learning import interviewer
+from project.learning import evaluator, interviewer
 from project.learning.content_schema import load_catalog
 from project.models import AIRequest, LearningAICharge, SessionMessage, User
-from project.services import practice_budget, practice_service as service, practice_worker
+from project.services import feedback_service as feedback, practice_budget, practice_service as service, practice_worker
 from project.services.curriculum_service import import_catalog
 from project.services.practice_worker import FakeProvider
 
@@ -29,7 +29,7 @@ URL = os.environ.get("LIBRARY_TEST_POSTGRES_URL")
 ROOT = Path(__file__).resolve().parents[1]
 EXERCISE = "idempotent-order-api"
 ALL_AT_ZERO = {"api": 0, "schema": 0, "algorithm": 0}
-PRACTICE_TABLES = ("artifact_revision", "session_message", "session_message_artifact", "practice_receipt", "ai_request")
+PRACTICE_TABLES = ("artifact_revision", "session_message", "session_message_artifact", "practice_receipt", "ai_request", "practice_feedback")
 ORDERS = ("first", "second", "race")
 
 
@@ -97,6 +97,102 @@ class PracticeReplyPostgresTests(unittest.TestCase):
         with ThreadPoolExecutor(len(operations)) as pool:
             return [future.result(timeout=30) for future in [pool.submit(run, op) for op in operations]]
 
+    def feedback_snapshot(self):
+        from tests.test_practice_submissions import submission_input
+        sid = service.start_session(self.user(), exercise_id=EXERCISE, request_id=str(uuid4()))["session_id"]
+        seq = service.save_and_submit(self.user(), sid, **submission_input(service.session_detail(1, sid), '{}'))["submission"]["sequence"]
+        return sid, seq
+
+    def feedback_queue(self, sid, seq, request_id=None):
+        return feedback.request_feedback(self.user(), sid, seq, request_id=request_id or str(uuid4()))
+
+    def test_concurrent_feedback_requests_and_workers_create_one_evaluation(self):
+        sid, seq = self.feedback_snapshot()
+        for shared in (True, False):
+            request_id = str(uuid4())
+            results = self.race(lambda: self.feedback_queue(sid, seq, request_id),
+                                lambda: self.feedback_queue(sid, seq, request_id if shared else None))
+            self.assertTrue(all(isinstance(r, dict) for r in results), results)
+            self.assertEqual(results[0]["request"]["id"], results[1]["request"]["id"])
+        self.assertEqual(self.count("ai_request"), 1)
+        claims = self.race(*(lambda: service.claim_reply(now(), known_profiles=evaluator.PROFILES, worker_id=str(uuid4()))
+                             for _ in range(2)))
+        self.assertEqual(sum(isinstance(c, tuple) for c in claims), 1)
+        claim = next(c for c in claims if isinstance(c, tuple))
+        output = evaluator.fake_feedback(evaluator.request_body(feedback.context(claim[0]), feedback.settings()))
+        db.session.commit()
+        results = self.race(*(lambda: feedback.complete(*claim, output=output, now=now()) for _ in range(2)))
+        self.assertEqual(results, ["written", "written"])
+        self.assertEqual(self.count("practice_feedback"), 1)
+        self.assertEqual(self.count("session_message", "kind = 'turn'"), 1)
+
+    def test_feedback_and_interviewer_share_one_live_slot(self):
+        sid, seq = self.feedback_snapshot()
+        results = self.race(lambda: self.feedback_queue(sid, seq), lambda: service.send_turn(
+            self.user(), sid, body="Who owns the key?", expected_sequence=1,
+            artifact_revisions={"api": 1, "schema": 0, "algorithm": 0}, brief_revision=0, request_id=str(uuid4())))
+        self.assertEqual(sum(isinstance(r, dict) for r in results), 1, results)
+        self.assertEqual(sum(isinstance(r, service.ReplyPendingError) for r in results), 1, results)
+        self.assertEqual(self.count("ai_request", "status IN ('pending', 'running')"), 1)
+
+    def test_feedback_and_reply_reservations_share_the_same_cap(self):
+        sid, seq = self.feedback_snapshot()
+        self.feedback_queue(sid, seq)
+        feedback_claim = service.claim_reply(now(), known_profiles=evaluator.PROFILES, worker_id="feedback")
+        self.queue()
+        reply_claim = self.claim()
+        self.app.config["LEARNING_AI_MONTHLY_CAP_USD"] = .004
+        def reserve(claim, purpose):
+            return lambda: service.begin_call(*claim, purpose=purpose, input_bytes=1000, max_output_tokens=100,
+                                              deadline_seconds=60, now=now())
+        results = self.race(reserve(feedback_claim, "feedback"), reserve(reply_claim, "reply"))
+        self.assertEqual(sorted(type(r).__name__ for r in results), ["BudgetExhausted", "int"])
+        self.assertLessEqual(practice_budget.committed(practice_budget.period(now())), 4000)
+
+    def test_feedback_next_call_check_and_deletion_preserve_lock_order(self):
+        for hold_before in self.HOLD_POINTS:
+            with self.subTest(hold_before=hold_before):
+                sid, seq = self.feedback_snapshot()
+                self.feedback_queue(sid, seq)
+                claim = service.claim_reply(now(), known_profiles=evaluator.PROFILES, worker_id="test")
+                charge, deleted, waited = self.during_call_check(claim,
+                    lambda: service.delete_session(self.user(), sid), hold_before=hold_before, purpose="feedback")
+                self.assertTrue(waited)
+                self.assertIsInstance(charge, int)
+                self.assertNotIsInstance(deleted, Exception)
+                self.assertEqual(feedback.complete(*claim, output={}, now=now()), "fenced")
+                self.assertEqual(self.count("ai_request", "practice_session_id = :sid", sid=sid), 0)
+                self.assertEqual(self.count("learning_ai_charge", "id = :id", id=charge), 1)
+
+    def test_feedback_completion_and_deletion_in_each_order_keep_only_billing(self):
+        for order in ORDERS:
+            sid, seq = self.feedback_snapshot()
+            self.feedback_queue(sid, seq)
+            claim = service.claim_reply(now(), known_profiles=evaluator.PROFILES, worker_id="test")
+            output = evaluator.fake_feedback(evaluator.request_body(feedback.context(claim[0]), feedback.settings()))
+            charge = service.begin_call(*claim, purpose="feedback", input_bytes=500, max_output_tokens=50, deadline_seconds=60, now=now())
+            completed, deleted = self.in_order(order, lambda: feedback.complete(*claim, output=output, now=now()),
+                                               lambda: service.delete_session(self.user(), sid))
+            self.assertIn(completed, ("written", "fenced"))
+            self.assertNotIsInstance(deleted, Exception)
+            for table in PRACTICE_TABLES:
+                self.assertEqual(self.count(table, "practice_session_id = :sid", sid=sid), 0)
+            self.assertEqual(self.count("learning_ai_charge", "id = :id", id=charge), 1)
+
+    def test_feedback_foreign_keys_reject_cross_session_snapshots_and_requests(self):
+        from sqlalchemy.exc import IntegrityError
+        sid, seq = self.feedback_snapshot()
+        rid = self.feedback_queue(sid, seq)["request"]["id"]
+        other, other_seq = self.feedback_snapshot()
+        snapshot_id = db.session.query(SessionMessage.id).filter_by(practice_session_id=sid, sequence=seq).scalar()
+        other_id = db.session.query(SessionMessage.id).filter_by(practice_session_id=other, sequence=other_seq).scalar()
+        db.session.commit()
+        for session_id, submission_id in ((sid, other_id), (other, snapshot_id)):
+            with self.assertRaises(IntegrityError), db.engine.begin() as connection:
+                connection.execute(text("INSERT INTO practice_feedback (request_id, practice_session_id, submission_id, data, created_at) "
+                                        "VALUES (:rid, :sid, :submission, '{}', now())"),
+                                   {"rid": rid, "sid": session_id, "submission": submission_id})
+
     def test_two_releases_claiming_at_once_claim_a_reply_once(self):
         _, reply_id = self.queue()
         second_app = create_app(self.config)  # the old and new dynos during a deploy
@@ -144,7 +240,7 @@ class PracticeReplyPostgresTests(unittest.TestCase):
     # (holding only the request row), or just before the budget lock (holding both rows).
     HOLD_POINTS = {"before the session lock": "FOR SHARE", "before the budget lock": "pg_advisory_xact_lock"}
 
-    def during_call_check(self, claim, other, *, hold_before, call_now=None):
+    def during_call_check(self, claim, other, *, hold_before, call_now=None, purpose="reply"):
         """Hold the worker's next-call check at a lock, run `other`, then let the check finish.
 
         Returns the check's result, the other operation's result, and whether the other waited on a lock.
@@ -162,7 +258,7 @@ class PracticeReplyPostgresTests(unittest.TestCase):
                 finally:
                     db.session.remove()
         check = threading.Thread(target=run, args=("check", lambda: service.begin_call(
-            *claim, purpose="reply", input_bytes=500, max_output_tokens=50, deadline_seconds=60,
+            *claim, purpose=purpose, input_bytes=500, max_output_tokens=50, deadline_seconds=60,
             now=call_now or now())))
         rival = threading.Thread(target=run, args=("other", other))
 

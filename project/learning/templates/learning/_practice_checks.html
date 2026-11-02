@@ -7,7 +7,7 @@
     <h3>Latest saved check</h3>
     <p class="practice-meta">{{ snapshot.created_at|practice_time }} · Snapshot {{ snapshot.sequence }}</p>
     {% include 'learning/_practice_check_results.html' %}
-    <p><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=snapshot.sequence) }}">View this snapshot</a></p>
+    <p><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=snapshot.sequence) }}">View this snapshot and request feedback</a></p>
     {% if detail.submissions|length > 1 %}
       <details><summary>Earlier checks ({{ detail.submissions|length - 1 }})</summary>
         <ol class="practice-history">

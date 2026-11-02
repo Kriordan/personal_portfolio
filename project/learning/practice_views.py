@@ -16,10 +16,10 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from project.database import db
-from project.services import learning_service, practice_service as practice
+from project.services import feedback_service, learning_service, practice_service as practice
 
 from . import learning_blueprint
-from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, PracticeWorkspaceForm, StartPracticeForm
+from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, FeedbackForm, PracticeWorkspaceForm, StartPracticeForm
 from .navigation import workspace_navigation
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
@@ -357,6 +357,9 @@ def _post(session_id):
         return _rerender(session_id, submitted, action=action, status=409,
                          alert="An earlier attempt from this page may already have saved. "
                                "Check the saved work, then try again.")
+    except practice.FeedbackPendingError:
+        return _rerender(session_id, submitted, action=action, status=409,
+                         alert="Feedback is being prepared. Your work is still here; you can save edits and try again when it finishes.")
     except practice.ReplyPendingError:
         return _rerender(session_id, submitted, action=action, status=409,
                          alert="The interviewer is still replying. Your work is still here: "
@@ -498,8 +501,59 @@ def practice_revision(session_id, artifact_id, revision):
 def practice_submission(session_id, sequence):
     try:
         detail = practice.submission_detail(current_user.id, session_id, sequence)
+        evaluation = feedback_service.detail(current_user.id, session_id, sequence)
     except learning_service.NotFoundError:
         abort(404)
     return render_template("learning/practice_submission.html", detail=detail,
+                           evaluation=evaluation,
+                           feedback_form=FeedbackForm(request_id=str(uuid4())), feedback_reasons=FEEDBACK_REASONS,
                            artifacts={a["artifact_id"]: a for a in detail["artifacts"]},
                            language_labels=LANGUAGE_LABELS, type_labels=BRIEF_TYPE_LABELS)
+
+
+FEEDBACK_REASONS = {
+    "disabled": "Feedback is not enabled right now. Your saved work and syntax checks remain available.",
+    "owner_only": "AI feedback is currently available only to the pilot owner.",
+    "budget": "This snapshot cannot fit within the remaining AI budget this month. Saved work is still available.",
+    "context_too_large": "This snapshot is too large to assess in one call. Nothing was omitted or assessed. "
+                         "Your full session is saved; a new, narrower exercise session can be assessed separately.",
+    "invalid_output": "The feedback did not pass the evidence checks, so it was not saved as a result. You can request it again.",
+    "paused": "Feedback was cancelled when the session was paused. Requesting again resumes the session.",
+}
+
+
+@learning_blueprint.route("/practice/<session_id>/submissions/<int:sequence>/feedback", methods=["GET", "POST"])
+@login_required
+def practice_feedback(session_id, sequence):
+    if request.method == "GET":
+        try:
+            evaluation = feedback_service.detail(current_user.id, session_id, sequence)
+        except learning_service.NotFoundError:
+            abort(404)
+        html = render_template("learning/_practice_feedback.html", detail={"session": {"id": session_id}},
+                               snapshot={"sequence": sequence}, evaluation=evaluation,
+                               feedback_form=FeedbackForm(request_id=str(uuid4())), feedback_reasons=FEEDBACK_REASONS)
+        return jsonify({"html": html, "live": evaluation["request"]["status"] in LIVE})
+    form = FeedbackForm()
+    if not form.validate_on_submit():
+        abort(400)
+    try:
+        result = feedback_service.request_feedback(current_user, session_id, sequence, request_id=form.request_id.data)
+    except learning_service.NotFoundError:
+        abort(404)
+    except practice.ReplyPendingError as exc:
+        flash("Feedback is already in progress." if isinstance(exc, practice.FeedbackPendingError)
+              else "Wait for the interviewer's reply, then request feedback.", "practice")
+    except practice.RequestConflictError:
+        abort(409)
+    except learning_service.ValidationError:
+        abort(400)
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Practice feedback request unconfirmed: %s", practice.describe_failure(exc))
+        # No layout or database reads after an ambiguous commit. Retry the same ID.
+        return render_template("learning/feedback_rescue.html", form=form, session_id=session_id, sequence=sequence), 503
+    else:
+        if result["request"]["status"] == "unavailable":
+            flash(FEEDBACK_REASONS.get(result["request"]["reason"], "Feedback is unavailable. Your snapshot is saved."), "practice")
+    return redirect(url_for("learning.practice_submission", session_id=session_id, sequence=sequence, _anchor="feedback"), code=303)

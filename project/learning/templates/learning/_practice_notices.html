@@ -1,5 +1,8 @@
 {% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
 {% if notice %}<p class="concept-notice" role="status">{{ notice }}</p>{% endif %}
+{% if detail.feedback_pending %}
+  <p class="concept-notice">Feedback is being prepared for <a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=detail.feedback_pending.sequence, _anchor='feedback') }}">snapshot {{ detail.feedback_pending.sequence }}</a>. You can save edits; sending and new checks resume when it finishes.</p>
+{% endif %}
 {% if detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
   <p class="practice-budget">{% if detail.ai_budget.exhausted %}This month's AI budget is used up: replies resume next month. Reading, saving, and sending still work.{% else %}AI spending this month: {{ money(detail.ai_budget.spent_microusd) }} of {{ money(detail.ai_budget.cap_microusd) }}.{% endif %}</p>
 {% endif %}

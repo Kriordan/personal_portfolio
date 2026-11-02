@@ -2683,6 +2683,57 @@ li.drag-placeholder {
   margin: -1px;
 }
 
+.practice-feedback-page h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+.practice-feedback-page h2 {
+  font-size: 1.25rem;
+}
+.practice-feedback-page h3 {
+  font-size: 1.1rem;
+}
+.practice-feedback-page .practice-history li {
+  margin-bottom: 0.65rem;
+}
+.practice-feedback-page .practice-meta {
+  display: block;
+}
+.practice-feedback-page .practice-meta a {
+  margin-left: 0.25rem;
+}
+
+.practice-feedback {
+  margin-top: 2rem;
+  border-top: 1px solid #d3dae3;
+  padding-top: 1.5rem;
+}
+
+.practice-finding {
+  margin: 1.5rem 0;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #d3dae3;
+  overflow-wrap: anywhere;
+}
+.practice-finding h3 {
+  margin-top: 0.4rem;
+}
+
+.practice-evidence {
+  margin: 1rem 0;
+  border-left: 3px solid #96a6b8;
+  padding-left: 1rem;
+}
+.practice-evidence blockquote {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  white-space: pre-wrap;
+}
+.practice-evidence figcaption {
+  font-size: 0.9rem;
+}
+
 .practice-shell-header {
   display: flex;
   justify-content: space-between;

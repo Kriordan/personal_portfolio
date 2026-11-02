@@ -1,0 +1,53 @@
+{% set state = evaluation.request %}
+{% set result = evaluation.feedback %}
+<section class="practice-feedback" aria-labelledby="feedback-heading" data-feedback-live="{{ 'true' if state.status in ['pending', 'running'] else 'false' }}">
+  <h2 id="feedback-heading">Design feedback</h2>
+  {% if result %}
+    <p>{{ result.summary }}</p>
+    <p class="practice-meta">Assessed the complete snapshot: {{ result.coverage.turn_count }} conversation turn{{ 's' if result.coverage.turn_count != 1 else '' }}, selected artifact revisions and saved notes. Earlier artifact revisions cited in the conversation were included. Later edits are not included.</p>
+    {% if result.coverage.hints_given %}<p class="concept-notice">{{ result.coverage.hints_given }} recorded hint{{ 's' if result.coverage.hints_given != 1 else '' }}. Assisted work is not evidence of unaided mastery.</p>{% endif %}
+    <p class="practice-meta">AI feedback is a judgment to review, not a grade. “Not observed” means the snapshot lacks evidence; it does not establish an error.</p>
+    {% for finding in result.findings %}
+      <article class="practice-finding" id="finding-{{ finding.id }}" data-finding-kind="{{ finding.kind }}">
+        <p class="learning-eyebrow">{{ {'strength': 'Strength', 'concern': 'Concern to review', 'tradeoff': 'Trade-off', 'not_observed': 'Not observed'}[finding.kind] }}</p>
+        <p class="practice-meta">{{ finding.dimension_label }}</p>
+        <h3>{{ finding.title }}</h3>
+        <p>{{ finding.explanation }}</p>
+        {% for citation in finding.evidence %}
+          <figure class="practice-evidence">
+            <blockquote>{{ citation.quote }}</blockquote>
+            <figcaption>
+              {% if citation.kind == 'artifact' %}
+                <a href="{{ url_for('learning.practice_revision', session_id=detail.session.id, artifact_id=citation.artifact_id, revision=citation.revision) }}">{{ citation.artifact_id }} · revision {{ citation.revision }}, line {{ citation.line }}</a>
+              {% elif citation.kind == 'turn' %}
+                <a href="{{ url_for('learning.practice_workspace', session_id=detail.session.id, view='discuss', _anchor='turn-' ~ citation.sequence) }}">Your message · turn {{ citation.sequence }}</a>
+              {% else %}
+                <a href="#note-{{ citation.entry_id }}" data-snapshot-note>Saved note · revision {{ citation.revision }}</a>
+              {% endif %}
+            </figcaption>
+          </figure>
+        {% endfor %}
+        <p><strong>Next step:</strong> {{ finding.next_step }}</p>
+        {% if finding.kind != 'strength' %}{% for link in finding.remediation %}
+          <a class="practice-remediation" href="{{ url_for('learning.concept', concept_id=link.concept_id, session_id=detail.session.id, _anchor=link.section_id) }}">Revisit the explanation</a>
+        {% endfor %}{% endif %}
+      </article>
+    {% endfor %}
+    <p>Revise in the workspace and save a new snapshot for another assessment. Your review schedule stays unchanged.</p>
+  {% elif state.status in ['pending', 'running'] %}
+    <p role="status">Feedback is being prepared. You can leave this page and return; the result will be saved here.</p>
+    <p><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=snapshot.sequence, _anchor='feedback') }}">Refresh status</a></p>
+  {% else %}
+    <p>Assess the conversation, artifacts, and notes in this snapshot together. Requesting feedback uses your AI budget and leaves the session editable.</p>
+    {% if evaluation.busy %}<p>Wait for the {{ 'interviewer’s reply' if evaluation.busy == 'reply' else 'other feedback request' }} to finish.</p>{% endif %}
+    {% if evaluation.unavailable or state.reason %}
+      <p role="status">{{ feedback_reasons.get(evaluation.unavailable or state.reason, 'Feedback was interrupted or could not be saved. It will not retry automatically. You can request it again; a previous attempt may still count toward the AI budget.') }}</p>
+    {% endif %}
+    {% if evaluation.can_request %}
+      <form method="post" action="{{ url_for('learning.practice_feedback', session_id=detail.session.id, sequence=snapshot.sequence) }}" data-feedback-form>
+        {{ feedback_form.hidden_tag() }}
+        <button class="button button--primary" type="submit">{{ 'Request feedback again' if state.id else 'Request feedback' }}</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>

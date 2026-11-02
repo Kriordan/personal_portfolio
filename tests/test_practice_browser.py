@@ -27,8 +27,9 @@ from werkzeug.serving import WSGIRequestHandler, make_server
 from project import create_app
 from project.database import db
 from project.extensions import talisman
-from project.models import ArtifactRevision, SessionMessage, User
-from project.services import practice_service as practice, practice_worker
+from project.models import AIRequest, ArtifactRevision, LearningAICharge, PracticeFeedback, SessionMessage, User
+from project.services import feedback_service, practice_service as practice, practice_worker
+from tests.feedback_fixtures import scripted_feedback
 from tests.test_practice_service import enable_sqlite_foreign_keys, seed_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +86,7 @@ class PracticeBrowserTests(unittest.TestCase):
 
             for name in ("save_work", "save_and_send", "send_turn", "request_reply", "save_and_submit"):
                 stack.enter_context(patch.object(practice, name, fail_or_lose(getattr(practice, name))))
+            stack.enter_context(patch.object(feedback_service, "request_feedback", fail_or_lose(feedback_service.request_feedback)))
 
             @app.get("/__browser_checks__")
             def checks():
@@ -106,7 +108,12 @@ class PracticeBrowserTests(unittest.TestCase):
                 if values.get("reply"):
                     practice_worker.run_once(practice_worker.FakeProvider(replies=[
                         "What happens if two requests arrive at the same time? Explain your reasoning."]))
+                if values.get("feedback"):
+                    practice_worker.run_once(practice_worker.FakeProvider(feedbacks=[scripted_feedback]))
                 return jsonify(revisions=ArtifactRevision.query.count(),
+                    feedback_requests=AIRequest.query.filter_by(kind="feedback").count(),
+                    feedback_results=PracticeFeedback.query.count(),
+                    feedback_charges=LearningAICharge.query.filter_by(purpose="feedback").count(),
                     submissions=SessionMessage.query.filter_by(kind="submission").count(),
                     learner_turns=SessionMessage.query.filter_by(role="learner", kind="turn").count(),
                     interviewer_turns=SessionMessage.query.filter_by(role="interviewer", kind="turn").count())

@@ -8,7 +8,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from project.api.learning import _current_user_from_jwt
 from project.database import db
-from project.services import learning_service, practice_service as practice
+from project.services import feedback_service, learning_service, practice_service as practice
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
@@ -67,6 +67,8 @@ def _call(operation):
         return _error(STALE_MESSAGES[exc.code], 409, exc.code, **exc.details())
     except practice.RequestConflictError:
         return _error("This request ID was already used for a different change.", 409, "request_conflict")
+    except practice.FeedbackPendingError:
+        return _error("Feedback is being prepared. You can still save edits; try again when it finishes.", 409, "feedback_pending")
     except practice.ReplyPendingError:
         return _error("The interviewer is still replying. Try again once the reply arrives.", 409, "reply_pending")
     except OperationalError as exc:
@@ -198,6 +200,22 @@ def submit_work(session_id):
 def submission_detail(session_id, sequence):
     user, _, failure = _user_and_payload(body=False)
     return failure or _call(lambda: (jsonify(practice.submission_detail(user.id, session_id, sequence)), 200))
+
+
+@practice_api_blueprint.route("/sessions/<session_id>/submissions/<int:sequence>/feedback", methods=["GET", "POST"])
+@jwt_required()
+def snapshot_feedback(session_id, sequence):
+    user, payload, failure = _user_and_payload(body=request.method == "POST")
+    if failure:
+        return failure
+    if request.method == "GET":
+        return _call(lambda: (jsonify(feedback_service.detail(user.id, session_id, sequence)), 200))
+    if set(payload) != {"request_id"}:
+        return _error("Send request_id only. Feedback uses the saved snapshot.", 400, "invalid_request")
+    def queue():
+        result = feedback_service.request_feedback(user, session_id, sequence, request_id=payload["request_id"])
+        return jsonify(result), 202 if result["request"]["status"] in practice.LIVE else 200
+    return _call(queue)
 
 
 @practice_api_blueprint.post("/sessions/<session_id>/reply")

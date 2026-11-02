@@ -6,6 +6,8 @@ provider call goes through an injectable provider: the scripted FakeProvider her
 OpenAIProvider (learning_ai_provider), which makes each call in a short-lived child process
 so a stuck call can always be abandoned. A reply is up to two calls: the selector, then the
 reply. Logs and error reports carry fixed codes only, never learner text or model output.
+Feedback uses the same lifecycle with a separate evaluator profile and one bounded
+call. Its validated result is saved separately from interviewer turns.
 """
 from __future__ import annotations
 
@@ -24,8 +26,8 @@ from sqlalchemy.exc import OperationalError
 
 from project import monitoring
 from project.database import db
-from project.learning import interviewer
-from project.services import practice_budget, practice_service, practice_signals
+from project.learning import evaluator, interviewer
+from project.services import feedback_service, practice_budget, practice_service, practice_signals
 from project.services.learning_ai_provider import OpenAIProvider, ProviderError
 
 FAKE_MODES = ("success", "slow", "fail", "lost", "hang", "invalid")
@@ -77,8 +79,9 @@ class FakeProvider:
     `replies`, else a fixed question.
     """
 
-    def __init__(self, mode="success", *, delay=2.0, replies=(), selections=()):
+    def __init__(self, mode="success", *, delay=2.0, replies=(), selections=(), feedbacks=()):
         self.mode, self.delay, self.replies, self.selections = mode, delay, list(replies), list(selections)
+        self.feedbacks = list(feedbacks)
         self.calls = []
 
     def call(self, body, *, deadline):
@@ -93,7 +96,11 @@ class FakeProvider:
             raise ProviderError("timeout")
         if mode == "slow":
             time.sleep(self.delay)
-        if body["text"]["format"]["name"] == interviewer.SELECTOR_SCHEMA_NAME:
+        if body["text"]["format"]["name"] == evaluator.SCHEMA_NAME:
+            scripted = self.feedbacks.pop(0) if self.feedbacks else evaluator.fake_feedback
+            output = {} if mode == "invalid" else (scripted(body) if callable(scripted) else scripted)
+            text = json.dumps(output)
+        elif body["text"]["format"]["name"] == interviewer.SELECTOR_SCHEMA_NAME:
             scripted = self.selections.pop(0) if self.selections else fake_selection
             output = scripted(body) if callable(scripted) else scripted
             text = json.dumps(output)
@@ -136,7 +143,7 @@ def _report(code, reply_id=None):
 def run_once(provider, *, now=_now, worker_id="worker"):
     """Sweep, then claim and run one pending reply. Returns whether a reply was claimed."""
     practice_service.sweep_replies(now())
-    claimed = practice_service.claim_reply(now(), known_profiles=interviewer.PROFILES, worker_id=worker_id)
+    claimed = practice_service.claim_reply(now(), known_profiles={**interviewer.PROFILES, **evaluator.PROFILES}, worker_id=worker_id)
     if claimed is None:
         return False
     reply_id, token = claimed
@@ -159,6 +166,18 @@ def _run(provider, reply_id, token, now):
     If the selector fails, so does the reply: answering without it could withhold a fact the
     learner earned. Its cost is settled, nothing is revealed, and asking again reruns both.
     """
+    evaluation = feedback_service.context(reply_id)
+    if evaluation is not None:
+        settings = feedback_service.settings()
+        body = evaluator.request_body(evaluation, settings)
+        if interviewer.body_bytes(body) > settings["context_bytes"]:
+            practice_service.fail_reply(reply_id, token, code="context_too_large", now=now())
+            _report("context_too_large", reply_id)
+            return
+        output = _call(provider, reply_id, token, body, purpose="feedback", settings=settings, now=now)
+        if output is not None:
+            _complete_feedback(reply_id, token, output, now)
+        return
     context = practice_service.reply_context(reply_id)
     if context is None:
         return
@@ -213,6 +232,19 @@ def _call(provider, reply_id, token, body, *, purpose, settings, now):
     practice_service.finish_call(charge, outcome="settled", usage=result.get("usage"), now=now())
     output = result.get("output")
     return output if isinstance(output, dict) else {}
+
+
+def _complete_feedback(request_id, token, output, now):
+    # A failed/lost database commit may be retried; the paid call never is.
+    for attempt in range(3):
+        try:
+            if feedback_service.complete(request_id, token, output=output, now=now()) == "invalid":
+                _report("invalid_output", request_id)
+            return
+        except OperationalError:
+            db.session.rollback()
+            time.sleep(0.5 * (attempt + 1))
+    _report("store", request_id)
 
 
 def _complete(reply_id, token, reply, now, *, disclosure=None):

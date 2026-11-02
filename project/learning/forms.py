@@ -19,6 +19,10 @@ LANGUAGE_LABELS = {"text": "Plain text", "markdown": "Markdown", "pseudocode": "
                    "python": "Python", "typescript": "TypeScript", "json": "JSON", "yaml": "YAML"}
 
 
+class FeedbackForm(FlaskForm):
+    request_id = HiddenField(validators=[InputRequired(), Length(min=36, max=36)])
+
+
 class StartPracticeForm(FlaskForm):
     exercise_id = HiddenField(validators=[InputRequired(), Length(max=128)])
     concept_id = HiddenField(validators=[InputRequired(), Length(max=128)])

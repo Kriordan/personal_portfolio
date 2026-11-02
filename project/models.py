@@ -709,7 +709,7 @@ class PracticeReceipt(db.Model):
 
     __tablename__ = "practice_receipt"
     __table_args__ = (db.CheckConstraint(
-        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit')", name="ck_practice_receipt_operation"),)
+        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit', 'feedback')", name="ck_practice_receipt_operation"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_receipt_user"), primary_key=True)
     request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -728,13 +728,14 @@ LIVE_REPLY = "status IN ('pending', 'running')"
 class AIRequest(db.Model):
     """One generation for a practice session, tracked in the database so it survives restarts.
 
-    The id is the public reply ID. Its inputs are pinned to the learner turn it answers
-    (that turn's cited revisions and brief revision). A claim token and lease fence late
+    The id is the public request ID. turn_message_id pins the learner turn it answers,
+    or the immutable submission for kind='feedback'. A claim token and lease fence late
     writers; nothing here ever holds learner text or model output.
     """
 
     __tablename__ = "ai_request"
     __table_args__ = (
+        db.UniqueConstraint("practice_session_id", "id", name="uq_ai_request_session_id"),
         db.ForeignKeyConstraint(["practice_session_id", "turn_message_id"],
                                 ["session_message.practice_session_id", "session_message.id"],
                                 ondelete="CASCADE", name="fk_ai_request_turn"),
@@ -770,6 +771,26 @@ class AIRequest(db.Model):
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
     started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+
+
+class PracticeFeedback(db.Model):
+    """Validated feedback on one immutable submission, separate from the conversation."""
+
+    __tablename__ = "practice_feedback"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["practice_session_id", "request_id"],
+                                ["ai_request.practice_session_id", "ai_request.id"],
+                                ondelete="CASCADE", name="fk_practice_feedback_request"),
+        db.ForeignKeyConstraint(["practice_session_id", "submission_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_practice_feedback_submission"),
+        db.UniqueConstraint("submission_id", name="uq_practice_feedback_submission"),
+    )
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(String(36))
+    submission_id: Mapped[int] = mapped_column(Integer)
+    data: Mapped[dict] = mapped_column(db.JSON)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
 
 
 class LearningAICharge(db.Model):

@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of November 2, 2026, **Milestone 1 is partially implemented. Learn, Review, Discuss, and Build now share one concept workspace. Practice sessions hold artifacts with history/conflict recovery, cited discussion turns, an editable brief, and pause/resume/delete (checkpoints 3a/3b). The interviewer has durable requests, owner-only paid access, budget/context limits, clarification-based disclosure, and explicit continuation/retry (4a/4b). Local activation selected `gpt-6.1-sol` at low reasoning on October 30 after live evaluations. The Learning home has one continuation card and separate reference/flashcard catalogs. Every Learning website route now requires login. Navigation through the lesson and reviews preserves the selected practice session, including an older session. Checkpoint 5a adds version-2 evaluator-only misconception mappings with v1 compatibility; it does not generate feedback yet. Nothing is deployed. Feedback generation and export do not exist yet.** Continue on `feature/learning-content-foundation`. Checkpoint 5b now saves immutable submission snapshots with deterministic JSON/YAML checks while keeping sessions editable. Next: review 5b, then approve evidence-linked AI feedback (see Recommended next checkpoint).
+As of November 2, 2026, **Milestone 1 is partially implemented.** Learn, Review, Discuss, and Build share the idempotency workspace; all Learning pages require login. Sessions preserve conversation, artifacts, notes, and recovery. The owner-only interviewer uses durable requests and a shared budget. Checkpoint **5c now adds evidence-linked feedback on the immutable snapshots from 5b**, with one bounded evaluation call, validated quotations, saved findings, and explicit retry. Sessions stay editable. Nothing is deployed. Learner acceptance/targeted review, export, live evaluator quality review, and final milestone acceptance remain. Continue on `feature/learning-content-foundation`.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 5b and the Learning UI/login follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 5c and the Learning UI/login follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -50,7 +50,8 @@ Within Milestone 1:
 | Learning UI/login follow-ups | Compact home and library catalogs; all Learning behind login; shared four-mode concept workspace with exact-session continuity. | Implemented locally November 2. Home: `30aea19`; login: `e1a90bc`; shared workspace in a separate checkpoint commit. |
 | 5a | Feedback content foundation: v2 misconception mappings and backward compatibility. | Implemented locally November 2; separate checkpoint commit. |
 | 5b | Immutable submission snapshots and persisted JSON/YAML syntax checks; editable sessions and Checks tab. | Implemented locally November 2; separate checkpoint commit. |
-| 5c onward | Evidence-linked AI feedback, remediation, export, complete recovery demonstration and milestone acceptance. | Not started; next checkpoint requires approval. |
+| 5c | Evidence-linked snapshot feedback, exact citations, bounded generation, persistence and recovery. | Implemented November 2; see below and the [hands-on guide](learning-checkpoint-5c-test-guide.md). |
+| After 5c | Learner acceptance/targeted review, export, live evaluator quality review, full demonstration and milestone acceptance. | Not started; further checkpoints require approval. |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
 
@@ -267,10 +268,11 @@ The budget check prices the selector's and reply's worst cases together.
 | `d7e8f9a0b1c2` → `e8f9a0b1c2d3` | Adds `ai_request` and `learning_ai_charge`, `practice_session.profile_version` (existing rows get `interviewer-1`), and the `reply` receipt operation. | Removes every reply request, the spending ledger, profile versions, and reply receipts. Interviewer turns already written stay. |
 | `e8f9a0b1c2d3` → `f9a0b1c2d3e4` | Adds nullable `learning_ai_charge.cache_write_tokens` (October 30); earlier charges keep null. | Drops the column; every charge keeps its cost. |
 | `f9a0b1c2d3e4` → `a0b1c2d3e4f5` | Allows `submit` receipts; no new table or copied artifacts. | Removes submit receipts to restore the old constraint; preserves snapshots, artifacts, turns, and review history. |
+| `a0b1c2d3e4f5` → `b1c2d3e4f5a6` | Adds `practice_feedback`, same-session request/snapshot FKs, the request composite unique key, and `feedback` receipts. | Removes derived feedback, feedback requests/receipts; retains snapshots, artifacts, conversation, review history, and billing metadata. |
 
 These migrations were exercised on populated disposable PostgreSQL fixtures, including downgrade and ORM/schema parity. CHECK constraints are verified separately, because Alembic's comparison ignores them. Do not downgrade real content as a routine feature rollback. To withdraw practice while keeping saved work, turn `LEARNING_PRACTICE_ENABLED` off.
 
-## Remaining architecture to implement
+## Session and feedback architecture
 
 This section distinguishes the implemented snapshot boundary from the remaining feedback work.
 
@@ -296,7 +298,7 @@ Checkpoint 4a implemented the request lifecycle, the worker thread, owner-only a
 
 4b added the OpenAI call process (above); the selector's charge settles before the reply's reservation.
 
-- **Activation** (done locally, October 30): Keith created the Learning OpenAI project and key and set a $50 hard limit. Three rounds of live evaluations chose `gpt-6.1-sol` with low reasoning for turns, and the model, service tier, prices, `pricing_version`, p95 latency, and cost per session are recorded under Recommended next checkpoint. Feedback's model is chosen in checkpoint 5 (the original idea was Sol at medium reasoning). Verify access and current pricing again before production enablement. Do not silently switch models after failures, or couple Learning to JobWizard's extraction workflow. On the deploy target, make one real call first: the child starts with only the key, `PATH`, and CA settings, so check Python starts without anything else (such as `LD_LIBRARY_PATH`). `requests` verifies TLS with certifi, so only `REQUESTS_CA_BUNDLE` changes the trust store.
+- **Activation** (done locally, October 30): Keith created the Learning OpenAI project and key and set a $50 hard limit. Three rounds of live evaluations chose `gpt-6.1-sol` with low reasoning for turns, and the model, service tier, prices, `pricing_version`, p95 latency, and cost per session are recorded under Recommended next checkpoint. Checkpoint 5c defaults feedback to the configured model at medium reasoning; live evaluator quality/latency review remains outstanding. Verify access and current pricing again before production enablement. Do not silently switch models after failures, or couple Learning to JobWizard's extraction workflow. On the deploy target, make one real call first: the child starts with only the key, `PATH`, and CA settings, so check Python starts without anything else (such as `LD_LIBRARY_PATH`). `requests` verifies TLS with certifi, so only `REQUESTS_CA_BUNDLE` changes the trust store.
 
 Disclosure, evaluation passes, and synthesis all consume this budget, as would compaction if it returns. Hosting is separate. At the cap, paid generation stops while reading, review, editing, saving, export, and later resumption continue.
 
@@ -323,13 +325,96 @@ Required deterministic recovery case: more than 24 learner turns, a worker resta
 - **Build → Checks** uses the native CSRF form, preserves an unsent message, opens the results after success, and retains standalone rescue/retry behavior. Older checks link to exact saved revisions and label newer saved work. Save/check works with JavaScript unavailable. Deletion cascades through snapshots/citations/receipts. Budget exhaustion does not prevent checks; no AI request, charge, score, review rating, or progress update is created.
 - Reference parser behavior: [Python JSON](https://docs.python.org/3.13/library/json.html), [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation). This is syntax evidence only, not OpenAPI/schema validation or assessment of engineering correctness.
 
+### Generated feedback (checkpoint 5c)
+
+**Approved decision, November 2:** assess one complete snapshot in one bounded call.
+If it is too large, explain that no assessment happened; never truncate it or start
+multiple calls silently. The original revised plan remains the historical approval
+record; this is a sequencing refinement for 5c. Session editing remains allowed.
+
+- `project/learning/evaluator.py` defines `evaluator-1`: a strict structured result
+  with a summary and findings (`strength`, `concern`, `tradeoff`, `not_observed`).
+  Every public assessment dimension must be covered. Findings give concrete next
+  steps; concerns are judgments for review, not confirmed errors. Syntax checks
+  remain separate, deterministic, and unchanged. There is no score or grade.
+- `project/services/feedback_service.py` builds private inputs from the pinned
+  exercise/assessment, all original conversation turns through the submission,
+  the snapshot's artifact revisions, historical revisions cited by those turns,
+  and the snapshot's notes. Empty revision 0 is explicit. It includes revealed
+  versus unrevealed requirements, recorded hint counts and continuation choices.
+  **Continue with recent messages never truncates evaluation.** Later changes
+  never enter these inputs; coverage records exactly which snapshot was assessed.
+- Evidence must be an exact substring of an original learner turn, artifact body,
+  or saved note. The server supplies source IDs and resolves locations; model URLs,
+  fabricated quotes, interviewer quotes presented as learner evidence, unknown
+  dimensions/mapping IDs, extra fields, and incomplete dimension coverage fail.
+  Misconception IDs require an evidenced concern in their authored dimension.
+  Remediation resolves to authored concepts/sections, preferring a matched
+  misconception's target. Private descriptions, guidance and mapping IDs are not
+  included in learner responses. A verbatim-copy backstop rejects complete private
+  passages of at least 20 characters absent from learner-visible inputs; this is
+  **not** a guarantee against semantic disclosure or technical misjudgment.
+- `PracticeFeedback` holds validated findings/coverage, with a request PK and a
+  unique submission FK. Same-session composite FKs prevent cross-session links.
+  `AIRequest.kind='feedback'` uses the existing `turn_message_id` as its input
+  **submission** ID; completed feedback never appends an interviewer turn.
+  The worker claims known interviewer/evaluator profiles and dispatches by kind.
+  Completion and next-call checks reject cross-kind operations.
+- One completed feedback result per snapshot. Repeated request IDs replay the
+  receipt; different IDs for the same live/completed snapshot reuse the request.
+  Failure needs an explicit new request; revised work needs a new snapshot.
+  Receipts/requests/charges never contain learner text. Sequential attempt creation
+  times are monotonic even with a frozen clock, so reads identify the latest retry.
+- The shared live-request index allows only one interviewer or evaluator request
+  per session. Saving works during evaluation; send/reply/new submission returns
+  `feedback_pending` until it finishes. A workspace notice links to that snapshot.
+  Requesting from a paused session resumes it. Pausing cancels pending generation;
+  an already running call may still save its result, matching interviewer behavior.
+  Deletion fences completion and cascades feedback; the content-free charge remains.
+- The worker makes exactly one `purpose='feedback'` call, through the existing
+  process-isolated provider and budget reservations. It retries only transient
+  database completion writes, never paid calls. Unknown outcomes keep the reserved
+  amount; invalid generated output is charged but not stored as usable feedback.
+  Existing owner, lease, start/call deadlines, monthly cap, pricing and lock order
+  remain in force. Full serialized request bytes are checked before queueing and
+  again before calling; exceeding the shared context allowance reports
+  `context_too_large` without charge or partial feedback.
+- Defaults: the configured interview model (`gpt-6.1-sol` in the current OpenAI
+  configuration), **medium** reasoning and **4,000** output tokens. Optional env
+  overrides: `LEARNING_AI_FEEDBACK_MODEL`, `LEARNING_AI_FEEDBACK_REASONING_EFFORT`,
+  `LEARNING_AI_FEEDBACK_MAX_OUTPUT_TOKENS`. Deadlines, tier, context allowance and
+  monthly budget remain shared. The existing Sol pricing was verified against
+  [official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+  on November 2 and needed no change. This default is not a completed live quality
+  or latency evaluation.
+- API: GET/POST `/api/v1/learning/practice/sessions/<id>/submissions/<sequence>/feedback`.
+  POST accepts only `request_id`; 202 for pending/running, 200 for completed reuse
+  or unavailable, 409 for a different live request. GET returns request status,
+  validated learner findings/coverage, availability and `can_request`. Receipts
+  use the existing endpoint. JWT ownership, feature flag and no-store apply.
+- Web: **Build → Checks → View this snapshot and request feedback**. The separate
+  CSRF form acts only on saved work. Results link to original turns/revisions/notes
+  and keep the compact Learning navigation. Status polling is GET-only, stops
+  after six failures, and has a native Refresh fallback. A standalone recovery
+  page keeps the request UUID after an unconfirmed POST. No raw model Markdown or
+  HTML is rendered. The plain form and saved feedback work without JavaScript.
+
+Development used deterministic fixtures only; **no paid calls were made in 5c**.
+The optional preview `--feedback-example` seeds a clearly labelled scripted result;
+ordinary fake-provider feedback explicitly does not grade the work. These fixtures
+test mechanisms, not live model quality. Before accepting the milestone, review
+live outputs for valid alternatives, clear errors, absent evidence, assisted
+answers, injection attempts, hidden-fact leakage, and citation interpretation;
+measure latency/cost with the real configuration. The public repository still
+contains authored reference material; server-side projection is not source secrecy.
+
 ### Feedback and privacy
 
-The future `Feedback` model references the exact transcript boundary, exercise/rubric version, brief revision, and artifact revisions evaluated. Findings cite original messages or artifact excerpts; summaries cannot stand in as learner quotes. Validate structure, IDs, quotations, rubric dimensions, and remediation links deterministically. Long sessions may need bounded evaluation passes plus synthesis; record coverage and do not imply omitted material was assessed.
+`PracticeFeedback` now references the immutable submission, which pins the transcript boundary, exercise/rubric version, brief revision, and artifact revisions evaluated. Findings cite original messages or artifact excerpts; summaries cannot stand in as learner quotes. Validate structure, IDs, quotations, rubric dimensions, and remediation links deterministically. Keith approved one complete snapshot per call for 5c (November 2). Oversized snapshots explicitly stop before generation. Multiple passes/synthesis remain deferred; do not imply omitted material was assessed.
 
 Distinguish confirmed errors, concerns requiring review, defensible trade-offs, and “not observed.” Accept valid alternatives. Record assistance, allow feedback annotations/disputes, and suggest remediation from accepted gaps without modifying review history. Avoid authoritative ability scores. Milestone 1 must demonstrate a meaningful strength, an evidenced concern when present, and a useful next step.
 
-Two additions, decided October 29: deterministic checks come first, so a JSON or YAML API definition that fails to parse is a confirmed finding; and a finding the learner accepts can offer its linked questions as an extra, labelled review. Checkpoint 5a supplies the versioned misconception mappings. Checkpoint 5b implements syntax checks and snapshots; generated feedback, acceptance, and follow-up review remain to be implemented.
+Two additions, decided October 29: deterministic checks come first, so a JSON or YAML API definition that fails to parse is a confirmed finding; and a finding the learner accepts can offer its linked questions as an extra, labelled review. Checkpoint 5a supplies the versioned misconception mappings. Checkpoint 5b implements syntax checks and snapshots; 5c implements generated feedback. Learner acceptance and follow-up review remain to be implemented.
 
 Use reviewed, versioned evaluation fixtures for correct alternatives, clear errors, missing evidence, assisted answers, and adversarial instructions embedded in learner work. Reject fabricated evidence; require no critical technical misgrading in the reviewed release set. The original pilot targets are conversational p95 completion under 15 seconds and final-feedback p95 under 45 seconds. Measure these with the chosen configuration; they are acceptance targets, not achieved performance.
 
@@ -391,7 +476,14 @@ Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections
 
 ## Verification evidence and commands
 
-Latest verification, November 2, for checkpoint 5b:
+Latest verification, November 2, for checkpoint 5c:
+
+- **617 backend tests run: 616 passed, one existing Linux-only skip on macOS**, including isolated PostgreSQL 18.6 migration, shared budget, concurrency, foreign-key and deletion/recovery checks. The checkpoint adds 31 tests; populated migration coverage was extended.
+- **145 practice browser assertions** (26 new), plus the existing 70 concept and 60 hub checks. After response/display refinements, 39 focused feedback/API/web/browser tests passed again.
+- **13 Node tests**, dependency integrity, **102 renderer checks**, Sass compilation and `git diff --check` passed. Desktop/mobile feedback was inspected in the disposable preview; this is not a screen-reader or cross-browser audit.
+- Scripted provider only: no paid calls, production migration, publication, push or deployment. Live technical quality, semantic privacy, latency and final milestone acceptance remain unverified.
+
+Earlier verification, November 2, for checkpoint 5b:
 
 - **586 backend tests run: 585 passed, one existing Linux-only JobWizard test skipped on macOS**, with disposable **PostgreSQL 18.6**. This includes populated migration downgrade/upgrade/schema parity, simultaneous submissions/edits/deletion, forced worker lock windows, process death, and fresh-process recovery.
 - **32 new tests** cover parser safety/limits, immutable results, ownership/CSRF/privacy, v1/v2 snapshots, stale views, receipt replay, failure recovery, AI-off/exhausted-budget operation, and PostgreSQL races. Integrated Chrome walkthroughs: **70 concept**, **60 hub**, **119 practice** assertions (22 new practice assertions).
@@ -504,10 +596,10 @@ These fixtures drop tables and reset migration state. Never use a database conta
 2. **Enrollment and reading progress:** the original plan includes explicit concept enrollment, reading position, self-assessment, and avoiding automatic due-queue expansion. `UserConceptProgress` does not exist. Currently, visiting a concept's review route offers its four eligible questions, while the legacy API queue is unchanged. Carry this forward as unfinished product work; do not claim enrollment is delivered. Settle its placement before Milestone 1 acceptance, and implement it before content expansion.
 3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
 4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. The `Procfile` runs only `web`, and `run.py` uses Flask's built-in server, so the worker thread starts there and nowhere else.
-5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). Structured AI outputs, feedback annotations, and evidence/coverage validation still need implementation and evaluation. Do not invent a hidden solution-disclosure path when adding these.
+5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). The `evaluator-1` contract, strict structured outputs, and evidence/coverage validation are implemented in 5c. Feedback annotations and live evaluator quality review remain. Do not invent a hidden solution-disclosure path when adding these.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
-7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. 4b covered disclosure, hints, the context allowance with oversized essential context, the long-session recovery case, and reviewed interviewer fixtures, all against the fake, and the live interviewer evaluations ran at activation (October 29 and 30). Still outstanding: export, long-session feedback coverage, a full keyboard/screen-reader pass, and the complete end-to-end demonstration. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion.
-8. **Content-schema gaps against the approved plan:** the misconception mapping gap is closed in 5a through catalog/spec version 2 and exercise revision 2. The behaviour profile/version remains in code (item 5); the facilitator schema is unchanged. Feedback evidence/coverage and learner acceptance are still pending.
+7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. 4b covered disclosure, hints, the context allowance with oversized essential context, the long-session recovery case, and reviewed interviewer fixtures, all against the fake, and the live interviewer evaluations ran at activation (October 29 and 30). Still outstanding: export, live evaluator quality/latency review, a full keyboard/screen-reader pass, and the complete end-to-end demonstration. Full snapshot coverage and explicit oversized rejection are implemented; multipass feedback is deferred by Keith’s 5c decision. The workspace has labelled controls, a focused error summary, status/alert regions, text labels for new turns and pins, and no colour-only cues, but has had no screen-reader audit. The broader multi-style AI evaluation set belongs to pilot expansion.
+8. **Content-schema gaps against the approved plan:** the misconception mapping gap is closed in 5a through catalog/spec version 2 and exercise revision 2. The behaviour profile/version remains in code (item 5); the facilitator schema is unchanged. Feedback evidence/coverage is implemented in 5c; learner acceptance is still pending.
 9. **Third-party scripts on private pages:** Marked (no SRI) and Alpine (no SRI, in the base template) load from jsDelivr, and the CSP allows `ws:`/`wss:` to any host. The practice workspace loads no Markdown library. Site-wide SRI and a narrower CSP are follow-ups.
 10. **Proposals from the October 28 vision review.** Keith accepted three on October 29 (see Decisions): defer compaction out of Milestone 1, close the misconception loop, and report deterministic JSON/YAML checks first. Three wait for Milestone 1's completion:
     - After Milestone 1, expand content on web and give Expo concept Learn/Review before porting Discuss/Build.
@@ -545,7 +637,7 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** review checkpoint 5b using the [hands-on guide](learning-checkpoint-5b-test-guide.md), then approve a separate 5c checkpoint for evidence-linked AI feedback. Build on the immutable snapshot contract above; do not recompute old syntax results or assess later edits. The evaluator contract, evidence/coverage validation, persisted findings, and a bounded generation/recovery flow remain to implement. Learner acceptance/targeted review and export follow in separate checkpoints. No new AI provider calls are made in 5b. Expo, additional personalities, and content expansion remain out of scope.
+**Next:** review checkpoint 5c with the [DevTools/REPL guide](learning-checkpoint-5c-test-guide.md). Before relying on its technical judgments, run and human-review a bounded live evaluator release set (valid alternatives, actual errors, missing evidence, assisted answers, and injection attempts), recording latency/cost and checking for critical misgrading or hidden-fact disclosure. This checkpoint made no paid calls. Learner acceptance/targeted review and export follow as separately approved checkpoints. Expo, additional personalities, and content expansion remain out of scope.
 
 ### Activation record
 
@@ -579,4 +671,4 @@ Activation (see Durable AI requests and spending), done locally on October 30 ap
 
 Production enablement waits for content review and a separate approval. Production then needs its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
 
-Checkpoints 5a/5b implement the content mappings, submission snapshots, and deterministic syntax checks. Remaining checkpoint 5 work is generated feedback, the follow-up review, export, and the full demonstration. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.
+Checkpoints 5a–5c implement content mappings, submission snapshots, deterministic syntax checks, and evidence-linked generated feedback. Remaining checkpoint 5 work is live evaluator quality review, learner acceptance/follow-up review, export, and the full demonstration. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), demonstrate all six steps under Goal and scope, present test evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.

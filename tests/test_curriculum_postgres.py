@@ -27,7 +27,7 @@ from project.database import db
 from project.learning.content_schema import load_catalog
 from project.models import ContentRevision, CurriculumItem, ReviewLog, ReviewProgress, ReviewReceipt, User
 from project.services import curriculum_service as service
-from project.services import practice_service, practice_worker
+from project.services import feedback_service, practice_service, practice_worker
 from project.services.learning_service import rate_card_for_user
 from tests.curriculum_v2_fixtures import CATALOG_V2
 
@@ -318,9 +318,23 @@ with create_app({self.config!r}).app_context():
         from tests.test_practice_submissions import submission_input
         submitted = practice_service.save_and_submit(user, session_id, **submission_input(
             practice_service.session_detail(user.id, session_id), '{}'))
+        feedback_service.request_feedback(user, session_id, submitted["submission"]["sequence"], request_id=str(uuid4()))
+        self.assertTrue(practice_worker.run_once(practice_worker.FakeProvider()))
+        self.assertIsNotNone(feedback_service.detail(1, session_id, submitted["submission"]["sequence"])["feedback"])
+        charge_count = db.session.execute(text("SELECT count(*) FROM learning_ai_charge")).scalar()
         db.session.remove()
         directory = str(ROOT / "migrations")
         stamp(directory=directory, revision="head")
+        downgrade(directory=directory, revision="a0b1c2d3e4f5")
+        with db.engine.connect() as connection:
+            self.assertIsNone(connection.execute(text("SELECT to_regclass('practice_feedback')")).scalar())
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM ai_request WHERE kind = 'feedback'")).scalar(), 0)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM practice_receipt WHERE operation = 'feedback'")).scalar(), 0)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM learning_ai_charge")).scalar(), charge_count)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM session_message WHERE kind = 'submission'")).scalar(), 1)
+        upgrade(directory=directory, revision="head")
+        self.assertIsNone(feedback_service.detail(1, session_id, submitted["submission"]["sequence"])["feedback"])
+        db.session.remove()
         downgrade(directory=directory, revision="f9a0b1c2d3e4")
         with db.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT count(*) FROM practice_receipt WHERE operation = 'submit'")).scalar(), 0)
@@ -369,6 +383,7 @@ with create_app({self.config!r}).app_context():
             "ck_learning_ai_charge_purpose", "ck_learning_ai_charge_state", "ck_learning_ai_charge_amounts"]))
         self.assertIn("'reply'", checks["ck_practice_receipt_operation"])
         self.assertIn("'submit'", checks["ck_practice_receipt_operation"])
+        self.assertIn("'feedback'", checks["ck_practice_receipt_operation"])
         self.assertIn("WHERE", indexes["uq_ai_request_live"])
         self.assertIn("'pending'", indexes["uq_ai_request_live"])
         self.assertIn("'completed'", indexes["uq_ai_request_completed_turn"])

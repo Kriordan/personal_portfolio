@@ -18,7 +18,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Implemented November 2; see Shared concept workspace below. |
 | 5a. Feedback foundation | Content schema 2 and exercise revision 2 with evaluator-only misconception mappings; validate remediation links; preserve v1 sessions and review history. | Implemented November 2; see Checkpoint 5a below. |
 | 5b. Submission snapshots and syntax checks | Immutable revision references, saved JSON/YAML results, editable sessions, Checks UI and API, recovery. | Implemented November 2; see Checkpoint 5b below. |
-| 5c onward. Feedback and complete demonstration | Evidence-linked transcript/artifact feedback; remediation and follow-up review from accepted findings; export; one full Learn → Review → Discuss → Build walkthrough. | Not started; next checkpoint requires approval. |
+| 5c. Saved design feedback | One complete snapshot per bounded call, evidence validation, saved findings, and recovery. | Implemented November 2; details below. |
+| After 5c. Complete demonstration | Live feedback quality review; learner acceptance/targeted review; export; full Learn → Review → Discuss → Build walkthrough. | Not started; further checkpoints require approval. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -688,3 +689,76 @@ DevTools, copied request replay, and recovery experiments. No paid calls, new
 dependencies, production migration/publication, push, or deployment occurred.
 Next, after approval: evidence-linked AI feedback on these snapshots. Expo and
 content expansion remain outside scope.
+
+## Checkpoint 5c: evidence-linked saved feedback (November 2)
+
+Keith approved **one complete snapshot per bounded evaluation call**, with an
+explicit oversized response instead of silent truncation or multiple passes.
+The editable snapshot lifecycle from 5b remains. The historical revised plan
+is preserved; this decision sequences multipass evaluation beyond 5c.
+
+Implemented:
+
+- Versioned `evaluator-1` instructions and a strict structured-output contract.
+  Original conversation, selected/cited artifact revisions and saved notes are
+  evaluated together; later edits and interviewer context truncation cannot alter
+  the snapshot. Server-owned coverage and assistance records accompany findings.
+- Strengths, evidenced concerns, trade-offs and missing-evidence findings, with
+  next steps and authored remediation links. Exact source quotations, known
+  dimensions, compatible misconception IDs, full dimension coverage and a direct
+  private-copy backstop are validated before persistence. No ability scores,
+  generated URLs, replacement artifacts or automatic review ratings.
+- `PracticeFeedback` and migration `b1c2d3e4f5a6`, down from `a0b1c2d3e4f5`.
+  Same-session request/snapshot FKs, one saved result per submission, and feedback
+  receipts. A downgrade removes derived feedback/requests/receipts while retaining
+  work and billing metadata. No production migration or curriculum publication.
+- Existing worker/leases/process boundary/budget ledger reused; no new SDK or
+  infrastructure. One paid call at most per attempt, with conservative reservations,
+  fenced completion, explicit retry, and idempotent database-write recovery.
+  Interviewer and evaluator share one live slot; editing remains available.
+- Owner-only JWT and CSRF endpoints, readable saved results, source links, polling,
+  no-JavaScript support and a standalone same-UUID recovery form. A new snapshot
+  is needed to assess revised work. The page uses the compact Learning shell.
+- Defaults: configured model (currently Sol), medium reasoning, 4,000 output tokens;
+  the existing deadline, context allowance, tier and monthly budget apply. Current
+  [Sol documentation](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+  and [strict output contract](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)
+  were verified November 2. Existing prices remain unchanged. No paid calls were
+  made and live grading quality/latency remain unverified.
+
+Verification:
+
+- **617 backend tests run: 616 passed, one existing Linux-only test skipped on
+  macOS**, with isolated **PostgreSQL 18.6**. This adds **31 tests**: 18 feedback
+  service/contract cases, seven API/web cases, and six PostgreSQL concurrency/FK
+  cases. The populated migration round trip and metadata parity checks were also
+  extended. Original review history survives the migration sequence.
+- Real PostgreSQL covers duplicate requests/claims/completions, the shared live
+  slot, competing interviewer/evaluator reservations, forced lock windows during
+  deletion, late completion/deletion ordering, and cross-session foreign keys.
+- Browser integration passes **145 practice checks** (26 added), plus the existing
+  **70 concept** and **60 hub** checks. Feedback cases include lost POST recovery,
+  polling, exact evidence links, immutable reload, shared workspace status,
+  learner-facing privacy, 320-pixel layout, and native forms without JavaScript.
+- **39 focused tests** including the browser walkthrough passed again after final
+  response/display refinements. **13 Node tests**, dependency integrity, **102
+  renderer checks**, Sass compilation and `git diff --check` passed.
+- Deterministic fixtures cover correct alternatives, actual race evidence, absent
+  evidence, assistance coverage, hostile input as data, fabricated citations,
+  unknown/private IDs, oversized contexts, lost provider outcomes and charged
+  invalid output. These are contract/recovery checks, not a live grading benchmark.
+
+Gotchas: a freshly initialized local cluster without an explicit encoding chose
+SQL_ASCII and psycopg returned bytes for the server version. Recreating only the
+disposable test database with UTF-8 fixed the fixture; no application change was
+needed. A frozen-clock retry also exposed the need to order feedback attempts
+monotonically rather than by random UUID. Saved pages now use Learning's typography
+and header instead of the portfolio layout.
+
+The [hands-on guide](learning-checkpoint-5c-test-guide.md) covers DevTools, cURL/
+Postman, HTTPie, REPL inspection, and failure experiments. Preview port 5059 keeps
+5057/5058 intact; `--feedback-example` seeds a labelled scripted result. No push,
+deployment, production publication, Expo work, or content expansion occurred.
+
+Next approval: live evaluator release review, then learner acceptance/targeted
+review and export as separate checkpoints. Milestone 1 acceptance is still open.
