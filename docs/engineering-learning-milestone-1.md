@@ -17,7 +17,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | Login boundary | Require login for every Learning website route; retain JWT API authentication and private cache headers. | `e1a90bc`, November 2. |
 | UI follow-up 2. Shared concept workspace | Bring Learn and concept Review into the four-mode workspace; maintain session and artifact continuity. | Implemented November 2; see Shared concept workspace below. |
 | 5a. Feedback foundation | Content schema 2 and exercise revision 2 with evaluator-only misconception mappings; validate remediation links; preserve v1 sessions and review history. | Implemented November 2; see Checkpoint 5a below. |
-| 5b onward. Feedback and complete demonstration | Deterministic JSON/YAML checks, then evidence-linked transcript/artifact feedback; remediation and a follow-up review from accepted findings; export; pause/reopen/recover; one full Learn → Review → Discuss → Build walkthrough. | Not started; next checkpoint requires approval. |
+| 5b. Submission snapshots and syntax checks | Immutable revision references, saved JSON/YAML results, editable sessions, Checks UI and API, recovery. | Implemented November 2; see Checkpoint 5b below. |
+| 5c onward. Feedback and complete demonstration | Evidence-linked transcript/artifact feedback; remediation and follow-up review from accepted findings; export; one full Learn → Review → Discuss → Build walkthrough. | Not started; next checkpoint requires approval. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -618,3 +619,72 @@ The preview still uses v1; there is no new UI in this checkpoint. Submission
 snapshots, deterministic artifact checks, generated feedback, learner acceptance,
 targeted review, and export remain for subsequent checkpoints. No new dependency,
 infrastructure, migration, paid AI call, push, or deployment was introduced.
+
+
+## Checkpoint 5b: immutable snapshots and saved syntax checks (November 2)
+
+Keith approved the lifecycle choice before implementation: **save a snapshot and
+keep the session editable**. `Save and check` follows Save's resume behavior;
+it does not finish or lock a session. This checkpoint stops at deterministic
+checks; generated assessment, accepted findings, and targeted review remain later work.
+
+Snapshots use the existing `SessionMessage(kind="submission")` and
+`SessionMessageArtifact` tables. They pin the exercise/rubric version, spec and
+profile versions, all-record boundary, latest conversation turn, notes revision,
+and exact artifact revisions. Artifact bodies are not copied. Parser results
+are stored with `syntax-1` and never recomputed during reads or retries. The only
+migration, `a0b1c2d3e4f5`, extends the receipt operation constraint with `submit`.
+Downgrade removes these receipts but preserves snapshots and all saved work.
+
+JSON and YAML syntax checks use existing Python/PyYAML dependencies. The YAML
+loader is safe and rejects aliases before construction. Checks bound bytes,
+nesting, and YAML nodes. Unsupported/ambiguous syntax features (including
+aliases, duplicate keys, unknown tags, and multi-document YAML) are labelled
+**Not checked**; they are not engineering mistakes. Confirmed parse errors have
+static messages and optional one-based locations. No code executes, raw parser
+exceptions escape, provider call runs, or review progress changes.
+
+**Build → Checks** adds native save/check, saved results, and earlier snapshot
+links to the existing workspace. The snapshot detail shows exact artifact
+revision links, notes, and conversation boundary; older work is labelled when a
+newer artifact exists. Unsent conversation text survives checking. The JWT API
+adds submission POST/detail GET and an additive `submissions` list on session
+GET, using explicit learner-safe projections. Reference solutions remain
+server-only in runtime responses, though the repository is public.
+
+Recovery uses the existing owner lock, freshness checks, CSRF/JWT boundaries,
+request hashes, receipt replay, and standalone rescue form. A check cannot race
+past a pending reply or silently include edits from another tab. Snapshotting
+works with AI disabled or its budget exhausted. Sessions and snapshot results
+survive process restarts; owner deletion cascades through all snapshot records.
+
+Verification:
+
+- **32 new automated tests**: parser safety/resource limits; immutable evidence
+  and results; both content versions and private sentinels; no budget charge;
+  CSRF/ownership/strict input; stale work, lost responses, and retries; seven
+  PostgreSQL concurrency/process tests. The existing populated migration test
+  now also verifies submit receipt rollback and retained snapshot reads.
+- **586 backend tests: 585 passed, one pre-existing Linux-only test skipped on
+  macOS**, against disposable PostgreSQL **18.6**. Full migration/schema,
+  scheduling, budget, and recovery coverage passed.
+- Integrated Chrome: **70 concept + 60 hub + 119 practice assertions**. The 22
+  new practice assertions cover checks without JavaScript, revision history,
+  unsent messages, syntax locations, failed/lost confirmations, exact retry,
+  and a 320px layout.
+- Node **24.22.1**: **13 tests**, dependency asset verification, and **102 browser
+  renderer/recovery assertions** passed. `git diff --check` passed.
+- Visual inspection shortened the initial explanation so the first syntax
+  finding is visible sooner. A separate disposable preview on **5058** preserves
+  the existing **5057** demo. The fixture accepts `--port`, reloads templates,
+  includes check failure simulation, and reports snapshot counts.
+
+PostgreSQL exposed one recovery gotcha: `timestamptz` reads use the connection's
+timezone, while the newly created receipt held UTC. Snapshot DTOs now normalize
+timestamps to UTC so fresh-process reads match the original receipt exactly.
+
+The [hands-on guide](learning-checkpoint-5b-test-guide.md) covers REPL/debugger,
+DevTools, copied request replay, and recovery experiments. No paid calls, new
+dependencies, production migration/publication, push, or deployment occurred.
+Next, after approval: evidence-linked AI feedback on these snapshots. Expo and
+content expansion remain outside scope.

@@ -27,6 +27,7 @@ from project.curriculum_terms import (
 )
 from project.database import db
 from project.learning import interviewer
+from project.learning.artifact_checks import CHECKER_VERSION, check_artifact
 from project.learning.content_schema import interviewer_view, learner_view, opening_view, selector_view
 from project.models import (
     AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, PracticeReceipt, PracticeSession,
@@ -602,6 +603,117 @@ def _append_turn(session, specs, text, brief_revision, now):
 
 
 # Mutations.
+
+def save_and_submit(user, session_id, *, edits, brief, expected_sequence, request_id, now=None):
+    """Save and check a complete view atomically; leave the session editable.
+
+    A submission is an ordered record with immutable revision references, not copied
+    artifact bodies. Its boundary includes brief/disclosure/assistance/context records.
+    Exercise version also pins the rubric. No AI request or budget charge is created.
+    Both the website and API submit full edits so they use identical conflict rules.
+    """
+    validate_request_id(request_id)
+    _check_session_id(session_id)
+    normalized = _normalize_edits(edits)
+    normalized_brief = _normalize_brief(brief)
+    _check_expected_sequence(expected_sequence)
+    digest = _digest("submit", session_id, {"edits": normalized, "brief": normalized_brief,
+                                            "expected_sequence": expected_sequence})
+    now = now or _now()
+    try:
+        _lock_owner(user.id)
+        replay = _replay(user.id, request_id, "submit", digest)
+        if replay is not None:
+            db.session.commit()
+            return replay
+        session = _owned_session(user.id, session_id)
+        if _settle_stale_reply(session, now) is not None:
+            raise ReplyPendingError("The interviewer is still replying.")
+        if session.status not in OPEN_STATUSES:
+            raise PracticeValidationError("A completed session can't be submitted.")
+        payload = _pinned_exercise(session).payload
+        specs = _artifact_specs(payload)
+        if {edit["artifact_id"] for edit in normalized} != set(specs):
+            raise PracticeValidationError("Include every artifact in the snapshot.")
+        outcomes, rows, conflicts, refresh = _decide_edits(session, specs, normalized, now)
+        brief_outcome, entries, brief_conflict, brief_refresh = _decide_brief(session, normalized_brief)
+        latest = _latest_turn(session.id)
+        if conflicts or refresh or brief_conflict is not None or brief_refresh is not None or latest != expected_sequence:
+            raise StaleViewError(conflicts=conflicts, refresh=refresh, brief_conflict=brief_conflict,
+                                 brief_refresh=brief_refresh, latest_turn=None if latest == expected_sequence else latest)
+        _write(session, rows, brief_outcome, entries, now)
+        sequence = _next_sequence(session.id)
+        checks, heads = [], []
+        for artifact_id, spec in specs.items():
+            head = _head(session.id, artifact_id)
+            body, language = _state(head, spec)
+            checks.append({"artifact_id": artifact_id, "revision": head.revision if head else 0,
+                           "language": language, **check_artifact(language, body)})
+            if head is not None:
+                heads.append(head)
+        snapshot = SessionMessage(
+            practice_session_id=session.id, sequence=sequence, role="learner", kind="submission",
+            modality="text", body="", created_at=now, data={
+                "exercise_id": session.exercise_id, "exercise_version": session.exercise_version,
+                "exercise_spec_version": payload["content"]["spec_version"],
+                "profile_version": session.profile_version, "through_sequence": sequence - 1,
+                "turn_sequence": latest, "brief_revision": brief_outcome["revision"],
+                "checker_version": CHECKER_VERSION, "checks": checks})
+        db.session.add(snapshot)
+        db.session.flush()
+        db.session.add_all([SessionMessageArtifact(practice_session_id=session.id, message_id=snapshot.id,
+                                                  artifact_revision_id=head.id) for head in heads])
+        _set_status(session, "active")
+        session.updated_at = now
+        response = {"session_id": session.id, "submission": _submission_dto(snapshot),
+                    "artifacts": outcomes, "brief": brief_outcome, "status": session.status}
+        _record(user.id, request_id, session.id, "submit", digest, response, now)
+        db.session.commit()
+        return response
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def _submission_dto(row):
+    """Explicit learner projection; future evaluator fields must not escape via data."""
+    fields = ("exercise_id", "exercise_version", "exercise_spec_version", "profile_version",
+              "through_sequence", "turn_sequence", "brief_revision", "checker_version")
+    check_fields = ("artifact_id", "revision", "language", "status", "code", "message", "line", "column")
+    # PostgreSQL returns timestamptz in the connection's zone; the original receipt
+    # must equal a later read even when a process uses a different zone.
+    created_at = row.created_at.astimezone(timezone.utc) if row.created_at.tzinfo else row.created_at
+    return {"sequence": row.sequence, "created_at": _iso(created_at),
+            **{key: row.data[key] for key in fields},
+            "checks": [{key: check[key] for key in check_fields} for check in row.data["checks"]]}
+
+
+def _submissions(session_id):
+    rows = db.session.scalars(select(SessionMessage).where(
+        SessionMessage.practice_session_id == session_id, SessionMessage.kind == "submission"
+    ).order_by(SessionMessage.sequence.desc())).all()
+    return [_submission_dto(row) for row in rows]
+
+
+def submission_detail(user_id, session_id, sequence):
+    """Owner-only immutable results, with current revision numbers for comparison."""
+    session = _owned_session(user_id, session_id)
+    row = db.session.scalar(select(SessionMessage).where(
+        SessionMessage.practice_session_id == session.id, SessionMessage.kind == "submission",
+        SessionMessage.sequence == sequence)) if _whole_number(sequence, minimum=1) else None
+    if row is None:
+        raise NotFoundError("snapshot not found")
+    payload = _pinned_exercise(session).payload
+    artifacts = []
+    for artifact_id, spec in _artifact_specs(payload).items():
+        head = _head(session.id, artifact_id)
+        artifacts.append({"artifact_id": artifact_id, "title": spec["title"],
+                          "current_revision": head.revision if head else 0})
+    # Reading the exact saved brief is safe; no current or evaluator data replaces it.
+    brief = _brief_record(session.id, row.data["brief_revision"]) if row.data["brief_revision"] else None
+    return {"session": _session_dto(session, payload), "submission": _submission_dto(row),
+            "session_brief": _brief_dto(brief), "artifacts": artifacts}
+
 
 def save_work(user, session_id, *, edits=None, brief=None, request_id, status="active", now=None):
     """All-or-nothing save of artifact edits and/or the brief. Unchanged content writes nothing.
@@ -1588,7 +1700,7 @@ def session_detail(user_id, session_id, *, now=None):
             "session_brief": _brief_dto(_brief_record(session.id)), "artifacts": artifacts,
             "messages": messages, "reply": reply, "ai_budget": ai_budget(session.user_id, now),
             "revealed_requirements": _revealed_requirements(payload, records),
-            "context_choices": _context_choices(records),
+            "context_choices": _context_choices(records), "submissions": _submissions(session.id),
             "learner_turns": learner_turns, "check_in_due": check_in > 0 and learner_turns >= check_in}
 
 
@@ -1602,6 +1714,7 @@ def session_counts(user_id, session_id):
     return {"session": _session_dto(session, _pinned_exercise(session).payload),
             "turns": count(SessionMessage, SessionMessage.kind == "turn"),
             "brief_revisions": count(SessionMessage, SessionMessage.kind == "brief"),
+            "submissions": count(SessionMessage, SessionMessage.kind == "submission"),
             "artifact_revisions": count(ArtifactRevision)}
 
 

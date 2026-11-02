@@ -709,7 +709,7 @@ class PracticeReceipt(db.Model):
 
     __tablename__ = "practice_receipt"
     __table_args__ = (db.CheckConstraint(
-        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply')", name="ck_practice_receipt_operation"),)
+        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit')", name="ck_practice_receipt_operation"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_receipt_user"), primary_key=True)
     request_id: Mapped[str] = mapped_column(String(36), primary_key=True)

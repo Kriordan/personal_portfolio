@@ -84,7 +84,7 @@ class PracticeApiTests(PracticeApiCase):
         self.assertEqual(detail.headers["Cache-Control"], "private, no-store")
         body = detail.get_json()
         self.assertEqual(set(body), {"session", "brief", "session_brief", "artifacts", "messages", "reply", "ai_budget",
-                                     "revealed_requirements", "context_choices", "learner_turns", "check_in_due"})
+                                     "revealed_requirements", "context_choices", "learner_turns", "check_in_due", "submissions"})
         self.assertEqual(body["reply"], {"id": None, "status": "none", "error": None, "turn_sequence": None,
                                          "answered": False, "can_request": False, "can_continue_recent": False,
                                          "unavailable": "disabled", "too_large_part": None})

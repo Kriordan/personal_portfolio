@@ -255,6 +255,45 @@ class PracticeReplyPostgresTests(unittest.TestCase):
     def completion(self, claim, body="A reply."):
         return lambda: service.complete_reply(*claim, body=body, now=now())
 
+    def test_submission_and_reply_completion_require_an_up_to_date_transcript_in_every_order(self):
+        from tests.test_practice_submissions import submission_input
+        for order in ORDERS:
+            with self.subTest(order=order):
+                sid, _reply = self.queue()
+                claim = self.claim()
+                values = submission_input(service.session_detail(1, sid), '{}')
+                db.session.commit()  # release any read transaction before concurrent workers
+
+                def submit():
+                    try:
+                        return service.save_and_submit(self.user(), sid, **values)
+                    except (service.StaleViewError, service.ReplyPendingError) as exc:
+                        return exc
+
+                completed, submitted = self.in_order(order, self.completion(claim), submit)
+                self.assertEqual(completed, "written")
+                self.assertIsInstance(submitted, (service.StaleViewError, service.ReplyPendingError))
+                self.assertEqual(self.count("session_message", "kind = 'submission' AND practice_session_id = :id", id=sid), 0)
+                fresh = submission_input(service.session_detail(1, sid), '{}')
+                result = service.save_and_submit(self.user(), sid, **fresh)
+                self.assertGreater(result["submission"]["turn_sequence"], values["expected_sequence"])
+
+    def test_submission_obeys_lock_order_while_worker_checks_its_next_call(self):
+        from tests.test_practice_submissions import submission_input
+        for hold_before in self.HOLD_POINTS:
+            with self.subTest(hold_before=hold_before):
+                sid, _reply = self.queue()
+                claim = self.claim()
+                values = submission_input(service.session_detail(1, sid), '{}')
+                db.session.commit()
+                charge, submitted, waited = self.during_call_check(claim,
+                    lambda: service.save_and_submit(self.user(), sid, **values), hold_before=hold_before)
+                self.assertTrue(waited)
+                self.assertIsInstance(charge, int)
+                self.assertIsInstance(submitted, service.ReplyPendingError)
+                self.assertEqual(self.count("session_message", "kind = 'submission' AND practice_session_id = :id", id=sid), 0)
+                self.assertEqual(self.completion(claim)(), "written")
+
     def test_completion_and_delete_in_either_order_leave_nothing_behind(self):
         for order in ORDERS:
             with self.subTest(order=order):

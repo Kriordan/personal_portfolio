@@ -315,9 +315,20 @@ with create_app({self.config!r}).app_context():
             practice_worker.run_once(practice_worker.FakeProvider("fail"))
         practice_service.request_reply(user, session_id, request_id=str(uuid4()))
         self.assertTrue(practice_worker.run_once(practice_worker.FakeProvider()))
+        from tests.test_practice_submissions import submission_input
+        submitted = practice_service.save_and_submit(user, session_id, **submission_input(
+            practice_service.session_detail(user.id, session_id), '{}'))
         db.session.remove()
         directory = str(ROOT / "migrations")
         stamp(directory=directory, revision="head")
+        downgrade(directory=directory, revision="f9a0b1c2d3e4")
+        with db.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM practice_receipt WHERE operation = 'submit'")).scalar(), 0)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM session_message WHERE kind = 'submission'")).scalar(), 1)
+        upgrade(directory=directory, revision="head")
+        self.assertEqual(practice_service.submission_detail(1, session_id, submitted["submission"]["sequence"])["submission"],
+                         submitted["submission"])
+        db.session.remove()
         downgrade(directory=directory, revision="d7e8f9a0b1c2")
         with db.engine.connect() as connection:
             for table in ("ai_request", "learning_ai_charge"):
@@ -326,7 +337,7 @@ with create_app({self.config!r}).app_context():
                 "SELECT operation, count(*) FROM practice_receipt GROUP BY operation ORDER BY operation")).all(),
                 [("save", 1), ("send", 1), ("start", 1)])
             # The conversation itself stays: the opening turn, the learner's turn, and the reply.
-            self.assertEqual(connection.execute(text("SELECT count(*) FROM session_message")).scalar(), 3)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM session_message")).scalar(), 4)
             self.assertIsNone(connection.execute(text(
                 "SELECT 1 FROM information_schema.columns WHERE table_name = 'practice_session' "
                 "AND column_name = 'profile_version'")).scalar())
@@ -357,6 +368,7 @@ with create_app({self.config!r}).app_context():
             "ck_practice_receipt_operation", "ck_ai_request_kind", "ck_ai_request_status", "ck_ai_request_context_from",
             "ck_learning_ai_charge_purpose", "ck_learning_ai_charge_state", "ck_learning_ai_charge_amounts"]))
         self.assertIn("'reply'", checks["ck_practice_receipt_operation"])
+        self.assertIn("'submit'", checks["ck_practice_receipt_operation"])
         self.assertIn("WHERE", indexes["uq_ai_request_live"])
         self.assertIn("'pending'", indexes["uq_ai_request_live"])
         self.assertIn("'completed'", indexes["uq_ai_request_completed_turn"])

@@ -24,7 +24,7 @@ from .navigation import workspace_navigation
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
 STATUS_LABELS = {"active": "In progress", "paused": "Paused", "completed": "Completed"}
-ACTIONS = ("save", "send", "pause", "resume", "reply", "recent")
+ACTIONS = ("save", "send", "pause", "resume", "reply", "recent", "submit")
 LIVE = ("pending", "running")
 BLANK_BRIEF_ROWS = 3
 
@@ -281,6 +281,9 @@ def _rerender(session_id, submitted, *, action, status, alert, errors=None, stal
 
 
 def _stale_alert(stale, action):
+    if action == "submit":
+        return ("No snapshot was saved: this page was out of date. Compare the marked work and latest messages, "
+                "then save and check again. Your message has not been sent.")
     if stale.conflicts or stale.brief_conflict is not None:
         verb, again = ("sent", "send") if action == "send" else ("saved", "save")
         return (f"Nothing was {verb}: newer work was saved from another tab or device. "
@@ -294,6 +297,8 @@ def _summary(result, action):
     brief = result.get("brief", {}).get("changed", False)
     noun = f"{changed} artifact{'s' if changed != 1 else ''}"
     parts = ["Message sent."] if action == "send" else []
+    if action == "submit":
+        parts.append("Snapshot saved with syntax check results. You can keep editing.")
     if "context_from_sequence" in result:
         parts.append("The interviewer now reads from a recent message on, marked in the conversation. "
                      "Nothing was deleted.")
@@ -331,6 +336,10 @@ def _post(session_id):
             result = practice.save_and_send(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                             body=submitted["message"], expected_sequence=submitted["expected_sequence"],
                                             request_id=request_id)
+        elif action == "submit":
+            result = practice.save_and_submit(current_user, session_id, edits=submitted["edits"],
+                                              brief=_brief(submitted), expected_sequence=submitted["expected_sequence"],
+                                              request_id=request_id)
         elif action in ("reply", "recent"):
             result = practice.request_reply(current_user, session_id, edits=submitted["edits"], brief=_brief(submitted),
                                             context="recent" if action == "recent" else None, request_id=request_id)
@@ -374,12 +383,15 @@ def _post(session_id):
             # The message was written against an older view. Say so, as an out-of-date Send would,
             # before the page moves on to the latest state.
             saved = (any(outcome["changed"] for outcome in result.get("artifacts", {}).values())
-                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume", "reply", "recent"))
+                     or result.get("brief", {}).get("changed", False) or action in ("pause", "resume", "reply", "recent", "submit"))
             return _render(detail, form, alert=(f"{summary} " if saved else "") + "Newer work arrived while you were "
                            "writing and is marked below. Your message hasn't been sent.",
                            refreshed=refreshed, brief_refreshed=brief_refreshed, new_after=new_after)
         return _render(detail, form, notice=f"{summary} Your message hasn't been sent.")
     flash(summary, "practice")
+    if action == "submit":
+        return redirect(url_for("learning.practice_workspace", session_id=session_id, view="build",
+                                work="work-checks", _anchor="work-checks"), code=303)
     return redirect(url_for("learning.practice_workspace", session_id=session_id), code=303)
 
 
@@ -479,3 +491,15 @@ def practice_history(session_id, artifact_id):
 @login_required
 def practice_revision(session_id, artifact_id, revision):
     return _history(session_id, artifact_id, revision)
+
+
+@learning_blueprint.get("/practice/<session_id>/submissions/<int:sequence>")
+@login_required
+def practice_submission(session_id, sequence):
+    try:
+        detail = practice.submission_detail(current_user.id, session_id, sequence)
+    except learning_service.NotFoundError:
+        abort(404)
+    return render_template("learning/practice_submission.html", detail=detail,
+                           artifacts={a["artifact_id"]: a for a in detail["artifacts"]},
+                           language_labels=LANGUAGE_LABELS, type_labels=BRIEF_TYPE_LABELS)

@@ -85,7 +85,7 @@ class LearningWebTests(unittest.TestCase):
                 continue
             with self.app.test_request_context():
                 from flask import url_for
-                values = {name: 1 if name == "revision" else "fixture" for name in rule.arguments}
+                values = {name: 1 if name in ("revision", "sequence") else "fixture" for name in rule.arguments}
                 path = url_for(rule.endpoint, **values)
             for method in rule.methods - {"OPTIONS"}:
                 with self.subTest(path=path, method=method):

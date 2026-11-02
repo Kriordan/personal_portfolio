@@ -181,6 +181,25 @@ def reply_status(session_id):
     return _call(lambda: (jsonify(practice.reply_updates(user.id, session_id, after=int(raw))), 200))
 
 
+@practice_api_blueprint.post("/sessions/<session_id>/submissions")
+@jwt_required()
+def submit_work(session_id):
+    """Atomically save all artifacts/brief and snapshot syntax checks; no AI generation."""
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != {"request_id", "expected_sequence", "edits", "brief"}:
+        return _error("Send request_id, expected_sequence, edits, and brief.", 400, "invalid_request")
+    return _call(lambda: (jsonify(practice.save_and_submit(user, session_id, **payload)), 201))
+
+
+@practice_api_blueprint.get("/sessions/<session_id>/submissions/<int:sequence>")
+@jwt_required()
+def submission_detail(session_id, sequence):
+    user, _, failure = _user_and_payload(body=False)
+    return failure or _call(lambda: (jsonify(practice.submission_detail(user.id, session_id, sequence)), 200))
+
+
 @practice_api_blueprint.post("/sessions/<session_id>/reply")
 @jwt_required()
 def ask_for_reply(session_id):

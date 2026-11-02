@@ -69,6 +69,112 @@ class PracticePostgresTests(unittest.TestCase):
         with db.engine.connect() as connection:
             return connection.execute(text(f"SELECT count(*) FROM {table} WHERE {where}")).scalar()
 
+    def submit(self, *, request_id=None, barrier=None):
+        with self.app.app_context():
+            user = db.session.get(User, 1)
+            if barrier:
+                barrier.wait(timeout=10)
+            try:
+                edits = self.full_view('{}')
+                edits[0]["language"] = "json"
+                return service.save_and_submit(user, self.session_id, edits=edits,
+                    brief={"base_revision": 0, "entries": []}, expected_sequence=1,
+                    request_id=request_id or str(uuid4()))
+            except service.StaleViewError:
+                return "stale"
+
+    def test_concurrent_submission_replays_commit_one_snapshot_and_one_set_of_results(self):
+        barrier, request_id = Barrier(2), str(uuid4())
+        with ThreadPoolExecutor(2) as pool:
+            futures = [pool.submit(self.submit, request_id=request_id, barrier=barrier) for _ in range(2)]
+            results = [future.result(timeout=15) for future in futures]
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(self.count("session_message", "kind = 'submission'"), 1)
+        self.assertEqual(self.count("practice_receipt", "operation = 'submit'"), 1)
+        self.assertEqual(self.count("artifact_revision"), 1)
+        self.assertEqual(self.count("session_message_artifact"), 1)
+
+    def test_a_submission_and_concurrent_edit_never_check_unseen_work(self):
+        barrier = Barrier(2)
+        with ThreadPoolExecutor(2) as pool:
+            submitted = pool.submit(self.submit, barrier=barrier)
+            saved = pool.submit(self.save, 'another tab', barrier=barrier)
+            results = [submitted.result(timeout=15), saved.result(timeout=15)]
+        self.assertEqual(results.count("stale"), 1)
+        self.assertEqual(self.count("artifact_revision"), 1)
+        if results[0] != "stale":
+            snap = results[0]["submission"]
+            self.assertEqual(snap["checks"][0]["status"], "passed")
+            self.assertEqual(service.artifact_revision(1, self.session_id, 'api', 1)["revision"]["body"], '{}')
+        else:
+            self.assertEqual(self.count("session_message", "kind = 'submission'"), 0)
+
+    def test_delete_racing_a_submission_leaves_no_snapshot_or_receipt(self):
+        barrier = Barrier(2)
+
+        def delete():
+            with self.app.app_context():
+                user = db.session.get(User, 1)
+                barrier.wait(timeout=10)
+                return service.delete_session(user, self.session_id)
+
+        with ThreadPoolExecutor(2) as pool:
+            submitted = pool.submit(self.submit, barrier=barrier)
+            deleted = pool.submit(delete)
+            try:
+                submitted.result(timeout=15)
+            except service.NotFoundError:
+                pass  # delete won the owner lock
+            self.assertEqual(deleted.result(timeout=15)["session_id"], self.session_id)
+        for table in ("session_message", "artifact_revision", "session_message_artifact", "practice_receipt"):
+            self.assertEqual(self.count(table), 0)
+
+    def test_submission_survives_a_fresh_process_and_never_recomputes_results(self):
+        result = self.submit()
+        script = f'''
+import json
+from unittest.mock import patch
+from project import create_app
+from project.services import practice_service as service
+with create_app({self.config!r}).app_context():
+    with patch.object(service, "check_artifact", side_effect=AssertionError("must not recompute")):
+        print(json.dumps(service.submission_detail(1, {self.session_id!r}, {result["submission"]["sequence"]})["submission"]))
+'''
+        completed = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=30, check=True)
+        self.assertEqual(json.loads(completed.stdout.strip().splitlines()[-1]), result["submission"])
+
+    def test_process_death_before_submission_commit_rolls_back_every_part(self):
+        request_id = str(uuid4())
+        edits = self.full_view('{}')
+        edits[0]["language"] = "json"
+        script = f'''
+from unittest.mock import patch
+from project import create_app
+from project.database import db
+from project.models import User
+from project.services.practice_service import save_and_submit
+with create_app({self.config!r}).app_context():
+    def stop():
+        db.session.flush()
+        print("READY", flush=True)
+        input()
+    with patch.object(db.session, "commit", stop):
+        save_and_submit(db.session.get(User, 1), {self.session_id!r}, edits={edits!r},
+            brief={{"base_revision": 0, "entries": []}}, expected_sequence=1, request_id={request_id!r})
+'''
+        child = subprocess.Popen([sys.executable, '-c', script], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, text=True)
+        try:
+            self.assertTrue(io_select.select([child.stdout], [], [], 15)[0])
+            self.assertEqual(child.stdout.readline().strip(), "READY")
+            self.assertEqual(self.count("artifact_revision"), 0)
+            self.assertEqual(self.count("session_message", "kind = 'submission'"), 0)
+        finally:
+            child.terminate()
+            child.communicate(timeout=10)
+        self.assertEqual(self.count("practice_receipt", "operation = 'submit'"), 0)
+        self.assertEqual(self.submit(request_id=request_id)["submission"]["checks"][0]["status"], "passed")
+
     def test_two_devices_saving_from_one_base_commit_one_revision_and_one_conflict(self):
         barrier = Barrier(2)
         with ThreadPoolExecutor(2) as pool:

@@ -50,6 +50,7 @@ from sqlalchemy.exc import OperationalError  # noqa: E402
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--concept', action='store_true', help='Include the idempotency web demo with CSRF enabled.')
+    parser.add_argument('--port', type=int, default=5057, help='Use another port to preserve an existing demo.')
     args = parser.parse_args()
     email_validator.TEST_ENVIRONMENT = True
     # Stopping with SIGTERM (as preview tools do) exits like Ctrl+C, so the temporary database is removed.
@@ -77,7 +78,7 @@ def main():
                 for card in range(3)
             ], ["practice", "searchable"])
         app = create_app({
-            "TESTING": True, "SECRET_KEY": "disposable-learning-only",
+            "TESTING": True, "TEMPLATES_AUTO_RELOAD": True, "SECRET_KEY": "disposable-learning-only",
             "JWT_SECRET_KEY": "disposable-learning-jwt-secret-only",
             "SQLALCHEMY_DATABASE_URI": f"sqlite:///{Path(directory) / 'preview.sqlite'}",
             "SQLALCHEMY_TRACK_MODIFICATIONS": False,
@@ -155,6 +156,8 @@ def main():
                                                              SessionMessage.kind == "turn").count(),
                         "brief_revisions": SessionMessage.query.filter(
                             SessionMessage.practice_session_id.in_(sessions), SessionMessage.kind == "brief").count(),
+                        "submissions": SessionMessage.query.filter(
+                            SessionMessage.practice_session_id.in_(sessions), SessionMessage.kind == "submission").count(),
                         "receipts": PracticeReceipt.query.filter_by(user_id=user_id).count(),
                         "replies": dict(db.session.query(AIRequest.status, db.func.count()).filter(
                             AIRequest.practice_session_id.in_(sessions)).group_by(AIRequest.status).all())}
@@ -195,9 +198,10 @@ def main():
         with patch("project.services.learning_service.notes_dir_for_root", return_value=notes_dir), \
                 patch.object(practice_service, "save_work", simulate_failures(practice_service.save_work)), \
                 patch.object(practice_service, "save_and_send", simulate_failures(practice_service.save_and_send)), \
+                patch.object(practice_service, "save_and_submit", simulate_failures(practice_service.save_and_submit)), \
                 patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)), \
                 patch.object(practice_service, "request_reply", simulate_failures(practice_service.request_reply)):
-            app.run(host="127.0.0.1", port=5057, use_reloader=False, threaded=True)
+            app.run(host="127.0.0.1", port=args.port, use_reloader=False, threaded=True)
 
 
 if __name__ == "__main__":

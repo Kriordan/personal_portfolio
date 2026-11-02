@@ -1,0 +1,16 @@
+<ul class="practice-history" data-check-results>
+  {% for check in snapshot.checks %}
+    {% set artifact = artifacts[check.artifact_id] %}
+    {% set current_revision = artifact.current_revision if artifact.current_revision is defined else artifact.revision %}
+    <li>
+      <strong>{{ artifact.title }}: {{ {'passed': 'Syntax passed', 'error': 'Syntax issue', 'not_checked': 'Not checked'}[check.status] }}</strong>
+      {% if check.code != 'unsupported' %}<p>{{ check.message }}{% if check.line %} Line {{ check.line }}, column {{ check.column }}.{% endif %}</p>{% endif %}
+      <p class="practice-meta">
+        {{ language_labels[check.language] }} ·
+        {% if check.revision %}<a href="{{ url_for('learning.practice_revision', session_id=detail.session.id, artifact_id=check.artifact_id, revision=check.revision) }}">Revision {{ check.revision }}</a>{% else %}Empty revision 0{% endif %}
+        {% if check.revision != current_revision %} · Older work: current saved revision is {{ current_revision }}{% endif %}
+      </p>
+    </li>
+  {% endfor %}
+</ul>
+<p class="practice-meta">Results apply only to the revisions above. Later edits are not included.</p>

@@ -18,11 +18,13 @@
             <button type="button" id="work-tab-{{ artifact.artifact_id }}" data-work-target="artifact-{{ artifact.artifact_id }}">{{ {'api': 'API', 'schema': 'Schema', 'algorithm': 'Pseudocode'}.get(artifact.artifact_id, artifact.title) }}</button>
           {% endfor %}
           <button type="button" id="work-tab-notes" data-work-target="session-brief">Notes</button>
+          <button type="button" id="work-tab-checks" data-work-target="work-checks">Checks</button>
         </div>
         <div class="practice-work-panels">
           {% include 'learning/_practice_requirements.html' %}
           {% include 'learning/_practice_artifacts.html' %}
           {% include 'learning/_practice_notes.html' %}
+          {% include 'learning/_practice_checks.html' %}
         </div>
       </section>
       <section class="practice-discuss" aria-labelledby="conversation">

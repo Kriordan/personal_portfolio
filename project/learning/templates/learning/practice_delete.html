@@ -12,6 +12,7 @@
     <li>the conversation: {{ counts.turns }} message{{ 's' if counts.turns != 1 }}</li>
     <li>your brief: {{ counts.brief_revisions }} saved version{{ 's' if counts.brief_revisions != 1 }}</li>
     <li>your artifacts: {{ counts.artifact_revisions }} saved revision{{ 's' if counts.artifact_revisions != 1 }}</li>
+    <li>your saved checks: {{ counts.submissions }} snapshot{{ 's' if counts.submissions != 1 }}</li>
   </ul>
   <p><strong>There is no undo.</strong> Downloading a copy isn't available yet, so copy anything you want to keep first. Database backups are kept separately and may hold a copy until they expire.</p>
   <form method="post" action="{{ url_for('learning.practice_delete', session_id=practice_session.id) }}" class="concept-controls">

@@ -206,6 +206,9 @@
       }
     });
     // learning-practice.js focuses the error summary after hidden panels are exposed.
+  } else if (pending.action === 'submit' && pending.time && Date.now() - pending.time < 5 * 60 * 1000) {
+    select('build', 'work-checks');
+    document.getElementById('work-tab-checks').focus({ preventScroll: true });
   } else if (pending.time && Date.now() - pending.time < 5 * 60 * 1000) {
     const sending = ['send', 'reply', 'recent'].includes(pending.action);
     const editorId = typeof pending.editor?.id === 'string' ? pending.editor.id : '';

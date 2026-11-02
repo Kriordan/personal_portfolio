@@ -83,7 +83,7 @@ class PracticeBrowserTests(unittest.TestCase):
                     return result
                 return wrapped
 
-            for name in ("save_work", "save_and_send", "send_turn", "request_reply"):
+            for name in ("save_work", "save_and_send", "send_turn", "request_reply", "save_and_submit"):
                 stack.enter_context(patch.object(practice, name, fail_or_lose(getattr(practice, name))))
 
             @app.get("/__browser_checks__")
@@ -107,6 +107,7 @@ class PracticeBrowserTests(unittest.TestCase):
                     practice_worker.run_once(practice_worker.FakeProvider(replies=[
                         "What happens if two requests arrive at the same time? Explain your reasoning."]))
                 return jsonify(revisions=ArtifactRevision.query.count(),
+                    submissions=SessionMessage.query.filter_by(kind="submission").count(),
                     learner_turns=SessionMessage.query.filter_by(role="learner", kind="turn").count(),
                     interviewer_turns=SessionMessage.query.filter_by(role="interviewer", kind="turn").count())
 
