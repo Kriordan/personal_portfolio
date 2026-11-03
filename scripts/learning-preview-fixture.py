@@ -3,7 +3,8 @@
 POST /fixture/state with reads=success|failure|empty, rating=success|failure|lost,
 receipts=success|failure, delay=seconds, practice=success|failure|lost,
 ai=success|slow|fail|lost|hang|invalid, cap_usd=dollars, context_bytes=bytes. With --concept, practice
-sessions are enabled; practice=failure makes saves and sends (website and API) fail
+sessions are enabled; practice=failure makes saves, sends, feedback responses and
+feedback-linked ratings (website and API) fail
 before saving, and practice=lost saves and then reports an unconfirmed result. AI replies
 come from a scripted fake provider (never a paid call) for learning1, the configured
 owner; `ai` switches how it behaves, cap_usd lowers the monthly AI budget, and
@@ -38,11 +39,11 @@ from project import create_app  # noqa: E402
 from project.database import db  # noqa: E402
 from project.extensions import talisman  # noqa: E402
 from project.models import (  # noqa: E402
-    AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, Gift, Playlist, PracticeFeedback, PracticeReceipt,
+    AIRequest, ArtifactRevision, ContentRevision, CurriculumItem, Gift, Playlist, PracticeFeedback, PracticeFeedbackAnnotation, PracticeReceipt,
     PracticeSession, ReviewLog, ReviewProgress, ReviewReceipt, SessionMessage, User,
 )
 from project.learning.content_schema import load_catalog  # noqa: E402
-from project.services import feedback_service, practice_budget, practice_service, practice_worker  # noqa: E402
+from project.services import feedback_review_service, feedback_service, practice_budget, practice_service, practice_worker  # noqa: E402
 from project.services.curriculum_service import content_checksum  # noqa: E402
 from sqlalchemy import event  # noqa: E402
 from sqlalchemy.exc import OperationalError  # noqa: E402
@@ -124,6 +125,12 @@ def main():
                     db.session.add(ContentRevision(item_id=item['id'], version=item['version'], schema_version=1,
                         payload=item, checksum=content_checksum(item), imported_at=now, published_at=now,
                         reviewed_by='Disposable demo fixture', reviewed_on=now.date()))
+                if args.feedback_example:
+                    catalog_v2 = load_catalog(ROOT / 'curriculum/idempotency/catalog-v2.json')
+                    for item in catalog_v2['items']:
+                        db.session.add(ContentRevision(item_id=item['id'], version=item['version'], schema_version=2,
+                            payload=item, checksum=content_checksum(item, 2), imported_at=now, published_at=now,
+                            reviewed_by='Disposable demo fixture', reviewed_on=now.date()))
             for number in (1, 2):
                 user = User(email=f"learning{number}@example.test", username=f"Learning Preview {number}", email_verified=True)
                 user.set_password("LearningPreview123!")
@@ -178,6 +185,9 @@ def main():
                             SessionMessage.practice_session_id.in_(sessions), SessionMessage.kind == "submission").count(),
                         "receipts": PracticeReceipt.query.filter_by(user_id=user_id).count(),
                         "feedback": PracticeFeedback.query.filter(PracticeFeedback.practice_session_id.in_(sessions)).count(),
+                        "feedback_annotations": PracticeFeedbackAnnotation.query.join(PracticeFeedback,
+                            PracticeFeedbackAnnotation.feedback_request_id == PracticeFeedback.request_id).filter(
+                                PracticeFeedback.practice_session_id.in_(sessions)).count(),
                         "replies": dict(db.session.query(AIRequest.status, db.func.count()).filter(
                             AIRequest.practice_session_id.in_(sessions)).group_by(AIRequest.status).all())}
             return jsonify({str(user.id): {"logs": ReviewLog.query.filter_by(user_id=user.id).count(),
@@ -220,7 +230,9 @@ def main():
                 patch.object(practice_service, "save_and_submit", simulate_failures(practice_service.save_and_submit)), \
                 patch.object(practice_service, "send_turn", simulate_failures(practice_service.send_turn)), \
                 patch.object(practice_service, "request_reply", simulate_failures(practice_service.request_reply)), \
-                patch.object(feedback_service, "request_feedback", simulate_failures(feedback_service.request_feedback)):
+                patch.object(feedback_service, "request_feedback", simulate_failures(feedback_service.request_feedback)), \
+                patch.object(feedback_review_service, "annotate", simulate_failures(feedback_review_service.annotate)), \
+                patch.object(feedback_review_service, "rate_review", simulate_failures(feedback_review_service.rate_review)):
             app.run(host="127.0.0.1", port=args.port, use_reloader=False, threaded=True)
 
 

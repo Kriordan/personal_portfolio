@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, FieldList, Form, FormField, HiddenField, IntegerField, SelectField, TextAreaField
 from wtforms.validators import InputRequired, Length, NumberRange
@@ -21,6 +23,22 @@ LANGUAGE_LABELS = {"text": "Plain text", "markdown": "Markdown", "pseudocode": "
 
 class FeedbackForm(FlaskForm):
     request_id = HiddenField(validators=[InputRequired(), Length(min=36, max=36)])
+
+
+class FeedbackAnnotationForm(FlaskForm):
+    class Meta:
+        csrf_time_limit = 86400
+
+    request_id = HiddenField(validators=[InputRequired(), Length(min=36, max=36)])
+    expected_revision = IntegerField(widget=HiddenInput(), validators=[InputRequired(), NumberRange(0, 2147483647)])
+    decision = SelectField("Your view", choices=[("unreviewed", "Not decided"), ("agree", "Agree"), ("disagree", "Disagree")])
+    note = TextAreaField("Your note (optional)", validators=[Length(max=2000)])
+
+
+def annotation_forms(evaluation):
+    return {f["id"]: FeedbackAnnotationForm(prefix=f"annotation-{f['id']}-", formdata=None,
+        data={**f["annotation"], "expected_revision": f["annotation"]["revision"], "request_id": str(uuid4())})
+        for f in (evaluation.get("feedback") or {}).get("findings", [])}
 
 
 class StartPracticeForm(FlaskForm):

@@ -29,11 +29,20 @@
         {% endfor %}
         <p><strong>Next step:</strong> {{ finding.next_step }}</p>
         {% if finding.kind != 'strength' %}{% for link in finding.remediation %}
-          <a class="practice-remediation" href="{{ url_for('learning.concept', concept_id=link.concept_id, session_id=detail.session.id, _anchor=link.section_id) }}">Revisit the explanation</a>
+          <a class="practice-remediation" href="{{ url_for('learning.concept', concept_id=link.concept_id, practice_session=detail.session.id if link.concept_id == detail.session.concept_id else none, _anchor=link.section_id) }}">Revisit the explanation</a>
         {% endfor %}{% endif %}
+        <details class="practice-annotation">
+          <summary>Your response · {{ {'unreviewed': 'Not decided', 'agree': 'Agree', 'disagree': 'Disagree'}[finding.annotation.decision] }}</summary>
+          <form method="post" action="{{ url_for('learning.practice_feedback_annotation', session_id=detail.session.id, sequence=snapshot.sequence, finding_id=finding.id) }}" data-annotation-form>
+            {% set annotation_form = annotation_forms[finding.id] %}
+            {% include 'learning/_feedback_annotation_fields.html' %}
+            <button class="button button--secondary" type="submit">Save response</button>
+          </form>
+        </details>
+        {% if finding.practice_available %}<p><a class="button" data-followup-link href="{{ url_for('learning.practice_feedback_review', session_id=detail.session.id, sequence=snapshot.sequence, finding_id=finding.id) }}">Practise this</a> <span class="practice-meta">Optional extra recall practice. Only your ratings change the review schedule.</span></p>{% endif %}
       </article>
     {% endfor %}
-    <p>Revise in the workspace and save a new snapshot for another assessment. Your review schedule stays unchanged.</p>
+    <p><a href="{{ url_for('learning.practice_workspace', session_id=detail.session.id, view='build') }}">Revise your work</a> and save a new snapshot for another assessment. Saving a response to feedback leaves your review schedule unchanged.</p>
   {% elif state.status in ['pending', 'running'] %}
     <p role="status">Feedback is being prepared. You can leave this page and return; the result will be saved here.</p>
     <p><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=snapshot.sequence, _anchor='feedback') }}">Refresh status</a></p>

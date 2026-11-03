@@ -321,10 +321,22 @@ with create_app({self.config!r}).app_context():
         feedback_service.request_feedback(user, session_id, submitted["submission"]["sequence"], request_id=str(uuid4()))
         self.assertTrue(practice_worker.run_once(practice_worker.FakeProvider()))
         self.assertIsNotNone(feedback_service.detail(1, session_id, submitted["submission"]["sequence"])["feedback"])
+        from project.services import feedback_review_service
+        feedback_review_service.annotate(user, session_id, submitted["submission"]["sequence"], "f1",
+            decision="agree", note="My retained draft response", expected_revision=0, request_id=str(uuid4()))
+        saved_feedback = db.session.execute(text("SELECT data FROM practice_feedback")).scalar()
         charge_count = db.session.execute(text("SELECT count(*) FROM learning_ai_charge")).scalar()
         db.session.remove()
         directory = str(ROOT / "migrations")
         stamp(directory=directory, revision="head")
+        downgrade(directory=directory, revision="b1c2d3e4f5a6")
+        with db.engine.connect() as connection:
+            self.assertIsNone(connection.execute(text("SELECT to_regclass('practice_feedback_annotation')")).scalar())
+            self.assertEqual(connection.execute(text("SELECT data FROM practice_feedback")).scalar(), saved_feedback)
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM practice_receipt WHERE operation = 'annotate'")).scalar(), 0)
+        upgrade(directory=directory, revision="head")
+        with db.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT count(*) FROM practice_feedback_annotation")).scalar(), 0)
         downgrade(directory=directory, revision="a0b1c2d3e4f5")
         with db.engine.connect() as connection:
             self.assertIsNone(connection.execute(text("SELECT to_regclass('practice_feedback')")).scalar())
@@ -371,7 +383,7 @@ with create_app({self.config!r}).app_context():
             checks = dict(connection.execute(text(
                 "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE contype = 'c' AND "
                 "conrelid::regclass::text IN ('practice_session', 'artifact_revision', 'session_message', "
-                "'practice_receipt', 'ai_request', 'learning_ai_charge')")).all())
+                "'practice_receipt', 'ai_request', 'learning_ai_charge', 'practice_feedback_annotation')")).all())
             # compare_metadata doesn't compare partial-index predicates either.
             indexes = dict(connection.execute(text(
                 "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'ai_request'")).all())
@@ -380,10 +392,12 @@ with create_app({self.config!r}).app_context():
             "ck_artifact_revision_format", "ck_artifact_revision_language", "ck_session_message_sequence",
             "ck_session_message_role", "ck_session_message_kind", "ck_session_message_modality",
             "ck_practice_receipt_operation", "ck_ai_request_kind", "ck_ai_request_status", "ck_ai_request_context_from",
-            "ck_learning_ai_charge_purpose", "ck_learning_ai_charge_state", "ck_learning_ai_charge_amounts"]))
+            "ck_learning_ai_charge_purpose", "ck_learning_ai_charge_state", "ck_learning_ai_charge_amounts",
+            "ck_feedback_annotation_decision", "ck_feedback_annotation_revision", "ck_feedback_annotation_note"]))
         self.assertIn("'reply'", checks["ck_practice_receipt_operation"])
         self.assertIn("'submit'", checks["ck_practice_receipt_operation"])
         self.assertIn("'feedback'", checks["ck_practice_receipt_operation"])
+        self.assertIn("'annotate'", checks["ck_practice_receipt_operation"])
         self.assertIn("WHERE", indexes["uq_ai_request_live"])
         self.assertIn("'pending'", indexes["uq_ai_request_live"])
         self.assertIn("'completed'", indexes["uq_ai_request_completed_turn"])

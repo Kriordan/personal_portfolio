@@ -1,0 +1,25 @@
+<!doctype html>
+{# Standalone: no layout/user/database reads after a potentially committed write. #}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ heading }}</title><link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head><body class="learning-private"><main class="practice practice-narrow">
+  <h1>{{ heading }}</h1><p role="alert">{{ message }}</p>
+  {% if latest %}<section aria-label="Latest saved response"><h2>Latest saved response</h2>
+    <p>{{ {'unreviewed': 'Not decided', 'agree': 'Agree', 'disagree': 'Disagree'}[latest.decision] }}</p>
+    <blockquote>{{ latest.note or 'No note saved.' }}</blockquote>
+    <p>Compare this with your response below. Saving will replace this version.</p>
+  </section>{% endif %}
+  {% for errors in form.errors.values() %}{% for error in errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+  {% if kind == 'read' %}<p><a class="button" href="{{ action_url }}">Reload extra practice</a></p>{% else %}
+  <form method="post" action="{{ action_url }}"{% if kind == 'annotation' %} data-annotation-form data-unsaved="true"{% endif %}>
+    {% if kind == 'annotation' %}
+      {% set annotation_form = form %}{% include 'learning/_feedback_annotation_fields.html' %}
+      <button class="button button--primary">Save response</button>
+    {% else %}
+      {{ form.csrf_token }}{{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
+      <button class="button button--primary" name="rating" value="{{ form.rating.data }}">Retry the same rating</button>
+    {% endif %}
+  </form>
+  {% endif %}
+  <p><a href="{{ snapshot_url }}">Back to saved feedback</a></p>
+</main><script defer src="{{ url_for('static', filename='js/learning-feedback.js') }}"></script></body></html>

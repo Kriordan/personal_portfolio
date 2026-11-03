@@ -709,7 +709,7 @@ class PracticeReceipt(db.Model):
 
     __tablename__ = "practice_receipt"
     __table_args__ = (db.CheckConstraint(
-        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit', 'feedback')", name="ck_practice_receipt_operation"),)
+        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit', 'feedback', 'annotate')", name="ck_practice_receipt_operation"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_receipt_user"), primary_key=True)
     request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -791,6 +791,24 @@ class PracticeFeedback(db.Model):
     submission_id: Mapped[int] = mapped_column(Integer)
     data: Mapped[dict] = mapped_column(db.JSON)
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class PracticeFeedbackAnnotation(db.Model):
+    """The learner's revisable response; never overwrites the evaluated snapshot."""
+
+    __tablename__ = "practice_feedback_annotation"
+    __table_args__ = (
+        db.CheckConstraint("decision IN ('unreviewed', 'agree', 'disagree')", name="ck_feedback_annotation_decision"),
+        db.CheckConstraint("revision > 0", name="ck_feedback_annotation_revision"),
+        db.CheckConstraint("length(note) <= 2000", name="ck_feedback_annotation_note"),
+    )
+    feedback_request_id: Mapped[str] = mapped_column(String(36), ForeignKey(
+        "practice_feedback.request_id", ondelete="CASCADE", name="fk_feedback_annotation_feedback"), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(16))
+    note: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
 
 
 class LearningAICharge(db.Model):

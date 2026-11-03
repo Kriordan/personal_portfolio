@@ -1,6 +1,31 @@
 /* Read-only status polling; a lost request is never resubmitted automatically. */
 (() => {
   'use strict';
+  // Notes stay in the form. Warn before navigation discards any unsaved response,
+  // including another finding's note when one response is submitted.
+  const saved = new WeakMap();
+  let submitting = null;
+  const responses = () => [...document.querySelectorAll('[data-annotation-form]')];
+  const value = form => JSON.stringify([...new FormData(form)]);
+  function remember() {
+    responses().forEach(form => {
+      if (!saved.has(form)) saved.set(form, form.dataset.unsaved === 'true' ? null : value(form));
+    });
+  }
+  remember();
+  document.addEventListener('submit', event => {
+    submitting = event.target.matches('[data-annotation-form]') ? event.target : null;
+  });
+  window.addEventListener('beforeunload', event => {
+    // Exempt this POST only for this navigation. If another draft prompts the
+    // learner to cancel leaving, the submitted form is still unsaved too.
+    const sending = submitting;
+    submitting = null;
+    if (responses().some(form => form !== sending && saved.get(form) !== value(form))) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
   const panel = document.querySelector('[data-feedback-panel]');
   if (!panel) return;
   const announcement = document.querySelector('[data-feedback-announcement]');
@@ -18,6 +43,7 @@
       if (!result.live) {
         // Server-rendered template: all learner/provider text is HTML-escaped.
         panel.innerHTML = result.html;
+        remember();
         announcement.textContent = 'Feedback status updated.';
         return;
       }

@@ -7,38 +7,7 @@
   {% if stale %}
     <a class="button" href="{{ workspace.review_url }}">Load current questions</a>
   {% elif card %}
-    <section class="concept-question" aria-labelledby="question-heading">
-      <p class="learning-eyebrow">Recall before you reveal</p>
-      <h2 id="question-heading">{{ card.note_title }}</h2>
-      <div class="concept-markdown" data-concept-markdown>{{ card.prompt }}</div>
-      {% if revealed %}
-        <div class="concept-answer">
-          <h3>Compare your answer</h3>
-          <div class="concept-markdown" id="concept-answer" data-concept-markdown>{{ card.answer }}</div>
-          <p>{{ card.explanation }}</p>
-          <a href="{{ workspace.learn_url }}#{{ card.remediation_section_id }}">Revisit the explanation</a>
-        </div>
-        <form method="post" action="{{ workspace.review_url }}">
-          {{ form.csrf_token }}{{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
-          {% if workspace.session %}<input type="hidden" name="practice_session" value="{{ workspace.session.id }}">{% endif %}
-          <fieldset><legend>How well did you recall it?</legend><div class="concept-ratings">
-          {% if retry_same %}<button class="button" name="rating" value="{{ form.rating.data }}">Retry the same rating</button>
-          {% else %}
-            <button class="button button--secondary" name="rating" value="0">Again<span>I couldn't recall it</span></button>
-            <button class="button button--secondary" name="rating" value="3">Hard<span>With difficulty</span></button>
-            <button class="button" name="rating" value="4">Good<span>Correctly recalled</span></button>
-            <button class="button button--secondary" name="rating" value="5">Easy<span>Readily explained</span></button>
-          {% endif %}</div></fieldset>
-        </form>
-      {% else %}
-        <p class="concept-recall-prompt">Explain your reasoning before revealing the answer.</p>
-        <form method="get" action="{{ workspace.review_url }}">
-          {{ form.card_id }}{{ form.content_version }}{{ form.expected_revision }}{{ form.request_id }}
-          {% if workspace.session %}<input type="hidden" name="practice_session" value="{{ workspace.session.id }}">{% endif %}
-          <button class="button">Show answer</button>
-        </form>
-      {% endif %}
-    </section>
+    {% include 'learning/_concept_review_question.html' %}
   {% else %}
     <section class="concept-review-complete">
       <p class="learning-eyebrow">Review complete for now</p>

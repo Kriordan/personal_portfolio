@@ -116,3 +116,12 @@
   blockquote { margin: 0 0 .5rem; padding: 0; border: 0; color: inherit; white-space: pre-wrap; }
   figcaption { font-size: .9rem; }
 }
+.practice-annotation {
+  margin-top: 1rem;
+  summary { min-height: 44px; padding: .5rem 0; }
+  form { padding: .25rem 1rem 1rem; background: #f3f5f7; border-radius: 8px; }
+}
+[data-annotation-form] textarea {
+  display: block; width: 100%; box-sizing: border-box; padding: .6rem;
+  border: 1px solid #767676; border-radius: 6px; font: inherit; resize: vertical;
+}

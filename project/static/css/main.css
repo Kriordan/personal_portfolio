@@ -2734,6 +2734,30 @@ li.drag-placeholder {
   font-size: 0.9rem;
 }
 
+.practice-annotation {
+  margin-top: 1rem;
+}
+.practice-annotation summary {
+  min-height: 44px;
+  padding: 0.5rem 0;
+}
+.practice-annotation form {
+  padding: 0.25rem 1rem 1rem;
+  background: #f3f5f7;
+  border-radius: 8px;
+}
+
+[data-annotation-form] textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem;
+  border: 1px solid #767676;
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+
 .practice-shell-header {
   display: flex;
   justify-content: space-between;

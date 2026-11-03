@@ -1,0 +1,4 @@
+{{ annotation_form.hidden_tag() }}
+<p>{{ annotation_form.decision.label }} {{ annotation_form.decision() }}</p>
+<p>{{ annotation_form.note.label }} {{ annotation_form.note(rows=3, maxlength=2000) }}</p>
+<p class="practice-meta">This records your judgment, not a grade. You can change it later.</p>

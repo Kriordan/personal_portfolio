@@ -19,7 +19,9 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 5a. Feedback foundation | Content schema 2 and exercise revision 2 with evaluator-only misconception mappings; validate remediation links; preserve v1 sessions and review history. | Implemented November 2; see Checkpoint 5a below. |
 | 5b. Submission snapshots and syntax checks | Immutable revision references, saved JSON/YAML results, editable sessions, Checks UI and API, recovery. | Implemented November 2; see Checkpoint 5b below. |
 | 5c. Saved design feedback | One complete snapshot per bounded call, evidence validation, saved findings, and recovery. | Implemented November 2; details below. |
-| After 5c. Complete demonstration | Live feedback quality review; learner acceptance/targeted review; export; full Learn → Review → Discuss → Build walkthrough. | Not started; further checkpoints require approval. |
+| Live evaluator review | Bounded live quality/latency/accounting review with fixed cases. | `88c706b`; complete November 2; report below. |
+| 5d. Learner responses and follow-up practice | Saved decisions/notes, authored questions for accepted concerns, explicit scheduler ratings, recovery and exact-session return. | Implemented November 2; details and guide below. |
+| After 5d. Complete demonstration | Export; full Learn → Review → Discuss → Build walkthrough; milestone acceptance. | Not started; further checkpoints require approval. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -807,3 +809,61 @@ for per-case judgments, exact costs, limitations, and reproduction instructions.
 The disposable cluster was stopped; existing previews were preserved. No
 production runtime/UI change, model switch, migration, publication, deployment,
 Expo work, or content expansion occurred.
+
+## Checkpoint 5d: learner responses and optional practice (November 2)
+
+Keith approved saved agree/disagree responses, optional notes, authored follow-up
+questions, and a return to the same design session. The original feedback stays
+immutable. This checkpoint uses no AI calls and changes no scheduling algorithm.
+
+- Added `PracticeFeedbackAnnotation` and migration `c2d3e4f5a6b7`, following
+  `b1c2d3e4f5a6`. A response has a decision, optional 2,000-character note,
+  revision, and timestamp. Existing content-free practice receipts handle safe
+  retries; the owner lock and expected revision prevent stale overwrites.
+- Added compact response forms beneath findings and optional **Practise this**
+  for agreed concerns with authored question mappings. No question generation or
+  automatic progress changes. Legacy v1/unmapped findings retain lesson links.
+- Reused existing review questions, explicit answer reveal, rating receipts, and
+  scheduler. One pass per finding is derived from review logs, with no new queue.
+  Suspended questions are respected; revealed content versions remain pinned.
+  Extra practice survives reload and returns to the original practice session.
+- Native web/CSRF and JWT endpoints preserve ownership, private responses, and
+  server-only evaluation material. Stale-note recovery shows the saved note and
+  draft; unknown commit recovery retains the same request ID. Unsaved notes stay
+  in the form, with navigation protection and no browser-storage copy.
+- Deletion cascades responses with feedback; explicit recall ratings remain in
+  existing review history, as explained on the confirmation page. Withdrawal of
+  agreement blocks new follow-up ratings but permits committed receipt replays.
+
+Verification:
+
+- **653 backend tests run: 652 passed and one existing Linux-only test skipped**
+  on macOS. The **28 new tests** cover service behavior, API/web boundaries,
+  immutable feedback, stale notes, lost commits, suspended/versioned questions,
+  explicit scheduling, and PostgreSQL concurrency/deletion ordering.
+- Real **PostgreSQL 18.6** verifies ten new concurrency cases, populated migration
+  upgrade/downgrade, constraints, and metadata parity. Existing feedback, work,
+  and review history survive the new migration's round trip.
+- The full run passed **182 practice browser assertions**, plus **70 concept**
+  and **60 hub** checks. A subsequent two-draft navigation fix passed a focused
+  **184-check browser run**, covering retries, stale notes, answer reveal/rating,
+  exact-session return, 320-pixel layouts, and use without JavaScript.
+- **13 Node tests**, dependency integrity, **102 renderer checks**, Sass
+  compilation, and `git diff --check` passed. The disposable preview was also
+  visually inspected. No live AI call was needed.
+
+Gotchas: WTForms integer fields render submitted `raw_data` before a changed
+`.data`, so conflict recovery must rebuild the form against the displayed revision.
+Also, a cancelled navigation must keep both annotation drafts dirty; a submit event
+alone is not confirmation. Both now have regressions. Browsers reserve 5060/5061,
+so the new demo uses **5062** and leaves older preview processes alone.
+
+The [hands-on guide](learning-checkpoint-5d-test-guide.md) covers DevTools request
+inspection, cURL/Postman replay, HTTPie failure simulation, and direct REPL calls.
+`--feedback-example` now seeds draft v2 in the disposable database so the authored
+race question is available. No new dependencies, infrastructure, content, paid
+calls, production migrations, publication, push, or deployment occurred.
+
+Next checkpoint to approve: learner-safe JSON/Markdown export. Human content
+review, accessibility checks, the complete demonstration, and milestone sign-off
+remain. Expo and additional concepts remain out of scope.

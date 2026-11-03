@@ -19,7 +19,7 @@ from project.database import db
 from project.services import feedback_service, learning_service, practice_service as practice
 
 from . import learning_blueprint
-from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, FeedbackForm, PracticeWorkspaceForm, StartPracticeForm
+from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, FeedbackForm, PracticeWorkspaceForm, StartPracticeForm, annotation_forms
 from .navigation import workspace_navigation
 
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
@@ -505,7 +505,7 @@ def practice_submission(session_id, sequence):
     except learning_service.NotFoundError:
         abort(404)
     return render_template("learning/practice_submission.html", detail=detail,
-                           evaluation=evaluation,
+                           evaluation=evaluation, annotation_forms=annotation_forms(evaluation),
                            feedback_form=FeedbackForm(request_id=str(uuid4())), feedback_reasons=FEEDBACK_REASONS,
                            artifacts={a["artifact_id"]: a for a in detail["artifacts"]},
                            language_labels=LANGUAGE_LABELS, type_labels=BRIEF_TYPE_LABELS)
@@ -530,8 +530,9 @@ def practice_feedback(session_id, sequence):
             evaluation = feedback_service.detail(current_user.id, session_id, sequence)
         except learning_service.NotFoundError:
             abort(404)
-        html = render_template("learning/_practice_feedback.html", detail={"session": {"id": session_id}},
+        html = render_template("learning/_practice_feedback.html", detail={"session": practice.session_summary(current_user.id, session_id)},
                                snapshot={"sequence": sequence}, evaluation=evaluation,
+                               annotation_forms=annotation_forms(evaluation),
                                feedback_form=FeedbackForm(request_id=str(uuid4())), feedback_reasons=FEEDBACK_REASONS)
         return jsonify({"html": html, "live": evaluation["request"]["status"] in LIVE})
     form = FeedbackForm()

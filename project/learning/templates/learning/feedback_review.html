@@ -1,0 +1,27 @@
+{% extends 'learning/concept_shell.html' %}
+{% block title %}Extra practice · {{ detail.finding.title }}{% endblock %}
+{% block concept_content %}
+<div class="concept-study concept-review-panel" data-feedback-review>
+  <p class="learning-eyebrow">Extra practice from feedback</p>
+  <h2>{{ detail.finding.title }}</h2>
+  <p>These linked questions are offered even when they aren't due. Only an explicit recall rating changes your review schedule.</p>
+  <p><a href="{{ snapshot_url }}">Back to this finding</a> · <a href="{{ workspace.build_url }}">Return to your work</a></p>
+  {% for message in get_flashed_messages(category_filter=['concept-review']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+  {% if error %}<p class="concept-notice" role="alert">{{ error }}</p>{% endif %}
+  {% if stale %}<a class="button" href="{{ workspace.review_url }}">Load remaining practice</a>
+  {% elif not detail.accepted %}<p>Agree with this concern in your saved feedback to choose its follow-up practice.</p>
+  {% elif card %}
+    <p class="practice-meta">{{ detail.completed }} of {{ detail.total }} linked question{{ 's' if detail.total != 1 }} rated.</p>
+    {% include 'learning/_concept_review_question.html' %}
+  {% else %}
+    <section class="concept-review-complete">
+      <h2>{{ 'Extra practice saved' if detail.total and detail.completed == detail.total else 'No linked questions available' }}</h2>
+      {% if detail.completed %}<p>{{ detail.completed }} linked question{{ 's' if detail.completed != 1 }} rated. Your saved ratings determine when they return.</p>{% endif %}
+      {% if detail.unavailable %}<p>Some linked questions are suspended or unavailable. They have not been rated here.</p>{% endif %}
+      <p>Return to the same session, revise your design, and save a new snapshot when you want another assessment.</p>
+      <a class="button" href="{{ workspace.build_url }}">Revise your work</a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

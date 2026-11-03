@@ -13,4 +13,4 @@ def require_learning_login():
         return current_app.login_manager.unauthorized()
 
 
-from . import practice_views, views  # noqa: E402,F401
+from . import practice_views, views, feedback_views  # noqa: E402,F401

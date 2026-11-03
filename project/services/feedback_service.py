@@ -182,11 +182,16 @@ def request_feedback(user, session_id, sequence, *, request_id, now=None):
 
 def _dto(row, session):
     """Validated generated prose is learner content; private authored mappings stay server-side."""
+    from project.services import feedback_review_service as review
+    annotations = review.annotations(row.request_id)
     dimensions = {d["id"]: d["label"] for d in
                   learner_view(practice._pinned_exercise(session).payload)["content"]["brief"]["assessment_dimensions"]}
     findings = []
     for f in row.data["findings"]:
-        findings.append({"dimension_label": dimensions[f["dimension_id"]], **{key: f[key] for key in (
+        annotation = annotations.get(f["id"], review.annotation_dto())
+        findings.append({"dimension_label": dimensions[f["dimension_id"]], "annotation": annotation,
+                         "practice_available": annotation["decision"] == "agree" and bool(review.targets(session, f)),
+                         **{key: f[key] for key in (
             "id", "kind", "dimension_id", "title", "explanation", "next_step", "evidence", "remediation")}})
     return {"request_id": row.request_id, "created_at": practice._iso(practice._aware(row.created_at).astimezone(timezone.utc)),
             "summary": row.data["summary"], "findings": findings, "coverage": row.data["coverage"]}

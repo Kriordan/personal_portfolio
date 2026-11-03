@@ -387,11 +387,97 @@
     check((await control()).feedback_charges === beforeFeedback.feedback_charges + 1, 'one bounded evaluator call is charged');
     check((await control()).learner_turns === beforeFeedback.learner_turns, 'feedback does not change conversation');
     check(doc().documentElement.scrollWidth <= 320, 'feedback fits 320px without overflow');
-    ['EVALUATOR_SENTINEL', 'HIDDEN_SENTINEL', 'reference_reasoning', 'misconception_ids'].forEach(secret =>
+    ['EVALUATOR_SENTINEL', 'HIDDEN_SENTINEL', 'reference_reasoning', 'misconception_ids',
+      'MISCONCEPTION_DESCRIPTION_SENTINEL', 'MISCONCEPTION_EVIDENCE_SENTINEL',
+      'MISCONCEPTION_SUGGESTION_SENTINEL', 'V2_REFERENCE_SENTINEL'].forEach(secret =>
       check(!doc().documentElement.outerHTML.includes(secret), `feedback keeps private packet absent: ${secret}`));
     await load(frame, () => { frame.src = feedbackSnapshot; });
     check(!!get('[data-finding-kind="concern"]'), 'feedback survives reload');
     check((await control()).feedback_charges === beforeFeedback.feedback_charges + 1, 'reload is read-only');
+
+    step = 'feedback response and lost confirmation';
+    const responseForm = '#finding-f2 [data-annotation-form]';
+    const noteField = '#annotation-f2-note';
+    const decisionField = '#annotation-f2-decision';
+    const responseId = '#annotation-f2-request_id';
+    check(!get('#finding-f2 details').open, 'response controls start collapsed to leave feedback readable');
+    check(!get('[data-followup-link]'), 'extra practice waits for explicit agreement');
+    click('#finding-f2 summary');
+    fill(decisionField, 'agree');
+    fill(noteField, 'Follow-up thought <script>not code</script>\nTest concurrent first attempts.');
+    check(leaving(), 'an unsaved feedback note guards navigation');
+    click('#finding-f1 summary');
+    fill('#annotation-f1-note', 'Another unsaved response.');
+    // Dispatch the event without actually navigating: model cancelling the
+    // beforeunload prompt because another finding has an unsaved note.
+    get(responseForm).dispatchEvent(new frame.contentWindow.Event('submit', {bubbles:true, cancelable:true}));
+    check(leaving(), 'submitting one response still warns about another unsaved response');
+    fill('#annotation-f1-note', '');
+    check(leaving(), 'cancelling navigation does not mark the submitted note as saved');
+    click('#finding-f1 summary');
+    const responseRequestId = get(responseId).value;
+    const beforeResponse = await control({ mode: 'failure' });
+    await load(frame, () => click(`${responseForm} button`));
+    check(get(responseId).value === responseRequestId && get(noteField).value.startsWith('Follow-up thought'), 'failed response keeps its note and request ID');
+    check((await control()).feedback_annotations === beforeResponse.feedback_annotations, 'failure saves no response');
+    await control({ mode: 'lost' });
+    await load(frame, () => click('[data-annotation-form] button'));
+    check(doc().body.textContent.includes('Response not confirmed'), 'lost commit uses a standalone recovery page');
+    check(get(responseId).value === responseRequestId && leaving(), 'unconfirmed note retains its attempt and navigation warning');
+    check((await control()).feedback_annotations === beforeResponse.feedback_annotations + 1, 'lost confirmation saved one response');
+    await control({ mode: 'success' });
+    await load(frame, () => click('[data-annotation-form] button'));
+    check(get(noteField).value.includes('<script>not code</script>'), 'saved note remains literal text');
+    check(!!get('#finding-f2 [data-followup-link]') && !leaving(), 'confirmed agreement offers optional practice');
+    check((await control()).feedback_annotations === beforeResponse.feedback_annotations + 1, 'response retry does not duplicate annotations');
+    check((await control()).review_ratings === beforeResponse.review_ratings, 'agreement does not change review scheduling');
+    check((await control()).feedback_charges === beforeFeedback.feedback_charges + 1, 'responses use no AI calls');
+    const storageValues = [frame.contentWindow.localStorage, frame.contentWindow.sessionStorage].flatMap(storage =>
+      Object.keys(storage).map(key => storage.getItem(key))).join('');
+    check(!storageValues.includes('Follow-up thought'), 'feedback notes are not copied into browser storage');
+    click('#finding-f2 summary');
+    check(doc().documentElement.scrollWidth <= 320, 'open response controls fit 320px');
+
+    step = 'stale feedback note recovery';
+    document.body.appendChild(other);
+    await load(other, () => { other.src = feedbackSnapshot; });
+    click('#finding-f2 summary', other);
+    fill(noteField, 'My second-tab draft', other);
+    fill(noteField, 'Newer saved explanation');
+    await load(frame, () => click(`${responseForm} button`));
+    await load(other, () => click(`${responseForm} button`, other));
+    check(doc(other).body.textContent.includes('Your response changed elsewhere'), 'stale note is rejected');
+    check(get('blockquote', other).textContent === 'Newer saved explanation', 'conflict shows the latest saved note');
+    check(get(noteField, other).value === 'My second-tab draft', 'conflict preserves the unsaved draft');
+    check(get('#annotation-f2-expected_revision', other).value === '2', 'replacement targets the revision actually displayed');
+    await load(other, () => click('[data-annotation-form] button', other));
+    check(get(noteField, other).value === 'My second-tab draft', 'explicit conflict resolution saves the preserved draft');
+    other.remove();
+    await load(frame, () => { frame.src = feedbackSnapshot; });
+
+    step = 'targeted practice and rating recovery';
+    await load(frame, () => click('#finding-f2 [data-followup-link]'));
+    const followupURL = frame.contentWindow.location.pathname;
+    check(!!get('[data-feedback-review]') && !get('#concept-answer'), 'extra practice starts with recall before reveal');
+    check(get('[name="card_id"]').value === 'idempotency:race', 'only the authored linked question is offered');
+    check((await control()).review_ratings === beforeResponse.review_ratings, 'opening extra practice saves no rating');
+    await load(frame, () => click('.concept-question button'));
+    check(!!get('#concept-answer'), 'explicit reveal shows the answer');
+    check(doc().documentElement.scrollWidth <= 320, 'revealed practice fits a narrow screen');
+    const ratingRequestId = get('#request_id').value;
+    await control({ mode: 'lost' });
+    await load(frame, () => click('button[name="rating"][value="4"]'));
+    check(doc().body.textContent.includes('Rating not confirmed') && get('#request_id').value === ratingRequestId, 'lost rating keeps the same attempt');
+    check((await control()).review_ratings === beforeResponse.review_ratings + 1, 'one explicit rating was saved');
+    await control({ mode: 'success' });
+    await load(frame, () => click('button[name="rating"]'));
+    check(doc().body.textContent.includes('Extra practice saved'), 'rating recovery resumes at completion');
+    check((await control()).review_ratings === beforeResponse.review_ratings + 1, 'retry does not rate twice');
+    await load(frame, () => { frame.src = followupURL; });
+    check(doc().body.textContent.includes('1 linked question rated'), 'follow-up completion survives reloading');
+    await load(frame, () => click('.concept-review-complete a'));
+    await ready();
+    check(frame.contentWindow.location.pathname === sessionURL && get('[data-practice-view="build"]').getAttribute('aria-selected') === 'true', 'revision returns to the exact original session in Build');
 
     step = 'feedback without JavaScript';
     document.body.appendChild(plain);
@@ -401,6 +487,14 @@
     await control({ feedback: true });
     await load(plain, () => { plain.src = oldSnapshot; });
     check(!!get('[data-finding-kind]', plain), 'saved feedback is readable without polling');
+    click('#finding-f2 summary', plain);
+    fill(decisionField, 'disagree', plain);
+    fill(noteField, 'I can respond without JavaScript.', plain);
+    await load(plain, () => click(`${responseForm} button`, plain));
+    check(get(noteField, plain).value === 'I can respond without JavaScript.', 'native response and note saving work without JavaScript');
+    await load(plain, () => { plain.src = feedbackSnapshot; });
+    await load(plain, () => click('#finding-f2 [data-followup-link]', plain));
+    check(doc(plain).body.textContent.includes('Extra practice saved'), 'saved follow-up progress is resumable without JavaScript');
     plain.remove();
     document.body.dataset.testResult = 'pass';
     result.textContent = `PASS: ${checks} integrated practice browser checks`;

@@ -8,7 +8,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from project.api.learning import _current_user_from_jwt
 from project.database import db
-from project.services import feedback_service, learning_service, practice_service as practice
+from project.services import feedback_service, feedback_review_service, learning_service, practice_service as practice
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
@@ -67,10 +67,17 @@ def _call(operation):
         return _error(STALE_MESSAGES[exc.code], 409, exc.code, **exc.details())
     except practice.RequestConflictError:
         return _error("This request ID was already used for a different change.", 409, "request_conflict")
+    except feedback_review_service.AnnotationConflict as exc:
+        return _error("Your response changed elsewhere. Compare both versions before saving.", 409,
+                      "stale_annotation", annotation=exc.current)
+    except feedback_review_service.DecisionRequired:
+        return _error("Agree with this concern before rating its follow-up practice.", 409, "decision_required")
     except practice.FeedbackPendingError:
         return _error("Feedback is being prepared. You can still save edits; try again when it finishes.", 409, "feedback_pending")
     except practice.ReplyPendingError:
         return _error("The interviewer is still replying. Try again once the reply arrives.", 409, "reply_pending")
+    except learning_service.ConflictError:
+        return _error("This review changed or was already rated. Load the remaining practice.", 409, "stale_review")
     except OperationalError as exc:
         db.session.rollback()
         current_app.logger.error("Practice API request could not be confirmed: %s", practice.describe_failure(exc))
@@ -216,6 +223,37 @@ def snapshot_feedback(session_id, sequence):
         result = feedback_service.request_feedback(user, session_id, sequence, request_id=payload["request_id"])
         return jsonify(result), 202 if result["request"]["status"] in practice.LIVE else 200
     return _call(queue)
+
+
+@practice_api_blueprint.put("/sessions/<session_id>/submissions/<int:sequence>/feedback/<finding_id>/response")
+@jwt_required()
+def feedback_annotation(session_id, sequence, finding_id):
+    user, payload, failure = _user_and_payload()
+    if failure:
+        return failure
+    if set(payload) != {"request_id", "expected_revision", "decision", "note"}:
+        return _error("Send request_id, expected_revision, decision, and note.", 400, "invalid_request")
+    return _call(lambda: (jsonify(feedback_review_service.annotate(user, session_id, sequence, finding_id, **payload)), 200))
+
+
+@practice_api_blueprint.route("/sessions/<session_id>/submissions/<int:sequence>/feedback/<finding_id>/review", methods=["GET", "POST"])
+@jwt_required()
+def feedback_review(session_id, sequence, finding_id):
+    user, payload, failure = _user_and_payload(body=request.method == "POST")
+    if failure:
+        return failure
+    attempt_fields = {"request_id", "card_id", "content_version", "expected_revision"}
+    if request.method == "POST":
+        if set(payload) != attempt_fields | {"rating"}:
+            return _error("Send a pinned question, progress revision, request_id, and rating.", 400, "invalid_request")
+        return _call(lambda: (jsonify(feedback_review_service.rate_review(user, session_id, sequence, finding_id, **payload)), 200))
+    if not request.args:
+        return _call(lambda: (jsonify(feedback_review_service.review_detail(user.id, session_id, sequence, finding_id)), 200))
+    if set(request.args) != attempt_fields:
+        return _error("Reveal requires card_id, content_version, expected_revision, and request_id.", 400, "invalid_request")
+    values = {key: request.args.get(key, type=int) if key in {"content_version", "expected_revision"}
+              else request.args.get(key) for key in attempt_fields}
+    return _call(lambda: (jsonify(feedback_review_service.review_card(user.id, session_id, sequence, finding_id, **values)), 200))
 
 
 @practice_api_blueprint.post("/sessions/<session_id>/reply")
