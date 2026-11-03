@@ -185,6 +185,9 @@ class PracticeWorkspaceDiscussionTests(PracticeWebCase):
         empty = self.act(session_id, self.fields(session_id), "send", message="   ")
         self.assertEqual(empty.status_code, 400)
         self.assertIn('<a href="#message">Your message: Write a message before sending.</a>', empty.get_data(as_text=True))
+        attributes = FormFields(empty.get_data(as_text=True)).attributes
+        self.assertIn("message-error", attributes["message"]["aria-describedby"].split())
+        self.assertIn("message-error", attributes)
         fields = self.fields(session_id)
         fields["brief-0-text"] = "x" * (practice_service.BRIEF_ENTRY_MAX_BYTES + 1)
         long_entry = self.act(session_id, fields, "send", message="KEPT message")
@@ -192,6 +195,9 @@ class PracticeWorkspaceDiscussionTests(PracticeWebCase):
         self.assertEqual(long_entry.status_code, 400)
         self.assertIn("This brief entry is 2.0 KiB; the limit is 2 KiB.", html)
         self.assertIn('aria-invalid="true"', html)
+        attributes = FormFields(html).attributes
+        self.assertIn("brief-error", attributes["brief-0-text"]["aria-describedby"].split())
+        self.assertIn("brief-error", attributes)
         values = FormFields(html).values
         self.assertEqual((values["message"], len(values["brief-0-text"])), ("KEPT message", 2049))
         expired = self.act(session_id, dict(values, csrf_token="expired"), "send", message="KEPT message")
@@ -229,6 +235,10 @@ class PracticeWorkspaceDiscussionTests(PracticeWebCase):
         self.assertEqual((page.status_code, page.headers["Cache-Control"]), (200, "private, no-store"))
         for text in ("There is no undo.", "2 messages", "0 saved versions", "1 saved revision", "backups"):
             self.assertIn(text, html)
+        self.assertIn('href="#learning-main"', html)
+        self.assertIn('id="learning-main" tabindex="-1"', html)
+        self.assertIn('class="learning-shell-header', html)
+        self.assertNotIn('class="Header', html)
         self.assertNotIn("googletagmanager.com", html)
         token = FormFields(html).values["csrf_token"]
         expired = self.post(path, {"csrf_token": "forged"})

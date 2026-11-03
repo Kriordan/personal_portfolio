@@ -42,6 +42,13 @@ const tests = `
   check(status.textContent.includes('Two orders'), 'new key explains duplicate effect');
   reset.click();
   check(count.textContent === '0' && !next.disabled, 'reset returns to initial state');
+  next.focus();
+  for (let i = 0; i < 5; i++) next.click();
+  check(document.activeElement === reset, 'finishing with the keyboard keeps focus on Start again');
+  reset.click();
+  failure.focus();
+  for (let i = 0; i < 5; i++) next.click();
+  check(document.activeElement === failure, 'completion does not steal focus from another control');
   const fallback = document.createElement('div');
   fallback.dataset.conceptMarkdown = '';
   const raw = '**Text** <img src=x onerror="window.fixtureExecuted=true">';

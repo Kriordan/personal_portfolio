@@ -41,10 +41,14 @@
       if (typeof result.html !== 'string' || typeof result.live !== 'boolean') throw new Error('status');
       failures = 0;
       if (!result.live) {
+        const replacingFocus = panel.contains(document.activeElement);
         // Server-rendered template: all learner/provider text is HTML-escaped.
         panel.innerHTML = result.html;
         remember();
         announcement.textContent = 'Feedback status updated.';
+        // A focused Refresh status link disappears when feedback arrives. Keep
+        // that reader at the result; leave focus elsewhere on the page alone.
+        if (replacingFocus) panel.querySelector('#feedback-heading')?.focus();
         return;
       }
     } catch (_) {
@@ -59,7 +63,11 @@
     const link = event.target.closest('[data-snapshot-note]');
     if (!link) return;
     const target = document.getElementById(link.hash.slice(1));
-    if (target?.closest('details')) target.closest('details').open = true;
+    if (target?.closest('details')) {
+      target.closest('details').open = true;
+      target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+    }
   });
   if (live()) setTimeout(poll, 1000);
 })();

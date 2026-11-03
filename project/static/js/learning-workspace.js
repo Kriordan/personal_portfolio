@@ -246,7 +246,23 @@
       };
     }
   };
-  form.addEventListener('focusout', (event) => rememberEditor(event.target));
+  const keepFocusedPaneVisible = (field) => {
+    if (!window.matchMedia('(max-width: 760px)').matches || !field || field.getClientRects().length) return;
+    const view = field.closest('.practice-discuss') ? 'discuss' : field.closest('.practice-build') ? 'build' : null;
+    if (!view) return;
+    select(view, state.work);
+    field.focus({ preventScroll: true });
+  };
+  form.addEventListener('focusout', (event) => {
+    rememberEditor(event.target);
+    // Some browsers blur a newly hidden pane before resize is dispatched.
+    // Repair only that lost focus, never a deliberate move to another control.
+    if (!event.relatedTarget && !event.target.getClientRects().length) {
+      queueMicrotask(() => {
+        if (document.activeElement === document.body) keepFocusedPaneVisible(event.target);
+      });
+    }
+  });
   form.addEventListener('submit', (event) => {
     if (event.defaultPrevented) return;
     rememberEditor(document.activeElement);
@@ -275,6 +291,6 @@
     transcript.focus({ preventScroll: true });
     persist();
   });
-  window.addEventListener('resize', () => { sizeLayout(); restoreChat(); });
+  window.addEventListener('resize', () => { sizeLayout(); keepFocusedPaneVisible(document.activeElement); restoreChat(); });
   window.addEventListener('pagehide', persist);
 })();

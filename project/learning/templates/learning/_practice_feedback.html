@@ -1,14 +1,14 @@
 {% set state = evaluation.request %}
 {% set result = evaluation.feedback %}
 <section class="practice-feedback" aria-labelledby="feedback-heading" data-feedback-live="{{ 'true' if state.status in ['pending', 'running'] else 'false' }}">
-  <h2 id="feedback-heading">Design feedback</h2>
+  <h2 id="feedback-heading" tabindex="-1">Design feedback</h2>
   {% if result %}
     <p>{{ result.summary }}</p>
     <p class="practice-meta">Assessed the complete snapshot: {{ result.coverage.turn_count }} conversation turn{{ 's' if result.coverage.turn_count != 1 else '' }}, selected artifact revisions and saved notes. Earlier artifact revisions cited in the conversation were included. Later edits are not included.</p>
     {% if result.coverage.hints_given %}<p class="concept-notice">{{ result.coverage.hints_given }} recorded hint{{ 's' if result.coverage.hints_given != 1 else '' }}. Assisted work is not evidence of unaided mastery.</p>{% endif %}
     <p class="practice-meta">AI feedback is a judgment to review, not a grade. “Not observed” means the snapshot lacks evidence; it does not establish an error.</p>
     {% for finding in result.findings %}
-      <article class="practice-finding" id="finding-{{ finding.id }}" data-finding-kind="{{ finding.kind }}">
+      <article class="practice-finding" id="finding-{{ finding.id }}" tabindex="-1" data-finding-kind="{{ finding.kind }}">
         <p class="learning-eyebrow">{{ {'strength': 'Strength', 'concern': 'Concern to review', 'tradeoff': 'Trade-off', 'not_observed': 'Not observed'}[finding.kind] }}</p>
         <p class="practice-meta">{{ finding.dimension_label }}</p>
         <h3>{{ finding.title }}</h3>

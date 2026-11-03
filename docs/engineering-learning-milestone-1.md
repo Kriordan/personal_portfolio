@@ -22,7 +22,7 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | Live evaluator review | Bounded live quality/latency/accounting review with fixed cases. | `88c706b`; complete November 2; report below. |
 | 5d. Learner responses and follow-up practice | Saved decisions/notes, authored questions for accepted concerns, explicit scheduler ratings, recovery and exact-session return. | Implemented November 2; details and guide below. |
 | 5e. Portable session export | Private JSON/Markdown downloads with complete saved history and consistent concurrent reads. | Implemented November 3; details and guide below. |
-| After 5e. Complete demonstration | Full Learn → Review → Discuss → Build walkthrough, accessibility review, and milestone acceptance. | Not started; further checkpoints require approval. |
+| 5f. Complete demonstration and accessibility review | Full Learn → Review → Discuss → Build walkthrough, targeted accessibility fixes, and regression tests. | Complete locally November 3; report below. Human content/evaluator review, screen-reader listening, standalone Safari/Firefox checks, and final milestone approval remain. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -929,3 +929,55 @@ The [handoff](engineering-learning-handoff.md) documents the export contract and
 Next checkpoint to approve: the full Milestone 1 acceptance and accessibility
 walkthrough. Human content review and the placement of enrollment/reading progress
 remain open before milestone sign-off. Expo and content expansion remain out of scope.
+
+## Checkpoint 5f: walkthrough and accessibility review (November 3)
+
+Keith approved the complete Milestone 1 walkthrough, accessibility fixes, tests,
+and a separate commit. He also settled the prior entry's placement question:
+**enrollment, saved reading position, and self-assessment are a separate checkpoint
+before content expansion**, not required for Milestone 1 sign-off. They remain
+unimplemented. No new architectural choice was necessary for this review.
+
+The native walkthrough followed Learn → Review → Discuss → Build, clarification
+and disclosure, saved artifacts/notes, old-revision feedback, an agreed finding,
+optional follow-up practice, a revised snapshot, pause/resume, closing/reopening,
+JSON export, and deletion confirmation/cancel. The demo session was retained.
+The [review report](learning-milestone-1-acceptance.md) records each result and
+provides a short keyboard/DevTools guide. The preview uses scripted AI; its newly
+generated feedback is not evidence of technical grading quality.
+
+Fixes:
+
+- Keep keyboard focus on Start again when the retry simulation ends; keep the
+  edited pane visible when the workspace narrows; preserve focus when feedback
+  replaces its Refresh control, when following note evidence, and after saving
+  a response. Leave unrelated focus alone.
+- Put tabpanel semantics on wrappers so artifact/note fieldsets retain native
+  groups and legends. Associate inline errors/conflict instructions with fields
+  and make saved code/revision text keyboard scrollable.
+- Use Learning's compact navigation and skip link on artifact history and deletion
+  confirmation. Their native forms and ownership boundaries remain unchanged.
+
+Verification:
+
+- **674 tests run: 673 passed, one existing Linux-only skip**, with isolated
+  **PostgreSQL 18.6**. Includes the existing migration, concurrency, budget,
+  privacy, and recovery suites. No database/service/API/scheduler change.
+- **225 integrated practice browser checks** (20 added), plus **70 concept** and
+  **60 hub** checks, passed. **104 renderer/security checks** (two added), **13 Node
+  tests**, dependency integrity, and `git diff --check` passed. Thirteen
+  discussion/web tests passed again after the final deletion-shell fix.
+- Native keyboard/accessibility-tree and 320-pixel walkthrough passed. A downloaded
+  JSON file confirmed the saved history; actual deletion/cascades are covered in
+  automated route/PostgreSQL tests. No paid calls; **$0 AI cost** for 5f.
+
+The responsive-focus regression initially exposed browser event-order differences:
+a pane may blur before resize is dispatched, and requestAnimationFrame callbacks
+were throttled in the headless fixture. The final fix uses a guarded microtask
+plus resize handling. Tests check both editing directions and that feedback
+completion does not steal focus from outside its replaced region.
+
+Remaining limits: VoiceOver/NVDA spoken output and standalone Safari/Firefox were
+not tested; this is not a WCAG conformance audit. Human technical content review,
+Keith's review of the live evaluator report, and final milestone approval remain.
+No production change, Expo work, or content expansion was performed or authorized.

@@ -25,10 +25,13 @@ class FormFields(HTMLParser):
     def __init__(self, html):
         super().__init__()
         self.values, self._textarea, self._select = {}, None, None
+        self.attributes = {}
         self.feed(html)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if attrs.get("id"):
+            self.attributes[attrs["id"]] = attrs
         name = attrs.get("name")
         if tag == "input" and name:
             if attrs.get("type") != "checkbox":
@@ -182,6 +185,12 @@ class PracticeWebTests(PracticeWebCase):
         revision = self.get(f"/learning/practice/{session_id}/artifacts/api/1").get_data(as_text=True)
         self.assertIn("Idempotency-Key: required", revision)
         self.assertIn("(current)", revision)
+        for html in (history, revision):
+            self.assertIn('href="#learning-main"', html)
+            self.assertIn('id="learning-main" tabindex="-1"', html)
+            self.assertIn('class="learning-shell-header', html)
+            self.assertNotIn('class="Header', html)
+        self.assertIn('class="practice-revision" tabindex="0" aria-label="API contract, revision 1"', revision)
         for path in ("artifacts/api/2", "artifacts/unknown", "artifacts/api/0"):
             self.assertEqual(self.get(f"/learning/practice/{session_id}/{path}").status_code, 404)
 
@@ -242,6 +251,9 @@ class PracticeWebTests(PracticeWebCase):
                 self.assertIn(message, response.data)
                 # Returned exactly as submitted (a browser displays a NUL as U+FFFD).
                 self.assertEqual(FormFields(response.get_data(as_text=True)).values["artifacts-1-body"], body)
+                attributes = FormFields(response.get_data(as_text=True)).attributes
+                self.assertIn("artifacts-1-body-error", attributes["artifacts-1-body"]["aria-describedby"].split())
+                self.assertIn("artifacts-1-body-error", attributes)
         tampered = dict(self.fields(session_id), **{"artifacts-1-language": "json"})
         self.assertEqual(self.save(session_id, tampered, schema="x").status_code, 400)
         self.assertEqual(ArtifactRevision.query.count(), 0)

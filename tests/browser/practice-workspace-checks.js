@@ -56,6 +56,14 @@
     check(get('[data-work-tabs]').getAttribute('role') === 'tablist', 'work tabs expose their semantics');
     check(doc().querySelectorAll('[data-work-panel]:not([hidden])').length === 1, 'one work panel is shown');
     check(get('#requirements').hidden === false, 'a new session starts with its brief');
+    check(!get('fieldset[role="tabpanel"]'), 'tab panels preserve native fieldset group semantics');
+    for (const panel of doc().querySelectorAll('[data-work-panel]')) {
+      const tab = doc().getElementById(panel.getAttribute('aria-labelledby'));
+      check(panel.getAttribute('role') === 'tabpanel' && tab?.getAttribute('aria-controls') === panel.id,
+        `work panel has a matching tab: ${panel.id}`);
+    }
+    check(get('#artifact-api fieldset > legend').textContent === 'API contract', 'artifact fields retain a named native group');
+    check(get('#session-brief fieldset > legend').textContent === 'Your brief', 'notes retain their native group');
     check(get('.learning-shell-header') && !get('.Header'), 'workspace uses compact navigation');
     const html = doc().documentElement.outerHTML;
     ['HIDDEN_SENTINEL', 'HINT_SENTINEL', 'INSTRUCTION_SENTINEL', 'EVALUATOR_SENTINEL',
@@ -187,6 +195,10 @@
     check(get('#artifacts-0-body').value === 'My conflicting API draft.', 'conflict preserves the local artifact');
     check(get('#artifacts-1-body').value === 'My independent schema draft.', 'conflict preserves other hidden work');
     check(get('#message').value === 'Keep this message through the conflict.', 'conflict preserves the message');
+    const descriptions = get('#artifacts-0-body').getAttribute('aria-describedby').split(' ').map(id => doc().getElementById(id)?.textContent).join(' ');
+    check(descriptions.includes('Your text is still in the box above and is not saved'), 'conflicted editor describes how to recover');
+    check(get('.practice-conflict pre').tabIndex === 0 && get('.practice-conflict pre').getAttribute('aria-label'),
+      'saved conflicting text can be focused and scrolled by keyboard');
     check((await control()).learner_turns === original.learner_turns + 1, 'conflict does not create a turn');
     work('session-brief');
     click('#practice-alert a[href="#artifact-api"]');
@@ -230,9 +242,21 @@
       'reply follows when the learner stays at the latest exchange');
 
     step = 'narrow screens';
+    view('build');
+    get('#message').focus();
     frame.style.width = '390px';
     frame.style.height = '844px';
+    await wait(() => visible('#message') && doc().activeElement.id === 'message', 'focused composer after reflow');
+    check(visible('#message') && doc().activeElement.id === 'message', 'reflow keeps the focused composer visible');
+    check(get('[data-practice-workspace]').dataset.view === 'discuss', 'reflow selects the pane being edited');
+    frame.style.width = '1280px';
     await delay(100);
+    work('artifact-api');
+    get('#artifacts-0-body').focus();
+    frame.style.width = '390px';
+    await wait(() => visible('#artifacts-0-body') && doc().activeElement.id === 'artifacts-0-body', 'focused artifact after reflow');
+    check(visible('#artifacts-0-body') && doc().activeElement.id === 'artifacts-0-body', 'reflow keeps the focused artifact visible too');
+    check(get('[data-practice-workspace]').dataset.view === 'build', 'reflow preserves artifact editing context');
     view('build');
     work('artifact-api');
     check(visible('#artifacts-0-body') && !visible('#message'), 'mobile Build focuses the selected artifact');
@@ -351,7 +375,9 @@
     step = 'feedback request recovery and saved evidence';
     work('artifact-api');
     fill('#artifacts-0-language', 'text');
-    fill('#artifacts-0-body', 'I will scope the key to the authenticated tenant and operation.\nCheck for an existing receipt, then insert the order. No constraint or lock is needed.');
+    fill('#artifacts-0-body', 'Check for an existing receipt, then insert the order. No constraint or lock is needed.');
+    work('session-brief');
+    fill('#brief-0-text', 'I will scope the key to the authenticated tenant and operation.');
     await submit('submit');
     await ready();
     const feedbackSnapshot = get('#work-checks a[href*="/submissions/"]').href;
@@ -375,13 +401,19 @@
     await ready();
     check(doc().body.textContent.includes('Feedback is being prepared for'), 'workspace names pending feedback');
     await load(frame, () => { frame.src = feedbackSnapshot; });
+    get('[data-feedback-live] a').focus();
     await control({ feedback: true });
     await wait(() => get('[data-finding-kind="concern"]'), 'saved feedback polling');
+    check(doc().activeElement.id === 'feedback-heading', 'completion preserves a reader whose focused refresh link disappears');
     check(get('[data-feedback-announcement]').textContent === 'Feedback status updated.', 'an existing live region announces completion');
     check(!!get('[data-finding-kind="strength"]'), 'meaningful scripted strength is displayed');
     check(!!get('[data-finding-kind="not_observed"]'), 'missing evidence is explicitly labelled');
     check(get('.practice-evidence blockquote').textContent.includes('authenticated tenant'), 'evidence preserves original quote');
-    check(get('.practice-evidence a').href.includes('/artifacts/api/'), 'citation links to an original revision');
+    check(get('[data-finding-kind="concern"] .practice-evidence a').href.includes('/artifacts/api/'), 'citation links to an original revision');
+    const citedNote = doc().getElementById(get('[data-snapshot-note]').hash.slice(1));
+    check(!citedNote.closest('details').open, 'saved note evidence starts collapsed');
+    click('[data-snapshot-note]');
+    check(citedNote.closest('details').open && doc().activeElement === citedNote, 'note evidence opens and focuses the exact saved note');
     check(get('.practice-remediation').href.includes('/concepts/idempotency'), 'remediation uses an authored concept link');
     check(!get('[data-feedback-form]'), 'completed snapshot cannot accidentally be assessed twice');
     check((await control()).feedback_charges === beforeFeedback.feedback_charges + 1, 'one bounded evaluator call is charged');
@@ -429,6 +461,7 @@
     await load(frame, () => click('[data-annotation-form] button'));
     check(get(noteField).value.includes('<script>not code</script>'), 'saved note remains literal text');
     check(!!get('#finding-f2 [data-followup-link]') && !leaving(), 'confirmed agreement offers optional practice');
+    check(doc().activeElement.id === 'finding-f2', 'saving a response returns keyboard focus to that finding');
     check((await control()).feedback_annotations === beforeResponse.feedback_annotations + 1, 'response retry does not duplicate annotations');
     check((await control()).review_ratings === beforeResponse.review_ratings, 'agreement does not change review scheduling');
     check((await control()).feedback_charges === beforeFeedback.feedback_charges + 1, 'responses use no AI calls');
@@ -520,7 +553,13 @@
     await load(plain, () => { plain.src = oldSnapshot; });
     await load(plain, () => click('[data-feedback-form] button', plain));
     check(!!get('[data-feedback-live="true"]', plain), 'native feedback form works without JavaScript');
+    document.body.appendChild(other);
+    await load(other, () => { other.src = plain.contentWindow.location.href; });
+    get('main > a', other).focus();
     await control({ feedback: true });
+    await wait(() => get('[data-finding-kind]', other), 'feedback without moving outside focus');
+    check(doc(other).activeElement === get('main > a', other), 'completion leaves focus outside the replaced feedback alone');
+    other.remove();
     await load(plain, () => { plain.src = oldSnapshot; });
     check(!!get('[data-finding-kind]', plain), 'saved feedback is readable without polling');
     click('#finding-f2 summary', plain);

@@ -16,11 +16,11 @@
   <p class="practice-checkin">You've sent {{ detail.learner_turns }} messages in this session. Keep going while it helps, or pause and pick it up later.</p>
 {% endif %}
 {% set message_attributes = {"aria-describedby": "message-help message-meta"} %}
-{% if errors.message %}{% set _ = message_attributes.update({"aria-invalid": "true"}) %}{% endif %}
+{% if errors.message %}{% set _ = message_attributes.update({"aria-invalid": "true", "aria-describedby": "message-help message-meta message-error"}) %}{% endif %}
 <label for="{{ form.message.id }}">Your message</label>
 {{ form.message(rows=2, class="practice-editor practice-message", spellcheck="true", data_draft=True, **message_attributes) }}
 <p class="practice-meta" id="message-meta"><output data-byte-count="{{ form.message.id }}" data-limit="{{ limits.turn }}"></output></p>
-{% if errors.message %}<p class="practice-error">{{ errors.message }}</p>{% endif %}
+{% if errors.message %}<p class="practice-error" id="message-error">{{ errors.message }}</p>{% endif %}
 <div class="concept-controls">
   <p class="practice-note" id="message-help">Send saves your work.</p>
   <button class="button" name="action" value="send"{% if reply_live %} disabled{% endif %}>Send message</button>

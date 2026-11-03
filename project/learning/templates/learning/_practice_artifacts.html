@@ -4,7 +4,10 @@
   {% set error = (errors.artifacts or {}).get(artifact.artifact_id) %}
   {% set attributes = {"aria-describedby": entry.body.id ~ "-help " ~ entry.body.id ~ "-meta"} %}
   {% if error or conflict %}{% set _ = attributes.update({"aria-invalid": "true"}) %}{% endif %}
-  <fieldset data-work-panel="artifact-{{ artifact.artifact_id }}" class="practice-artifact{% if conflict %} has-conflict{% endif %}" id="artifact-{{ artifact.artifact_id }}">
+  {% if error %}{% set _ = attributes.update({"aria-describedby": attributes['aria-describedby'] ~ " " ~ entry.body.id ~ "-error"}) %}{% endif %}
+  {% if conflict %}{% set _ = attributes.update({"aria-describedby": attributes['aria-describedby'] ~ " " ~ entry.body.id ~ "-conflict"}) %}{% endif %}
+  <div data-work-panel="artifact-{{ artifact.artifact_id }}" id="artifact-{{ artifact.artifact_id }}">
+  <fieldset class="practice-artifact{% if conflict %} has-conflict{% endif %}">
     <legend>{{ artifact.title }}</legend>
     <div class="practice-artifact-tools">
     <details class="practice-artifact-help"><summary>What to include</summary><p class="practice-instructions" id="{{ entry.body.id }}-help">{{ artifact.instructions }}</p></details>
@@ -24,13 +27,14 @@
       <output data-byte-count="{{ entry.body.id }}" data-limit="{{ limits.artifact }}"></output>
       {% if artifact.revision %}<a href="{{ url_for('learning.practice_history', session_id=detail.session.id, artifact_id=artifact.artifact_id) }}">History</a>{% endif %}
     </p>
-    {% if error %}<p class="practice-error">{{ error }}</p>{% endif %}
+    {% if error %}<p class="practice-error" id="{{ entry.body.id }}-error">{{ error }}</p>{% endif %}
     {% if conflict %}
       <div class="practice-conflict">
         <h3>Saved elsewhere: revision {{ conflict.revision }} ({{ language_labels[conflict.language] }})</h3>
-        <p>Your text is still in the box above and is not saved. Saving again makes your text revision {{ conflict.revision + 1 }}; this version stays in the history.</p>
-        <pre>{{ conflict.body }}</pre>
+        <p id="{{ entry.body.id }}-conflict">Your text is still in the box above and is not saved. Saving again makes your text revision {{ conflict.revision + 1 }}; this version stays in the history.</p>
+        <pre tabindex="0" aria-label="{{ artifact.title }} saved elsewhere, revision {{ conflict.revision }}">{{ conflict.body }}</pre>
       </div>
     {% endif %}
   </fieldset>
+  </div>
 {% endfor %}

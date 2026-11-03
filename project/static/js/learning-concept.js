@@ -91,7 +91,10 @@
     if (step === trace.length && Number(count.textContent) === 2) {
       status.textContent += ' Two orders: changing the key removed the duplicate protection.';
     }
+    // Disabling the focused button drops keyboard focus onto the document.
+    const finishedHere = step === trace.length && document.activeElement === next;
     next.disabled = step === trace.length;
+    if (finishedHere) reset.focus();
   };
   const restart = () => { step = 0; render(); };
   [failure, reuse, next, reset].forEach((control) => { control.disabled = false; });

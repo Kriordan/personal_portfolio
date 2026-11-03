@@ -26,10 +26,11 @@ the locked DOMPurify version, both CDN references, and SHA-384 integrity match t
 installed browser bundle. The [October dependency review](../../docs/security/dependabot-2026-10-05.md)
 documents the audit exceptions and remaining exposure.
 
-The same command now runs `run-concept-check.cjs`: 27 checks against the actual
+The same command now runs `run-concept-check.cjs`: 29 checks against the actual
 lesson renderer and retry simulation. It verifies the Markdown allowlist, unsafe
 links, remote-media removal, missing-sanitizer fallback, all six combinations of
-failure position/key reuse, and reset/end states. Dependencies load locally; no
+failure position/key reuse, reset/end states, and keyboard focus on completion
+without stealing unrelated focus. Dependencies load locally; no
 AI service or external website is contacted by these fixtures.
 
 `run-practice-check.cjs` runs the practice workspace script on small isolated pages
@@ -47,12 +48,15 @@ PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
   poetry run python -m unittest tests.test_practice_browser
 ```
 
-This test runs the real Flask templates and native forms inside headless Chrome,
+This test runs 225 checks against the real Flask templates and native forms inside headless Chrome,
 with a temporary localhost server, disposable SQLite data, CSRF enabled, and a
 scripted AI provider. It checks shared tabs/drafts, focus and scroll continuity,
 keyboard operation, pause/resume, hidden-panel conflicts, an unconfirmed save and
 receipt replay, failed-send recovery, mobile layout, blocked browser storage, and
-saving without JavaScript. External resources are blocked by the fixture CSP.
+saving without JavaScript. Feedback, learner responses, follow-up review, private
+exports, native tab/fieldset semantics, error descriptions, evidence links, and
+focus during feedback completion and responsive reflow are also covered.
+External resources are blocked by the fixture CSP.
 It is discovered by the backend CI suite. Chrome is required in CI; local runs
 without Chrome skip with an explicit reason. Set `CHROME_BIN` to override its path.
 No new npm dependency is needed. PostgreSQL races/migrations have separate tests.
