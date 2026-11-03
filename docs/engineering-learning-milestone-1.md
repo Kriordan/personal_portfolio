@@ -762,3 +762,48 @@ deployment, production publication, Expo work, or content expansion occurred.
 
 Next approval: live evaluator release review, then learner acceptance/targeted
 review and export as separate checkpoints. Milestone 1 acceptance is still open.
+
+## Live evaluator quality review (November 2)
+
+Keith approved a bounded live review and asked to settle important decisions
+before making changes. The review used the existing Sol/medium configuration
+and `evaluator-1`, with a **$2 total ceiling** announced before paid calls.
+
+- Twelve fixed synthetic cases were run twice through real saved snapshots,
+  the worker, output validation, persistence, and the PostgreSQL ledger. Cases
+  cover three defensible designs, four actual errors, absent evidence, recorded
+  assistance, hostile instructions, a corrected earlier draft, and exercise v1.
+- **24/24 calls produced validated saved results.** Codex reviewed every output
+  against the expectations authored before the runs. No critical misgrading or
+  undisclosed requirement/reference leakage was found in this set. All eight
+  planted-error repetitions received the expected misconception mapping.
+- **$0.519980** spent; all charges settled, with no uncertain balance. Costs were
+  recomputed from usage. Peak committed spending while a call was reserved was
+  $0.578016. The review stayed in one disposable database across rounds.
+- Provider wall time: **20.759 seconds median**, **25.203 seconds observed p95**,
+  25.755 seconds maximum. These are small-sample measurements for compact design
+  snapshots, not a guarantee for long sessions.
+- Added a guarded CLI, frozen fixtures, raw results, and an accounting/input
+  audit. PostgreSQL run exclusion and an all-time review cap supplement the
+  existing monthly reservation ledger. No automatic paid retries occur.
+- **55 focused tests passed:** eight new harness cases plus 47 existing
+  feedback/API/web/PostgreSQL recovery tests. The SERIALIZABLE alternative's
+  overlapping absence reads were independently checked on PostgreSQL 18.6.
+
+One fixture-only issue was corrected: the seeder initially used schema-1
+metadata/checksums for both catalogs. The payloads were correct. A real importer
+replay test now enforces catalog identity; six disposable metadata rows were
+repaired and all 24 model request hashes remained identical. No content or case
+expectations changed and no additional paid call was required for the correction.
+
+Recommendation: retain the current model/profile and proceed to learner
+acceptance/targeted follow-up review after Keith approves that checkpoint.
+Human content review, export, accessibility checks, the full demonstration, and
+milestone acceptance remain. The report also records a future content wording
+clarification and the need to assess feedback focus with real learners.
+
+See the [review report and REPL walkthrough](evaluations/learning-feedback-2026-11-02-review.md)
+for per-case judgments, exact costs, limitations, and reproduction instructions.
+The disposable cluster was stopped; existing previews were preserved. No
+production runtime/UI change, model switch, migration, publication, deployment,
+Expo work, or content expansion occurred.

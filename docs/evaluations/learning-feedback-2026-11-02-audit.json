@@ -1,0 +1,14 @@
+{
+  "requests_reproduced_before_metadata_repair": 24,
+  "metadata_only_rows_repaired": 6,
+  "requests_unchanged_after_metadata_repair": 24,
+  "validated_outputs": 24,
+  "saved_feedback_count": 24,
+  "ledger_count": 24,
+  "all_charges_settled": true,
+  "all_costs_recomputed": true,
+  "all_costs_within_reservations": true,
+  "total_microusd": 519980,
+  "unknown_reserved_microusd": 0,
+  "note": "The initial evaluation seeder used schema version 1 metadata for both catalogs. Only disposable schema_version/checksum metadata was repaired; every content payload and every recorded model request hash remained identical. Production data and content files were not changed."
+}
