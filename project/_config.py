@@ -19,6 +19,7 @@ RATELIMIT_STORAGE_URI = "memory://"
 
 # Practice sessions stay off until explicitly enabled; migrations run on deploy regardless.
 LEARNING_PRACTICE_ENABLED = os.getenv("LEARNING_PRACTICE_ENABLED") == "1"
+LEARNING_EXPORT_MAX_BYTES = int(os.getenv("LEARNING_EXPORT_MAX_BYTES", str(32 * 1024 * 1024)))
 # AI replies in practice sessions: off until enabled, and only for the one verified account named here.
 # The provider key (LEARNING_OPENAI_API_KEY) is read from the environment at call time, never from config.
 LEARNING_AI_ENABLED = os.getenv("LEARNING_AI_ENABLED") == "1"

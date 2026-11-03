@@ -44,6 +44,7 @@
   <details class="practice-session-details"><summary>Session details</summary>
     <p>Exercise version {{ detail.session.exercise_version }} · {{ status_label }}</p>
     <p>Discuss and Build use the same conversation, artifacts, and notes. Saving and sending record your work; switching views does not send a message.</p>
+    {% set export_session_id = detail.session.id %}{% include 'learning/_practice_export_links.html' %}
     <p class="practice-delete"><a href="{{ url_for('learning.practice_delete', session_id=detail.session.id) }}">Delete this practice session</a></p>
   </details>
 {% endblock %}

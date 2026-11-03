@@ -11,12 +11,12 @@ import json
 from datetime import datetime
 from uuid import uuid4
 
-from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, make_response, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from project.database import db
-from project.services import feedback_service, learning_service, practice_service as practice
+from project.services import feedback_service, learning_service, practice_service as practice, practice_export_service
 
 from . import learning_blueprint
 from .forms import BRIEF_TYPE_LABELS, LANGUAGE_LABELS, DeletePracticeForm, FeedbackForm, PracticeWorkspaceForm, StartPracticeForm, annotation_forms
@@ -147,7 +147,7 @@ def _render(detail, form, *, status=200, alert=None, notice=None, errors=None, s
         refreshed=set(refreshed) | {current["artifact_id"] for current in (stale.refresh if stale else [])},
         brief_conflict=stale.brief_conflict if stale else None,
         brief_refreshed=brief_refreshed or (stale is not None and stale.brief_refresh is not None),
-        new_after=new_after, unsaved=unsaved,
+        new_after=new_after, unsaved=unsaved, export_available=True,
         sources={row.entry_id.data: _shown_sources(row.sources.data) for row in form.brief},
         status_label=STATUS_LABELS[detail["session"]["status"]], paused=detail["session"]["status"] == "paused",
         limits={"artifact": practice.ARTIFACT_MAX_BYTES, "turn": practice.TURN_MAX_BYTES},
@@ -410,6 +410,30 @@ def practice_workspace(session_id):
     return _render(detail, _workspace_form(detail))
 
 
+@learning_blueprint.get("/practice/<session_id>/export/<format>")
+@login_required
+def practice_export(session_id, format):
+    try:
+        file = practice_export_service.export_file(current_user.id, session_id, format)
+    except learning_service.NotFoundError:
+        abort(404)
+    except learning_service.ValidationError:
+        abort(400)
+    except practice_export_service.ExportTooLarge:
+        return render_template("learning/practice_export_error.html", retry_url=request.path,
+            message="This session exceeds the download size allowance. Nothing was omitted or changed. Contact the operator to increase the export allowance."), 413
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Practice export unavailable: %s", practice.describe_failure(exc))
+        return render_template("learning/practice_export_error.html", retry_url=request.path,
+            message="The download could not be prepared. Your saved work has not been changed. Try again."), 503
+    response = make_response(file["data"])
+    response.headers["Content-Type"] = file["mimetype"] + "; charset=utf-8"
+    response.headers.set("Content-Disposition", "attachment", filename=file["filename"])
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 @learning_blueprint.get("/practice/<session_id>/reply")
 @login_required
 def practice_reply(session_id):
@@ -449,7 +473,7 @@ def _delete_page(session_id, *, status=200, alert=None):
     except learning_service.NotFoundError:
         abort(404)
     return render_template("learning/practice_delete.html", counts=counts, form=DeletePracticeForm(formdata=None),
-                           alert=alert), status
+                           alert=alert, export_available=True), status
 
 
 @learning_blueprint.route("/practice/<session_id>/delete", methods=["GET", "POST"])

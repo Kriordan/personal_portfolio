@@ -16,7 +16,8 @@
     <li>saved feedback and your responses to it</li>
   </ul>
   <p>Your recall ratings and review schedule are retained.</p>
-  <p><strong>There is no undo.</strong> Downloading a copy isn't available yet, so copy anything you want to keep first. Database backups are kept separately and may hold a copy until they expire.</p>
+  {% set export_session_id = practice_session.id %}{% include 'learning/_practice_export_links.html' %}
+  <p><strong>There is no undo.</strong> Keep a copy of anything you need first. Database backups are kept separately and may hold a copy until they expire.</p>
   <form method="post" action="{{ url_for('learning.practice_delete', session_id=practice_session.id) }}" class="concept-controls">
     {{ form.csrf_token }}
     <button class="button button--danger">Delete permanently</button>

@@ -21,7 +21,8 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 5c. Saved design feedback | One complete snapshot per bounded call, evidence validation, saved findings, and recovery. | Implemented November 2; details below. |
 | Live evaluator review | Bounded live quality/latency/accounting review with fixed cases. | `88c706b`; complete November 2; report below. |
 | 5d. Learner responses and follow-up practice | Saved decisions/notes, authored questions for accepted concerns, explicit scheduler ratings, recovery and exact-session return. | Implemented November 2; details and guide below. |
-| After 5d. Complete demonstration | Export; full Learn → Review → Discuss → Build walkthrough; milestone acceptance. | Not started; further checkpoints require approval. |
+| 5e. Portable session export | Private JSON/Markdown downloads with complete saved history and consistent concurrent reads. | Implemented November 3; details and guide below. |
+| After 5e. Complete demonstration | Full Learn → Review → Discuss → Build walkthrough, accessibility review, and milestone acceptance. | Not started; further checkpoints require approval. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -867,3 +868,64 @@ calls, production migrations, publication, push, or deployment occurred.
 Next checkpoint to approve: learner-safe JSON/Markdown export. Human content
 review, accessibility checks, the complete demonstration, and milestone sign-off
 remain. Expo and additional concepts remain out of scope.
+
+## Checkpoint 5e: portable session exports (November 3)
+
+Keith approved JSON/Markdown exports as the next checkpoint. The download includes
+the pinned learner-facing exercise, complete saved conversation, all artifact and
+note revisions, revealed requirements, continuation choices, saved checks/feedback,
+latest learner responses, and explicit follow-up ratings associated with the session.
+
+- Versioned JSON (`engineering-learning.practice-session`, schema 1) preserves
+  exact text and structured citations. Readable Markdown preserves work and source
+  coordinates, escapes untrusted prose, and safely fences arbitrary saved code.
+- Historical revisions are included so old feedback can be understood offline.
+  Private rubrics/reference reasoning, hidden constraints not yet disclosed,
+  misconception mappings, receipts, provider state, account data, billing, and
+  unrelated review history are excluded through explicit field projections.
+- The exporter reads on a separate PostgreSQL **REPEATABLE READ, READ ONLY**
+  connection. Concurrent changes can't mix versions, and exporting takes no
+  owner lock or caller-transaction ownership. There is no progress change or AI call.
+- The complete response is prepared before sending download headers. Database
+  batches and a configurable **32 MiB** allowance bound preparation; errors return
+  413/503 without an attachment or silent truncation. The error page performs no
+  further DB reads. No persistent export copy, job, dependency, or migration was added.
+- Website and JWT download routes preserve existing ownership, feature gating,
+  private cache headers and `nosniff`. UUID filenames exclude user-controlled
+  titles. **Session details** and the delete confirmation have download links;
+  they open separately and leave unsaved editor text intact. Copy explains that
+  saved work is exported. Import/restore is outside this checkpoint.
+
+Verification:
+
+- **674 backend tests run: 673 passed, one existing Linux-only skip** on macOS.
+  Adds **21 tests**: ten service/projection cases, six web/API cases, and five
+  real PostgreSQL cases. Existing migration and Learning regressions pass.
+- **PostgreSQL 18.6** tests force saves, annotation/rating, feedback completion,
+  and deletion between export reads. Writers finish while the export holds its
+  snapshot; the next export sees new state. Caller changes remain uncommitted,
+  and connection settings return to READ COMMITTED/read-write afterward.
+- **205 integrated practice browser checks** (21 added), plus **70 concept**,
+  **60 hub**, and **102 renderer/security checks** pass. Coverage includes exact
+  session links, private responses, drafts, failures/retry, 320-pixel layout,
+  and controls without JavaScript. `git diff --check` passes.
+- Both native browser downloads were opened as files and checked. Preview **5063**
+  uses disposable data and fake AI; the earlier 5062 preview was left running.
+  No paid calls, production publication/migration, push, or deployment occurred.
+
+The main gotcha is that authentication may already have opened the request's ORM
+transaction. A separate export connection establishes snapshot isolation without
+rolling back or committing that caller transaction. In-memory SQLite shares one
+physical connection; a regression test showed that borrowing it could roll back
+uncommitted REPL writes. The exporter now refuses that case before borrowing the
+connection, leaving an explicit commit/rollback to the caller. Older preview processes also
+reload templates without Python; new links are gated by the updated render context
+so an old process doesn't try resolving routes it hasn't loaded.
+
+The [hands-on guide](learning-checkpoint-5e-test-guide.md) covers DevTools download
+inspection, cURL/Postman, HTTPie failure simulation, and direct Python REPL calls.
+The [handoff](engineering-learning-handoff.md) documents the export contract and limits.
+
+Next checkpoint to approve: the full Milestone 1 acceptance and accessibility
+walkthrough. Human content review and the placement of enrollment/reading progress
+remain open before milestone sign-off. Expo and content expansion remain out of scope.

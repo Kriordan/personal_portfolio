@@ -1,14 +1,14 @@
 """JSON practice-session endpoints for API clients (JWT). Same service as the website."""
 from __future__ import annotations
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, make_response, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from project.api.learning import _current_user_from_jwt
 from project.database import db
-from project.services import feedback_service, feedback_review_service, learning_service, practice_service as practice
+from project.services import feedback_service, feedback_review_service, learning_service, practice_service as practice, practice_export_service
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
@@ -59,6 +59,9 @@ def _call(operation):
         return operation()
     except learning_service.NotFoundError:
         return _error("Not found.", 404, "not_found")
+    except practice_export_service.ExportTooLarge:
+        return _error("This session exceeds the download size allowance. Nothing was omitted or changed.",
+                      413, "export_too_large")
     except practice.PracticeValidationError as exc:
         return _error(exc.message, 400, "invalid_request", field=exc.field, part=exc.part)
     except learning_service.ValidationError:
@@ -126,6 +129,24 @@ def start_session():
 def session_detail(session_id):
     user, _, failure = _user_and_payload(body=False)
     return failure or _call(lambda: (jsonify(practice.session_detail(user.id, session_id)), 200))
+
+
+@practice_api_blueprint.get("/sessions/<session_id>/export/<format>")
+@jwt_required()
+def export_session(session_id, format):
+    user, _, failure = _user_and_payload(body=False)
+    if failure:
+        return failure
+
+    def download():
+        file = practice_export_service.export_file(user.id, session_id, format)
+        response = make_response(file["data"])
+        response.headers["Content-Type"] = file["mimetype"] + "; charset=utf-8"
+        response.headers.set("Content-Disposition", "attachment", filename=file["filename"])
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    return _call(download)
 
 
 @practice_api_blueprint.put("/sessions/<session_id>/artifacts/<artifact_id>")

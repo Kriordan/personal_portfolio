@@ -479,6 +479,42 @@
     await ready();
     check(frame.contentWindow.location.pathname === sessionURL && get('[data-practice-view="build"]').getAttribute('aria-selected') === 'true', 'revision returns to the exact original session in Build');
 
+    step = 'saved session exports preserve drafts';
+    work('artifact-api');
+    const savedBeforeExport = get('#artifacts-0-body').value;
+    fill('#artifacts-0-body', 'UNSAVED_EXPORT_DRAFT');
+    click('.practice-session-details summary');
+    const jsonLink = get('[data-export-format="json"]');
+    const markdownLink = get('[data-export-format="md"]');
+    check(jsonLink.target === '_blank' && jsonLink.rel === 'noopener', 'downloads leave the editable workspace open');
+    check(jsonLink.href.endsWith(sessionURL + '/export/json'), 'download targets the exact current session');
+    const exportCounts = await control();
+    const exportedResponse = await fetch(jsonLink.href);
+    check(exportedResponse.ok && exportedResponse.headers.get('Content-Disposition').includes('.json'), 'JSON response is a download');
+    check(exportedResponse.headers.get('Cache-Control') === 'private, no-store', 'download is private and not cached');
+    const exported = await exportedResponse.json();
+    check(exported.session.id === sessionURL.split('/').pop() && exported.schema_version === 1, 'download identifies the session and schema');
+    check(exported.artifacts[0].revisions.at(-1).body === savedBeforeExport, 'download contains only committed artifact text');
+    check(!JSON.stringify(exported).includes('UNSAVED_EXPORT_DRAFT'), 'unsaved text is not silently included');
+    const assessed = exported.submissions.find(snapshot => snapshot.feedback?.findings.some(finding => finding.kind === 'concern'));
+    check(assessed.feedback.findings[1].annotation.note === 'My second-tab draft', 'download includes the saved feedback response');
+    check(exported.followup_ratings.length === 1, 'download includes the explicit follow-up rating');
+    ['V2_REFERENCE_SENTINEL', 'MISCONCEPTION_DESCRIPTION_SENTINEL', 'misconception_ids', 'claim_token'].forEach(secret =>
+      check(!JSON.stringify(exported).includes(secret), `export excludes private material: ${secret}`));
+    const markdownResponse = await fetch(markdownLink.href);
+    const markdownText = await markdownResponse.text();
+    check(markdownResponse.headers.get('Content-Type').startsWith('text/markdown') && markdownText.includes('## Conversation'), 'Markdown download is readable');
+    check(markdownText.includes('## Artifacts and revision history') && markdownText.includes('## Saved snapshots and feedback'), 'Markdown retains history and feedback');
+    await control({mode:'failure'});
+    const unavailableExport = await fetch(jsonLink.href);
+    check(unavailableExport.status === 503 && !unavailableExport.headers.has('Content-Disposition'), 'failed export returns an error instead of a partial download');
+    await control({mode:'success'});
+    check((await fetch(jsonLink.href)).ok, 'a failed download can be retried');
+    check(get('#artifacts-0-body').value === 'UNSAVED_EXPORT_DRAFT' && leaving(), 'downloads and retries leave the draft and guard intact');
+    check(JSON.stringify(await control()) === JSON.stringify(exportCounts), 'exports do not change work, ratings, or AI usage');
+    fill('#artifacts-0-body', savedBeforeExport);
+    check(doc().documentElement.scrollWidth <= 320, 'expanded export controls fit a narrow screen');
+
     step = 'feedback without JavaScript';
     document.body.appendChild(plain);
     await load(plain, () => { plain.src = oldSnapshot; });
@@ -495,6 +531,9 @@
     await load(plain, () => { plain.src = feedbackSnapshot; });
     await load(plain, () => click('#finding-f2 [data-followup-link]', plain));
     check(doc(plain).body.textContent.includes('Extra practice saved'), 'saved follow-up progress is resumable without JavaScript');
+    await load(plain, () => { plain.src = sessionURL; });
+    click('.practice-session-details summary', plain);
+    check(visible('[data-export-format="json"]', plain) && visible('[data-export-format="md"]', plain), 'download links work without JavaScript enhancement');
     plain.remove();
     document.body.dataset.testResult = 'pass';
     result.textContent = `PASS: ${checks} integrated practice browser checks`;

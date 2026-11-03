@@ -28,7 +28,7 @@ from project import create_app
 from project.database import db
 from project.extensions import talisman
 from project.models import AIRequest, ArtifactRevision, LearningAICharge, PracticeFeedback, PracticeFeedbackAnnotation, ReviewLog, SessionMessage, User
-from project.services import feedback_review_service, feedback_service, practice_service as practice, practice_worker
+from project.services import feedback_review_service, feedback_service, practice_export_service, practice_service as practice, practice_worker
 from tests.curriculum_v2_fixtures import publish_feedback_catalog
 from tests.feedback_fixtures import scripted_feedback
 from tests.test_practice_service import enable_sqlite_foreign_keys, seed_catalog
@@ -89,6 +89,7 @@ class PracticeBrowserTests(unittest.TestCase):
             for name in ("save_work", "save_and_send", "send_turn", "request_reply", "save_and_submit"):
                 stack.enter_context(patch.object(practice, name, fail_or_lose(getattr(practice, name))))
             stack.enter_context(patch.object(feedback_service, "request_feedback", fail_or_lose(feedback_service.request_feedback)))
+            stack.enter_context(patch.object(practice_export_service, "export_file", fail_or_lose(practice_export_service.export_file)))
             for name in ("annotate", "rate_review"):
                 stack.enter_context(patch.object(feedback_review_service, name, fail_or_lose(getattr(feedback_review_service, name))))
 
