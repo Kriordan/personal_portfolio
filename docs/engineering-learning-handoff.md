@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of November 3, 2026, **the Milestone 1 web flow is implemented and its local walkthrough is complete; human review and milestone approval remain.** Learn, Review, Discuss, and Build share the idempotency workspace; all Learning pages require login. Sessions preserve conversation, artifacts, notes, recovery, immutable feedback, learner responses, optional follow-up practice, and JSON/Markdown exports. Checkpoint 5f fixes keyboard focus, field/tab semantics, error descriptions, and navigation on evidence/deletion pages. The [walkthrough and accessibility report](learning-milestone-1-acceptance.md) records evidence and remaining assistive-technology checks. Nothing is deployed. The bounded live evaluator review is complete: 24 outputs reviewed, $0.519980 spent, no critical misgrading found in the fixed set. Keith's evaluator review and human curriculum review remain. Continue on `feature/learning-content-foundation`.
+As of November 6, 2026, **Milestone 1 is ready for local pilot use following the delegated technical review.** Keith reviewed Learn/Review and Discuss/Build and delegated the remaining content and AI feedback judgment to Codex. Checkpoint 5g corrects the private concurrency reference in exercise revision 3 and verifies version pinning and saved progress on PostgreSQL. The [acceptance report](learning-milestone-1-acceptance.md) records the recommendation and remaining limits. Production publication still needs an actual human-review attestation and rollout approval. VoiceOver/NVDA and standalone Safari/Firefox checks remain unverified. Continue on `feature/learning-content-foundation`.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 5f and the Learning UI/login follow-ups, and the remaining acceptance work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 5g and the Learning UI/login follow-ups, and the remaining rollout work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -27,7 +27,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
-| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Checkpoints through 5f, bounded live evaluator review, and local end-to-end/keyboard review complete. Human review and milestone acceptance remain. |
+| 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Local implementation and delegated technical review complete through 5g. Codex recommends local pilot acceptance. Production publication remains separately gated. |
 | 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | Requires approval after Milestone 1. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
@@ -51,10 +51,11 @@ Within Milestone 1:
 | 5a | Feedback content foundation: v2 misconception mappings and backward compatibility. | Implemented locally November 2; separate checkpoint commit. |
 | 5b | Immutable submission snapshots and persisted JSON/YAML syntax checks; editable sessions and Checks tab. | Implemented locally November 2; separate checkpoint commit. |
 | 5c | Evidence-linked snapshot feedback, exact citations, bounded generation, persistence and recovery. | Implemented November 2; see below and the [hands-on guide](learning-checkpoint-5c-test-guide.md). |
-| Live evaluator review | Twelve fixed cases, two live repetitions, technical review, and cost/latency accounting. | Complete November 2; [report and REPL walkthrough](evaluations/learning-feedback-2026-11-02-review.md). Keith’s review remains. |
+| Live evaluator review | Twelve fixed cases, two live repetitions, technical review, and cost/latency accounting. | Complete November 2; [report and REPL walkthrough](evaluations/learning-feedback-2026-11-02-review.md). Keith delegated the remaining review on November 6; see 5g. |
 | 5d | Saved agree/disagree responses and notes; optional authored review questions; recovery and return to the same session. | Implemented locally November 2; [hands-on guide](learning-checkpoint-5d-test-guide.md). |
 | 5e | Consistent, learner-safe JSON/Markdown session downloads, full history, ownership and concurrent-write checks. | Implemented locally November 3; [hands-on guide](learning-checkpoint-5e-test-guide.md). |
-| 5f | Full local demonstration and targeted accessibility review; fixes and regression tests. | Complete locally November 3; [report and hands-on guide](learning-milestone-1-acceptance.md). Human content/evaluator review, screen-reader listening, standalone Safari/Firefox checks, and final approval remain. |
+| 5f | Full local demonstration and targeted accessibility review; fixes and regression tests. | Complete locally November 3; [report and hands-on guide](learning-milestone-1-acceptance.md). Later content/evaluator review recorded in 5g. |
+| 5g | Delegated content/AI review and a versioned private reference correction. | Complete locally November 6; 678 tests passed, one platform skip. Local pilot recommended; publication and browser/screen-reader limits remain in the acceptance report. |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
 
@@ -81,6 +82,7 @@ Keith settled the feedback lifecycle on November 2: **save an immutable snapshot
 | Owner-only paid AI and a separate Learning budget. | Limit exposure while validating usefulness. Exhausting the AI budget must not block saving or reading work. |
 | Retention and applied evidence remain separate. | Self-rated recall, assisted reasoning, and independently verified implementation are different kinds of evidence. AI findings must not silently change review ratings or schedules. |
 | Enrollment, saved reading position, and self-assessment are a separate checkpoint before content expansion. Keith, November 3. | Validate the single-concept flow without introducing a new progress model during 5f. Their implementation is not required for Milestone 1 sign-off, remains unfinished, and needs a separately approved checkpoint. |
+| Keith delegated the remaining content/AI review to Codex on November 6 after reviewing the four-mode experience. | Complete the local technical review and make routine corrections. Record Codex's judgment, keep actual human publication attestation separate, and preserve the approval gates for Expo and content expansion. |
 | Split checkpoint 3 into 3a (sessions, artifacts) and 3b (turns, brief, pause/resume, delete). Keith, October 28. | Smaller reviewable steps; deletion ships with the first discussion data. |
 | Learner turns persist in 3b, before the AI interviewer exists. Keith, October 28. | Checkpoint 4 then adds only the AI request inside the same transaction. A turn without a reply is also the lasting state for non-owner accounts and at the budget cap. |
 | The editable session brief is versioned snapshots in `SessionMessage` (`kind='brief'`), from 3b. Keith, October 28. | Matches "no separate memory service"; compaction checkpoints can reference a brief version. Demo step "resume with requirements and decisions intact" needs it. |
@@ -596,7 +598,23 @@ Use the [REPL guide](learning-checkpoint-1-test-guide.md) to inspect projections
 
 ## Verification evidence and commands
 
-Latest verification, November 3, for checkpoint 5f:
+Latest verification, November 6, for checkpoint 5g:
+
+- **679 tests run: 678 passed, one existing Linux-only skip**, with isolated
+  PostgreSQL 18.6. Five added tests cover the private revision, projections,
+  source-route exclusion, import/replay, old saved work and ratings, and evaluator
+  inputs pinned independently to exercise versions 2 and 3.
+- The full run includes **225 practice, 70 concept, and 60 hub browser checks**,
+  the migration/concurrency/recovery suites, and the SERIALIZABLE interleaving
+  regression. `git diff --check` passed.
+- The revision-3 manifest replays the five existing concept/question revisions
+  and adds one exercise revision. The feedback preview selects this manifest on
+  its next start. Existing running previews retain their temporary data.
+- Saved live feedback was rechecked; added paid cost was **$0**. Historical live
+  outputs assess revisions 1/2. Revision 3 was verified with deterministic
+  integration tests and technical review, without a fresh paid evaluation.
+
+Earlier verification, November 3, for checkpoint 5f:
 
 - **674 tests run: 673 passed, one existing Linux-only skip**, with isolated
   PostgreSQL 18.6, including migration, ownership, budget, concurrency, and recovery
@@ -776,13 +794,13 @@ These fixtures drop tables and reset migration state. Never use a database conta
 
 ## Open items and decisions to revisit
 
-1. **Human content review and rollout owner:** the exact lesson/questions/exercise/reference packet still need review. Version 2 is now authored in 5a, so the packet includes the misconception mappings. Confirm the reviewer and actual review date before publication. Production migration/deployment haven't happened. Paid-provider activation is done locally (October 30); production enablement waits for this review.
+1. **Publication review and rollout owner:** Codex completed the delegated technical review in 5g and recommends the local pilot. `catalog-v3.json` is the current draft, with exercise revision 3 and concept/question revisions 2. Production publication still requires an actual human reviewer and review date for that exact packet. No publication attestation was created by the delegated review. Production migration/deployment remain pending separate approval.
 2. **Enrollment and reading progress:** the original plan includes explicit concept enrollment, reading position, self-assessment, and avoiding automatic due-queue expansion. `UserConceptProgress` does not exist. Currently, visiting a concept's review route offers its four eligible questions, while the legacy API queue is unchanged. Keith decided November 3 to implement this in a **separate checkpoint before content expansion**, not as a Milestone 1 sign-off prerequisite. Placement is settled; the model and implementation still need that checkpoint's approval. Do not claim enrollment is delivered.
 3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
 4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. The `Procfile` runs only `web`, and `run.py` uses Flask's built-in server, so the worker thread starts there and nowhere else.
-5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). The `evaluator-1` contract, strict structured outputs, and evidence/coverage validation are implemented in 5c; annotations and follow-up practice in 5d. Keith’s review of the bounded live results remains; the technical review and latency/cost measurements are recorded in the evaluator report. Do not invent a hidden solution-disclosure path.
+5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). The `evaluator-1` contract, strict structured outputs, and evidence/coverage validation are implemented in 5c; annotations and follow-up practice in 5d. Keith delegated the remaining live-results review on November 6. Codex's 5g assessment supports the current profile/model for local use, with feedback density to observe during the trial. Historical paid results remain pinned to exercise revisions 1/2.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
-7. **Remaining acceptance:** 4a covered fencing late replies after pause or delete, owner-only AI access, reply telemetry exclusions, worker restart and process death, and budget races. 4b covered disclosure, hints, oversized essential context, long-session recovery, and interviewer fixtures; live interviewer evaluations ran at activation. Export is implemented in 5e. Checkpoint 5f completed the local end-to-end and targeted keyboard/accessibility-tree review, with fixes and regression coverage recorded in its report. Still outstanding: human curriculum review, Keith's review of the live evaluator results, VoiceOver/NVDA listening, standalone Safari/Firefox checks, and milestone approval. This is not a full accessibility conformance audit. Full snapshot coverage and explicit oversized rejection are implemented; multipass feedback is deferred by Keith's 5c decision. The broader multi-style AI evaluation set belongs to pilot expansion.
+7. **Remaining validation and rollout:** local end-to-end, keyboard/accessibility-tree, recovery, budget, concurrency, and delegated content/AI review are complete through 5g. VoiceOver/NVDA listening and standalone Safari/Firefox remain unverified. Human publication attestation and production rollout approval remain outstanding. Full snapshot coverage and explicit oversized rejection are implemented; multipass feedback is deferred by Keith's 5c decision. The broader multi-style AI evaluation set belongs to pilot expansion.
 8. **Content-schema gaps against the approved plan:** the misconception mapping gap is closed in 5a through catalog/spec version 2 and exercise revision 2. The behaviour profile/version remains in code (item 5); the facilitator schema is unchanged. Feedback evidence/coverage is implemented in 5c; learner responses and follow-up review in 5d.
 9. **Third-party scripts on private pages:** Marked (no SRI) and Alpine (no SRI, in the base template) load from jsDelivr, and the CSP allows `ws:`/`wss:` to any host. The practice workspace loads no Markdown library. Site-wide SRI and a narrower CSP are follow-ups.
 10. **Proposals from the October 28 vision review.** Keith accepted three on October 29 (see Decisions): defer compaction out of Milestone 1, close the misconception loop, and report deterministic JSON/YAML checks first. Three wait for Milestone 1's completion:
@@ -821,15 +839,12 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** Keith tries the complete flow using the
-[5f walkthrough and accessibility guide](learning-milestone-1-acceptance.md),
-including the remaining assistive-technology checks. Review the version-2
-curriculum and the [live evaluator report](evaluations/learning-feedback-2026-11-02-review.md)
-before final milestone approval. Keep the current Sol/medium configuration.
-Enrollment/reading position/self-assessment is a separately approved placement
-decision: implement it in its own checkpoint before content expansion. That
-implementation, Expo, additional personalities, and content expansion have not
-been authorized by this walkthrough.
+**Next:** the local pilot is ready under the November 6 delegated review. The
+[acceptance report](learning-milestone-1-acceptance.md) records the outcome and
+remaining publication/browser limitations. The next proposed implementation
+checkpoint is enrollment, reading position, and self-assessment, before content
+expansion. Agree that progress model and checkpoint scope before implementing it.
+Expo, additional personalities, and content expansion require explicit approval.
 
 ### Activation record
 
@@ -863,4 +878,4 @@ Activation (see Durable AI requests and spending), done locally on October 30 ap
 
 Production enablement waits for content review and a separate approval. Production then needs its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
 
-Checkpoints 5a–5e implement content mappings, submission snapshots, deterministic syntax checks, evidence-linked generated feedback, learner responses, optional follow-up practice, and session export. Checkpoint 5f records the local demonstration and targeted accessibility review. The bounded live evaluator technical review is recorded above; Keith's review, human curriculum review, remaining browser/screen-reader checks, and final approval remain. At Milestone 1 completion, decide the remaining vision-review proposals (open item 10), review the demonstration evidence, limitations, and incurred costs, and stop for Keith's approval before Milestone 2.
+Checkpoints 5a–5e implement content mappings, submission snapshots, deterministic syntax checks, evidence-linked generated feedback, learner responses, optional follow-up practice, and session export. Checkpoints 5f/5g complete the local demonstration, targeted accessibility review, delegated content/AI review, and private reference correction. Production publication and remaining browser/screen-reader validation are recorded follow-ups. The remaining vision-review proposals (open item 10) and Milestone 2 still need Keith's explicit approval.

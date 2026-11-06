@@ -1,6 +1,11 @@
 # Milestone 1 walkthrough and accessibility review
 
-November 3, 2026 · checkpoint 5f · idempotency on web only
+November 3 walkthrough, updated November 6, 2026 · checkpoints 5f/5g · idempotency on web only
+
+**Current judgment: Milestone 1 is ready for local pilot use.** Keith reviewed
+Learn/Review and Discuss/Build and reported that both looked good. On November 6,
+he delegated the remaining content and AI feedback judgment to Codex. The review
+and reference correction are recorded in the [November 6 addendum](#november-6-delegated-content-and-feedback-review).
 
 The single-concept flow works locally from Learn through Review, Discuss, Build,
 saved feedback, revision, and resumption. This checkpoint fixes keyboard and
@@ -135,9 +140,76 @@ of 40 visible text nodes found no contrast candidates below the applicable ratio
 it is not a complete contrast audit.
 
 VoiceOver/NVDA spoken output and standalone Safari/Firefox remain unverified.
-Human technical review of the version-2 lesson, questions, exercise, and private
-reference packet, Keith's review of the live evaluator report, and final Milestone
-1 approval remain outstanding. Long-term unaided retention/transfer belongs to
-the planned personal trial. Enrollment/reading position/self-assessment is the
-separate approved placement decision above; implementation still needs its own
-checkpoint approval. Do not start Expo or expand content from this report alone.
+The November 6 delegated review below completes the remaining local technical
+assessment. Human publication attestation and production rollout approval remain
+outstanding. Long-term unaided retention/transfer belongs to the planned personal
+trial. Enrollment/reading position/self-assessment is the separate approved
+placement decision above; implementation still needs its own checkpoint approval.
+Expo and content expansion also require explicit approval.
+
+## November 6 delegated content and feedback review
+
+Keith delegated the remaining content and AI feedback review to Codex on
+November 6. This records Codex's assessment and recommendation. No human-review
+attestation was entered into an application database.
+
+The lesson, four questions, scenario, clarification facts, alternatives, rubric,
+and misconception mappings support the intended learning loop. The exercise asks
+for reasoning about identity, concurrency, failure, and recovery. The hidden
+retention/load/warehouse details are fictional exercise inputs that can be
+discovered through clarification. The rubric and mapping guidance accept
+defensible alternatives, separate missing evidence from contradictions, and credit
+explicit corrections. The remaining concrete correction was the overly broad
+private statement that a check followed by an insert always requires a database
+constraint.
+
+`catalog-v3.json` corrects that statement in exercise revision 3. Its wording
+distinguishes an uncoordinated READ COMMITTED sequence from uniqueness, correctly
+scoped locking, and SERIALIZABLE with whole-transaction retries. It asks the
+learner to account for participating writers, cleanup, and the competing caller's
+recovery. This matches PostgreSQL's
+[isolation semantics](https://www.postgresql.org/docs/18/transaction-iso.html#XACT-SERIALIZABLE)
+and [complete-transaction retry requirement](https://www.postgresql.org/docs/18/mvcc-serialization-failure-handling.html).
+The lesson's intended-effect definition and its delivery reasoning agree with
+[HTTP semantics](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2) and
+[AWS's outbox guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).
+
+The recorded live review contains 12 cases run twice. Rechecking the summaries,
+concerns, and alternative/recovery findings in both repetitions supports keeping
+the current evaluator. It identifies the four planted misconceptions, accepts
+the SERIALIZABLE and fenced-claim alternatives, credits corrected drafts, and
+labels incomplete work as missing evidence. Recorded interviewer examples cite
+the proposal and ask the learner to repair a concrete failure case. Existing
+findings also acknowledge assistance and distinguish planned tests from measured
+results. The [live review](evaluations/learning-feedback-2026-11-02-review.md)
+retains the complete outputs and original limitations.
+
+Feedback density is a pilot observation to track. Three to six findings can give
+the learner several tasks at once. The evidence-backed concerns and concrete next
+steps are sufficient to start local use. A change to ordering, prompts, or the
+assessment format should follow observed difficulty choosing a next action.
+
+Verification for this correction:
+
+- **679 tests run, 678 passed, one existing Linux-only skip**, on macOS with
+  isolated PostgreSQL 18.6. Five tests were added for version identity, private
+  projections, source-route exclusion, import/replay and saved progress, and
+  feedback against each session's pinned reference.
+- The full run includes **225 practice, 70 concept, and 60 hub browser checks**,
+  migration/concurrency/recovery regressions, and the real PostgreSQL SERIALIZABLE
+  interleaving test. `git diff --check` passed.
+- The preview fixture selects the new manifest when `--feedback-example` is used.
+  Catalog/spec format stays 2, the exercise becomes 3, and lesson/questions stay 2.
+  Only one new row is inserted when the manifest follows revision 2.
+- A separate [corrected preview](http://127.0.0.1:5065/learning/) was started with
+  the same disposable credentials. Login and the saved-session API returned
+  exercise revision 3 with the private cache policy and no reference material.
+  The earlier preview on 5064 retains its existing sessions.
+- This follow-up uses saved live evidence and mocked integration responses.
+  Additional paid AI cost is **$0**. A fresh live evaluation of revision 3 was not
+  run; the historical paid results remain pinned to revisions 1 and 2.
+
+The local implementation and delegated technical review are complete. The
+remaining publication and cross-browser/assistive-technology limits above stay
+visible in the handoff. The next implementation checkpoint is enrollment, reading
+position, and self-assessment, subject to separate approval before content expansion.

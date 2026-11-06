@@ -23,6 +23,7 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 5d. Learner responses and follow-up practice | Saved decisions/notes, authored questions for accepted concerns, explicit scheduler ratings, recovery and exact-session return. | Implemented November 2; details and guide below. |
 | 5e. Portable session export | Private JSON/Markdown downloads with complete saved history and consistent concurrent reads. | Implemented November 3; details and guide below. |
 | 5f. Complete demonstration and accessibility review | Full Learn → Review → Discuss → Build walkthrough, targeted accessibility fixes, and regression tests. | Complete locally November 3; report below. Human content/evaluator review, screen-reader listening, standalone Safari/Firefox checks, and final milestone approval remain. |
+| 5g. Delegated content and AI review | Correct the private concurrency reference in a new exercise revision and verify saved-work/version boundaries. | Complete locally November 6. Codex recommends local pilot acceptance following Keith's delegated review. Publication and browser/screen-reader limits are recorded in the acceptance report. |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -981,3 +982,43 @@ Remaining limits: VoiceOver/NVDA spoken output and standalone Safari/Firefox wer
 not tested; this is not a WCAG conformance audit. Human technical content review,
 Keith's review of the live evaluator report, and final milestone approval remain.
 No production change, Expo work, or content expansion was performed or authorized.
+
+## Checkpoint 5g: delegated content and AI review (November 6)
+
+Keith reported that Learn/Review and Discuss/Build looked good, then delegated the
+remaining content and AI feedback judgment to Codex. The local technical review
+is complete and supports starting the local pilot. The
+[acceptance addendum](learning-milestone-1-acceptance.md#november-6-delegated-content-and-feedback-review)
+records the judgment, supporting sources, and remaining limitations.
+
+`curriculum/idempotency/catalog-v3.json` corrects one private reference passage.
+It now distinguishes an uncoordinated READ COMMITTED lookup/insert from valid
+uniqueness, locking, and SERIALIZABLE protocols and asks how competing callers
+recover after commit or rollback. Catalog/spec format stays 2. Only the exercise
+advances to revision 3, while the five lesson/question items replay revision 2.
+The preview fixture's `--feedback-example` option selects this manifest on its
+next start. Existing sessions continue using their pinned revisions.
+
+The saved live evaluation summaries and concerns were rechecked in both runs,
+including alternative designs, corrections, incomplete work, and assistance.
+Those results support the existing interviewer/evaluator profiles for local use.
+Feedback density remains an observation for the pilot. Additional paid cost was
+**$0**. The historical paid results assess revisions 1/2; the reference correction
+has technical review and deterministic integration coverage, without a fresh live
+revision-3 evaluation.
+
+Five regression tests were added. They verify that the correction only changes
+private exercise identity, stays out of learner/interviewer projections and public
+source routes, inserts one new revision on PostgreSQL, preserves work/ratings and
+replayed start receipts, and reaches the evaluator only for sessions pinned to
+revision 3. **679 tests ran: 678 passed, one existing Linux-only skip**, with
+isolated PostgreSQL 18.6. The full run includes **225 practice, 70 concept, and
+60 hub browser checks**, migration/concurrency/recovery tests, and the PostgreSQL
+SERIALIZABLE interleaving regression. `git diff --check` passed.
+
+Codex's delegated review is recorded as the local technical assessment. Actual
+human publication attestation, production rollout approval, VoiceOver/NVDA
+listening, and standalone Safari/Firefox remain outstanding. The next proposed
+implementation checkpoint is enrollment, reading position, and self-assessment,
+subject to separate approval before content expansion. Expo also requires
+explicit approval.

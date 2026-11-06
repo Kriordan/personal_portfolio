@@ -1,6 +1,8 @@
 # Versioned curriculum source
 
-The original catalog is `idempotency/catalog.json`: one concept, four review questions, and one interview exercise. `idempotency/catalog-v2.json` is the feedback-foundation revision of that same concept, with four evaluator-only misconception mappings. Both are **AI-assisted drafts awaiting human technical review**, not published curriculum. No reviewer approval is implied by approval of the application architecture. Their Markdown files are part of the content snapshots.
+The original catalog is `idempotency/catalog.json`: one concept, four review questions, and one interview exercise. `idempotency/catalog-v2.json` adds four evaluator-only misconception mappings. The current draft is `idempotency/catalog-v3.json`, which qualifies one private concurrency reference. It uses catalog/spec format 2, exercise revision 3, and the existing concept/question revisions 2. Their Markdown files are part of the content snapshots.
+
+Codex completed a delegated technical review on November 6, recorded in the [Milestone 1 acceptance report](../docs/learning-milestone-1-acceptance.md#november-6-delegated-content-and-feedback-review). These remain AI-assisted drafts. Production publication requires an actual human review and its reviewer/date attestation.
 
 The canonical source is Git. PostgreSQL stores resolved, immutable revisions and separate publication attestations. These files deliberately live outside Flask static/templates and the Expo project. The repository remains public: the exercise's facilitator and evaluator material is private **inside the application**, not secret from someone reading GitHub.
 
@@ -59,19 +61,34 @@ attempts keep their original revisions. Stable question IDs preserve review
 history and scheduling. Nothing is automatically published, migrated, or
 backfilled, and no database migration is needed for this format change.
 
+### Exercise reference correction in revision 3
+
+The new manifest includes the complete reference closure and changes one
+`assessment.reference_reasoning` entry. It distinguishes an uncoordinated
+READ COMMITTED lookup/insert from valid coordination through uniqueness, an
+appropriately scoped lock, or SERIALIZABLE with whole-transaction retry. The
+reference also asks how competing callers recover after commit or rollback.
+
+Only exercise `idempotent-order-api` advances to revision 3. The concept and four
+questions replay their existing revision-2 checksums. Existing sessions retain
+their pinned reference, saved work, feedback, and review history. The preview's
+`--feedback-example` option uses this current manifest. The saved live evaluation
+files remain evidence for revisions 1 and 2; revision 3 has deterministic
+projection/import/feedback tests and a technical source review.
+
 ## Validation and import
 
 Use the existing Flask application environment. Validation does not access database tables:
 
 ```sh
-poetry run flask --app project:create_app validate-curriculum curriculum/idempotency/catalog-v2.json
+poetry run flask --app project:create_app validate-curriculum curriculum/idempotency/catalog-v3.json
 ```
 
 On an explicitly selected, migrated PostgreSQL database, the default import is a dry run. It exercises the same transaction and constraints, then rolls back:
 
 ```sh
-poetry run flask --app project:create_app import-curriculum curriculum/idempotency/catalog-v2.json
-poetry run flask --app project:create_app import-curriculum curriculum/idempotency/catalog-v2.json --apply
+poetry run flask --app project:create_app import-curriculum curriculum/idempotency/catalog-v3.json
+poetry run flask --app project:create_app import-curriculum curriculum/idempotency/catalog-v3.json --apply
 ```
 
 The second command saves drafts. They remain absent from `published_learner_item`. Publication additionally requires `--publish --reviewed-by 'Human reviewer name' --reviewed-on YYYY-MM-DD`. Supply the real reviewer and actual review date only after that person reviews the exact lesson, questions, hidden constraints, alternatives, and rubric. The CLI is an operator attestation, not an identity verification or editorial approval service. No content is imported automatically on application startup or migration.

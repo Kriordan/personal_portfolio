@@ -1,4 +1,6 @@
 """Review tooling safety and fixture plumbing; fake responses do not prove grading quality."""
+from copy import deepcopy
+from datetime import date
 import json
 import os
 import unittest
@@ -14,6 +16,7 @@ from project.learning.content_schema import load_catalog
 from project.models import LearningAICharge
 from project.services.curriculum_service import import_catalog
 from project.services.practice_worker import FakeProvider
+from tests.test_curriculum_reference_revision import CATALOG_V3
 
 URL = os.environ.get("LIBRARY_TEST_POSTGRES_URL")
 
@@ -86,6 +89,25 @@ class FeedbackEvaluationPostgresTests(unittest.TestCase):
                     self.assertNotIn("misconceptions", material["assessment"])
         self.assertEqual(LearningAICharge.query.count(), len(self.document["cases"]))
         self.assertTrue(all(row.state == "settled" for row in LearningAICharge.query.all()))
+
+    def test_feedback_uses_the_reference_revision_pinned_to_each_session(self):
+        corrected = load_catalog(CATALOG_V3)
+        import_catalog(corrected, dry_run=False, publish=True,
+                       reviewed_by="Disposable test fixture", reviewed_on=date(2026, 11, 6))
+        original_case = next(case for case in self.document["cases"] if case["id"] == "correct-serializable")
+        for version, path in ((2, review.ROOT / "curriculum/idempotency/catalog-v2.json"), (3, CATALOG_V3)):
+            with self.subTest(version=version):
+                case = deepcopy(original_case)
+                case["version"] = version
+                provider = FakeProvider()
+                result = review.run_case(self.document, case, provider)
+                self.assertTrue(result["checks"]["completed_and_validated"], result)
+                self.assertTrue(result["checks"]["complete_snapshot"], result)
+                self.assertEqual(len(provider.calls), 1)
+                material = json.loads(provider.calls[0]["input"])
+                expected = load_catalog(path)["items"][-1]["content"]["assessment"]
+                self.assertEqual(material["assessment"], expected)
+                self.assertNotIn(expected["reference_reasoning"][1], json.dumps(result["result"]))
 
     def test_unknown_outcomes_keep_their_reservation_and_are_not_retried(self):
         provider = FakeProvider(mode="lost")

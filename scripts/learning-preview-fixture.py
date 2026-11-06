@@ -126,8 +126,8 @@ def main():
                         payload=item, checksum=content_checksum(item), imported_at=now, published_at=now,
                         reviewed_by='Disposable demo fixture', reviewed_on=now.date()))
                 if args.feedback_example:
-                    catalog_v2 = load_catalog(ROOT / 'curriculum/idempotency/catalog-v2.json')
-                    for item in catalog_v2['items']:
+                    feedback_catalog = load_catalog(ROOT / 'curriculum/idempotency/catalog-v3.json')
+                    for item in feedback_catalog['items']:
                         db.session.add(ContentRevision(item_id=item['id'], version=item['version'], schema_version=2,
                             payload=item, checksum=content_checksum(item, 2), imported_at=now, published_at=now,
                             reviewed_by='Disposable demo fixture', reviewed_on=now.date()))
