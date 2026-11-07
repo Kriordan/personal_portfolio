@@ -6,6 +6,24 @@ from wtforms.validators import InputRequired, Length, NumberRange
 from wtforms.widgets import HiddenInput
 
 from project.curriculum_terms import ARTIFACT_LANGUAGES, BRIEF_ENTRY_TYPES, BRIEF_MAX_ENTRIES, MAX_EXPECTED_ARTIFACTS
+from .self_assessment import RATINGS
+
+
+class ClearSelfAssessmentForm(FlaskForm):
+    class Meta:
+        csrf_time_limit = 86400
+
+    expected_revision = IntegerField(widget=HiddenInput(), validators=[InputRequired(), NumberRange(0, 2147483646)])
+    request_id = HiddenField(validators=[InputRequired(), Length(min=36, max=36)])
+    practice_session = HiddenField(default="", validators=[Length(max=36)])
+
+
+class SelfAssessmentForm(ClearSelfAssessmentForm):
+    content_version = IntegerField(widget=HiddenInput(), validators=[InputRequired(), NumberRange(1, 2147483647)])
+    recognition = SelectField("Recognition", choices=RATINGS, default="not_assessed")
+    understanding = SelectField("Understanding", choices=RATINGS, default="not_assessed")
+    application = SelectField("Application", choices=RATINGS, default="not_assessed")
+    judgment = SelectField("Judgment", choices=RATINGS, default="not_assessed")
 
 
 class ConceptRatingForm(FlaskForm):

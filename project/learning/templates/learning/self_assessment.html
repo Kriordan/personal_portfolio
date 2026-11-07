@@ -1,0 +1,30 @@
+{% extends 'learning/concept_shell.html' %}
+{% from 'learning/_self_assessment_fields.html' import hidden_fields, choices, checkin %}
+{% block title %}Self-assessment · {{ workspace.title }}{% endblock %}
+{% block concept_content %}
+<section class="concept-study concept-assessment" aria-labelledby="assessment-heading">
+  <p class="learning-eyebrow">Optional reflection</p>
+  <h2 id="assessment-heading">Where are you today?</h2>
+  <p>Choose each area independently. Leave any area <strong>Not assessed</strong> if you’re unsure or want to skip it.</p>
+  <p class="assessment-explanation">“With help” includes notes, AI, or another person. “Without help” means unaided. These are your impressions, not a test of mastery. They don’t change your review schedule or AI feedback.</p>
+  {% for message in get_flashed_messages(category_filter=['self-assessment']) %}<p role="status" class="assessment-notice">{{ message }}</p>{% endfor %}
+  {% if saved.current %}<p class="assessment-last-saved">Last check-in: <time datetime="{{ saved.current.created_at }}">{{ saved.current.created_at[:16]|replace('T', ' ') }} UTC</time>. Your latest choices are below.</p>
+  {% else %}<p class="assessment-last-saved">No check-ins yet. You can start whenever you like.</p>{% endif %}
+  {% if available %}
+  <form method="post" action="{{ action_url }}" data-self-assessment-form>
+    {{ hidden_fields(form) }}{{ choices(form, dimensions) }}
+    <p class="assessment-explanation">Each save adds a dated check-in. Earlier entries stay in your history.</p>
+    <div class="assessment-actions"><button class="button button--primary">Save check-in</button><a href="{{ workspace.learn_url }}">Back to learning</a></div>
+  </form>
+  {% else %}<p>This lesson is currently unavailable. You can still read or delete your saved check-ins.</p>{% endif %}
+  {% if saved.entries or older_page %}
+  <details class="assessment-history" id="assessment-history"{% if older_page %} open{% endif %}>
+    <summary>Your check-in history</summary>
+    <ol>{% for entry in saved.entries %}<li data-assessment-entry>{{ checkin(entry, dimensions, rating_labels) }}</li>{% else %}<li>No check-ins on this page.</li>{% endfor %}</ol>
+    <nav aria-label="Self-assessment history pages">{% if older_page %}<a href="{{ latest_url }}">Latest check-ins</a>{% endif %}{% if saved.next_before %}<a href="{{ older_url }}">Older check-ins</a>{% endif %}</nav>
+  </details>
+  {% endif %}
+  {% if saved.current %}<p class="assessment-delete"><a href="{{ delete_url }}">Delete self-assessment history</a></p>{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}{{ super() }}<script defer src="{{ url_for('static', filename='js/learning-self-assessment.js') }}"></script>{% endblock %}

@@ -100,3 +100,43 @@
   button, a { min-height: 44px; }
   [hidden] { display: none !important; }
 }
+.concept-workspace .concept-reflection-link {
+  display: inline-flex; align-items: center; gap: .25em; min-height: 44px; font-size: .8rem;
+  span { color: #52645d; }
+}
+@media (min-width: 761px) {
+  .concept-workspace .concept-workspace-heading {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem;
+    h1, p { grid-column: 1; }
+    .concept-reflection-link { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+  }
+}
+.concept-assessment {
+  max-width: 44rem; margin: 1.5rem auto 3rem;
+  .assessment-explanation, .assessment-last-saved { font-size: .875rem; color: #52645d; }
+  .assessment-notice { border-left: 3px solid #17675a; padding: .5rem 1rem; background: #f2f7f4; }
+  .assessment-choices { margin: 1.5rem 0; }
+  .assessment-choice {
+    display: grid; grid-template-columns: minmax(0, 1fr) 11rem; gap: 1rem; align-items: center;
+    padding: 1.1rem 0; border-top: 1px solid #d5dfda;
+    label { display: block; font-size: 1rem; font-weight: 600; }
+    p { margin: .25rem 0 0; font-size: .875rem; color: #52645d; }
+    select { width: 100%; min-height: 44px; padding: .5rem; font: inherit; }
+  }
+  .assessment-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+  .assessment-actions a, .assessment-history a, .assessment-delete a { display: inline-flex; align-items: center; min-height: 44px; }
+  .assessment-history { margin: 2rem 0 0; padding: .75rem 1rem; border: 1px solid #d5dfda; border-radius: 8px; }
+  .assessment-history ol { list-style: none; padding: 0; }
+  .assessment-history li { padding: 1rem 0; border-top: 1px solid #d5dfda; }
+  .assessment-history li > p { font-size: .8rem; color: #52645d; }
+  .assessment-history nav { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+  .assessment-ratings { margin: .5rem 0; font-size: .875rem; }
+  .assessment-ratings > div { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .assessment-ratings dt { font-weight: 550; }
+  .assessment-ratings dd { margin: 0; }
+  .assessment-delete { font-size: .8rem; }
+  &.assessment-rescue { padding: 1.5rem; }
+}
+@media (max-width: 600px) {
+  .concept-assessment .assessment-choice { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+}

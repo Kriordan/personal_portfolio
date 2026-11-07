@@ -16,13 +16,14 @@ from uuid import uuid4
 from flask import jsonify, request, send_file
 from flask_login import current_user, login_user
 from sqlalchemy import event
+from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.serving import make_server
 
 from project import create_app
 from project.database import db
 from project.extensions import talisman
 from project.models import ArtifactRevision, PracticeSession, ReviewLog, ReviewReceipt, SessionMessage, User
-from project.services import concept_progress_service, learning_service, practice_service
+from project.services import concept_progress_service, learning_service, practice_service, self_assessment_service
 from tests.learning_hub_fixtures import seed_notes
 from tests.test_practice_browser import CHROME, QuietHandler, ROOT
 from tests.test_practice_service import enable_sqlite_foreign_keys, seed_catalog
@@ -37,6 +38,9 @@ class LearningHubBrowserTests(unittest.TestCase):
 
     def test_enrollment_reading_resume_conflicts_and_recovery(self):
         self.run_browser_checks("concept-progress-checks.js")
+
+    def test_optional_reflections_history_retries_and_account_isolation(self):
+        self.run_browser_checks("self-assessment-checks.js")
 
     def run_browser_checks(self, script_name):
         if not CHROME:
@@ -62,16 +66,38 @@ class LearningHubBrowserTests(unittest.TestCase):
                 db.session.add(User(id=2, username="Other learner", email="other@example.test", email_verified=True))
                 db.session.commit()
                 seed_catalog(SimpleNamespace())
-                if script_name != "concept-progress-checks.js":
+                if script_name not in {"concept-progress-checks.js", "self-assessment-checks.js"}:
                     concept_progress_service.enroll(1, "idempotency")
                 seed_notes(notes)
                 session_id = practice_service.start_session(user, exercise_id="idempotent-order-api",
                     request_id=str(uuid4()))["session_id"]
                 practice_service.save_work(user, session_id, status="paused", request_id=str(uuid4()),
                     edits=[dict(artifact_id="api", language="text", body="POST /orders — saved work", base_revision=0)])
-                if script_name == "concept-workspace-checks.js":
+                if script_name in {"concept-workspace-checks.js", "self-assessment-checks.js"}:
                     # Navigation must keep this older session, even with a newer one available.
                     practice_service.start_session(user, exercise_id="idempotent-order-api", request_id=str(uuid4()))
+
+            if script_name == "self-assessment-checks.js":
+                failure = {"mode": None}
+                real_save = self_assessment_service.save
+                def simulated_save(*args, **kwargs):
+                    mode, failure["mode"] = failure["mode"], None
+                    if mode == "before":
+                        raise SQLAlchemyError("Fixture fails before writing")
+                    result = real_save(*args, **kwargs)
+                    if mode == "after":
+                        raise SQLAlchemyError("Fixture loses committed response")
+                    return result
+                stack.enter_context(patch.object(self_assessment_service, "save", side_effect=simulated_save))
+
+                @app.get("/__assessment_state__")
+                def assessment_state():
+                    return jsonify(self_assessment_service.history(current_user.id, "idempotency"))
+
+                @app.post("/__assessment_failure__/<mode>")
+                def assessment_failure(mode):
+                    failure["mode"] = mode
+                    return "Fixture failure armed"
 
             @app.get("/__hub_checks__")
             def checks():

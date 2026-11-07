@@ -1,0 +1,13 @@
+{% extends 'learning/concept_shell.html' %}
+{% from 'learning/_self_assessment_fields.html' import hidden_fields %}
+{% block title %}Delete self-assessment history{% endblock %}
+{% block concept_content %}
+<section class="concept-study concept-assessment" aria-labelledby="assessment-heading">
+  <h2 id="assessment-heading">Delete your check-ins?</h2>
+  <p>This removes all your saved self-assessment ratings for {{ workspace.title }}. You cannot undo it.</p>
+  <p>Your enrollment, reading position, reviews, practice sessions, and AI feedback stay as they are. Dates and request records remain to make retries safe; the ratings are removed.</p>
+  <form method="post" action="{{ action_url }}" data-assessment-delete>
+    {{ hidden_fields(form) }}<div class="assessment-actions"><button class="button">Delete all check-ins</button><a href="{{ back_url }}">Keep my check-ins</a></div>
+  </form>
+</section>
+{% endblock %}

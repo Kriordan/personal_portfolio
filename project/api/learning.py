@@ -7,7 +7,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from project.database import db
 from project.models import User
-from project.services import concept_progress_service, learning_service
+from project.services import concept_progress_service, learning_service, self_assessment_service
 from sqlalchemy.exc import SQLAlchemyError
 
 learning_api_blueprint = Blueprint("api_learning", __name__, url_prefix="/learning")
@@ -178,3 +178,38 @@ def api_enroll_concept(concept_id):
 @jwt_required()
 def api_reading_position(concept_id):
     return _concept_progress_response(concept_id, "position")
+
+
+@learning_api_blueprint.route("/concepts/<concept_id>/self-assessments", methods=["GET", "POST", "DELETE"])
+@jwt_required()
+def api_self_assessments(concept_id):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify(error="Unauthorized."), 401
+    try:
+        if request.method == "GET":
+            raw = request.args.get("before")
+            if raw is not None and (not raw.isascii() or not raw.isdecimal() or len(raw) > 10):
+                raise learning_service.ValidationError("Invalid history cursor.")
+            return jsonify(self_assessment_service.history(user.id, concept_id, before=int(raw) if raw is not None else None))
+        payload = request.get_json(silent=True)
+        keys = {"expected_revision", "request_id"}
+        if request.method == "POST":
+            keys |= {"content_version", "ratings"}
+        if not isinstance(payload, dict) or set(payload) != keys:
+            raise learning_service.ValidationError("Invalid self-assessment request.")
+        if request.method == "DELETE":
+            return jsonify(self_assessment_service.clear_history(user.id, concept_id, **payload))
+        return jsonify(checkin=self_assessment_service.save(user.id, concept_id, **payload))
+    except learning_service.NotFoundError:
+        return jsonify(error="Concept not found."), 404
+    except learning_service.ValidationError as exc:
+        return jsonify(error=str(exc)), 400
+    except self_assessment_service.AssessmentConflict as exc:
+        return jsonify(error=str(exc), revision=exc.revision, current=exc.current), 409
+    except learning_service.ConflictError as exc:
+        return jsonify(error=str(exc)), 409
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Self-assessment operation unconfirmed: %s", type(exc).__name__)
+        return jsonify(error="Self-assessment could not be confirmed. Retry the same request."), 503

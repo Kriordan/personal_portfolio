@@ -3,6 +3,7 @@
   {% if workspace.session %}
     <p class="concept-session-caption">Practice · {{ {'active': 'In progress', 'paused': 'Paused', 'completed': 'Completed'}[workspace.session.status] }} · {{ workspace.session.exercise_title }}</p>
   {% else %}<p>Build understanding, test your recall, and put it to work.</p>{% endif %}
+  {% if workspace.self_assessment_url %}<a class="concept-reflection-link" href="{{ workspace.self_assessment_url }}"{% if workspace.mode == 'self-assessment' %} aria-current="page"{% endif %}>Self-assessment <span>(optional)</span></a>{% endif %}
 </header>
 <nav class="practice-views concept-mode-nav" aria-label="Concept views">
   <a href="{{ workspace.learn_url }}"{% if workspace.mode == 'learn' %} aria-current="page"{% endif %}>Learn</a>

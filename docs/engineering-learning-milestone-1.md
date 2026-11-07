@@ -5,8 +5,9 @@ Scope approved October 28, 2026: one complete **idempotency** concept on the exi
 Read the [approved revised plan](engineering-learning-revised-plan.md) for the agreed architecture and milestone acceptance criteria. For current progress, remaining work, local setup, and implementation gotchas, start with the [engineering handoff](engineering-learning-handoff.md).
 
 After Milestone 1's local acceptance, Keith separately approved checkpoint 6a on
-November 7: enrollment, saved reading position, and home continuation. It is
-recorded below; self-assessment, Expo, and content expansion remain separate.
+November 7: enrollment, saved reading position, and home continuation. He then
+approved 6b with four independent optional ratings and dated check-ins. Both are
+recorded below; Expo and content expansion still need separate approval.
 
 | Checkpoint | Deliverable and acceptance gate | Status |
 | --- | --- | --- |
@@ -29,6 +30,7 @@ recorded below; self-assessment, Expo, and content expansion remain separate.
 | 5f. Complete demonstration and accessibility review | Full Learn → Review → Discuss → Build walkthrough, targeted accessibility fixes, and regression tests. | Complete locally November 3; report below. Human content/evaluator review, screen-reader listening, standalone Safari/Firefox checks, and final milestone approval remain. |
 | 5g. Delegated content and AI review | Correct the private concurrency reference in a new exercise revision and verify saved-work/version boundaries. | Complete locally November 6. Codex recommends local pilot acceptance following Keith's delegated review. Publication and browser/screen-reader limits are recorded in the acceptance report. |
 | 6a. Enrollment and resumption | Explicit Start learning, saved section, clear home continuation; preserve scheduler and saved work; PostgreSQL and browser verification. | Approved and implemented November 7; [hands-on guide](learning-checkpoint-6a-test-guide.md). |
+| 6b. Optional self-assessment | Four independent ratings, dated history, native forms and JWT API, safe conflict/retry/deletion behavior; unchanged review/practice/AI state. | Approved and implemented November 7; [hands-on guide](learning-checkpoint-6b-test-guide.md). |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -1079,3 +1081,62 @@ older previews retain their data but their running Python code predates these
 changes. Use the new preview. Persistent environments require the new migration
 before starting the updated app. No production migration/publication/deployment
 was performed. Optional self-assessment remains the proposed next checkpoint.
+
+## Checkpoint 6b: optional self-assessment (November 7)
+
+Keith approved four separate optional ratings and dated check-ins. A quiet
+Self-assessment link in the concept header leads to native selects for
+recognition, understanding, application, and judgment. Choices are Not assessed,
+Not yet, With help, and Without help. Reflection is available before enrollment,
+never required, and never interpreted as demonstrated mastery. The main four-mode
+workspace remains unchanged, including the selected practice session.
+
+Migration `e4f5a6b7c8d9` adds `ConceptSelfAssessment`, with owner/concept/revision
+identity, per-user request UUIDs, lesson/scale version pins, UTC dates, and four
+independent ratings. No backfill or existing-table mutation occurs. The service
+uses the existing user-row lock pattern and a revision sequence independent of
+bookmarks. Exact retries return the original snapshot even after later check-ins.
+Stale new requests show the latest entry alongside unsaved choices; an explicit
+Save as a new check-in appends rather than overwrites. Lost-response recovery
+retains the original request and renders without further DB reads.
+
+History uses ten-entry pages. Deletion requires confirmation and removes the
+rating values while retaining dates/request identities and a clear marker for
+retry fencing. Old forms cannot resurrect deleted ratings, and a repeated deletion
+cannot erase a check-in saved afterward. Owned history remains readable/removable
+if the lesson is withdrawn, with no draft/reference exposure. Website routes use
+login/CSRF; GET/POST/DELETE `/api/v1/learning/concepts/<id>/self-assessments` use
+JWT and private/no-store responses. There is no AI call, overall score, promotion,
+local storage, or change to enrollment, bookmarks, reviews, feedback, or budgets.
+
+Verification:
+
+- **721 tests run, 720 passed, one existing Linux-only skip**, using isolated
+  **PostgreSQL 18.6**. Twenty-four new tests cover the service, web/JWT adapters,
+  DDL, constraints, first-write/concurrent-save/deletion races, process-death
+  rollback, pagination, publication withdrawal, and browser behavior.
+- **55 new self-assessment browser checks**, plus **225 practice / 70 concept /
+  60 hub / 40 progress**. Native and no-script forms, stale tabs, lost responses,
+  failure before commit, keyboard controls, 320-pixel layout, account isolation,
+  and exact-session/artifact continuity passed.
+- **13 Node tests**, dependency integrity, Sass, and `git diff --check` passed.
+  Final response copy received a focused route/browser rerun.
+- Manual preview verified independent choices, Tab/Enter saving, and keyboard
+  history disclosure with labeled controls in the accessibility tree. Additional
+  paid AI cost: **$0**. VoiceOver/NVDA listening and standalone Safari/Firefox
+  remain unverified.
+
+Gotchas: WTForms integer fields prefer submitted raw data, so conflict recovery
+rebuilds the form with the new expected revision; an uncertain save must instead
+retain its original UUID/revision. Reading autosaves and reflection have separate
+revision streams. A copied POST is a retry, not a fresh tab's request; browser
+fixtures must use distinct UUIDs to exercise stale-tab conflicts. The base layout
+uses a `scripts` block for progressive enhancement. Older previews do not reload
+Python or gain new schema from template reloads.
+
+The [hands-on guide](learning-checkpoint-6b-test-guide.md) covers DevTools,
+Postman/HTTPie, and a Python REPL. The new disposable preview is on **5067** with
+one example check-in for account 1; earlier previews retain their data. Apply the
+migration before updating persistent environments. No production migration,
+publication, push, or deployment was performed. Further implementation, Expo,
+additional personalities, and content expansion require separate approval.

@@ -564,6 +564,45 @@ class UserConceptProgress(db.Model):
     last_request_id: Mapped[Optional[str]] = mapped_column(String(36))
 
 
+class ConceptSelfAssessment(db.Model):
+    """Dated personal check-ins, independent of enrollment and assessed evidence.
+
+    Explicit history deletion removes ratings but keeps content-free request
+    identities and a new clear marker, fencing stale retries and old forms.
+    """
+
+    __tablename__ = "concept_self_assessment"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "request_id", name="uq_self_assessment_request"),
+        db.ForeignKeyConstraint(["concept_id", "content_version"],
+            ["content_revision.item_id", "content_revision.version"], name="fk_self_assessment_content"),
+        db.CheckConstraint("revision > 0 AND scale_version = 1", name="ck_self_assessment_revision"),
+        db.CheckConstraint("kind IN ('checkin', 'clear')", name="ck_self_assessment_kind"),
+        db.CheckConstraint("(kind = 'checkin' AND content_version IS NOT NULL) OR "
+                           "(kind = 'clear' AND content_version IS NULL)", name="ck_self_assessment_content"),
+        *[db.CheckConstraint(
+            f"((kind = 'clear' OR deleted) AND {dimension} IS NULL) OR "
+            f"(kind = 'checkin' AND NOT deleted AND {dimension} IS NOT NULL AND "
+            f"{dimension} IN ('not_assessed', 'not_yet', 'with_help', 'without_help'))",
+            name=f"ck_self_assessment_{dimension}")
+          for dimension in ("recognition", "understanding", "application", "judgment")],
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    concept_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36))
+    kind: Mapped[str] = mapped_column(String(16))
+    scale_version: Mapped[int] = mapped_column(Integer)
+    content_version: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    recognition: Mapped[Optional[str]] = mapped_column(String(16))
+    understanding: Mapped[Optional[str]] = mapped_column(String(16))
+    application: Mapped[Optional[str]] = mapped_column(String(16))
+    judgment: Mapped[Optional[str]] = mapped_column(String(16))
+
+
 class ReviewReceipt(db.Model):
     """A rating and its response commit together, scoped to the signed-in user."""
 

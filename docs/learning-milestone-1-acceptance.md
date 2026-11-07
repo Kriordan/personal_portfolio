@@ -221,5 +221,29 @@ Keith approved the separate enrollment/reading-resumption checkpoint after local
 Milestone 1 acceptance. It is implemented with PostgreSQL and browser coverage;
 see the [checkpoint log](engineering-learning-milestone-1.md#checkpoint-6a-enrollment-and-continue-learning-november-7)
 and [hands-on guide](learning-checkpoint-6a-test-guide.md). Optional self-assessment
-is proposed as 6b and still needs approval. This does not change the historical
+was proposed as 6b at that point and subsequently approved below. This does not change the historical
 Milestone 1 review evidence or authorize Expo/content expansion.
+
+## November 7 follow-up: checkpoint 6b
+
+Keith approved optional self-assessment and chose four independent ratings
+(recognition, understanding, application, judgment) with dated history. The
+implementation adds an optional reflection page and private native/JWT endpoints,
+using one additive PostgreSQL table. It supports baseline reflection before
+enrollment, independent Not assessed choices, history, explicit deletion, exact
+retries and stale-tab recovery. It changes no review schedule, AI feedback, budget,
+saved artifact, or enrollment/bookmark state. The same selected practice session
+survives the detour.
+
+**721 tests ran: 720 passed, one existing Linux-only skip**, including isolated
+PostgreSQL 18.6 migration/downgrade, first-write races, concurrent saves/deletions,
+and process-death rollback. Browser checks: **55 reflection, 40 progress, 225
+practice, 70 concept, 60 hub**. Node's 13 tests, dependency integrity and Sass
+compilation passed. Manual keyboard/AX verification confirmed labeled independent
+selects, native saving, and dated history; this does not constitute a full
+screen-reader audit. No paid AI calls or production changes were made.
+
+See the [hands-on guide](learning-checkpoint-6b-test-guide.md) for DevTools,
+HTTPie/Postman, and REPL exploration. The updated disposable preview is on 5067;
+5066 retains its previous data and running code. This checkpoint completes the
+separately approved reflection work without authorizing Expo or content expansion.

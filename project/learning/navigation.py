@@ -32,6 +32,7 @@ def workspace_navigation(concept_id, *, mode, session=None, practice_enabled=Non
     return dict(concept_id=concept_id, title=concept_id.replace("-", " ").capitalize(), mode=mode,
         session=session, practice_enabled=practice_enabled,
         learn_url=url_for("learning.concept", concept_id=concept_id, **selected),
+        self_assessment_url=url_for("learning.concept_self_assessment", concept_id=concept_id, **selected),
         review_url=url_for("learning.concept_review", concept_id=concept_id, **selected),
         **{f"{view}_url": url_for("learning.practice_workspace", session_id=session["id"], view=view)
            if session else url_for("learning.concept_practice", concept_id=concept_id, view=view)
