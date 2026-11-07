@@ -17,7 +17,7 @@ from project import create_app
 from project.database import db
 from project.learning.content_schema import load_catalog
 from project.models import ContentRevision, CurriculumItem, ReviewLog, ReviewProgress, ReviewReceipt, User
-from project.services import curriculum_service, learning_service
+from project.services import concept_progress_service, curriculum_service, learning_service
 
 ROOT = Path(__file__).resolve().parents[1]
 LESSON = "/learning/concepts/idempotency"
@@ -55,6 +55,8 @@ class ConceptWebTests(unittest.TestCase):
         for item in self.catalog["items"]:
             self.add_revision(item)
         db.session.commit()
+        for user_id in (1, 2):
+            concept_progress_service.enroll(user_id, "idempotency")
         self.client = self.app.test_client()
         self.login(1)
 

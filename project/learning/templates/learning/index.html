@@ -1,10 +1,11 @@
 {% extends 'learning/shell.html' %}
+{% from 'learning/_progress_fields.html' import hidden_fields %}
 {% block title %}Learning{% endblock %}
 {% block meta_description %}Build engineering understanding through lessons, recall, and technical practice. Explore reference articles and personal flashcards.{% endblock %}
 {% block learning_content %}
 <div class="learning-hub">
   <header class="learning-page-heading">
-    <h1>{{ 'Continue learning' if continue_session else 'Make understanding stick' }}</h1>
+    <h1>{{ 'Continue learning' if continue_session or (featured_concept and featured_concept.progress) else 'Make understanding stick' }}</h1>
     <p>Learn a concept. Recall it. Put it to work.</p>
   </header>
 
@@ -17,17 +18,26 @@
           <p class="learning-path">Learn <span aria-hidden="true">→</span> Review <span aria-hidden="true">→</span> Discuss &amp; Build</p>
           <h3 id="featured-concept-title">{{ featured_concept.title if featured_concept else continue_session.exercise_title }}</h3>
           {% if featured_concept %}<p class="learning-feature-summary">{{ featured_concept.content.summary }}</p>{% endif %}
+          {% if featured_concept and featured_concept.progress %}
+            <p class="learning-reading-state">Your learning · {% if featured_concept.resume_section %}Saved at {{ featured_concept.resume_section.title }}{% else %}Ready to begin reading{% endif %}</p>
+          {% elif featured_concept %}
+            <p class="learning-reading-state">Start learning to save your place and include this concept in review.</p>
+          {% endif %}
           {% if continue_session %}
             <p class="learning-resume-state">{{ 'Paused' if continue_session.status == 'paused' else 'In progress' }} · {{ continue_session.exercise_title }}<br>Saved {{ continue_session.updated_at|practice_time }}</p>
           {% endif %}
           <div class="learning-hub-actions">
-            {% if continue_session %}
-              <a class="learning-primary" data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice <span aria-hidden="true">→</span></a>
+            {% if featured_concept and featured_concept.progress %}
+              <a class="learning-primary" data-learning-lesson href="{{ url_for('learning.concept', concept_id=featured_concept.id, _anchor=featured_concept.resume_section.id if featured_concept.resume_section else None) }}">Continue lesson <span aria-hidden="true">→</span></a>
+              {% if continue_session %}<a data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice</a>{% endif %}
+            {% elif featured_concept %}
+              <form method="post" action="{{ url_for('learning.enroll_concept', concept_id=featured_concept.id) }}">{{ hidden_fields(enrollment_form) }}<button class="learning-primary" type="submit">Start learning</button></form>
+              <a href="{{ url_for('learning.concept', concept_id=featured_concept.id) }}">Explore the concept <span aria-hidden="true">→</span></a>
+              {% if continue_session %}<a data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice</a>{% endif %}
             {% else %}
-              <a class="learning-primary" href="{{ url_for('learning.concept', concept_id=featured_concept.id) }}">Explore the concept <span aria-hidden="true">→</span></a>
+              <a class="learning-primary" data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice <span aria-hidden="true">→</span></a>
             {% endif %}
             {% if featured_concept %}
-              {% if continue_session %}<a href="{{ url_for('learning.concept', concept_id=featured_concept.id) }}">Read lesson</a>{% endif %}
               <a href="{{ url_for('learning.concept_review', concept_id=featured_concept.id) }}">Review{% if featured_concept.due_count %} · {{ featured_concept.due_count }} due{% endif %}</a>
             {% endif %}
           </div>
@@ -39,7 +49,7 @@
         </div>
       </article>
       {% for concept in concepts if concept != featured_concept %}
-        <p class="learning-other-concept"><a href="{{ url_for('learning.concept', concept_id=concept.id) }}">{{ concept.title }}</a> · {{ concept.due_count }} due for review</p>
+        <p class="learning-other-concept"><a href="{{ url_for('learning.concept', concept_id=concept.id, _anchor=concept.resume_section.id if concept.resume_section else None) }}">{{ concept.title }}</a>{% if concept.progress %} · Learning{% endif %}{% if concept.due_count %} · {{ concept.due_count }} due for review{% endif %}</p>
       {% endfor %}
     {% elif current_user.is_authenticated %}
       <div class="learning-feature"><div><h3>Your next concept will appear here</h3><p>No concepts are published yet. You can explore the reference articles or review your flashcards below.</p></div></div>

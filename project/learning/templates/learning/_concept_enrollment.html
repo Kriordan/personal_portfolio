@@ -1,0 +1,9 @@
+{% from 'learning/_progress_fields.html' import hidden_fields %}
+<aside class="concept-enrollment" aria-label="Start learning this concept">
+  <p>Save your place and add this concept’s questions to your reviews.</p>
+  <form method="post" action="{{ url_for('learning.enroll_concept', concept_id=concept.id) }}" data-concept-enrollment>
+    {{ hidden_fields(enrollment_form) }}
+    <button class="button" type="submit">Start learning</button>
+  </form>
+  <p class="concept-progress-note">You can browse without enrolling. Any existing review schedule stays the same.</p>
+</aside>

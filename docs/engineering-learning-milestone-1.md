@@ -4,6 +4,10 @@ Scope approved October 28, 2026: one complete **idempotency** concept on the exi
 
 Read the [approved revised plan](engineering-learning-revised-plan.md) for the agreed architecture and milestone acceptance criteria. For current progress, remaining work, local setup, and implementation gotchas, start with the [engineering handoff](engineering-learning-handoff.md).
 
+After Milestone 1's local acceptance, Keith separately approved checkpoint 6a on
+November 7: enrollment, saved reading position, and home continuation. It is
+recorded below; self-assessment, Expo, and content expansion remain separate.
+
 | Checkpoint | Deliverable and acceptance gate | Status |
 | --- | --- | --- |
 | 1. Content foundation | Versioned catalog, draft lesson/four questions/one structured interview; audience projections; atomic import; additive migration verified on PostgreSQL; legacy Learning regression checks. | Committed as `1f344a5`; [REPL guide](learning-checkpoint-1-test-guide.md). |
@@ -24,6 +28,7 @@ Read the [approved revised plan](engineering-learning-revised-plan.md) for the a
 | 5e. Portable session export | Private JSON/Markdown downloads with complete saved history and consistent concurrent reads. | Implemented November 3; details and guide below. |
 | 5f. Complete demonstration and accessibility review | Full Learn → Review → Discuss → Build walkthrough, targeted accessibility fixes, and regression tests. | Complete locally November 3; report below. Human content/evaluator review, screen-reader listening, standalone Safari/Firefox checks, and final milestone approval remain. |
 | 5g. Delegated content and AI review | Correct the private concurrency reference in a new exercise revision and verify saved-work/version boundaries. | Complete locally November 6. Codex recommends local pilot acceptance following Keith's delegated review. Publication and browser/screen-reader limits are recorded in the acceptance report. |
+| 6a. Enrollment and resumption | Explicit Start learning, saved section, clear home continuation; preserve scheduler and saved work; PostgreSQL and browser verification. | Approved and implemented November 7; [hands-on guide](learning-checkpoint-6a-test-guide.md). |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -1022,3 +1027,55 @@ listening, and standalone Safari/Firefox remain outstanding. The next proposed
 implementation checkpoint is enrollment, reading position, and self-assessment,
 subject to separate approval before content expansion. Expo also requires
 explicit approval.
+
+## Checkpoint 6a: enrollment and continue learning (November 7)
+
+Keith approved enrollment, reading position, and a clear continuation point as a
+small follow-up after Milestone 1. Optional self-assessment is proposed as 6b;
+Expo and content expansion remain separately gated.
+
+Implemented one `UserConceptProgress` row per user/concept, with an explicit
+Start learning operation and a versioned section bookmark. Migration
+`d3e4f5a6b7c8` is additive, with no enrollment backfill or review/practice changes.
+The service serializes first enrollment and reading writes using the existing
+user-row lock pattern. Exact immediate reading retries replay; stale revisions
+return 409, including an old retry after a newer save. UTC-normalized timestamps
+keep replay responses identical across database connection time zones.
+
+Home offers Start learning for an unenrolled concept, or Continue lesson at its
+saved section, alongside review and existing practice. New concept questions are
+eligible after enrollment; already-started questions keep their schedules even
+without it. Browsing does not enroll or rate. The legacy review API is unchanged.
+Explicit section links take precedence over stored reading position, and unrelated
+anchors do not erase it. Native forms work without scripts. The enhanced saver
+serializes rapid navigation, retains an unconfirmed request for exact retry,
+handles stale tabs without overwriting, and preserves focus when retrying by
+keyboard. This records reading location, not mastery or completion.
+
+Web writes use CSRF; the shared JWT progress endpoints use the existing Learning
+API and private cache policy. No new infrastructure or changes to the practice,
+AI worker, budget, feedback, or artifact contracts were needed. The existing
+rating failure path uses preloaded progress so it does not query the database
+again while rendering recovery from a failed write.
+
+Verification:
+
+- **697 tests run, 696 passed, one existing Linux-only skip**, with isolated
+  **PostgreSQL 18.6**. Eighteen new tests cover the service, web/JWT boundaries,
+  migration, concurrency, process-death rollback, and browser flow.
+- **40 new progress browser checks**, plus the existing **225 practice / 70
+  concept / 60 hub** checks. They cover opt-in behavior, saved/deep-link
+  navigation, sign-out/account isolation, stale tabs, lost responses, offline
+  retry, rapid navigation, native forms, keyboard retry, and 320-pixel layout.
+- **13 Node tests**, dependency integrity, **29 standalone lesson browser
+  checks**, Sass compilation, and `git diff --check` passed. The final home
+  enrollment action received a focused route/browser rerun.
+- Manual preview verified Start learning, saving a different section, and a home
+  continuation link to that exact section. Additional paid AI cost: **$0**.
+
+The [hands-on guide](learning-checkpoint-6a-test-guide.md) uses DevTools,
+Postman/HTTPie, and a Python REPL. The updated disposable preview is on port 5066;
+older previews retain their data but their running Python code predates these
+changes. Use the new preview. Persistent environments require the new migration
+before starting the updated app. No production migration/publication/deployment
+was performed. Optional self-assessment remains the proposed next checkpoint.

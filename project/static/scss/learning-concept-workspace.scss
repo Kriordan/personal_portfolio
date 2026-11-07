@@ -88,3 +88,15 @@
     .concept-question { padding: 1.25rem; }
   }
 }
+.concept-enrollment, .concept-reading-position {
+  padding: 1rem; margin: 1rem 0; border: 1px solid #c9dcd3; border-radius: 8px;
+  background: #f2f7f4; color: #1e3028; font: .875rem/1.5 system-ui, sans-serif;
+  p { margin: 0 0 .5rem; }
+  p:last-child { margin-bottom: 0; }
+  form { margin: 0; }
+  .concept-progress-note { margin-top: .5rem; color: #52645d; }
+  label { display: block; margin-bottom: .25rem; }
+  select { max-width: 100%; min-height: 44px; margin-bottom: .5rem; }
+  button, a { min-height: 44px; }
+  [hidden] { display: none !important; }
+}

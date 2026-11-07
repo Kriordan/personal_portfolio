@@ -3868,3 +3868,40 @@ li.drag-placeholder {
     padding: 1.25rem;
   }
 }
+.concept-enrollment, .concept-reading-position {
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #c9dcd3;
+  border-radius: 8px;
+  background: #f2f7f4;
+  color: #1e3028;
+  font: 0.875rem/1.5 system-ui, sans-serif;
+}
+.concept-enrollment p, .concept-reading-position p {
+  margin: 0 0 0.5rem;
+}
+.concept-enrollment p:last-child, .concept-reading-position p:last-child {
+  margin-bottom: 0;
+}
+.concept-enrollment form, .concept-reading-position form {
+  margin: 0;
+}
+.concept-enrollment .concept-progress-note, .concept-reading-position .concept-progress-note {
+  margin-top: 0.5rem;
+  color: #52645d;
+}
+.concept-enrollment label, .concept-reading-position label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.concept-enrollment select, .concept-reading-position select {
+  max-width: 100%;
+  min-height: 44px;
+  margin-bottom: 0.5rem;
+}
+.concept-enrollment button, .concept-enrollment a, .concept-reading-position button, .concept-reading-position a {
+  min-height: 44px;
+}
+.concept-enrollment [hidden], .concept-reading-position [hidden] {
+  display: none !important;
+}

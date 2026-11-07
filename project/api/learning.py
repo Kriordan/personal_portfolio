@@ -7,7 +7,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from project.database import db
 from project.models import User
-from project.services import learning_service
+from project.services import concept_progress_service, learning_service
+from sqlalchemy.exc import SQLAlchemyError
 
 learning_api_blueprint = Blueprint("api_learning", __name__, url_prefix="/learning")
 
@@ -131,3 +132,49 @@ def api_get_rating(request_id: str):
         return jsonify({"error": "Invalid request ID."}), 400
     # No receipt is not proof that an in-flight transaction cannot commit.
     return jsonify({"receipt": receipt}), 200
+
+
+def _concept_progress_response(concept_id, operation):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify(error="Unauthorized."), 401
+    try:
+        concept_progress_service.published_concept(concept_id)
+        if operation == "get":
+            saved = concept_progress_service.progress(user.id, concept_id)
+        else:
+            payload = request.get_json(silent=True)
+            required = {"content_version", "section_id", "expected_revision", "request_id"}
+            if not isinstance(payload, dict) or set(payload) != (required if operation == "position" else set()):
+                raise learning_service.ValidationError("Invalid progress request.")
+            saved = (concept_progress_service.enroll(user.id, concept_id) if operation == "enroll" else
+                     concept_progress_service.save_position(user.id, concept_id, **payload))
+        return jsonify(progress=saved)
+    except learning_service.NotFoundError:
+        return jsonify(error="Concept not found."), 404
+    except learning_service.ValidationError as exc:
+        return jsonify(error=str(exc)), 400
+    except learning_service.ConflictError as exc:
+        return jsonify(error=str(exc)), 409
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Concept progress operation failed")
+        return jsonify(error="Progress could not be confirmed. Retry the same request."), 503
+
+
+@learning_api_blueprint.get("/concepts/<concept_id>/progress")
+@jwt_required()
+def api_concept_progress(concept_id):
+    return _concept_progress_response(concept_id, "get")
+
+
+@learning_api_blueprint.post("/concepts/<concept_id>/enrollment")
+@jwt_required()
+def api_enroll_concept(concept_id):
+    return _concept_progress_response(concept_id, "enroll")
+
+
+@learning_api_blueprint.put("/concepts/<concept_id>/reading-position")
+@jwt_required()
+def api_reading_position(concept_id):
+    return _concept_progress_response(concept_id, "position")

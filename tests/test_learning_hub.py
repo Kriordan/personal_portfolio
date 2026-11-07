@@ -35,7 +35,8 @@ class LearningHubTests(PracticeWebCase):
             page = self.get("/learning/")
         self.assertEqual(page.status_code, 200)
         self.assertIn(b"Explore the concept", page.data)
-        self.assertIn(b"Review \xc2\xb7 4 due", page.data)
+        self.assertIn(b"Start learning", page.data)
+        self.assertNotIn(b"Review \xc2\xb7 4 due", page.data)
         self.assertNotIn(b"Note 00", page.data)
         self.assertEqual(before, self.counts())
 

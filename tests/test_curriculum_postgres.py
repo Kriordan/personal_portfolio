@@ -151,6 +151,8 @@ class CurriculumPostgresTests(unittest.TestCase):
         self.assertEqual(ReviewReceipt.query.count(), 2)
         current_concept = service.published_learner_item("idempotency")
         self.assertEqual(current_concept["version"], 2)
+        from project.services import concept_progress_service
+        concept_progress_service.enroll(user.id, "idempotency")
         self.assertEqual(len(service.concept_review_queue(current_concept, user_id=user.id)), 2)
 
     def test_reference_revision_replays_shared_content_and_preserves_saved_work(self):

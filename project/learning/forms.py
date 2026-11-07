@@ -17,6 +17,23 @@ class ConceptRatingForm(FlaskForm):
                          validators=[InputRequired()])
 
 
+class ConceptEnrollmentForm(FlaskForm):
+    return_view = HiddenField(default="learn")
+    section_id = HiddenField(default="", validators=[Length(max=128)])
+    practice_session = HiddenField(default="", validators=[Length(max=36)])
+
+
+class ReadingPositionForm(FlaskForm):
+    class Meta:
+        csrf_time_limit = 86400
+
+    content_version = IntegerField(widget=HiddenInput(), validators=[InputRequired(), NumberRange(1, 2147483646)])
+    expected_revision = IntegerField(widget=HiddenInput(), validators=[InputRequired(), NumberRange(1, 2147483646)])
+    request_id = HiddenField(validators=[InputRequired(), Length(min=36, max=36)])
+    section_id = SelectField("Reading position", validators=[InputRequired()], validate_choice=False)
+    practice_session = HiddenField(default="", validators=[Length(max=36)])
+
+
 LANGUAGE_LABELS = {"text": "Plain text", "markdown": "Markdown", "pseudocode": "Pseudocode", "sql": "SQL",
                    "python": "Python", "typescript": "TypeScript", "json": "JSON", "yaml": "YAML"}
 

@@ -2,7 +2,8 @@
 {% block title %}{{ concept.title }}{% endblock %}
 {% block concept_content %}
 {% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
-<div class="concept-study concept-lesson" data-concept-lesson>
+{% if not concept_progress %}{% include 'learning/_concept_enrollment.html' %}{% endif %}
+<div class="concept-study concept-lesson" data-concept-lesson data-resume-section="{{ resume_section.id if resume_section else '' }}">
   <aside class="lesson-outline">
     <nav aria-label="Lesson sections" class="lesson-section-nav">
       <h2>In this lesson</h2>
@@ -13,6 +14,7 @@
     <details><summary>References</summary><ul>{% for reference in concept.content.references %}<li><a href="{{ reference.url }}" rel="noreferrer">{{ reference.title }}</a></li>{% endfor %}</ul></details>
   </aside>
   <div class="lesson-reading">
+    {% if concept_progress %}{% include 'learning/_reading_position.html' %}{% endif %}
     <div class="lesson-mobile-nav" data-lesson-picker hidden>
       <label for="lesson-section">Lesson section</label>
       <select id="lesson-section">{% for section in concept.content.sections %}<option value="{{ section.id }}">{{ loop.index }}. {{ section.title }}</option>{% endfor %}</select>

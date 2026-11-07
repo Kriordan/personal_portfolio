@@ -135,9 +135,15 @@ def published_review_question(concept_id, question_id, *, version=None, notes_di
 
 
 def concept_review_queue(concept, *, user_id):
-    from project.services.learning_service import due_cards_for_user
+    from project.services.learning_service import due_cards_for_user, progress_map
+    from project.services.concept_progress_service import progress
     cards = [published_review_question(concept["id"], question_id)
              for question_id in concept["content"]["review_question_ids"]]
+    if progress(user_id, concept["id"]) is None:
+        # Preserve already-started cards; discovering a concept creates no new
+        # review obligations. Explicit one-off ratings remain supported.
+        started = progress_map([card["card_id"] for card in cards], user_id)
+        cards = [card for card in cards if card["card_id"] in started]
     return due_cards_for_user(cards, user_id=user_id)
 
 

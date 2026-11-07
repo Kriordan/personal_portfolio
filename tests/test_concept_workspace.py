@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from project.database import db
 from project.models import ArtifactRevision, PracticeReceipt, PracticeSession, ReviewLog, ReviewReceipt, User
-from project.services import learning_service, practice_service
+from project.services import concept_progress_service, learning_service, practice_service
 from tests.test_concept_web import FormInputs
 from tests.test_practice_service import SENTINELS
 from tests.test_practice_web import PracticeWebCase
@@ -43,6 +43,10 @@ class ModeLinks(HTMLParser):
 
 
 class ConceptWorkspaceTests(PracticeWebCase):
+    def setUp(self):
+        super().setUp()
+        concept_progress_service.enroll(1, "idempotency")
+
     def counts(self):
         return tuple(model.query.count() for model in
             (PracticeSession, PracticeReceipt, ArtifactRevision, ReviewLog, ReviewReceipt))
@@ -133,7 +137,10 @@ class ConceptWorkspaceTests(PracticeWebCase):
     def test_failed_rating_retains_attempt_and_session_for_retry(self):
         session_id = self.start()
         values = self.review_attempt(session_id)
-        with patch.object(learning_service, "rate_card_for_user", side_effect=SQLAlchemyError("fixture")), self.assertLogs("project", level="ERROR"):
+        saved = concept_progress_service.progress(1, "idempotency")
+        with patch.object(learning_service, "rate_card_for_user", side_effect=SQLAlchemyError("fixture")), \
+                patch.object(concept_progress_service, "progress", side_effect=[saved, AssertionError("read after save failure")]), \
+                self.assertLogs("project", level="ERROR"):
             response = self.post(REVIEW, dict(values, rating="4"))
         self.assertEqual(response.status_code, 503)
         retry = FormInputs(response.get_data(as_text=True)).values

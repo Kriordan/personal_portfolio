@@ -540,6 +540,30 @@ class ContentRevision(db.Model):
     reviewed_on: Mapped[Optional[date]] = mapped_column(db.Date)
 
 
+class UserConceptProgress(db.Model):
+    """Explicit enrollment and a bookmark; neither is evidence of mastery."""
+
+    __tablename__ = "user_concept_progress"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["concept_id", "reading_version"],
+            ["content_revision.item_id", "content_revision.version"], name="fk_concept_progress_reading"),
+        db.CheckConstraint("revision > 0", name="ck_concept_progress_revision"),
+        db.CheckConstraint(
+            "(reading_version IS NULL AND reading_section IS NULL AND last_request_id IS NULL) OR "
+            "(reading_version IS NOT NULL AND reading_section IS NOT NULL AND last_request_id IS NOT NULL)",
+            name="ck_concept_progress_reading"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    concept_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    enrolled_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    revision: Mapped[int] = mapped_column(Integer)
+    reading_version: Mapped[Optional[int]] = mapped_column(Integer)
+    reading_section: Mapped[Optional[str]] = mapped_column(String(128))
+    last_request_id: Mapped[Optional[str]] = mapped_column(String(36))
+
+
 class ReviewReceipt(db.Model):
     """A rating and its response commit together, scoped to the signed-in user."""
 

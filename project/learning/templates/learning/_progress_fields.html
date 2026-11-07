@@ -1,0 +1,3 @@
+{% macro hidden_fields(form) -%}
+  {% for field in form if field.widget.input_type == 'hidden' %}{{ field(id='concept-progress-' ~ field.name) }}{% endfor %}
+{%- endmacro %}

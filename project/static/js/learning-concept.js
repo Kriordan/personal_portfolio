@@ -16,6 +16,11 @@
   const lesson = document.querySelector('[data-concept-lesson]');
   const sections = lesson ? [...lesson.querySelectorAll('[data-lesson-section]')] : [];
   const picker = lesson?.querySelector('#lesson-section');
+  if (!location.hash && lesson?.dataset.resumeSection && sections.some(section => section.id === lesson.dataset.resumeSection)) {
+    const url = new URL(location.href);
+    url.hash = lesson.dataset.resumeSection;
+    history.replaceState(history.state, '', url);
+  }
   const hashTarget = () => {
     try { return document.getElementById(decodeURIComponent(location.hash.slice(1))); }
     catch { return null; }
@@ -30,6 +35,12 @@
         else link.removeAttribute('aria-current');
       });
       picker.value = section.id;
+      const enrollment = document.querySelector('[data-concept-enrollment]');
+      if (enrollment) enrollment.elements.section_id.value = section.id;
+      // Non-lesson anchors (e.g. practice options) must not overwrite a bookmark.
+      if (!location.hash || target?.closest('[data-lesson-section]')) {
+        document.dispatchEvent(new CustomEvent('learning:section', { detail: { sectionId: section.id } }));
+      }
     }
     if (target?.matches('details')) target.open = true;
   };

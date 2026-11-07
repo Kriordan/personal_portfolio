@@ -213,3 +213,13 @@ The local implementation and delegated technical review are complete. The
 remaining publication and cross-browser/assistive-technology limits above stay
 visible in the handoff. The next implementation checkpoint is enrollment, reading
 position, and self-assessment, subject to separate approval before content expansion.
+
+
+## November 7 follow-up: checkpoint 6a
+
+Keith approved the separate enrollment/reading-resumption checkpoint after local
+Milestone 1 acceptance. It is implemented with PostgreSQL and browser coverage;
+see the [checkpoint log](engineering-learning-milestone-1.md#checkpoint-6a-enrollment-and-continue-learning-november-7)
+and [hands-on guide](learning-checkpoint-6a-test-guide.md). Optional self-assessment
+is proposed as 6b and still needs approval. This does not change the historical
+Milestone 1 review evidence or authorize Expo/content expansion.

@@ -6,12 +6,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from project.database import db
 from project.models import CurriculumItem
-from project.services import curriculum_service, learning_service, practice_service
+from project.services import concept_progress_service, curriculum_service, learning_service, practice_service
 
 from . import learning_blueprint
-from .forms import ConceptRatingForm
+from .forms import ConceptEnrollmentForm, ConceptRatingForm
 from .navigation import selected_session, workspace_navigation
 from .practice_views import start_form
+from .progress_views import study_context
 
 
 @learning_blueprint.after_request
@@ -28,6 +29,8 @@ def index():
         concepts = curriculum_service.published_concepts()
         for concept in concepts:
             concept["due_count"] = len(curriculum_service.concept_review_queue(concept, user_id=current_user.id))
+            concept["progress"] = concept_progress_service.progress(current_user.id, concept["id"])
+            concept["resume_section"] = concept_progress_service.resume_section(concept, concept["progress"])
         # No practice query at all while the feature is off (e.g. before its migration).
         if practice_service.enabled():
             sessions = practice_service.list_sessions(current_user.id, limit=1)
@@ -37,11 +40,20 @@ def index():
         if continue_session and item["id"] == continue_session["concept_id"]), None)
     if not continue_session and concepts:
         featured_concept = concepts[0]
+    enrolled = sorted((item for item in concepts if item["progress"]),
+                      key=lambda item: item["progress"]["updated_at"], reverse=True)
+    if enrolled:
+        featured_concept = enrolled[0]
+        if practice_service.enabled():
+            sessions = practice_service.list_sessions(current_user.id,
+                exercise_ids=featured_concept["content"]["exercise_ids"], limit=1)
+            continue_session = sessions[0] if sessions else None
     return render_template(
         "learning/index.html",
         concepts=concepts,
         featured_concept=featured_concept,
         continue_session=continue_session,
+        enrollment_form=ConceptEnrollmentForm(formdata=None),
     )
 
 
@@ -86,7 +98,7 @@ def concept(concept_id):
         exercise["start_form"] = start_form(exercise["id"], item["id"])
     workspace = workspace_navigation(concept_id, mode="learn", session=selected_session(item))
     return render_template("learning/concept.html", concept=item, due_count=len(queue),
-                           exercises=exercises, workspace=workspace)
+                           exercises=exercises, workspace=workspace, **study_context(item, workspace))
 
 
 @learning_blueprint.get("/concepts/<concept_id>/practice")
@@ -114,6 +126,7 @@ def concept_practice(concept_id):
 def concept_review(concept_id):
     item = _published_concept(concept_id)
     workspace = workspace_navigation(concept_id, mode="review", session=selected_session(item))
+    study = study_context(item, workspace)  # No new DB reads after a failed rating save.
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
     form = ConceptRatingForm()
     error, status, card, revealed = None, 200, None, False
@@ -172,7 +185,8 @@ def concept_review(concept_id):
             form = ConceptRatingForm(card_id=card["card_id"], content_version=card["content_version"],
                 expected_revision=card["progress_revision"], request_id=str(uuid4()))
     return render_template("learning/concept_review.html", concept=item, card=card, form=form,
-        revealed=revealed, error=error, retry_same=status == 503, stale=status == 409, workspace=workspace), status
+        revealed=revealed, error=error, retry_same=status == 503, stale=status == 409, workspace=workspace,
+        **study), status
 
 
 @learning_blueprint.route(

@@ -14,7 +14,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from flask import jsonify, request, send_file
-from flask_login import login_user
+from flask_login import current_user, login_user
 from sqlalchemy import event
 from werkzeug.serving import make_server
 
@@ -22,7 +22,7 @@ from project import create_app
 from project.database import db
 from project.extensions import talisman
 from project.models import ArtifactRevision, PracticeSession, ReviewLog, ReviewReceipt, SessionMessage, User
-from project.services import learning_service, practice_service
+from project.services import concept_progress_service, learning_service, practice_service
 from tests.learning_hub_fixtures import seed_notes
 from tests.test_practice_browser import CHROME, QuietHandler, ROOT
 from tests.test_practice_service import enable_sqlite_foreign_keys, seed_catalog
@@ -34,6 +34,9 @@ class LearningHubBrowserTests(unittest.TestCase):
 
     def test_concept_modes_keep_the_selected_session_and_review_attempt(self):
         self.run_browser_checks("concept-workspace-checks.js")
+
+    def test_enrollment_reading_resume_conflicts_and_recovery(self):
+        self.run_browser_checks("concept-progress-checks.js")
 
     def run_browser_checks(self, script_name):
         if not CHROME:
@@ -56,8 +59,11 @@ class LearningHubBrowserTests(unittest.TestCase):
                 db.create_all()
                 user = User(id=1, username="Hub fixture", email="hub@example.test", email_verified=True)
                 db.session.add(user)
+                db.session.add(User(id=2, username="Other learner", email="other@example.test", email_verified=True))
                 db.session.commit()
                 seed_catalog(SimpleNamespace())
+                if script_name != "concept-progress-checks.js":
+                    concept_progress_service.enroll(1, "idempotency")
                 seed_notes(notes)
                 session_id = practice_service.start_session(user, exercise_id="idempotent-order-api",
                     request_id=str(uuid4()))["session_id"]
@@ -71,7 +77,7 @@ class LearningHubBrowserTests(unittest.TestCase):
             def checks():
                 login_user(db.session.get(User, 1))
                 initial = (f"/learning/concepts/idempotency?practice_session={session_id}"
-                           if script_name == "concept-workspace-checks.js" else "/learning/")
+                           if script_name != "learning-hub-checks.js" else "/learning/")
                 return ('<!doctype html><meta charset="utf-8"><title>Learning hub checks</title>'
                         '<pre id="result">Running</pre><iframe id="hub" title="Learning pages" '
                         f'style="width:1280px;height:800px;border:0" src="{initial}"></iframe>'
@@ -86,6 +92,15 @@ class LearningHubBrowserTests(unittest.TestCase):
                 return jsonify(sessions=PracticeSession.query.count(), artifacts=ArtifactRevision.query.count(),
                     ratings=ReviewLog.query.count(), receipts=ReviewReceipt.query.count(),
                     turns=SessionMessage.query.filter_by(kind="turn").count())
+
+            @app.get("/__progress_state__")
+            def progress_state():
+                return jsonify(progress=concept_progress_service.progress(current_user.id, "idempotency"))
+
+            @app.get("/__progress_login__/<int:user_id>")
+            def progress_login(user_id):
+                login_user(db.session.get(User, user_id))
+                return "Fixture signed in"
 
             @app.after_request
             def local_only(response):
