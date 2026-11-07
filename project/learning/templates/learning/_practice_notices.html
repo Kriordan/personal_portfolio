@@ -3,7 +3,9 @@
 {% if detail.feedback_pending %}
   <p class="concept-notice">Feedback is being prepared for <a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=detail.feedback_pending.sequence, _anchor='feedback') }}">snapshot {{ detail.feedback_pending.sequence }}</a>. You can save edits; sending and new checks resume when it finishes.</p>
 {% endif %}
-{% if detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
+{% if detail.ai_budget and detail.ai_budget.total %}
+  <p class="practice-budget">Pilot AI allowance: {{ money(detail.ai_budget.total.spent_microusd) }} committed of {{ money(detail.ai_budget.total.cap_microusd) }} total, including pending or uncertain calls. This allowance does not reset each month.{% if detail.ai_budget.exhausted %} There is no room for another call. Reading, saving, and sending still work.{% endif %}</p>
+{% elif detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
   <p class="practice-budget">{% if detail.ai_budget.exhausted %}This month's AI budget is used up: replies resume next month. Reading, saving, and sending still work.{% else %}AI spending this month: {{ money(detail.ai_budget.spent_microusd) }} of {{ money(detail.ai_budget.cap_microusd) }}.{% endif %}</p>
 {% endif %}
 {% if paused %}<p class="practice-paused">This session is paused. Saving, sending, or resuming picks it up again.</p>{% endif %}

@@ -283,11 +283,12 @@ def _session_dto(session, payload):
 
 
 def _published_exercise(exercise_id, concept_id=None):
+    from project.services.curriculum_service import learner_visibility
     if not isinstance(exercise_id, str) or not IDENTIFIER.fullmatch(exercise_id) or len(exercise_id) > 128:
         raise NotFoundError("exercise not found")
     row = db.session.scalar(select(ContentRevision).join(CurriculumItem).where(
         ContentRevision.item_id == exercise_id, CurriculumItem.kind == "exercise",
-        ContentRevision.published_at.is_not(None),
+        learner_visibility(),
     ).order_by(ContentRevision.version.desc()).limit(1))
     if row is None or (concept_id is not None and row.payload["content"]["concept_id"] != concept_id):
         raise NotFoundError("exercise not found")

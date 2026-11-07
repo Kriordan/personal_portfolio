@@ -5,7 +5,7 @@
 <header class="learning-shell-header{% block learning_header_class %}{% endblock %}">
   <a class="learning-brand" href="{{ url_for('learning.index') }}"{% if request.endpoint == 'learning.index' %} aria-current="page"{% endif %}>Learning</a>
   <nav aria-label="Account and portfolio">
-    <a href="{{ url_for('foyer.home') }}">Portfolio</a>
+    {% if not config.get('LEARNING_LOCAL_PILOT') %}<a href="{{ url_for('foyer.home') }}">Portfolio</a>{% endif %}
     {% if current_user.is_authenticated %}
       <a href="{{ url_for('account.logout') }}">Log out</a>
     {% else %}

@@ -8,7 +8,7 @@ or shared layout holds the text for a retry. Logs carry failure summaries, never
 learner text.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from flask import abort, current_app, flash, jsonify, make_response, redirect, render_template, request, url_for
@@ -41,7 +41,12 @@ def guard_practice_routes():
 
 @learning_blueprint.app_template_filter("practice_time")
 def practice_time(value):
-    return datetime.fromisoformat(value).strftime("%b %d, %Y, %H:%M UTC") if value else ""
+    if not value:
+        return ""
+    saved = datetime.fromisoformat(value)
+    # PostgreSQL may return a session-local offset. The label promises UTC.
+    saved = saved.astimezone(timezone.utc) if saved.tzinfo else saved.replace(tzinfo=timezone.utc)
+    return saved.strftime("%b %d, %Y, %H:%M UTC")
 
 
 def start_form(exercise_id, concept_id):
@@ -313,7 +318,8 @@ def _summary(result, action):
     elif brief:
         parts.append("Saved your brief.")
     if action == "pause":
-        parts.append("Session paused: resume it from Learning on any device.")
+        location = "this computer" if current_app.config.get("LEARNING_LOCAL_PILOT") else "any device"
+        parts.append(f"Session paused: resume it from Learning on {location}.")
     elif action == "resume":
         parts.append("Session resumed.")
     return " ".join(parts) or "No changes to save: everything matches the saved versions."

@@ -7,7 +7,7 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 from marshmallow import ValidationError
-from sqlalchemy import select, text
+from sqlalchemy import or_, select, text, tuple_
 from sqlalchemy.orm import Session
 
 from project.database import db
@@ -88,10 +88,26 @@ def import_catalog(document, *, dry_run=True, publish=False, reviewed_by=None, r
     return report
 
 
+def learner_visibility():
+    """Publication by default; the isolated pilot may allow exact approved drafts.
+
+    Only the guarded local entry point sets this allowlist after checking database
+    identity and its private approval file. No environment toggle grants access.
+    Matching the checksum prevents an approved version from authorizing new text.
+    This changes visibility only: learner projections still exclude private material.
+    """
+    published = ContentRevision.published_at.is_not(None)
+    drafts = current_app.config.get("LEARNING_LOCAL_DRAFT_REVISIONS")
+    if current_app.config.get("LEARNING_LOCAL_PILOT") and drafts:
+        return or_(published, tuple_(ContentRevision.item_id, ContentRevision.version,
+                                     ContentRevision.checksum).in_(drafts))
+    return published
+
+
 def published_learner_item(item_id, *, version=None, reveal_answer=False):
-    """Read only published content through an allowlisted learner projection."""
+    """Read published content or an explicitly approved local draft through the learner projection."""
     query = select(ContentRevision).where(ContentRevision.item_id == item_id,
-        ContentRevision.published_at.is_not(None))
+        learner_visibility())
     if version is not None:
         query = query.where(ContentRevision.version == version)
     revision = db.session.scalar(query.order_by(ContentRevision.version.desc()).limit(1))
@@ -99,18 +115,22 @@ def published_learner_item(item_id, *, version=None, reveal_answer=False):
         return None
     result = learner_view(revision.payload, reveal_answer=reveal_answer)
     result["schema_version"] = revision.schema_version
+    if revision.published_at is None:
+        result["local_draft"] = True
     return result
 
 
 def published_concepts():
     """Latest published concepts, with no private exercise snapshots in the result."""
     revisions = db.session.scalars(select(ContentRevision).join(CurriculumItem).where(
-        CurriculumItem.kind == "concept", ContentRevision.published_at.is_not(None)
+        CurriculumItem.kind == "concept", learner_visibility()
     ).order_by(ContentRevision.item_id, ContentRevision.version.desc()))
     latest = {}
     for revision in revisions:
         if revision.item_id not in latest:
             latest[revision.item_id] = learner_view(revision.payload)
+            if revision.published_at is None:
+                latest[revision.item_id]["local_draft"] = True
     return list(latest.values())
 
 

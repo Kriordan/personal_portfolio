@@ -1140,3 +1140,62 @@ one example check-in for account 1; earlier previews retain their data. Apply th
 migration before updating persistent environments. No production migration,
 publication, push, or deployment was performed. Further implementation, Expo,
 additional personalities, and content expansion require separate approval.
+
+## Checkpoint 7a: persistent personal local pilot (November 7)
+
+Keith approved **$5 total**, with **at most $1 of it for verification**, and
+clearly labelled drafts in the isolated local pilot. The new operator entry
+point uses the existing Flask app, PostgreSQL server, request worker, and ledger.
+It adds no service or schema migration. Fresh setup applies the existing full
+migration chain; normal startup preserves data, credentials and progress.
+
+Private instance settings bind to a dedicated local database. Startup is
+loopback-only, uses normal login/CSRF/ownership, and requires explicit `--live`
+plus recorded approval for AI. The exact approved draft IDs, versions, and
+checksums become visible only through the guarded local factory. Normal content
+readers still require publication, and learner projections still exclude private
+reference/evaluation material. No human attestation was fabricated.
+
+The optional total allowance uses the existing ledger and PostgreSQL budget
+lock alongside monthly limits. It counts unresolved reservations and persists
+across restarts, month changes, and session deletion. Verification mode applies
+the smaller cap to that same ledger. Backup requires a stopped server; restore
+uses a new database, rotates signing keys, and blocks paid AI until spending can
+be reconciled and a new activation decision reviewed.
+
+Verification:
+
+- **740 tests run, 739 passed, one existing Linux-only skip**, on PostgreSQL
+  18.6 and the pinned Python 3.13.18/Node 24.22.1 runtimes. Nineteen added tests
+  cover setup, policy/key isolation, draft privacy, real process restart,
+  migration/metadata comparison, backup restoration, budget concurrency and
+  cross-month/deletion accounting, and UTC timestamp rendering.
+- The full run includes **450 browser assertions** across practice, concept,
+  home, enrollment/bookmark, and self-assessment flows. Thirteen Node tests,
+  dependency integrity, Sass, and diff checks pass. Final local-only pause copy
+  received a targeted route/PostgreSQL rerun.
+- The real local pilot completed two interviewer turns with saved API/SQL/
+  pseudocode artifacts and one complete-snapshot evaluation. Feedback cited
+  exact evidence, accepted the concurrency/outbox design, identified the open
+  expiry contract, and acknowledged Codex authorship/insufficient unaided evidence.
+- **Actual paid cost: $0.037859**, all five calls settled; **$4.962141 remains**.
+  There are no pending requests from verification. The paused example is clearly
+  identified in its first message; enrollment, review ratings, and self-assessment
+  remain untouched for Keith to begin his own trial.
+- A real web-process restart retained the browser login, work, feedback and
+  budget. The independent backup restore reproduced the session export checksum
+  (excluding export time) and all five charge records, and refused live activation.
+
+The walkthrough exposed two fixes: Talisman re-enabled secure-only cookies on
+local HTTP despite the factory config, and the timestamp renderer printed local
+offsets with a UTC label. The local entry point now uses the intended cookie
+policy; timestamps are converted to UTC for display. Production HTTPS and stored
+dates are unchanged. Local navigation also omits unavailable portfolio/reset
+routes and uses accurate local-only pause wording.
+
+The persistent pilot is at **5068**, with private settings/login/approval/backups
+under `.local/learning-pilot/`. The [operating and exploration guide](learning-checkpoint-7a-test-guide.md)
+covers daily use, DevTools, HTTPie/Postman, Python REPL, backup, and recovery.
+The prior disposable previews and portfolio database were preserved. The next
+step is a short personal learning trial; Expo, new concepts/personalities, and
+production publication/deployment still require approval.

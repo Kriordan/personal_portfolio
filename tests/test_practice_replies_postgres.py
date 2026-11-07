@@ -225,6 +225,33 @@ class PracticeReplyPostgresTests(unittest.TestCase):
         self.assertEqual(json.loads(json.dumps(service.ai_budget(1, now())))["spent_microusd"], spent)
         self.assertEqual(self.count("learning_ai_charge"), 1)
 
+    def test_total_cap_serializes_reservations_and_survives_month_restart_and_session_deletion(self):
+        sessions = [self.queue()[0] for _ in range(2)]
+        claims = [self.claim() for _ in sessions]
+        self.app.config["LEARNING_AI_TOTAL_CAP_USD"] = .004
+        # A previous month's unresolved paid call remains reserved indefinitely.
+        db.session.add(LearningAICharge(user_id=1, reply_id=str(uuid4()), purpose="reply", period="2020-01",
+            provider="fake", model="fake-interviewer", service_tier="default", pricing_version="fake-1",
+            state="reserved", reserved_microusd=500, expires_at=now() - timedelta(days=100), created_at=now()))
+        db.session.commit()
+        results = self.race(*(lambda claim=claim: service.begin_call(*claim, purpose="reply", input_bytes=1000,
+            max_output_tokens=100, deadline_seconds=60, now=now()) for claim in claims))
+        self.assertEqual(sorted(type(result).__name__ for result in results), ["BudgetExhausted", "int"])
+        self.assertEqual(practice_budget.committed(), 3300)
+        for sid in sessions:
+            service.delete_session(self.user(), sid)
+        # New engine/app and next month: neither clears the content-free spending ledger.
+        restarted = create_app({**self.config, "LEARNING_AI_TOTAL_CAP_USD": .004})
+        with restarted.app_context():
+            future = datetime(2028, 1, 1, tzinfo=timezone.utc)
+            self.assertEqual(practice_budget.committed(practice_budget.period(future)), 0)
+            self.assertEqual(practice_budget.committed(), 3300)
+            self.assertTrue(practice_budget.fits(700, future))
+            self.assertFalse(practice_budget.fits(701, future))
+            self.assertTrue(practice_budget.month_status(future, smallest_microusd=701)["exhausted"])
+            db.session.remove()
+            db.engine.dispose()
+
     def waits_on_a_lock(self):
         """Whether another connection to this database is waiting on a lock, polled for up to five seconds."""
         deadline = time.monotonic() + 5

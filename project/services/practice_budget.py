@@ -1,4 +1,4 @@
-"""Learning AI spending: worst-case reservations, settlement, and a monthly cap.
+"""Learning AI spending: reservations, settlement, monthly and optional total caps.
 
 The ledger (`LearningAICharge`) is content-free and outlives practice deletion. A month's
 committed spend is every settled cost plus every unsettled reservation, including
@@ -94,17 +94,26 @@ def warn_microusd():
     return _dollars("LEARNING_AI_WARN_USD", 40)
 
 
+def total_cap_microusd():
+    """An optional pilot allowance across all months, using the same durable ledger."""
+    if current_app.config.get("LEARNING_AI_TOTAL_CAP_USD") is None:
+        return None
+    return _dollars("LEARNING_AI_TOTAL_CAP_USD", 0)
+
+
 def period(now):
     return now.astimezone(timezone.utc).strftime("%Y-%m")
 
 
-def committed(period_name):
-    """Settled cost plus every unsettled reservation in the month, in micro-dollars."""
+def committed(period_name=None):
+    """Settled cost plus unsettled reservations, for one month or the entire ledger."""
     amount = case((LearningAICharge.state == "settled", LearningAICharge.cost_microusd),
                   else_=LearningAICharge.reserved_microusd)
     # PostgreSQL sums bigint as numeric, which would reach JSON as a string.
-    return int(db.session.scalar(select(func.coalesce(func.sum(amount), 0)).where(
-        LearningAICharge.period == period_name, LearningAICharge.state != "released")) or 0)
+    query = select(func.coalesce(func.sum(amount), 0)).where(LearningAICharge.state != "released")
+    if period_name is not None:
+        query = query.where(LearningAICharge.period == period_name)
+    return int(db.session.scalar(query) or 0)
 
 
 def month_status(now, *, smallest_microusd=0):
@@ -113,8 +122,17 @@ def month_status(now, *, smallest_microusd=0):
     Reservations never take the month past its cap, so spending alone rarely reaches it.
     """
     spent, cap, warn = committed(period(now)), cap_microusd(), warn_microusd()
-    return {"spent_microusd": spent, "cap_microusd": cap, "warn_microusd": warn,
-            "warning": spent >= warn, "exhausted": spent + smallest_microusd >= cap}
+    result = {"spent_microusd": spent, "cap_microusd": cap, "warn_microusd": warn,
+              "warning": spent >= warn, "exhausted": spent + smallest_microusd >= cap}
+    total_cap = total_cap_microusd()
+    if total_cap is not None:
+        total_spent = committed()
+        result["total"] = {"spent_microusd": total_spent, "cap_microusd": total_cap,
+                           "warning": total_spent * 5 >= total_cap * 4,
+                           "exhausted": total_spent + smallest_microusd >= total_cap}
+        result["warning"] |= result["total"]["warning"]
+        result["exhausted"] |= result["total"]["exhausted"]
+    return result
 
 
 def worst_case(provider, model, tier, *, input_bytes, max_output_tokens):
@@ -132,7 +150,9 @@ def worst_case(provider, model, tier, *, input_bytes, max_output_tokens):
 
 def fits(amount, now):
     """Whether `amount` more fits under the cap now. Only `reserve`, under the budget lock, is binding."""
-    return committed(period(now)) + amount <= cap_microusd()
+    total_cap = total_cap_microusd()
+    return (committed(period(now)) + amount <= cap_microusd()
+            and (total_cap is None or committed() + amount <= total_cap))
 
 
 def _lock():

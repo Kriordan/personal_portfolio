@@ -9,7 +9,7 @@
   "refused": "The interviewer declined to answer that.",
   "incomplete": "The interviewer's reply was cut off.",
   "paused": "The reply was cancelled when you paused.",
-  "budget": "This month's AI budget has no room for another reply, so replies resume next month.",
+  "budget": "The AI allowance cannot cover another reply. Check the pilot spending status before authorizing more." if config.get('LEARNING_AI_TOTAL_CAP_USD') is not none else "This month's AI budget has no room for another reply, so replies resume next month.",
   "unpriced": "AI replies are turned off right now.",
   "disabled": "AI replies are turned off right now.",
   "owner_only": "AI replies aren't available for this account.",

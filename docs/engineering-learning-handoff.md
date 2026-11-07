@@ -1,8 +1,8 @@
 # Engineering Learning Platform Handoff
 
-As of November 7, 2026, **Milestone 1 is ready for local pilot use; separately approved checkpoints 6a/6b add enrollment, saved reading position, and optional dated self-assessment.** The Learning home offers lesson, review, and practice continuation. Existing scheduling and practice recovery are preserved. See the [6b hands-on guide](learning-checkpoint-6b-test-guide.md), [6a guide](learning-checkpoint-6a-test-guide.md), and [Milestone 1 acceptance report](learning-milestone-1-acceptance.md). Production publication still needs an actual human-review attestation and rollout approval. VoiceOver/NVDA and standalone Safari/Firefox checks remain unverified. Continue on `feature/learning-content-foundation`.
+As of November 7, 2026, **Milestone 1 and checkpoints 6a/6b are complete locally; checkpoint 7a provides the persistent personal pilot on port 5068.** Its approved $5 total allowance includes up to $1 for verification, which used $0.037859. Explicitly approved drafts are labelled and isolated; normal publication remains gated. Existing scheduling and practice recovery are preserved. See the [7a operating/exploration guide](learning-checkpoint-7a-test-guide.md), [6b guide](learning-checkpoint-6b-test-guide.md), and [Milestone 1 acceptance report](learning-milestone-1-acceptance.md). Production publication still needs an actual human-review attestation and rollout approval. VoiceOver/NVDA and standalone Safari/Firefox checks remain unverified. Continue on `feature/learning-content-foundation`.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 6b and the Learning UI/login follow-ups, and the remaining rollout work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7a and the Learning UI/login follow-ups, and the remaining rollout work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -19,7 +19,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b** are authorized and implemented locally. Keith chose four separate optional ratings and dated check-in history for 6b. Do not start Expo implementation, expand to the other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed for this milestone. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a** are authorized and implemented locally. The 7a approval covers a personal local pilot, $5 total/$1 verification, and labelled exact drafts; it does not authorize production rollout. Keith chose four separate optional ratings and dated check-in history for 6b. Do not start Expo implementation, expand to the other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed for this milestone. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
@@ -58,6 +58,7 @@ Milestone 1 and the separately approved progress follow-up:
 | 5g | Delegated content/AI review and a versioned private reference correction. | Complete locally November 6; 678 tests passed, one platform skip. Local pilot recommended; publication and browser/screen-reader limits remain in the acceptance report. |
 | 6a | Explicit enrollment, saved reading position, and home continuation. | Approved and implemented locally November 7; PostgreSQL and browser verification; [hands-on guide](learning-checkpoint-6a-test-guide.md). |
 | 6b | Optional recognition/understanding/application/judgment check-ins with dated history and safe retry/deletion. | Approved and implemented locally November 7; PostgreSQL and browser verification; [hands-on guide](learning-checkpoint-6b-test-guide.md). |
+| 7a | Persistent personal local pilot, exact labelled drafts, bounded live AI, restart and backup recovery. | Complete locally November 7; $0.037859 verification cost; [operating guide](learning-checkpoint-7a-test-guide.md). |
 
 No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
 
@@ -953,7 +954,7 @@ migration or content publication was performed.
 1. **Publication review and rollout owner:** Codex completed the delegated technical review in 5g and recommends the local pilot. `catalog-v3.json` is the current draft, with exercise revision 3 and concept/question revisions 2. Production publication still requires an actual human reviewer and review date for that exact packet. No publication attestation was created by the delegated review. Production migration/deployment remain pending separate approval.
 2. **Concept progress:** separately approved 6a/6b are implemented (November 7). `UserConceptProgress` contains enrollment/bookmark state; `ConceptSelfAssessment` independently records optional recognition/understanding/application/judgment check-ins. Existing rated cards remain eligible without enrollment; new questions enter a concept queue only after enrollment. The legacy API queue remains unchanged. Trial observations should guide future presentation; no overall mastery score or inferred promotion is implemented.
 3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
-4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. The `Procfile` runs only `web`, and `run.py` uses Flask's built-in server, so the worker thread starts there and nowhere else.
+4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. The `Procfile` runs only `web`, and `run.py` starts its worker with the portfolio app. The separately approved 7a personal pilot instead uses `scripts/learning-pilot.py serve --live`; ordinary app-factory/CLI reads never start a worker.
 5. **Profile versioning and evaluator contract:** profiles are versioned in code and pinned per session (decided October 29). The `evaluator-1` contract, strict structured outputs, and evidence/coverage validation are implemented in 5c; annotations and follow-up practice in 5d. Keith delegated the remaining live-results review on November 6. Codex's 5g assessment supports the current profile/model for local use, with feedback density to observe during the trial. Historical paid results remain pinned to exercise revisions 1/2.
 6. **Content lifecycle and mobile representation:** explicit retirement, richer presentation blocks/visualization metadata, and the full taxonomy manifest remain future work. Today the importer stores resolved Markdown text, not precompiled portable presentation blocks. Agree any necessary schema evolution before Expo; do not silently invalidate version-1 content.
 7. **Remaining validation and rollout:** local end-to-end, keyboard/accessibility-tree, recovery, budget, concurrency, and delegated content/AI review are complete through 5g. VoiceOver/NVDA listening and standalone Safari/Firefox remain unverified. Human publication attestation and production rollout approval remain outstanding. Full snapshot coverage and explicit oversized rejection are implemented; multipass feedback is deferred by Keith's 5c decision. The broader multi-style AI evaluation set belongs to pilot expansion.
@@ -996,11 +997,120 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
 **Next:** use the complete idempotency loop in a short local learning trial,
-including an optional baseline and a later check-in. The [6b hands-on guide](learning-checkpoint-6b-test-guide.md)
-lets Keith inspect the behavior in DevTools, HTTPie/Postman, and a Python REPL.
+including an optional baseline and a later check-in. Checkpoint 7a is complete;
+see the [operating/exploration guide](learning-checkpoint-7a-test-guide.md).
 Agree the next implementation checkpoint before adding content, revising the
 lesson schema, or starting Expo. Additional personalities and production rollout
-also require explicit approval. No further implementation is authorized by 6b.
+also require explicit approval.
+
+### Checkpoint 7a: personal local pilot — November 7
+
+Keith explicitly approved $5 total for this pilot, including at most $1 for
+Codex verification, and labelled draft content in the isolated local database.
+The current draft has delegated technical review, not a human publication
+attestation. No publication or production deployment occurred.
+
+**Entry point and storage.** `scripts/learning-pilot.py` disables dotenv before
+imports. `scripts/learning_pilot.py` supplies explicit settings to the existing
+Flask factory and starts the existing worker only for `serve --live`. It binds
+127.0.0.1, permits Learning/auth/static routes, retains CSRF/account ownership,
+uses instance-specific cookies, excludes login/Learning analytics, and reads
+only Learning's dedicated provider key. Startup never seeds or migrates. It
+checks the schema against the checkout's Alembic head. `status` is read-only and
+works while the server runs. Backup/upgrade require the operator lock and a
+stopped server. A port collision is detected before any worker starts.
+
+The actual database is `learning_personal_pilot` on the existing Postgres.app
+server, loopback port 5432; the website is on 5068. It is migrated through
+`e4f5a6b7c8d9`. State, login, approval, logs, and backups live under the
+Git-ignored `.local/learning-pilot/`. Settings/credentials are private files;
+a UUID database comment binds them to the correct database. Remote URLs,
+connection-option redirects, existing databases, and mismatched identities are
+refused. No existing portfolio database or preview was changed.
+
+The existing Poetry environment used Python 3.13.11 despite the repository pin.
+A separate locked environment using **3.13.18** is under
+`.local/learning-pilot/venvs/`; commands use `POETRY_VIRTUALENVS_PATH` to select
+it. Existing previews keep their original environment. Node checks/Sass use
+**24.22.1**. On a fresh checkout, select the pinned interpreter, install locked
+dependencies, run `init` once, and then `authorize --total-usd …
+--verification-usd … --allow-idempotency-draft` only for an explicitly agreed
+allowance. `resume-init` can complete interrupted initialization using its
+original identity/login without resetting existing users or progress.
+
+**Visibility and spend.** `approval.json` records the explicit allowance and
+exact `(item_id, version, checksum)` tuples from `catalog-v3.json`. The importer
+writes six unpublished immutable snapshots (lesson/questions v2, exercise v3),
+with no reviewer/date attestation. The guarded local factory supplies the
+allowlist to `curriculum_service.learner_visibility`; normal readers remain
+published-only. Learner projections are unchanged, with a `local_draft` marker
+on locally visible items and an HTTP draft-pilot header. Private reference,
+facilitator, and evaluation fields do not enter learner responses or bundles.
+The authored source still exists in the public repository.
+
+`LEARNING_AI_TOTAL_CAP_USD` adds an optional all-month limit to the existing
+content-free ledger and advisory budget lock. Monthly/per-call/context limits
+remain enforced, and normal behavior is unchanged when the total cap is absent.
+Settled costs plus outstanding/uncertain reservations count. Deleting sessions,
+restarting, or crossing months cannot refund/reset the allowance. `serve --live
+--verification` applies $1 to the same total ledger, so repeated verification
+runs do not receive another $1. `serve --live` uses the approved $5. Defaults
+remain AI-off; an absent/zero approval cannot enable calls. There is no automatic
+retry or automatic cap increase. Model and prompt choices are unchanged:
+`gpt-6.1-sol`, low interviewer reasoning, medium feedback reasoning, standard
+service tier. Published rates were checked again on November 7 against the
+[official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-sol).
+
+**Recovery.** `scripts/learning_pilot_storage.py` handles exclusive database
+creation, private files, operator locking, `pg_dump`, checksum verification,
+and `pg_restore` into a new database. Backups contain the dump, settings,
+approval, and login, but do not automatically capture the provider key. Restore
+rotates signing secrets and retains draft access/passwords. Restored instances
+are permanently AI-off in this checkpoint: an older ledger can omit later
+charges, so reactivation requires spending reconciliation and a new reviewed
+approval/path. There is no force-live flag or automatic restoration of live
+spending authorization. This limitation preserves the total allowance.
+
+The actual verified backup is `backups/verified-7a`, restored independently to
+`learning_pilot_restored_7a` with state in `restored/checkpoint-7a`. Original and
+restored conversation/artifact/feedback exports matched after excluding only
+the export timestamp; all five settled charges and their total matched too.
+The real web process was restarted, and the same browser login, paused session,
+artifacts, snapshot, feedback and budget remained available. The restored copy
+stays offline. Files are local backups, not off-computer disaster recovery.
+
+**Verification.** The final full run passed **739 tests, with one existing
+Linux-only skip (740 run)** on isolated PostgreSQL 18.6, Python 3.13.18 and Node
+24.22.1. It includes 450 browser assertions (225 practice / 70 concept / 60 hub /
+40 progress / 55 reflection), fresh full migrations/metadata comparison, actual
+CLI process restarts, backup restoration, approval/key isolation, draft privacy,
+and concurrent/cross-month/deletion-safe budget reservations. Thirteen Node
+tests, dependency integrity, Sass, and `git diff --check` pass. Final local-only
+pause copy received a focused route/PostgreSQL rerun.
+
+Live verification used session `31806d3b-7e95-4b39-b78a-04736a0dbb48`, snapshot 7:
+two interviewer turns referenced the three saved artifacts; one complete-snapshot
+feedback request produced three evidenced strengths, an appropriate expiry-contract
+concern, and a trade-off. It accepted the new READ COMMITTED statement after a
+conflicting insert, and did not claim the external effect was atomic. It correctly
+recognized the Codex authorship and missing final unaided trace. This is a bounded
+integration check, not a new broad evaluator benchmark or proof of learning.
+
+All five calls settled: select 1,044 + reply 4,086 + select 782 + reply 6,546 +
+feedback 25,401 = **37,859 micro-dollars ($0.037859)**. There are no outstanding
+requests or uncertain reservations from verification. **$4.962141 remains**.
+The session is paused and explicitly marked as setup verification in its first
+message. Enrollment, review ratings and self-assessment remain empty for Keith
+to begin his own trial. Private report/export files are beside `settings.json`.
+
+**Gotchas fixed.** Talisman was re-enabling secure-only cookies over loopback
+HTTP; actual HTTP clients exposed the issue that Flask's test client missed.
+Only the local entry point disables that override, retaining HttpOnly/SameSite
+and CSRF; production HTTPS is unchanged. PostgreSQL can return timestamps with
+its local UTC offset; the practice timestamp renderer now converts to UTC before
+printing a UTC label. Stored times were already correct; no data rewrite was
+needed. Local-only navigation excludes unavailable portfolio/password-reset
+routes and pause text correctly refers to this computer.
 
 ### Activation record
 
@@ -1034,4 +1144,4 @@ Activation (see Durable AI requests and spending), done locally on October 30 ap
 
 Production enablement waits for content review and a separate approval. Production then needs its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
 
-Checkpoints 5a–5e implement content mappings, submission snapshots, deterministic syntax checks, evidence-linked generated feedback, learner responses, optional follow-up practice, and session export. Checkpoints 5f/5g complete the local demonstration, targeted accessibility review, delegated content/AI review, and private reference correction. Separately approved 6a/6b add enrollment, saved reading position, and optional dated self-assessment. Production publication and remaining browser/screen-reader validation are recorded follow-ups. The remaining vision-review proposals (open item 10) and Milestone 2 still need Keith's explicit approval.
+Checkpoints 5a–5e implement content mappings, submission snapshots, deterministic syntax checks, evidence-linked generated feedback, learner responses, optional follow-up practice, and session export. Checkpoints 5f/5g complete the local demonstration, targeted accessibility review, delegated content/AI review, and private reference correction. Separately approved 6a/6b add enrollment, saved reading position, and optional dated self-assessment. Checkpoint 7a supplies the persistent local pilot with an approved total allowance, exact labelled drafts, live verification, and backup/restart recovery. Production publication and remaining browser/screen-reader validation are recorded follow-ups. The remaining vision-review proposals (open item 10) and Milestone 2 still need Keith's explicit approval.

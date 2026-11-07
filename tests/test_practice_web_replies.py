@@ -134,6 +134,17 @@ class PracticeWebReplyTests(PracticeWebCase):
         self.assertIn("AI replies aren&#39;t available for this account.", html)
         self.assertNotIn("AI spending", html)
 
+    def test_pilot_allowance_explains_that_a_new_month_does_not_reset_it(self):
+        session_id = self.start()
+        self.app.config["LEARNING_AI_TOTAL_CAP_USD"] = 0
+        self.act(session_id, self.fields(session_id), "send", message="Saved even with no allowance")
+        html = self.page(session_id)
+        self.assertIn("Pilot AI allowance: $0.00 committed of $0.00 total", html)
+        self.assertIn("This allowance does not reset each month", html)
+        self.assertIn("The AI allowance cannot cover another reply", html)
+        self.assertIn("Saved even with no allowance", html)
+        self.assertNotIn("replies resume next month", html)
+
     def test_the_last_poll_reports_the_newest_turn(self):
         session_id = self.start()
         self.act(session_id, self.fields(session_id), "send", message="first")

@@ -30,6 +30,10 @@
 .concept-markdown { white-space: pre-wrap; }
 .concept-markdown.is-rendered { white-space: normal; }
 .concept-notice { padding: 1rem; background: #eaf3f0; border-left: 4px solid #17675a; }
+.learning-pilot-notice {
+  margin: 0; padding: .5rem 1rem; background: #f6f1df; color: #463c20;
+  text-align: center; font-size: .875rem; line-height: 1.5;
+}
 .concept-question, .concept-next, .retry-lab { padding: 1.25rem; border: 1px solid #bbb; border-radius: 10px; }
 .concept-controls { display: flex; flex-wrap: wrap; gap: .75rem; }
 .concept-ratings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }

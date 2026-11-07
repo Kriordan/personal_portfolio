@@ -101,6 +101,37 @@ class PracticeReplyCase(PracticeServiceCase):
 
 
 class PracticeReplyTests(PracticeReplyCase):
+    def test_total_allowance_counts_settled_and_uncertain_calls_but_not_releases(self):
+        self.app.config["LEARNING_AI_TOTAL_CAP_USD"] = .02
+        charges = []
+        for _ in range(3):
+            charges.append(practice_budget.reserve(user_id=1, reply_id=str(uuid4()), purpose="reply", provider="fake",
+                model="fake-interviewer", tier="default", input_bytes=1000, max_output_tokens=100,
+                expires_at=self.clock() + timedelta(seconds=60), now=self.clock()))
+        practice_budget.settle(charges[0], usage={"input_tokens": 100, "output_tokens": 10}, now=self.clock())
+        practice_budget.release(charges[1], now=self.clock())
+        db.session.commit()
+        self.clock.advance(40 * 86400)
+        self.assertEqual(practice_budget.committed(), 3080)  # 280 settled + 2800 unresolved
+        self.assertEqual(practice_budget.committed(practice_budget.period(self.clock())), 0)
+        self.app.config["LEARNING_AI_TOTAL_CAP_USD"] = .0035
+        status = practice_budget.month_status(self.clock(), smallest_microusd=500)
+        self.assertTrue(status["warning"])
+        self.assertTrue(status["exhausted"])
+        self.assertEqual(status["total"]["spent_microusd"], 3080)
+        self.assertFalse(practice_budget.fits(500, self.clock()))
+        del self.app.config["LEARNING_AI_TOTAL_CAP_USD"]
+        self.assertNotIn("total", practice_budget.month_status(self.clock()))
+        self.assertTrue(practice_budget.fits(500, self.clock()))
+
+    def test_zero_total_allowance_prevents_a_paid_reservation(self):
+        self.app.config["LEARNING_AI_TOTAL_CAP_USD"] = 0
+        with self.assertRaises(practice_budget.BudgetExhausted):
+            practice_budget.reserve(user_id=1, reply_id=str(uuid4()), purpose="reply", provider="fake",
+                model="fake-interviewer", tier="default", input_bytes=1000, max_output_tokens=100,
+                expires_at=self.clock() + timedelta(seconds=60), now=self.clock())
+        self.assertEqual(LearningAICharge.query.count(), 0)
+
     def test_send_queues_a_reply_only_for_the_verified_owner_when_enabled(self):
         session_id = self.start()
         sent = self.send(session_id)

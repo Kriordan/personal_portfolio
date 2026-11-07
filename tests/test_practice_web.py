@@ -19,6 +19,15 @@ from tests.test_practice_service import SENTINELS, enable_sqlite_foreign_keys, s
 LESSON = "/learning/concepts/idempotency"
 
 
+class PracticeTimeTests(unittest.TestCase):
+    def test_saved_times_are_converted_to_the_utc_zone_named_in_the_label(self):
+        from project.learning.practice_views import practice_time
+        for timestamp in ("2026-11-07T18:52:00+00:00", "2026-11-07T13:52:00-05:00",
+                          "2026-11-08T00:22:00+05:30", "2026-11-07T18:52:00"):
+            self.assertEqual(practice_time(timestamp), "Nov 07, 2026, 18:52 UTC")
+        self.assertEqual(practice_time(None), "")
+
+
 class FormFields(HTMLParser):
     """Collect the values a browser would submit, including textarea text and selections."""
 
