@@ -7,10 +7,13 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from project.database import db
 from project.models import User
+from project.learning.access import private_response, require_api_access
 from project.services import concept_progress_service, learning_service, self_assessment_service
 from sqlalchemy.exc import SQLAlchemyError
 
 learning_api_blueprint = Blueprint("api_learning", __name__, url_prefix="/learning")
+learning_api_blueprint.before_request(require_api_access)
+learning_api_blueprint.after_request(private_response)
 
 
 @learning_api_blueprint.after_request

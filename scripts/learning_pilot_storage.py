@@ -14,7 +14,7 @@ import re
 import shutil
 import stat
 import subprocess
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psycopg
 from psycopg import sql
@@ -111,6 +111,22 @@ def write_json(path, data):
     write_private(path, json.dumps(data, indent=2, sort_keys=True) + "\n")
 
 
+def replace_private_json(path, data):
+    """Replace an existing operator file atomically, retaining private permissions."""
+    path = private_file(path)
+    temporary = path.with_name("." + path.name + "." + uuid4().hex)
+    try:
+        write_json(temporary, data)
+        os.replace(temporary, path)
+        descriptor = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def read_json(path):
     return json.loads(private_file(path).read_text())
 
@@ -179,7 +195,10 @@ def restore_database(value, instance_id, path, checksum):
         raise PilotError("Backup checksum mismatch. Nothing was restored.")
     url = create_database(value, instance_id)
     args, env = _postgres_command("pg_restore", url)
-    result = subprocess.run(args + ["--single-transaction", "--exit-on-error", "--no-owner", "--no-privileges",
+    # This target was just created exclusively above. Hosted dumps can explicitly
+    # recreate public (different schema ownership); remove its empty default first.
+    result = subprocess.run(args + ["--single-transaction", "--exit-on-error", "--clean", "--if-exists",
+                                   "--no-owner", "--no-privileges",
                                    "--dbname", url.database, str(path)],
         env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=120)
     if result.returncode:

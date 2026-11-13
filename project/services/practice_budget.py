@@ -113,7 +113,8 @@ def committed(period_name=None):
     query = select(func.coalesce(func.sum(amount), 0)).where(LearningAICharge.state != "released")
     if period_name is not None:
         query = query.where(LearningAICharge.period == period_name)
-    return int(db.session.scalar(query) or 0)
+    from project.learning.hosted_pilot import carried_spending
+    return int(db.session.scalar(query) or 0) + carried_spending(current_app.config, period_name)
 
 
 def month_status(now, *, smallest_microusd=0):

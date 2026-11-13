@@ -91,14 +91,18 @@ def import_catalog(document, *, dry_run=True, publish=False, reviewed_by=None, r
 def learner_visibility():
     """Publication by default; the isolated pilot may allow exact approved drafts.
 
-    Only the guarded local entry point sets this allowlist after checking database
-    identity and its private approval file. No environment toggle grants access.
+    The local entry point checks database identity and its approval file. The
+    private hosted runtime validates its exact cutover approval and owner gate.
     Matching the checksum prevents an approved version from authorizing new text.
     This changes visibility only: learner projections still exclude private material.
     """
     published = ContentRevision.published_at.is_not(None)
     drafts = current_app.config.get("LEARNING_LOCAL_DRAFT_REVISIONS")
     if current_app.config.get("LEARNING_LOCAL_PILOT") and drafts:
+        return or_(published, tuple_(ContentRevision.item_id, ContentRevision.version,
+                                     ContentRevision.checksum).in_(drafts))
+    drafts = current_app.config.get("LEARNING_HOSTED_DRAFT_REVISIONS")
+    if current_app.config.get("LEARNING_HOSTED_PILOT") and drafts:
         return or_(published, tuple_(ContentRevision.item_id, ContentRevision.version,
                                      ContentRevision.checksum).in_(drafts))
     return published
@@ -116,7 +120,7 @@ def published_learner_item(item_id, *, version=None, reveal_answer=False):
     result = learner_view(revision.payload, reveal_answer=reveal_answer)
     result["schema_version"] = revision.schema_version
     if revision.published_at is None:
-        result["local_draft"] = True
+        result["private_pilot_draft" if current_app.config.get("LEARNING_HOSTED_PILOT") else "local_draft"] = True
     return result
 
 
@@ -130,7 +134,7 @@ def published_concepts():
         if revision.item_id not in latest:
             latest[revision.item_id] = learner_view(revision.payload)
             if revision.published_at is None:
-                latest[revision.item_id]["local_draft"] = True
+                latest[revision.item_id]["private_pilot_draft" if current_app.config.get("LEARNING_HOSTED_PILOT") else "local_draft"] = True
     return list(latest.values())
 
 

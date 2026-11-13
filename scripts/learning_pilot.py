@@ -65,10 +65,19 @@ def load_settings(directory):
     value = storage.read_json(directory / SETTINGS)
     required = {"format_version", "instance_id", "database_url", "owner_email", "port", "secret_key",
                 "jwt_secret_key", "created_at", "restored"}
-    if not isinstance(value, dict) or set(value) != required or value["format_version"] != 1:
+    if not isinstance(value, dict) or set(value) - {"hosted_handoff_id", "hosted_handoff_target"} != required or value["format_version"] != 1:
         raise storage.PilotError("Unrecognized pilot settings format.")
     storage.local_url(value["database_url"])
     storage.database_marker(value["instance_id"])
+    if "hosted_handoff_id" in value:
+        storage.database_marker(value["hosted_handoff_id"])
+        target = value.get("hosted_handoff_target")
+        if (not isinstance(target, dict) or set(target) != {"owner_id", "owner_email"}
+                or type(target["owner_id"]) is not int or target["owner_id"] < 1
+                or not isinstance(target["owner_email"], str)):
+            raise storage.PilotError("Invalid hosted handoff target. Keep the original settings.")
+    elif "hosted_handoff_target" in value:
+        raise storage.PilotError("Incomplete hosted handoff identity.")
     if (type(value["port"]) is not int or not 1024 <= value["port"] <= 65535
             or type(value["restored"]) is not bool
             or any(not isinstance(value[key], str) or len(value[key]) < 32 for key in ("secret_key", "jwt_secret_key"))):
@@ -114,7 +123,7 @@ def authorize(directory, *, total_usd, verification_usd, allow_draft=False):
         raise storage.PilotError("Verification must fit inside the total allowance.")
     with storage.operator_lock(directory):
         settings = load_settings(directory)
-        if settings["restored"]:
+        if settings["restored"] or settings.get("hosted_handoff_id"):
             raise storage.PilotError("Restored spending must be reconciled before a new live approval. Live AI remains disabled.")
         catalog = load_catalog(DRAFT_CATALOG) if allow_draft else None
         revisions = [[item["id"], item["version"], curriculum_service.content_checksum(item, catalog["schema_version"])]
@@ -146,8 +155,8 @@ def app_for(settings, *, approval=None, live=False, verification=False):
     if approval and approval["instance_id"] != settings["instance_id"]:
         raise storage.PilotError("This approval belongs to a different pilot.")
     cap = (approval["verification_microusd"] if verification else approval["total_microusd"]) if approval else 0
-    if live and (settings["restored"] or not approval or cap <= 0):
-        raise storage.PilotError("Live AI requires a positive approved allowance on the original pilot. Restores stay offline until spending is reconciled.")
+    if live and (settings["restored"] or settings.get("hosted_handoff_id") or not approval or cap <= 0):
+        raise storage.PilotError("Live AI requires a positive approved allowance on the original pilot. Restored or handed-off pilots stay offline until spending is reconciled.")
     cookie_suffix = settings["instance_id"].split("-")[0]
     app = create_app(dict(SECRET_KEY=settings["secret_key"], JWT_SECRET_KEY=settings["jwt_secret_key"],
         SQLALCHEMY_DATABASE_URI=settings["database_url"], SQLALCHEMY_TRACK_MODIFICATIONS=False,
@@ -227,8 +236,8 @@ def initialize(directory, *, database_url, email, port):
 
 def finish_initialization(directory, settings):
     """Complete a new pilot using its retained identity; never reset an existing login."""
-    if settings["restored"]:
-        raise storage.PilotError("A restored pilot cannot be initialized again.")
+    if settings["restored"] or settings.get("hosted_handoff_id"):
+        raise storage.PilotError("A restored or handed-off pilot cannot be initialized again.")
     credentials = storage.private_file(Path(directory) / "login.txt").read_text().splitlines()
     if (len(credentials) != 2 or credentials[0] != f"Email: {settings['owner_email']}"
             or not credentials[1].startswith("Password: ") or len(credentials[1][10:]) < 24):
@@ -359,6 +368,9 @@ def main():
     recover.add_argument("backup", type=Path)
     recover.add_argument("--database-url", required=True)
     commands.add_parser("upgrade", help="After a backup, explicitly apply pending migrations; startup never migrates.")
+    handoff = commands.add_parser("handoff-hosted", help="At approved cutover only: permanently disable local paid AI and record carried spending.")
+    handoff.add_argument("--owner-id", required=True, type=int)
+    handoff.add_argument("--owner-email", required=True)
     args = parser.parse_args()
     try:
         if args.command == "init":
@@ -378,6 +390,10 @@ def main():
         elif args.command == "restore":
             restore(args.backup, args.state_dir, args.database_url)
             print("Restored to a new private database. Paid AI remains disabled; reconcile spending before authorizing it.")
+        elif args.command == "handoff-hosted":
+            from scripts.learning_hosted_handoff import freeze
+            path = freeze(args.state_dir, owner_id=args.owner_id, owner_email=args.owner_email)
+            print(f"Local paid AI is disabled. Private hosted cutover record: {path}")
         else:
             with storage.operator_lock(args.state_dir) if args.command == "upgrade" else nullcontext():
                 settings = load_settings(args.state_dir)
@@ -395,6 +411,8 @@ def main():
                           "This command makes no paid calls.")
                     if settings["restored"]:
                         print("Restored pilot: live AI is blocked pending spending reconciliation and new approval.")
+                    if settings.get("hosted_handoff_id"):
+                        print("Handed-off pilot: local paid AI is blocked. Saved work remains available without --live.")
     except (storage.PilotError, FileExistsError) as exc:
         parser.exit(1, (str(exc) if isinstance(exc, storage.PilotError) else "Destination already exists; nothing was overwritten.") + "\n")
     except Exception as exc:

@@ -30,9 +30,11 @@
       {% if request.path == '/contact' %}class="active"{% endif %}
       href="{{ url_for( 'foyer.contact' )}}">Contact</a>
     {% if not current_user.is_anonymous %}
+      {% if learning_access_allowed(current_user) %}
       <a
         {% if request.path.startswith('/learning') %}class="active"{% endif %}
         href="{{ url_for( 'learning.index' )}}">Learning</a>
+      {% endif %}
       <a
         {% if request.blueprint == 'lottery' %}class="active"{% endif %}
         href="{{ url_for('lottery.index') }}">Scratch-offs</a>

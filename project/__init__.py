@@ -181,9 +181,11 @@ def register_jinja_env(app):
     Returns:
         None
     """
+    from project.learning.access import allowed
     app.jinja_env.globals.update(
         {
             "now": datetime.datetime.now().strftime("%Y"),
+            "learning_access_allowed": allowed,
         }
     )
 

@@ -7,10 +7,13 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from project.api.learning import _current_user_from_jwt
+from project.learning.access import private_response, require_api_access
 from project.database import db
 from project.services import feedback_service, feedback_review_service, learning_service, practice_service as practice, practice_export_service
 
 practice_api_blueprint = Blueprint("api_learning_practice", __name__, url_prefix="/learning/practice")
+practice_api_blueprint.before_request(require_api_access)
+practice_api_blueprint.after_request(private_response)
 PRACTICE_REQUEST_BYTES = 2 * 1024 * 1024
 TURN_FIELDS = {"request_id", "body", "expected_sequence", "artifact_revisions", "brief_revision"}
 # What to tell a client when the database fails. Only POST and PUT carry a request_id.

@@ -1016,7 +1016,11 @@ def ai_owner_id():
         return None
     ids = db.session.scalars(select(User.id).where(
         func.lower(User.email) == email.strip().lower(), User.email_verified.is_(True)).limit(2)).all()
-    return ids[0] if len(ids) == 1 else None
+    if len(ids) != 1:
+        return None
+    if current_app.config.get("LEARNING_HOSTED_PILOT") and ids[0] != current_app.config.get("LEARNING_HOSTED_OWNER_ID"):
+        return None
+    return ids[0]
 
 
 def reply_unavailable(user_id, now):
