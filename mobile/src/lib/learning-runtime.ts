@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { AccessibilityInfo, Platform } from 'react-native';
 
+import { clearConceptStudy } from './concept-runtime';
 import { learningApi } from './learning-api';
 import { reconcileLearningRating } from './learning-cache';
 import { LearningSession, type AttemptStorage } from './learning-session';
@@ -59,5 +60,5 @@ export function learningSession(userId: number) {
 export async function clearLearningSession() {
   current?.session.dispose();
   current = null;
-  await storage.clear();
+  await Promise.all([storage.clear(), clearConceptStudy()]);
 }

@@ -44,6 +44,9 @@ function AppNavigation() {
         <Stack.Screen name="lists/index" options={{ title: 'Grocery' }} />
         <Stack.Screen name="lists/[id]" options={{ title: 'Grocery list' }} />
         <Stack.Screen name="learning/index" options={{ title: 'Learning' }} />
+        <Stack.Screen name="learning/notes" options={{ title: 'Notes and flashcards' }} />
+        <Stack.Screen name="learning/concepts/[id]/index" options={{ title: 'Idempotency' }} />
+        <Stack.Screen name="learning/concepts/[id]/review" options={{ title: 'Review' }} />
         <Stack.Screen name="learning/[id]" options={{ title: 'Note' }} />
         <Stack.Screen name="learning/review" options={{ title: 'Review' }} />
         <Stack.Screen name="wishlist/index" options={{ title: 'Wishlist' }} />
