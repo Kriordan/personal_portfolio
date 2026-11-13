@@ -32,7 +32,7 @@ recorded below; Expo and content expansion still need separate approval.
 | 6a. Enrollment and resumption | Explicit Start learning, saved section, clear home continuation; preserve scheduler and saved work; PostgreSQL and browser verification. | Approved and implemented November 7; [hands-on guide](learning-checkpoint-6a-test-guide.md). |
 | 6b. Optional self-assessment | Four independent ratings, dated history, native forms and JWT API, safe conflict/retry/deletion behavior; unchanged review/practice/AI state. | Approved and implemented November 7; [hands-on guide](learning-checkpoint-6b-test-guide.md). |
 | 7a. Persistent personal pilot | Dedicated local PostgreSQL, exact labelled drafts, durable $5 total/$1 verification allowance, backups and safe restart. | Implemented in `dfdabbc`; [operating guide](learning-checkpoint-7a-test-guide.md). |
-| 7b. Private hosted pilot | Existing hosted account/site/database, exact private drafts, fresh hosted practice, frozen local AI and carried spending, production server and release safeguards. | Prepared November 13; tests complete; **deployment requires approval**. [Rollout and hands-on guide](learning-checkpoint-7b-test-guide.md). |
+| 7b. Private hosted pilot | Existing hosted account/site/database, exact private drafts, fresh hosted practice, frozen local AI and carried spending, production server and release safeguards. | Deployed November 13 as Heroku v171 / `93a24a2`; private access, live AI and restart verified. [Rollout and hands-on guide](learning-checkpoint-7b-test-guide.md). |
 
 Each checkpoint should remain independently reviewable. At Milestone 1 completion, stop for approval before Expo or content expansion. Additional personalities, voice, advanced editors, and the remaining concepts are outside these checkpoints.
 
@@ -1198,17 +1198,18 @@ routes and uses accurate local-only pause wording.
 The persistent pilot is at **5068**, with private settings/login/approval/backups
 under `.local/learning-pilot/`. The [operating and exploration guide](learning-checkpoint-7a-test-guide.md)
 covers daily use, DevTools, HTTPie/Postman, Python REPL, backup, and recovery.
-The prior disposable previews and portfolio database were preserved. The next
-step is a short personal learning trial; Expo, new concepts/personalities, and
-production publication/deployment still require approval.
+The prior disposable previews and portfolio database were preserved. At the
+7a checkpoint, the next step was a short personal trial and hosted deployment
+still required approval. The subsequent approved cutover is recorded below;
+Expo, new concepts/personalities and general publication remain unapproved.
 
-## Checkpoint 7b: private hosted pilot preparation (November 13)
+## Checkpoint 7b: private hosted pilot (November 13)
 
 Keith approved reusing the existing Heroku site/database/account, exact labelled
 drafts behind a verified-owner gate, and fresh hosted practice. Local work stays
 readable; its spending carries forward and local paid AI is frozen before hosted
-activation. The same $5 lifetime/$1 verification allowance applies. **Deployment
-still requires explicit approval.**
+activation. The same $5 lifetime/$1 verification allowance applies. Keith
+explicitly approved deployment; it is now live on the existing site.
 
 The hosting audit found one Basic web dyno, PostgreSQL 16.14, and the existing
 verified owner. The new hosted policy validates a private cutover record and
@@ -1236,14 +1237,16 @@ Validation on the final dependency set:
 - The read-only production-copy rehearsal preserved **11,324 rows across 28
   application tables** through two release runs, moving from `a4b5c6d7e8f9` to
   `e4f5a6b7c8d9` and importing six unpublished revisions. The clone was removed;
-  the private backup/report is retained locally. Production was not changed.
+  the private backup/report is retained locally. This rehearsal made no
+  production writes; the subsequent approved deployment applied the upgrade.
 - Thirteen Node tests, dependency integrity, Poetry lock/install consistency,
   and the Python dependency audit pass. The audit prompted existing-library
   patches to [OAuthLib 4.0.1](https://github.com/oauthlib/oauthlib/releases/tag/v4.0.1)
   and [pyasn1 0.6.5](https://github.com/pyasn1/pyasn1/releases/tag/v0.6.5).
-- All AI responses were deterministic fixtures; **$0 spent**. Real local AI is
-  not frozen yet. No production configuration, migration, push or deployment
-  occurred. Unrelated mobile changes stay outside this commit.
+- Pre-deployment AI responses were deterministic fixtures; those tests spent
+  **$0**. The runtime fix then passed 79 targeted local tests and all 18 provider
+  tests on Heroku against a fake API. Unrelated mobile changes stay outside
+  these commits.
 
 The rehearsal caught a restore issue caused by Heroku's explicit `public`
 schema ownership. Restore now cleans only a freshly created target; a regression
@@ -1251,8 +1254,28 @@ test reproduces that ownership. PostgreSQL backup clients must match version 16;
 CI now uses that version and matching clients. Row comparisons normalize UTC
 and exclude hosting-system monitoring views.
 
-Next: ask for deployment approval against this commit, then follow the
-[rollout and hands-on guide](learning-checkpoint-7b-test-guide.md). Activation
-starts with AI off, then bounded verification and finally private use. Restore
-or rollback must preserve accounting; older hosted backups need spending
+Deployment used the approved `1142806` tree, history-only merge `cd5555e`
+(preserving the previous Heroku ancestry), and runtime fix `93a24a2`. The first
+live child process could not locate Heroku's shared Python library. AI was turned
+off, the interpreter-derived Linux library path was tested and deployed, then
+one explicit recovery reused the original turn. Arbitrary parent loader/Python
+paths remain excluded; the failed $0.007315 reservation still counts.
+
+Final **Heroku v171 / `93a24a2`**, schema `e4f5a6b7c8d9`, is in private `pilot`
+mode. Owner-only access, draft/private response boundaries, existing portfolio
+and lists, native WebSocket authentication, saved artifacts, one live interviewer
+exchange and complete-snapshot feedback passed. Feedback validated eight original
+citations and identified the example as assisted work. A real web restart
+preserved login, artifacts, feedback and accounting; explicit resume/pause passed.
+The setup example is paused, and no learner review ratings, enrollment or
+self-assessment were invented.
+
+The local pilot is backed up and paid AI is frozen. Heroku backups **b011**
+(before) and **b012** (after verification) completed. Counted spending is
+**$0.076025**: $0.037859 carried + $0.030851 new settled + $0.007315 reserved.
+The original $5 cap leaves **$4.923975**, and verification stayed below $1.
+
+Next: use the [live Learning pilot](https://www.keithriordan.com/learning/) for
+a short trial; see the [hands-on guide](learning-checkpoint-7b-test-guide.md).
+Restore or rollback must preserve accounting; older hosted backups need spending
 reconciliation before AI can resume. Content expansion and Expo remain unapproved.

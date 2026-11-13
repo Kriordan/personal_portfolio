@@ -2,14 +2,15 @@
 
 As of November 7, 2026, **Milestone 1 and checkpoints 6a/6b are complete locally; checkpoint 7a provides the persistent personal pilot on port 5068.** Its approved $5 total allowance includes up to $1 for verification, which used $0.037859. Explicitly approved drafts are labelled and isolated; normal publication remains gated. Existing scheduling and practice recovery are preserved. See the [7a operating/exploration guide](learning-checkpoint-7a-test-guide.md), [6b guide](learning-checkpoint-6b-test-guide.md), and [Milestone 1 acceptance report](learning-milestone-1-acceptance.md). Production publication still needs an actual human-review attestation and rollout approval. VoiceOver/NVDA and standalone Safari/Firefox checks remain unverified. Continue on `feature/learning-content-foundation`.
 
-**November 13 update:** Keith approved all three checkpoint 7b recommendations:
-reuse the existing hosted account/site/database, allow exact labelled drafts
-privately, and start fresh hosted practice while retaining local work and
-carrying forward spending. Implementation and verification are complete; **ask
-Keith before deploying**. No production configuration/migration, local AI
-cutover, push, or paid call was made. See the [7b rollout and hands-on guide](learning-checkpoint-7b-test-guide.md).
+**November 13 update:** Keith approved deployment and checkpoint 7b is **live** at
+[Learning](https://www.keithriordan.com/learning/), using his existing verified
+account. Heroku release **v171**, source `93a24a2`, is in private `pilot` mode.
+Local paid AI is frozen; local work remains readable. Combined spending and
+reservations are **$0.076025**, leaving **$4.923975** of the original $5 allowance.
+Access, live interviewer/feedback, saved artifacts, restart/resumption and
+accounting checks passed. See the [7b rollout and hands-on guide](learning-checkpoint-7b-test-guide.md).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and the Learning UI/login follow-ups, and the remaining rollout work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -66,10 +67,16 @@ Milestone 1 and the separately approved progress follow-up:
 | 6a | Explicit enrollment, saved reading position, and home continuation. | Approved and implemented locally November 7; PostgreSQL and browser verification; [hands-on guide](learning-checkpoint-6a-test-guide.md). |
 | 6b | Optional recognition/understanding/application/judgment check-ins with dated history and safe retry/deletion. | Approved and implemented locally November 7; PostgreSQL and browser verification; [hands-on guide](learning-checkpoint-6b-test-guide.md). |
 | 7a | Persistent personal local pilot, exact labelled drafts, bounded live AI, restart and backup recovery. | Complete locally November 7; $0.037859 verification cost; [operating guide](learning-checkpoint-7a-test-guide.md). |
+| 7b | Private hosted pilot on the existing site, with local spending carried forward. | Deployed November 13; v171 / `93a24a2`; live feedback and restart verified; [operating guide](learning-checkpoint-7b-test-guide.md). |
 
-No push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
+Before checkpoint 7b, no push, PR, deployment, production migration, or production publication was performed for these checkpoints. Content remains an AI-assisted draft awaiting human technical review; demo publication is not production approval.
 
-**Deploying this branch migrates production.** The `Procfile` runs `flask db upgrade; python run.py`, so every deploy applies pending migrations, and the `;` starts the app even if the upgrade fails. Practice stays hidden unless `LEARNING_PRACTICE_ENABLED=1`; with the flag off, no page queries the practice tables, so Learn and Review keep working even if that migration failed.
+**Deploying this branch migrates production.** Since checkpoint 7b, the `Procfile`
+runs `scripts/release.py` before serving through Gunicorn. A failed release check
+prevents promotion; web startup independently checks readiness. This replaced
+the former `flask db upgrade; python run.py` command, which could start after a
+failed migration. The hosted pilot derives practice access from its validated
+owner policy. Leave that policy enabled when switching AI off.
 
 ## Decisions and reasons
 
@@ -958,7 +965,7 @@ migration or content publication was performed.
 
 ## Open items and decisions to revisit
 
-1. **Publication review and rollout owner:** Codex completed the delegated technical review in 5g and recommends the local pilot. `catalog-v3.json` is the current draft, with exercise revision 3 and concept/question revisions 2. General publication still requires an actual human reviewer and review date for that exact packet. No publication attestation was created by the delegated review. The 7b exception allows only exact labelled drafts behind the verified owner gate; deployment still needs approval.
+1. **Publication review and rollout owner:** Codex completed the delegated technical review in 5g and recommends the local pilot. `catalog-v3.json` is the current draft, with exercise revision 3 and concept/question revisions 2. General publication still requires an actual human reviewer and review date for that exact packet. No publication attestation was created by the delegated review. The approved and deployed 7b exception allows only exact labelled drafts behind the verified owner gate. It does not authorize general publication.
 2. **Concept progress:** separately approved 6a/6b are implemented (November 7). `UserConceptProgress` contains enrollment/bookmark state; `ConceptSelfAssessment` independently records optional recognition/understanding/application/judgment check-ins. Existing rated cards remain eligible without enrollment; new questions enter a concept queue only after enrollment. The legacy API queue remains unchanged. Trial observations should guide future presentation; no overall mastery score or inferred promotion is implemented.
 3. **Exact session schema and lifecycle:** decided and built through 3b (schema, constraints, payloads, replay, conflicts, limits, brief snapshots, turn freshness, pause/resume, delete). Choices made while building 3b that Keith may want to revisit: **Save and pause** saves before pausing; brief sources can be added only through the API (the website shows and preserves them); there is no brief history page; delete refuses SQLite without foreign keys. Ask Keith if a substantial departure is necessary.
 4. **Provider and worker activation:** decided October 29: a worker thread in the web process, and Learning's own OpenAI project and key. The worker thread, request table, and content-free budget ledger exist (4a), and so does the OpenAI call process (4b). Activation (October 29 and 30): Keith created the project and key with a $50 hard limit, and live evaluations chose `gpt-6.1-sol` at low reasoning, with access and prices verified, and confirmed the deadlines, output caps, and context allowance. Checkpoint 7b moves production to a release phase plus one threaded Gunicorn web process; its post-initialization hook starts the existing worker only after readiness checks. `run.py` remains a development entry point. The separately approved 7a personal pilot instead uses `scripts/learning-pilot.py serve --live`; ordinary app-factory/CLI reads never start a worker.
@@ -1003,22 +1010,26 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** obtain deployment approval for the completed 7b commit, then activate
-the private hosted pilot using its [rollout guide](learning-checkpoint-7b-test-guide.md).
-After activation, use the idempotency loop in a short learning trial with an
+**Next:** use the [live private pilot](https://www.keithriordan.com/learning/)
+for a short idempotency learning trial, following its
+[hands-on guide](learning-checkpoint-7b-test-guide.md), with an
 optional baseline and later check-in. New concepts, personalities, lesson-schema
 changes, and Expo still require separate approval.
 
-### Checkpoint 7b: private hosted pilot prepared — November 13
+### Checkpoint 7b: private hosted pilot deployed — November 13
 
 **Hosting audit.** Heroku app `keithriordan` runs on `heroku-24` in the US,
 with one Basic `web.1` process, an existing Essential 0 PostgreSQL database,
-and Heroku Scheduler. Release v164 uses source `c5edc1b2`; that source is an
-ancestor of this branch. A database connection explicitly restricted to
-read-only transactions confirmed PostgreSQL **16.14**, Alembic revision
+and Heroku Scheduler. The pre-deployment release v164 used source `c5edc1b2`.
+That commit was not
+an ancestor of this branch, despite the initial audit note: its entire tree
+matched the common ancestor. History-only merge `cd5555e` preserved deployed
+ancestry without changing the reviewed `1142806` tree or force-pushing.
+A database connection restricted to read-only transactions confirmed PostgreSQL
+**16.14**, Alembic revision
 `a4b5c6d7e8f9`, one verified administrator account (ID 1), and none of the new
 curriculum/practice/AI-ledger tables. No Learning feature flags or dedicated
-Learning provider key are currently configured on Heroku. Existing secrets
+Learning provider key were configured on Heroku at that baseline. Existing secrets
 were filtered in memory and were not copied into this document or tool output.
 
 **Decisions approved by Keith.** Reuse this site/database and verified owner ID 1;
@@ -1026,13 +1037,14 @@ allow the exact labelled `catalog-v3.json` draft packet privately; start fresh
 hosted practice. Keep local work readable, carry prior spending forward, and
 disable local paid AI before hosted activation. The **same $5 total and $1
 verification allowance** applies. No new service, database, worker dyno, or
-publication attestation is needed. Deployment itself still requires approval.
+publication attestation is needed. Keith subsequently explicitly approved deployment.
 
 The local read-only check found one enrollment, the Codex verification session,
 no review ratings or self-assessments, no pending/running AI requests, and five
-settled charges totaling **$0.037859**. Recheck at actual cutover; the real pilot
-has not been frozen. The private cutover file carries identity, exact draft
-fingerprints, ledger checksum/count and amounts by month, never session content.
+settled charges totaling **$0.037859**. Cutover rechecked the same amounts and
+froze local paid AI before hosted activation. The private cutover file carries
+identity, exact draft fingerprints, ledger checksum/count and amounts by month,
+never session content.
 
 **Access and configuration.** `project/learning/hosted_pilot.py` validates the
 operator's exact `LEARNING_HOSTED_APPROVAL` JSON and derives the owner ID/email,
@@ -1082,14 +1094,20 @@ cross-month/concurrent budget accounting, release rollback/serialization, native
 WebSocket upgrades with cookie/JWT auth, HTTPS login and real Gunicorn restart.
 The existing 13 Node tests and dependency integrity checks pass. Dependency
 audit findings required small existing-library updates to OAuthLib 4.0.1 and
-pyasn1 0.6.5; Gunicorn is the only new runtime dependency. All AI was scripted.
+pyasn1 0.6.5; Gunicorn is the only new runtime dependency. These pre-deployment
+AI tests used scripted responses. The later runtime fix passed 79 targeted local
+tests and all 18 provider tests against a fake endpoint on Heroku's Linux runtime.
 
 **Actual backup rehearsal.** A consistent, read-only production snapshot restored
 to a newly marked local database. Two release runs upgraded `a4b5c6d7e8f9` to
 `e4f5a6b7c8d9`, preserved all **11,324 rows across 28 existing application tables**,
-and imported six unpublished revisions with no sessions/charges. The private
-backup/report is under `.local/learning-pilot/hosted-rehearsals/20261113T160737Z/`;
-take a fresh backup at deployment. The temporary clone was removed.
+and imported six unpublished revisions with no sessions/charges. The fresh
+private deployment backup/report is under
+`.local/learning-pilot/hosted-rehearsals/20261113T184616Z/`; its dump SHA-256 is
+`dd6d6649b0eca086105f8ef024dacbd176c858a5fb5c839374797baa96d33d33`.
+The temporary clone was removed. Heroku backup **b011** preceded deployment;
+**b012** completed after verification and includes the new work and ledger.
+The stopped local pilot was backed up before its paid-AI freeze.
 
 **Gotchas.** Use matching PostgreSQL 16 clients: the Mac defaults to version 18.
 Heroku's public-schema ownership makes its dump explicitly recreate `public`;
@@ -1098,12 +1116,44 @@ The automated fixture exercises that ownership difference. Compare timestamps
 in UTC and exclude Heroku's monitoring views when fingerprinting application
 rows. CI now uses PostgreSQL 16 and matching clients on Ubuntu 24.04.
 
-**Remaining:** deployment approval, fresh backup/cutover, hosted verification
-under the remaining shared $1 allowance, then normal private use under $5.
-Deploy only the committed revision: unrelated mobile interval-timer changes and
-its `.gitignore` edit remain outside this checkpoint. Keep the owner gate enabled
+**Hosted verification and activation.** Release v166 deployed `cd5555e` with AI
+off and migrated to `e4f5a6b7c8d9`. Owner-only pages/API, anonymous and non-owner
+denial, draft labels, private headers, omitted analytics and reference fields,
+public portfolio, existing lists and an authenticated native WebSocket handshake
+passed. Five deployed workspace assets matched the reviewed source hashes.
+
+The first live selector failed before Python could start: Heroku's shared Python
+requires its interpreter library directory. AI was turned off, the narrow
+runtime fix was committed as **`93a24a2`**, and fake-provider tests passed on
+Heroku before redeployment. One explicit retry used the original saved turn and
+artifact revisions. The initial **$0.007315** uncertain reservation still counts;
+there was no automatic paid retry and no budget reset.
+
+The recovered interviewer disclosed only the requested retention constraint,
+referenced saved drafts and asked the learner to choose expiry behavior. Feedback
+assessed the complete snapshot, validated eight exact citations, distinguished
+missing evidence from errors and acknowledged Codex assistance. No review rating,
+enrollment or self-assessment was recorded on Keith's behalf. The clearly labelled
+setup example is session `d0739690-1e7b-485f-842a-e36257a6976d`, snapshot 5;
+it is paused and is not evidence of Keith's unaided ability.
+
+A real web restart preserved the session export, feedback, login cookie and
+ledger; explicit resume/pause worked. Final **v171 / `93a24a2`** is in `pilot`
+mode with the original $5 cap, one Basic web dyno, and no active AI requests.
+Spending at activation: **$0.037859 carried**, **$0.030851 new settled calls**,
+**$0.007315 reserved** = **$0.076025 counted**, leaving **$4.923975**. All
+verification remains within the shared $1 allowance. Content-free activation
+records and private response snapshots are under
+`.local/learning-pilot/hosted-deployment/`; temporary operator credentials were
+removed after verification. No passwords or existing signing keys were changed.
+
+**Remaining:** a short personal learning trial and the already recorded
+Safari/Firefox/screen-reader checks. Content expansion, new personalities and
+Expo remain unapproved. Unrelated mobile interval-timer changes and its
+`.gitignore` edit remain outside these commits. Keep the owner gate enabled
 when turning AI off, and never reactivate a restored hosted database until its
-missing spending has been reconciled; see the rollout guide.
+missing spending has been reconciled; see the rollout guide. Only Heroku was
+pushed; no GitHub push or PR was created for activation.
 
 ### Checkpoint 7a: personal local pilot — November 7
 
@@ -1244,6 +1294,6 @@ Activation (see Durable AI requests and spending), done locally on October 30 ap
    - One live session through the app: three turns on a disposable PostgreSQL database with the defaults, through Send, the worker, the call process, and the ledger. Both requirements asked about were revealed, all six charges settled with their write tokens, and the session cost $0.013. The first turns' prompts shared too short a prefix to read from the cache; longer sessions do.
    - Cache writes are priced (October 29). GPT-6 and GPT-6.1 models bill tokens written to the prompt cache at 1.25 times the input rate, in place of it (2.5 times for the 12-hour lifetime, which the app doesn't request). `PRICES` has a `cache_write` rate; the call process and its parent read `input_tokens_details.cache_write_tokens`; `cost()` bills cached reads, writes, and the rest separately; and `worst_case` prices every input byte as a write. The ledger records them too: `learning_ai_charge.cache_write_tokens` (migration `f9a0b1c2d3e4`, October 30).
 
-For general production publication, content review and a separate approval remain required. Checkpoint 7b instead has explicit approval to use exact labelled drafts privately and transfer the existing dedicated Learning allowance/key after local AI is frozen. Its deployment still requires approval. A later general rollout should use its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
+For general production publication, content review and a separate approval remain required. Checkpoint 7b instead has explicit approval to use exact labelled drafts privately and transfer the existing dedicated Learning allowance/key after local AI is frozen. Its private deployment was approved and completed November 13. A later general rollout should use its own key, which Keith creates. The recommendation is a separate OpenAI project with a hard limit a little above the app's monthly cap, so development and evaluation spending can't use up production's limit. That key goes in the production config, never in a `.env` file. Checkpoint 5 can be planned meanwhile.
 
 Checkpoints 5a–5e implement content mappings, submission snapshots, deterministic syntax checks, evidence-linked generated feedback, learner responses, optional follow-up practice, and session export. Checkpoints 5f/5g complete the local demonstration, targeted accessibility review, delegated content/AI review, and private reference correction. Separately approved 6a/6b add enrollment, saved reading position, and optional dated self-assessment. Checkpoint 7a supplies the persistent local pilot with an approved total allowance, exact labelled drafts, live verification, and backup/restart recovery. Production publication and remaining browser/screen-reader validation are recorded follow-ups. The remaining vision-review proposals (open item 10) and Milestone 2 still need Keith's explicit approval.

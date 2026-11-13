@@ -1,16 +1,18 @@
 # Checkpoint 7b: private hosted pilot
 
-Prepared November 13, 2026. **Deployment is awaiting Keith's approval.** The
-intended address is [Learning](https://www.keithriordan.com/learning/), using the
-existing verified account. No new hosting service is required. This guide does
-not imply that the new experience is live yet.
+Deployed November 13, 2026 with Keith's explicit approval. **The private pilot
+is live** at [Learning](https://www.keithriordan.com/learning/), using the existing
+verified account. Heroku **v171 / `93a24a2`** is in `pilot` mode; the existing
+site, PostgreSQL database and single Basic web dyno are reused.
 
 Keith approved one-account access, exact labelled idempotency drafts and fresh
-hosted practice. Local sessions remain readable. The original **$5 total** and
-**$1 verification portion** carry forward; $0.037859 was spent at the last check.
-The amount is re-read when local AI is frozen, not copied from this document.
+hosted practice. Local sessions remain readable and local paid AI is frozen.
+The original **$5 total** and **$1 verification portion** carry forward. At
+activation, $0.076025 was counted ($0.037859 carried, $0.030851 new settled calls,
+$0.007315 reserved), leaving **$4.923975**. The on-screen allowance is the current
+source of truth as you use the pilot.
 
-## A short hands-on check after deployment
+## A short hands-on check
 
 1. In a private browser window, open Learning. Expect a login redirect and no
    Learning link in the public navigation. Sign in with your existing account;
@@ -33,6 +35,11 @@ The amount is re-read when local AI is frozen, not copied from this document.
    A reply interrupted during a restart offers explicit recovery; it is never
    automatically charged again.
 
+You can also inspect the paused [Codex setup example](https://www.keithriordan.com/learning/practice/d0739690-1e7b-485f-842a-e36257a6976d?view=build&work=artifact-api).
+Its artifacts and feedback are labelled as assisted verification, not your
+unaided work. Start a new session for your own practice. The hosted restart
+check already confirmed that its work, login and accounting survive restarts.
+
 For an API check without changing progress, use Postman to POST your credentials
 as JSON (`email`, `password`) to `/api/v1/auth/login`. Keep its access token in a
 private local variable and GET `/api/v1/learning/practice/sessions` with Bearer
@@ -53,7 +60,7 @@ has a local Python REPL exploration. It continues to work after cutover when
 `app_for` is used without live mode. Do not use production credentials in a local
 REPL or point a disposable preview at the hosted database.
 
-## Deployment procedure — only after approval
+## Deployment procedure — completed for this rollout
 
 1. Confirm the exact checkpoint commit, current Heroku release/source, schema,
    verified owner ID **1**, domain list and one Basic web dyno. The inspected
@@ -149,9 +156,24 @@ strict approval/cap parsing, local cutover crash recovery, real PostgreSQL races
 cross-month/restart accounting, transactional/concurrent migrations, backup
 restore, native WebSocket cookie/JWT authentication and real Gunicorn recovery.
 Existing browser tests cover 450 assertions; 13 Node tests pass. The sole skip
-is an existing Linux-only check on macOS. All AI was mocked; this preparation
-spent **$0**. The separate production-copy rehearsal preserved all 11,324
-pre-existing rows across 28 application tables, with no production writes.
+is an existing Linux-only check on macOS. All pre-deployment AI was mocked;
+those tests spent **$0**. The separate production-copy rehearsal preserved all
+11,324 pre-existing rows across 28 application tables with no production writes.
+
+Hosted verification found that isolated Python needed its own Linux shared-library
+path. Fix `93a24a2` derives only that trusted directory; it does not inherit arbitrary
+loader/Python settings or other credentials. It passed 79 targeted local tests
+and all 18 provider tests on Heroku using a fake endpoint before paid recovery.
+The first failed request's reservation remains counted conservatively.
+
+The recovered live interviewer referenced saved artifacts and challenged the
+open expiry decision. Feedback covered the complete snapshot and validated eight
+exact citations. Private fields and analytics remained absent; anonymous and
+non-owner access stayed denied. Public portfolio/list pages and an authenticated
+WebSocket upgrade passed. Restart/resume preserved the work, feedback, login and
+ledger. Final activation had no pending AI requests. Heroku backups **b011**
+(before deployment) and **b012** (after verification) completed; private records
+are under `.local/learning-pilot/hosted-deployment/`.
 
 The backend workflow now matches hosted PostgreSQL 16 and installs matching
 backup clients. Gunicorn 27.0.1 is pinned; OAuthLib 4.0.1 and pyasn1 0.6.5 are
