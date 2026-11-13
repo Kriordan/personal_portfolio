@@ -9,7 +9,7 @@ still requires explicit approval.
 
 | Checkpoint | Scope | Status |
 | --- | --- | --- |
-| 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Implemented; verification and release record below. |
+| 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; physical-device acceptance remains. |
 | 2b | Native interviewer conversation and web/phone session continuity. | Proposed; not authorized yet. |
 | 2c | Native saved artifacts and feedback within the same practice session. | Proposed; not authorized yet. |
 
@@ -74,7 +74,7 @@ authentication cleanup path.
 
 The checkout also contained unrelated interval-timer work. Verification uses a
 temporary copy of committed baseline files plus only this checkpoint's changes;
-the commit and eventual release must exclude the unrelated edits. The simulator
+the commit and signed release exclude the unrelated edits. The simulator
 uses an isolated QA app identifier and disposable accounts against a temporary
 fixture, not hosted personal progress or paid AI.
 
@@ -84,15 +84,47 @@ the correct hosted bundle, which was inspected directly. Clear build caches
 for the signed preview too and inspect the downloaded bundle's origin; resolved
 app config alone is not enough evidence.
 
-### Release gate
+### Approved release — November 13
 
-**Not deployed; no signed 2a preview yet.** The existing hosted API and installed
-iPhone preview do not gain these screens until release. After Keith approves,
-deploy the committed backward-compatible API, verify the existing owner policy
-and unchanged budget, and build the `preview` profile from the exact reviewed
-source using the existing registered-device signing setup. Do not submit to the
-App Store/TestFlight or change signing access. No paid AI verification is needed.
-Record the matching commit, Heroku release, and Expo install link, then verify
-installation and a deliberate review on Keith's physical iPhone.
+Keith explicitly approved deployment and the standalone preview. The exact
+application source is **`eee8b9e4a45cf5739e500f4c5b3319918957327f`**. Heroku
+**v172** deployed it successfully; **v173** then updated only the existing
+error-monitoring release tag to that commit. No Learning configuration, database
+schema, signing access, or infrastructure changed. Predeployment backup **b013**
+completed. The schema remains `e4f5a6b7c8d9`.
+
+Read-only checks on both hosted domains verified owner access, anonymous 401,
+non-owner 404, draft labels, private cache headers, lesson/queue/progress reads,
+explicit versioned answer reveal, legacy notes and practice-session access.
+Public pages and the web login gate remained available. Before/after database
+fingerprints matched for review history/receipts, bookmarks, self-assessment,
+practice sessions, artifacts, messages, feedback, and the AI ledger. No learner
+enrollment, rating, reflection, practice work, or paid request was created.
+
+The original **$5 lifetime allowance**, **$1 verification portion**, **$50 monthly
+cap**, and call/context limits are unchanged. The ledger plus carried spending
+still counted **$0.076025**, leaving **$4.923975** at release verification; no
+pending or running AI requests existed. Local paid AI remains frozen.
+
+Standalone [iPhone build 9](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/eb7be266-9a98-484d-b4fa-8bdc4f75e836)
+finished at **4:59:44 p.m. EST**. Its upload contained 908 source files matching
+the approved commit, with no local settings, credentials, databases, generated
+folders, or interval-timer changes. Existing signing credentials were frozen
+and reused; the internal profile still contains one iPhone. Caches were cleared.
+No App Store/TestFlight submission or OTA update was made.
+
+The downloaded 16,986,363-byte IPA is an `iPhoneOS` build, bundle identifier
+`com.kriordan.personalportfolio`, version 1.0.0/build 9. Its Hermes bundle contains
+the new screens and hosted API origin, with no fixture URL or private reference/
+evaluation markers. The packaged app config records the correct source commit.
+The archive log confirms the existing Sentry source-map upload; its debug ID
+matches the downloaded Hermes bundle. No new error event was generated.
+See [artifact evidence](assets/learning-2a-iphone-2026-11-13/release.json).
+Raw archives, provisioning identifiers, and operator records stay under the
+ignored private `.local/learning-pilot/iphone-2a-deployment/` directory.
+
+**Physical-device installation and a deliberate review are still pending.**
+Build/download verification does not substitute for Keith trying the phone app.
+Future deployments, 2b/2c, and content expansion require separate approval.
 
 See the [phone and hands-on engineering guide](learning-checkpoint-2a-iphone-guide.md).

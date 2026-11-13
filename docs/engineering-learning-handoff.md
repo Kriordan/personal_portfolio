@@ -15,9 +15,12 @@ approved **Milestone 2a: Learn and Review**. Its implementation reuses the hoste
 curriculum, enrollment/bookmark, and scheduler services through small JWT
 adapters. No new progress model, migration, dependency, or paid AI calls are
 needed. See the [Milestone 2 log](engineering-learning-milestone-2.md) and
-[phone/testing guide](learning-checkpoint-2a-iphone-guide.md). The new backend
-release and signed standalone preview still require deployment approval; 2b/2c
-and additional concepts remain unapproved.
+[phone/testing guide](learning-checkpoint-2a-iphone-guide.md). Keith then approved
+release: **Heroku v173** and [standalone iPhone build 9](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/eb7be266-9a98-484d-b4fa-8bdc4f75e836)
+use application source `eee8b9e`. Downloaded-bundle and read-only hosted checks
+passed; the unchanged shared allowance has **$4.923975** remaining at verification.
+Physical installation/first review remain pending. 2b/2c and additional concepts
+remain unapproved.
 
 This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2a, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 

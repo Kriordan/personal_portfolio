@@ -6,18 +6,21 @@ concepts are not part of this mobile slice. The website keeps those features.
 
 ## Try it on your phone
 
-The new backend endpoints and a new standalone `preview` build must be released
-together. **Deployment and the signed preview are pending Keith's approval.**
-The existing installed preview does not contain these screens.
+**Released with Keith's approval on November 13:** Heroku **v173** and standalone
+iPhone preview **build 9**, both from application commit `eee8b9e`.
+
+[Install the Learn/Review iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/eb7be266-9a98-484d-b4fa-8bdc4f75e836).
+Open that link in Safari on the already registered iPhone, tap Install, and use
+your existing website account. The previous installed build must be updated to
+get these screens. Physical installation and your first deliberate review are
+the remaining device acceptance checks.
 
 Release precaution: clear Metro/EAS build caches when changing from the local
 fixture to the hosted origin, then inspect the built bundle's actual API URL.
 During verification, a cached transform retained the old local address until
 `expo export --clear` was used. The final clean export targets the hosted API.
 
-After release, open the Expo installation link in Safari on the already
-registered iPhone and install it. Use your existing website account. The
-preview uses the hosted API in `mobile/eas.json`; your Mac can be off. This is
+The preview uses the hosted API in `mobile/eas.json`; your Mac can be off. This is
 internal distribution, not an App Store submission or an OTA update.
 
 1. Open **Learning → Idempotency**. Browsing does not enroll you or change a
@@ -141,9 +144,10 @@ database, never the hosted database.
 - A newly opened lesson waits for its current server bookmark before choosing
   the initial section. Active review questions stay pinned while due counts
   refresh. Recovery from the Learning hub returns to the correct kind of review.
-- The existing $5 shared AI allowance is unchanged; this checkpoint makes no
-  paid calls. Release approval is still required before updating the hosted API
-  and preparing a signed iPhone preview.
+- The existing $5 shared AI allowance is unchanged; this checkpoint made no
+  paid calls. Release verification counted $0.076025, leaving **$4.923975**.
+  The $1 verification portion, $50 monthly cap, and existing call/context limits
+  remain intact. Future deployments and subsequent checkpoints still need approval.
 
 Automated evidence and native walkthrough results are recorded in the
 [Milestone 2 checkpoint log](engineering-learning-milestone-2.md).
