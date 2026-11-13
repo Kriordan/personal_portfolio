@@ -7,6 +7,7 @@ import ast
 import contextlib
 import json
 import os
+from pathlib import Path
 import shlex
 import signal
 import socket
@@ -248,12 +249,15 @@ class LearningAICallTests(unittest.TestCase):
         self.assertEqual(json.loads(ran.stdout), {"error": "failed", "charged": "no", "usage": None, "seconds": 0.0})
         self.assertEqual(self.server.received, [])
 
-    def test_the_child_environment_holds_only_the_key_path_and_ca_settings(self):
+    def test_the_child_environment_keeps_only_provider_and_trusted_runtime_settings(self):
         parent = {KEY: TEST_KEY, "PATH": "/usr/bin:/bin", "SSL_CERT_FILE": "/etc/ssl/cert.pem",
                   "REQUESTS_CA_BUNDLE": "", "LEARNING_TEST_SENTINEL": "leak", "DATABASE_URL": "postgresql://user:pw@db/app",
                   "OPENAI_API_KEY": "jobwizard-key", "PYTHONPATH": "/elsewhere", "HOME": "/home/learner"}
-        self.assertEqual(child_environment(parent), {KEY: TEST_KEY, "PATH": "/usr/bin:/bin",
-                                                     "SSL_CERT_FILE": "/etc/ssl/cert.pem"})
+        expected = {KEY: TEST_KEY, "PATH": "/usr/bin:/bin", "SSL_CERT_FILE": "/etc/ssl/cert.pem"}
+        library = Path(sys.base_prefix).resolve() / "lib"
+        if sys.platform == "linux" and library.is_dir():
+            expected["LD_LIBRARY_PATH"] = str(library)
+        self.assertEqual(child_environment(parent), expected)
         os.environ.update(LEARNING_TEST_SENTINEL="leak", DATABASE_URL="postgresql://user:pw@db/app")
         self.respond(json=response('{"reply": "Fine."}'))
         with patch.object(provider_module.subprocess, "run", wraps=subprocess.run) as run:
@@ -261,21 +265,36 @@ class LearningAICallTests(unittest.TestCase):
         args, kwargs = run.call_args
         self.assertEqual(args[0], [sys.executable, "-I", str(SCRIPT)])
         self.assertEqual((kwargs["env"][KEY], kwargs["env"]["PATH"]), (TEST_KEY, os.environ["PATH"]))
-        self.assertLessEqual(set(kwargs["env"]), {KEY, "PATH", *provider_module.CA_VARIABLES})
+        self.assertLessEqual(set(kwargs["env"]), {KEY, "PATH", *provider_module.CA_VARIABLES, "LD_LIBRARY_PATH"})
         self.assertEqual((kwargs["timeout"], kwargs["stderr"]), (15, subprocess.DEVNULL))
+
+    def test_linux_loader_path_comes_from_the_interpreter_not_parent_environment(self):
+        parent = {KEY: TEST_KEY, "PATH": "/usr/bin", "LD_LIBRARY_PATH": "/untrusted/lib:/another/lib",
+                  "LD_PRELOAD": "/untrusted/hook.so", "PYTHONHOME": "/untrusted/python",
+                  "PYTHONPATH": "/untrusted/modules", "DATABASE_URL": "private", "OPENAI_API_KEY": "other-key"}
+        with tempfile.TemporaryDirectory() as folder, patch.object(provider_module.sys, "base_prefix", folder):
+            library = Path(folder).resolve() / "lib"
+            library.mkdir()
+            with patch.object(provider_module.sys, "platform", "linux"):
+                self.assertEqual(child_environment(parent),
+                    {KEY: TEST_KEY, "PATH": "/usr/bin", "LD_LIBRARY_PATH": str(library)})
+            with patch.object(provider_module.sys, "platform", "darwin"):
+                self.assertEqual(child_environment(parent), {KEY: TEST_KEY, "PATH": "/usr/bin"})
 
     def test_the_child_imports_only_the_standard_library_and_requests(self):
         tree = ast.parse(SCRIPT.read_text())
         names = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
         names |= {node.module or "." for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
         self.assertEqual({name.split(".")[0] for name in names} - set(sys.stdlib_module_names), {"requests"})
-        # Outside the repository, with nothing but PATH: it loads, and without a key stops before any request.
+        # Outside the repository, with only runtime paths: it loads, and without
+        # a key stops before any request (including a shared-library Python).
         probe = ("import runpy, sys; runpy.run_path(sys.argv[1]); "
                  "print(' '.join({name.split('.')[0] for name in sys.modules}))")
         payload = {"parent_pid": os.getpid(), "deadline": 5, "base_url": self.base_url, "body": BODY,
                    "max_response_bytes": 1000}
         with tempfile.TemporaryDirectory() as folder:
-            options = dict(cwd=folder, env={"PATH": os.environ["PATH"]}, capture_output=True, text=True, timeout=30)
+            options = dict(cwd=folder, env=child_environment({"PATH": os.environ["PATH"]}),
+                           capture_output=True, text=True, timeout=30)
             loaded = subprocess.run([sys.executable, "-I", "-c", probe, str(SCRIPT)], **options)
             ran = subprocess.run([sys.executable, "-I", str(SCRIPT)], input=json.dumps(payload), **options)
         self.assertEqual(loaded.returncode, 0)

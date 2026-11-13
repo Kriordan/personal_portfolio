@@ -322,7 +322,7 @@ The context allowance (`LEARNING_AI_CONTEXT_BYTES`, a placeholder of 512 KiB unt
 
 The budget check prices the selector and reply worst cases together.
 
-The OpenAI call runs in a child process: `project/learning_ai_call.py`, run with `python -I`, imports only the standard library and `requests`. `project/services/learning_ai_provider.py` gives it an environment of just the key, `PATH`, and CA settings, and discards its stderr. The child:
+The OpenAI call runs in a child process: `project/learning_ai_call.py`, run with `python -I`, imports only the standard library and `requests`. `project/services/learning_ai_provider.py` gives it an environment of the key, `PATH`, CA settings, and the trusted interpreter library directory on Linux, and discards its stderr. The Linux path is derived from `sys.base_prefix`, never inherited from arbitrary parent loader settings. The child:
 
 - reads one size-capped request on stdin;
 - guards against an orphaned start, with a hard alarm deadline;

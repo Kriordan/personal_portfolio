@@ -1,8 +1,9 @@
 """The Learning interviewer's OpenAI provider: each call runs in a short-lived child process.
 
 The child, `project/learning_ai_call.py`, runs with `python -I` and an environment holding only
-the key, PATH, and CA bundle settings. Its own alarm and the timeout here bound it, so a stuck
-call can always be abandoned. Its stderr is discarded: failures arrive as fixed codes, with
+the key, PATH, CA bundle settings, and the trusted interpreter's library directory on Linux.
+Its own alarm and the timeout here bound it, so a stuck call can always be abandoned.
+Its stderr is discarded: failures arrive as fixed codes, with
 whether the provider may have charged for the call, never as provider or exception text.
 """
 import json
@@ -35,9 +36,19 @@ class ProviderError(Exception):
 
 
 def child_environment(environ=None):
-    """The child's entire environment: the key, PATH, and the CA bundle settings that are set."""
+    """Minimal environment, plus the interpreter's own Linux shared libraries.
+
+    Heroku's Python needs libpython from its installation to start. Derive that
+    one directory from the running interpreter; never inherit LD_LIBRARY_PATH,
+    LD_PRELOAD, PYTHONPATH, or unrelated application credentials from the parent.
+    """
     environ = os.environ if environ is None else environ
-    return {name: environ[name] for name in (KEY_VARIABLE, "PATH", *CA_VARIABLES) if environ.get(name)}
+    selected = {name: environ[name] for name in (KEY_VARIABLE, "PATH", *CA_VARIABLES) if environ.get(name)}
+    if sys.platform == "linux":
+        library = Path(sys.base_prefix).resolve() / "lib"
+        if library.is_dir():
+            selected["LD_LIBRARY_PATH"] = str(library)
+    return selected
 
 
 def _usage(value):
