@@ -46,6 +46,9 @@ export function scrubMobileEvent(event: ErrorEvent, hint?: { attachments?: unkno
   if (/^[45]\d\d$/.test(String(incoming.status))) tags.status = String(incoming.status);
   if (codes.has(String(incoming.code))) tags.code = String(incoming.code);
   if (/^[a-f0-9]{7,40}$/.test(String(incoming.commit))) tags.commit = String(incoming.commit);
+  if (uuid.test(String(incoming.expo_update_id))) tags.expo_update_id = String(incoming.expo_update_id);
+  if (['embedded', 'ota'].includes(String(incoming.expo_update_source)))
+    tags.expo_update_source = String(incoming.expo_update_source);
   const contexts: NonNullable<ErrorEvent['contexts']> = {};
   for (const [kind, fields] of Object.entries({
     os: ['name', 'version', 'build'],

@@ -7,10 +7,11 @@ Run `nvm use` before npm or Expo commands; nvm finds the repository's parent
 every EAS build profile. Installs and npm scripts reject Node below 24.22.1 or
 outside the supported 24.x line. The shared machine default is unchanged.
 
-The [security compatibility packages](security-compat/README.md) retain Expo 57
-while using the patched URL decoder, bounded Zod 3 CLI validation, and fixed
-Zod 4 lint tooling. `npm test` exercises the actual consumer paths; clean
-installs need no lifecycle-script patching. The mobile audit has no exceptions.
+The [security compatibility configuration](security-compat/README.md) retains
+Expo 57 with the patched URL decoder and updated configuration, CLI, matching,
+and signing tools. Expo no longer installs deepmerge or the legacy Zod 3 adapter.
+`npm test` exercises the actual consumer paths; clean installs need no
+lifecycle-script patching. The mobile audit has no exceptions.
 
 ## Prerequisites
 
@@ -64,7 +65,7 @@ The API base URL is resolved in `src/lib/config.ts`:
 
 For a physical device, set `EXPO_PUBLIC_API_URL` to your machine's LAN IP, e.g. `http://192.168.1.20:5001`, and make sure the device is on the same network. A quick way to verify the right IP is to match the host shown in Metro's dev-client URL. After changing `.env`, fully reload the development build so Expo re-inlines the value into the JavaScript bundle.
 
-Set `EXPO_PUBLIC_API_URL` in the EAS **production** environment before a production build. `app.config.ts` rejects a missing, non-HTTPS, or loopback production URL. It does not provision or verify remote EAS environment values; confirm those before releasing. Development, preview, and production build profiles are retained; no EAS Update configuration is added.
+Set `EXPO_PUBLIC_API_URL` in the EAS **production** environment before a production build. `app.config.ts` rejects a missing, non-HTTPS, or loopback production URL. The **preview** EAS environment also carries the preview API origin and `APP_VARIANT=preview`, so native builds and update jobs resolve the same configuration. Development and production profiles keep remote updates disabled.
 
 ### Installable iPhone preview
 
@@ -78,6 +79,23 @@ npx eas-cli build --platform ios --profile preview
 Reuse the registered iPhone and existing signing credentials when prompted. Open the completed build's Expo install page in Safari on that iPhone and tap **Install**. Only devices included in the provisioning profile can install it. If the phone has changed, register it with `npx eas-cli device:create` and include it when rebuilding. This is internal distribution; no App Store submission or TestFlight setup is required.
 
 If iOS asks for Developer Mode, follow **Settings → Privacy & Security → Developer Mode**, enable it, restart, and confirm **Turn On** after unlocking. This is a one-time device setup for internal builds; see [Expo's instructions](https://docs.expo.dev/guides/ios-developer-mode/). Sign in with the existing website account, then verify a small grocery change appears in both clients.
+
+### Publish an iPhone preview update
+
+Install an update-enabled native preview once. After that, publish tested JavaScript,
+styling, and bundled asset changes from `mobile/` with:
+
+```bash
+npx eas-cli workflow:run .eas/workflows/preview-update.yml --input 'message=Describe the tested change' --wait
+```
+
+This manual workflow uploads the current working tree, publishes only iOS to the
+`preview` channel, and requires Sentry source-map upload using the existing Expo
+secret. It checks for a finished preview with a matching native fingerprint before
+publishing. Native module, plugin, or permission changes require a new preview
+build first. Updates download in the background on launch and activate on the next
+restart; they never force a reload during a workout. See [preview updates](../docs/preview-updates.md)
+for validation, rollback, and environment details.
 
 ## Physical iPhone development build (EAS)
 
@@ -146,6 +164,10 @@ References: [Expo iPhone builds](https://docs.expo.dev/tutorial/eas/ios-developm
 - Old database completeness and optional external integration flows were not verified by this check.
 
 ## Project structure
+
+The iPhone **Intervals** tool includes a local Swift audio module and requires a
+new native build. See [the interval timer guide](../docs/interval-timer.md) for
+workout behavior, offline storage, native audio checks, and device acceptance.
 
 | Path | Purpose |
 |------|---------|

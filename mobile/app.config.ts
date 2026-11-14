@@ -2,7 +2,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   // Standalone previews and production builds must not silently target localhost.
-  const profile = process.env.EAS_BUILD_PROFILE;
+  // Update jobs select the same preview environment without a build profile.
+  const profile = process.env.EAS_BUILD_PROFILE ?? process.env.APP_VARIANT;
   if (profile === 'preview' || profile === 'production') {
     let apiUrl: URL;
     try {
@@ -33,6 +34,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const commit = process.env.EAS_BUILD_GIT_COMMIT_HASH;
   return {
     ...config,
+    updates: {
+      ...config.updates,
+      enabled: profile === 'preview',
+    },
     extra: {
       ...config.extra,
       ...(commit && /^[a-f0-9]{7,40}$/.test(commit) ? { monitoringCommit: commit } : {}),

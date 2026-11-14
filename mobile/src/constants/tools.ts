@@ -1,4 +1,12 @@
+import { Platform } from 'react-native';
+
 export const mobileTools = [
+  ...(Platform.OS === 'ios' ? [{
+    title: 'Intervals',
+    description: 'Build a workout. Run at your own rhythm.',
+    href: '/intervals',
+    badge: 'I',
+  } as const] : []),
   {
     title: 'Scratch-offs',
     description: 'Compare NY and CT ticket odds.',
