@@ -97,12 +97,15 @@ export class PracticeOperation {
     if (!this.active || !this.state.ready || this.busy || this.state.pending)
       return;
     if (!isPracticeChange(input)) {
-      this.update({ error: 'Enter a message of at most 8 KiB.' });
+      this.update({
+        error: 'Check the content and size limits before saving or sending.',
+      });
       return;
     }
     if (!this.deps.online()) {
       this.update({
-        error: 'Reconnect before sending. Your draft has not been sent.',
+        error:
+          'Reconnect before saving or sending. Your draft stays on this device.',
       });
       return;
     }
@@ -161,6 +164,19 @@ export class PracticeOperation {
     if (this.active && this.state.phase === 'uncertain') await this.check();
   }
   private matches(change: PracticeChange, result: PracticeResult) {
+    if (change.kind === 'artifact' || change.kind === 'brief') {
+      const outcome =
+        change.kind === 'brief'
+          ? result?.brief
+          : result?.artifacts?.[change.artifactId];
+      if (
+        !outcome ||
+        !Number.isInteger(outcome.revision) ||
+        outcome.revision < change.base_revision ||
+        typeof outcome.changed !== 'boolean'
+      )
+        return false;
+    }
     return (
       result &&
       validSessionId(result.session_id) &&
@@ -186,7 +202,10 @@ export class PracticeOperation {
       const { receipt } = await this.deps.api.receipt(change.request_id);
       if (!this.active) return;
       if (
-        receipt?.operation === change.kind &&
+        receipt?.operation ===
+          (change.kind === 'artifact' || change.kind === 'brief'
+            ? 'save'
+            : change.kind) &&
         this.matches(change, receipt.response)
       )
         await this.confirm(change, receipt.response);

@@ -1,6 +1,6 @@
 # Engineering Learning & Mastery Platform — refined implementation plan
 
-> Approved planning snapshot, preserved from the revision discussion before implementation began. Statements about implementation being unstarted describe that point in time. For current progress, see the [engineering handoff](engineering-learning-handoff.md), [Milestone 1 checkpoint log](engineering-learning-milestone-1.md), and [Milestone 2 checkpoint log](engineering-learning-milestone-2.md). Keith approved Milestone 2a (iPhone Learn/Review), 2b (Discuss and shared session continuity), and their releases on November 13. The current release is `a905098` / iPhone build 10; subsequent mobile checkpoints still need approval.
+> Approved planning snapshot, preserved from the revision discussion before implementation began. Statements about implementation being unstarted describe that point in time. For current progress, see the [engineering handoff](engineering-learning-handoff.md), [Milestone 1 checkpoint log](engineering-learning-milestone-1.md), and [Milestone 2 checkpoint log](engineering-learning-milestone-2.md). Keith approved Milestone 2a (iPhone Learn/Review), 2b (Discuss and shared session continuity), and their releases on November 13. The current release is `a905098` / iPhone build 10. Keith subsequently accepted Discuss and approved 2c.1 native Build editing, now implemented locally; its deployment and 2c.2 feedback still need approval.
 
 Background: [the original project vision](engineering-learning-original-vision.md), preserved verbatim from Keith's opening request.
 

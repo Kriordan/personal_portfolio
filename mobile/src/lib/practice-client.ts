@@ -2,7 +2,7 @@ import type { PracticeApi } from './practice-model.ts';
 type Request = <T>(
   path: string,
   options?: {
-    method?: 'GET' | 'POST';
+    method?: 'GET' | 'POST' | 'PUT';
     body?: unknown;
     timeoutMs?: number;
     requestId?: string;
@@ -22,6 +22,28 @@ export function createPracticeClient(request: Request): PracticeApi {
     receipt: (id) => read(`${root}/receipts/${encodeURIComponent(id)}`),
     change: (change) => {
       const { kind, conceptId, request_id } = change;
+      if (kind === 'artifact' || kind === 'brief')
+        return request(
+          `${session(change.sessionId)}/${kind === 'brief' ? 'brief' : `artifacts/${encodeURIComponent(change.artifactId)}`}`,
+          {
+            method: 'PUT',
+            body:
+              kind === 'artifact'
+                ? {
+                    request_id,
+                    base_revision: change.base_revision,
+                    language: change.language,
+                    body: change.body,
+                  }
+                : {
+                    request_id,
+                    base_revision: change.base_revision,
+                    entries: change.entries,
+                  },
+            timeoutMs: 20_000,
+            requestId: request_id,
+          },
+        );
       let path = `${root}/sessions`;
       let body: object = {
         request_id,

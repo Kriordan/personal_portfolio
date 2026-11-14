@@ -38,13 +38,25 @@ export function PracticeRecovery({
       {'sessionId' in change ? (
         <NativeAction
           secondary
-          label="Open the affected conversation"
+          label={
+            change.kind === 'artifact' || change.kind === 'brief'
+              ? 'Open the affected work'
+              : 'Open the affected conversation'
+          }
           onPress={() =>
             router.replace({
-              pathname: '/learning/concepts/[id]/discuss',
+              pathname:
+                change.kind === 'artifact' || change.kind === 'brief'
+                  ? '/learning/concepts/[id]/build'
+                  : '/learning/concepts/[id]/discuss',
               params: {
                 id: change.conceptId,
                 practice_session: change.sessionId,
+                ...(change.kind === 'artifact'
+                  ? { work: `artifact:${change.artifactId}` }
+                  : change.kind === 'brief'
+                    ? { work: 'brief' }
+                    : {}),
               },
             })
           }

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { InlineError, NativeAction, PageHeading } from './screen';
 import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,41 +9,70 @@ import type { Concept } from '@/lib/concept-model';
 export function ConceptHeader({
   concept,
   mode,
+  compact = false,
 }: {
   concept: Concept;
-  mode: 'learn' | 'review' | 'discuss';
+  mode: 'learn' | 'review' | 'discuss' | 'build';
+  compact?: boolean;
 }) {
   const router = useRouter();
-  const { practice_session } = useLocalSearchParams<{ practice_session?: string }>();
+  const { practice_session, work } = useLocalSearchParams<{
+    practice_session?: string;
+    work?: string;
+  }>();
   const theme = useTheme();
+  const { fontScale } = useWindowDimensions();
   return (
     <>
-      <PageHeading title={concept.title} eyebrow="ENGINEERING PRACTICE" />
+      {compact ? (
+        <ThemedText type="smallBold" accessibilityRole="header">
+          {concept.title}
+        </ThemedText>
+      ) : (
+        <PageHeading title={concept.title} eyebrow="ENGINEERING PRACTICE" />
+      )}
       {concept.private_pilot_draft || concept.local_draft ? (
         <ThemedText type="small" themeColor="textSecondary">
           Private Learning pilot · Draft content
         </ThemedText>
       ) : null}
       <View accessibilityRole="tablist" style={styles.tabs}>
-        {(['learn', 'review', 'discuss'] as const).map((view) => (
+        {(['learn', 'review', 'discuss', 'build'] as const).map((view) => (
           <Pressable
             key={view}
             accessibilityRole="tab"
             accessibilityState={{ selected: mode === view }}
-            accessibilityLabel={view === 'learn' ? 'Learn' : view === 'review' ? 'Review' : 'Discuss'}
+            accessibilityLabel={
+              view === 'learn'
+                ? 'Learn'
+                : view === 'review'
+                  ? 'Review'
+                  : view === 'discuss'
+                    ? 'Discuss'
+                    : 'Build'
+            }
             onPress={() => {
               if (view !== mode)
                 router.replace({
                   pathname:
                     view === 'learn'
                       ? '/learning/concepts/[id]'
-                      : view === 'review' ? '/learning/concepts/[id]/review' : '/learning/concepts/[id]/discuss',
-                  params: { id: concept.id, ...(practice_session ? { practice_session } : {}) },
+                      : view === 'review'
+                        ? '/learning/concepts/[id]/review'
+                        : view === 'discuss'
+                          ? '/learning/concepts/[id]/discuss'
+                          : '/learning/concepts/[id]/build',
+                  params: {
+                    id: concept.id,
+                    ...(practice_session ? { practice_session } : {}),
+                    ...(work ? { work } : {}),
+                  },
                 });
             }}
             style={[
               styles.tab,
               {
+                flexBasis: 68 * fontScale,
                 backgroundColor:
                   mode === view ? theme.accentSoft : theme.backgroundElement,
               },
@@ -53,7 +82,13 @@ export function ConceptHeader({
               type="smallBold"
               themeColor={mode === view ? 'accent' : 'textSecondary'}
             >
-              {view === 'learn' ? 'Learn' : view === 'review' ? 'Review' : 'Discuss'}
+              {view === 'learn'
+                ? 'Learn'
+                : view === 'review'
+                  ? 'Review'
+                  : view === 'discuss'
+                    ? 'Discuss'
+                    : 'Build'}
             </ThemedText>
           </Pressable>
         ))}
@@ -118,11 +153,13 @@ export function StudyStatus({
   );
 }
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: 8 },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tab: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
     minHeight: 48,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

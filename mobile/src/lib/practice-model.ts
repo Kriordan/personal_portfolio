@@ -1,3 +1,9 @@
+import {
+  validWorkEdit,
+  type BriefEntry,
+  type WorkEdit,
+} from './practice-work-model.ts';
+
 export const validSessionId = (id: unknown): id is string =>
   typeof id === 'string' &&
   /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id);
@@ -29,6 +35,7 @@ export interface PracticeArtifact {
   title: string;
   format: string;
   instructions: string;
+  languages: string[];
   revision: number;
   language: string;
   body: string;
@@ -55,7 +62,7 @@ export interface PracticeDetail {
   };
   session_brief: {
     revision: number;
-    entries: { id: string; type: string; text: string; pinned: boolean }[];
+    entries: BriefEntry[];
   };
   artifacts: PracticeArtifact[];
   messages: PracticeMessage[];
@@ -104,10 +111,13 @@ export type PracticeChange = { request_id: string; conceptId: string } & (
       context?: 'recent';
     }
   | { kind: 'pause' | 'resume'; sessionId: string }
+  | (WorkEdit & { sessionId: string })
 );
 export interface PracticeResult {
   session_id: string;
   sequence?: number;
+  artifacts?: Record<string, { revision: number; changed: boolean }>;
+  brief?: { revision: number; changed: boolean };
 }
 export interface PracticeReceipt {
   operation: string;
@@ -172,6 +182,7 @@ export function isPracticeChange(value: unknown): value is PracticeChange {
     );
   if (!('sessionId' in c) || !validSessionId(c.sessionId)) return false;
   if (c.kind === 'pause' || c.kind === 'resume') return true;
+  if (c.kind === 'artifact' || c.kind === 'brief') return validWorkEdit(c);
   if (c.kind === 'reply')
     return (
       whole(c.expected_sequence) &&

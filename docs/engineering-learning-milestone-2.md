@@ -10,8 +10,9 @@ still requires explicit approval.
 | Checkpoint | Scope | Status |
 | --- | --- | --- |
 | 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
-| 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Physical-device acceptance pending. |
-| 2c | Native saved artifacts and feedback within the same practice session. | Proposed; not authorized yet. |
+| 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
+| 2c.1 | Native artifact and learner-note editing within the existing shared session. | Approved and implemented locally; verification below. Deployment and a signed iPhone preview require approval. |
+| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Proposed; not authorized. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -126,7 +127,7 @@ ignored private `.local/learning-pilot/iphone-2a-deployment/` directory.
 At release verification, physical installation and a deliberate review were
 still pending; build/download verification did not substitute for phone use.
 Keith subsequently reported that Learn/Review look good on his iPhone and approved
-checkpoint 2b. Future deployments, 2c, and content expansion require separate approval.
+checkpoint 2b. Future deployments, 2c.2, and content expansion require separate approval; 2c.1 is recorded below.
 
 See the [phone and hands-on engineering guide](learning-checkpoint-2a-iphone-guide.md).
 
@@ -256,15 +257,15 @@ App Store/TestFlight submission, or OTA update was created.
 See [release evidence](assets/learning-2b-iphone-2026-11-13/release.json).
 Raw archives, provisioning identifiers, and operator records remain under the
 ignored private `.local/learning-pilot/iphone-2b-deployment/` directory.
-Physical installation and use of build 10 remain Keith's acceptance step;
-archive verification does not substitute for that check.
+Keith subsequently reported that Discuss looks good on his iPhone and approved
+2c.1. That acceptance is separate from the archive verification above.
 
 Open the build link in Safari on the registered iPhone and tap **Install**.
 In the app, open **Tools → Learning → Idempotency → Discuss**. Resume an existing
 session, inspect **Scenario & work**, and type a draft to try closing/reopening
 the app before sending. Sent messages use the same session as the website and
-the existing shared allowance. Native artifact editing and feedback remain 2c,
-which requires separate approval.
+the existing shared allowance. Native artifact editing is now the approved 2c.1 checkpoint below. Native feedback
+remains 2c.2 and requires separate approval.
 
 ### Hands-on engineering checks
 
@@ -295,3 +296,102 @@ local origin into the distributed preview.
    mutation and loses the response. Observe the receipt read, not a second POST.
    `reads: failure` also blocks receipt reads; restore `reads: success` and reopen
    the app to recover. Keep tokens and private bodies out of screenshots/logs.
+
+
+## Checkpoint 2c.1 — Build editing on iPhone
+
+Keith approved this implementation, tests, and a separate commit on November 13,
+2026. **This checkpoint is local only.** The hosted release and standalone iPhone
+preview remain `a905098` / build 10 until a new deployment approval.
+
+The fourth concept tab opens Build in the same session as Discuss. It edits the
+exercise's existing API, SQL, and pseudocode artifacts, plus learner assumptions,
+questions, decisions, and next steps. Each part has an explicit Save action.
+Notation choices come from the learner-visible artifact definition; this is a
+plain text editor, with no execution or additional editor infrastructure.
+
+Build uses the existing JWT PUT endpoints, optimistic base revisions, immutable
+artifact history, and `save` receipts. There are **no backend, schema, provider,
+prompt, curriculum, dependency, or spending-setting changes**. Existing Learn,
+Review, scheduling, and progress behavior is retained. Reference solutions and
+evaluation material remain server-side and are not imported into the app.
+
+### Continuity and decisions
+
+- Unconfirmed Build edits use the same approved privacy policy as Discuss drafts:
+  account/session-scoped Keychain storage, `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, and
+  serialized cleanup on sign-out. Only pending edits are retained; no transcript
+  or private reference packet is stored. A separate index tracks at most 20
+  sessions with Build drafts. Drafts never sync or write to the server automatically.
+- The existing single pending-operation journal now also accepts artifact/brief
+  saves. It stores the immutable payload and UUID before any PUT. A lost response
+  triggers receipt reads; only explicit retry replays a write. Confirmation clears
+  only the matching part, retaining other edits. Storage/cleanup failure keeps the
+  draft and journal recoverable. Signing out fences late writes and callbacks.
+- A newer web revision preserves the phone draft and blocks Save. The learner
+  compares the saved work, then either discards the local draft or explicitly
+  keeps it with the new base revision. Keeping a draft does not save it. Notes
+  replace the entire brief, so the comparison explains that other notes must be
+  retained manually. There is no automatic merge or last-write-wins overwrite.
+- Note IDs, types, pinned status, and existing evidence links survive editing.
+  Editing a cited artifact changes its current head; old conversation citations
+  continue opening the exact immutable revision.
+- Discuss blocks Send until every Build edit in that session is saved or discarded.
+  An already-written conversation draft still requires the existing explicit
+  review/adoption of changed work before sending.
+- Saving a paused session resumes it under the existing backend behavior. The
+  button says so explicitly. Saving work itself queues no AI reply or evaluation.
+- The server limits stay authoritative: 64 KiB per artifact, 2 KiB per note, and
+  50 notes. Unfinished notes and over-byte-limit Unicode remain local and editable,
+  with Save disabled and a visible explanation.
+
+### Verification
+
+- **179 mobile tests passed**, including 17 new deterministic tests for PUT
+  contracts, exact revisions, byte limits, note evidence, coalesced draft writes,
+  restart, multiple pending parts, conflict handling, lost responses, immutable
+  retries, duplicate taps, storage/cleanup failures, sign-out races, and the
+  Discuss guard. TypeScript and ESLint passed.
+- **57 backend tests passed** against the appropriate existing fixtures, including
+  actual PostgreSQL 16 concurrency and migration checks. Four new PostgreSQL
+  tests exercise duplicate maximum-size PUTs, receipt replay after a newer web
+  edit, competing phone/web brief saves, and artifact saves racing a discussion
+  turn. No new migration is required. No AI request/charge is created by a save.
+- A production iOS Hermes export passed. Verification uses an isolated copy of
+  committed baseline `ab7b987` plus only this checkpoint; unrelated interval and
+  dependency-security work in the shared checkout is excluded. The actual bundle
+  contains the intended QA origin and Build screens, with private reference/
+  evaluation markers absent.
+- The native iPhone 18 Pro / iOS 27 walkthrough uses an isolated QA app and
+  disposable local accounts with fake AI. API/SQL/pseudocode saves, pinned
+  decisions, unfinished-work Send blocking, and the subsequent interviewer's
+  exact saved-artifact citations were verified. A web save produced a visible
+  conflict; explicit comparison/keep/save preserved the chosen draft.
+- A SQL save committed while its response and receipt reads failed. Closing the
+  app, restoring reads, and resuming recovered exactly one revision without
+  another PUT. A 65,536-byte pseudocode draft survived process termination and
+  then saved successfully through the native journal and Keychain.
+- The native walkthrough prompted a compact Build heading and full-width work
+  choices. Maximum text size exposed cramped tab labels; tabs now allocate width
+  according to font scale and wrap, and the note's pin label can wrap beside its
+  switch. **The final visual recheck of that last tab-sizing change is pending:**
+  the Mac locked before it could run. TypeScript, lint, and export passed for the
+  final source. Finish that native recheck before requesting deployment approval.
+  Normal simulator text size was restored to `large` before the lock. A full
+  software-keyboard pass and native sign-out repeat remain manual release checks;
+  account cleanup and late-write fencing are covered by deterministic tests.
+
+The **$5 lifetime allowance, $1 verification portion, $50 monthly cap, and per-call/
+context limits are unchanged**. All checkpoint AI responses are mocked/fake;
+paid AI spending is zero. Fixture ledger amounts are simulated, not hosted usage.
+
+Native QA embeds the production JS bundle in an existing compatible simulator
+binary. A newly signed physical-device archive, physical iPhone acceptance,
+Android acceptance, and a full VoiceOver interaction audit remain unverified.
+
+**QA gotcha:** do not type a 64 KiB stress-test value as individual automated
+keystrokes. That flooded the simulator's keyboard queue. Seeding 65,535 bytes via
+the disposable API, adding one character on the phone, then closing/reopening
+and saving verified the intended storage/recovery boundary without the key flood.
+
+See the [short hands-on guide](learning-checkpoint-2c1-iphone-guide.md).

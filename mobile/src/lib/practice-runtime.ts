@@ -11,6 +11,10 @@ import {
 import { practiceKeys } from './practice-model';
 import { PracticeOperation } from './practice-operation';
 import { queryClient } from './query-client';
+import {
+  clearStoredWorkDrafts,
+  PracticeWorkDrafts,
+} from './practice-work-drafts';
 
 export const practiceApi = createPracticeClient(apiRequest);
 const key = 'learning.practice.pending.v1';
@@ -62,15 +66,19 @@ let current: {
   userId: number;
   operation: PracticeOperation;
   drafts: PracticeDrafts;
+  work: PracticeWorkDrafts;
 } | null = null;
 export function practiceOperation(userId: number) {
   if (current?.userId !== userId) {
     current?.operation.dispose();
     current?.drafts.dispose();
+    current?.work.dispose();
     const drafts = new PracticeDrafts(userId, draftStorage, serial);
+    const work = new PracticeWorkDrafts(userId, draftStorage, serial);
     current = {
       userId,
       drafts,
+      work,
       operation: new PracticeOperation(userId, {
         storage,
         api: practiceApi,
@@ -78,10 +86,15 @@ export function practiceOperation(userId: number) {
         onConfirmed: async (change, _result, active) => {
           if (active() && change.kind === 'send')
             await drafts.clearIfMatches(change.sessionId, change.body);
+          if (
+            active() &&
+            (change.kind === 'artifact' || change.kind === 'brief')
+          )
+            await work.clearIfMatches(change.sessionId, change);
           if (!active()) return;
           await queryClient.cancelQueries({ queryKey: practiceKeys.all });
           if (active())
-            void queryClient.invalidateQueries({ queryKey: practiceKeys.all });
+            await queryClient.invalidateQueries({ queryKey: practiceKeys.all });
         },
       }),
     };
@@ -92,12 +105,18 @@ export function practiceDrafts(userId: number) {
   practiceOperation(userId);
   return current!.drafts;
 }
+export function practiceWorkDrafts(userId: number) {
+  practiceOperation(userId);
+  return current!.work;
+}
 export async function clearPracticeSession() {
   current?.operation.dispose();
   current?.drafts.dispose();
+  current?.work.dispose();
   current = null;
   await Promise.all([
     storage.clear(),
     serial(() => clearStoredDrafts(draftStorage)),
+    serial(() => clearStoredWorkDrafts(draftStorage)),
   ]);
 }

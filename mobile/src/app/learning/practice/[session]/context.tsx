@@ -111,12 +111,12 @@ function Context({ userId, id }: { userId: number; id: string }) {
         ))
       ) : (
         <ThemedText themeColor="textSecondary">
-          No saved notes yet. You can edit this brief in the web workspace.
+          No saved notes yet. Add assumptions, decisions, and questions in Build.
         </ThemedText>
       )}
       <SectionHeading>Saved artifacts</SectionHeading>
       <ThemedText type="small" themeColor="textSecondary">
-        Read your work here. Editing remains available in the web workspace.
+        These are saved revisions. Open Build to edit your proposal.
       </ThemedText>
       {detail.artifacts.map((artifact) => (
         <NavRow
@@ -137,6 +137,10 @@ function Context({ userId, id }: { userId: number; id: string }) {
           }}
         />
       ))}
+      <NavRow title="Open Build" subtitle="Edit artifacts, assumptions, and decisions" href={{
+        pathname: '/learning/concepts/[id]/build',
+        params: { id: detail.session.concept_id, practice_session: id },
+      }} />
       <SectionHeading>Conversation continuity</SectionHeading>
       <ThemedText>
         {detail.context_choices.length

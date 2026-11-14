@@ -27,10 +27,18 @@ Keith explicitly approved deploying `a905098`: **Heroku v175** and
 [standalone iPhone build 10](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/45ce8b80-8d63-415f-a0d7-887d77b09aef)
 are now released. Hosted recovery/privacy checks and downloaded-archive checks
 passed, with no paid AI usage or spending-limit changes. The allowance still had
-**$4.923975** remaining at release verification. Build 10 physical-device acceptance
-is pending; 2c and additional concepts remain unapproved.
+**$4.923975** remaining at release verification. Keith subsequently reported that Discuss looks good on his iPhone and approved
+**2c.1: native Build editing**. Its local implementation reuses existing artifact/brief
+PUTs and save receipts, with private device drafts, explicit conflict comparison,
+and the same operation journal. Tests and verification are in the
+[Milestone 2 log](engineering-learning-milestone-2.md#checkpoint-2c1--build-editing-on-iphone)
+and [hands-on guide](learning-checkpoint-2c1-iphone-guide.md). Deployment and a new
+signed preview still require approval. Native feedback (2c.2) and additional
+concepts remain unapproved. The final maximum-text simulator recheck is pending
+because the Mac locked; finish it before requesting deployment approval. Core
+native save/conflict/restart checks and all automated checks passed.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2b, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2c.1, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -47,7 +55,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a is released and 2b is authorized**, limited to native Discuss, shared sessions/recovery, and read-only work references. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Do not start 2c, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b are released and accepted; 2c.1 is approved and implemented locally**, adding native artifact/learner-note editing to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Do not deploy 2c.1 or start 2c.2, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
@@ -56,7 +64,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
 | 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Local implementation and delegated technical review complete through 5g. Codex recommends local pilot acceptance. Production publication remains separately gated. |
-| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review and 2b Discuss released as iPhone build 10; physical-device 2b acceptance pending. 2c still requires approval; see the Milestone 2 log. |
+| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review and 2b Discuss released and accepted as iPhone build 10. 2c.1 Build implemented locally; deployment and 2c.2 feedback require separate approval. See the Milestone 2 log. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
 

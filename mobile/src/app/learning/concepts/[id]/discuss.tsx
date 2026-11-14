@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   Alert,
   FlatList,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConceptHeader } from '@/components/concept-workspace';
+import { PracticeSessionPicker } from '@/components/practice-session-picker';
 import {
   LearningAccountState,
   LearningUnavailable,
@@ -19,26 +20,21 @@ import {
   ConversationMessage,
   PracticeRecovery,
 } from '@/components/practice-content';
-import {
-  InlineError,
-  NativeAction,
-  NavRow,
-  Screen,
-  ScreenState,
-} from '@/components/screen';
+import { InlineError, NativeAction, ScreenState } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConcept } from '@/hooks/use-concepts';
 import {
   usePracticeDetail,
   usePracticeDraft,
-  usePracticeList,
   usePracticeOperation,
+  usePracticeWork,
 } from '@/hooks/use-practice';
 import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import type { Concept } from '@/lib/concept-model';
 import { draftOutdated } from '@/lib/practice-drafts';
+import { workBlocksSend } from '@/lib/practice-work-drafts';
 import { validNoteId } from '@/lib/learning-model';
 import {
   latestSequence,
@@ -103,94 +99,7 @@ function Discuss({
       concept={query.data.concept}
     />
   ) : (
-    <SessionPicker userId={userId} concept={query.data.concept} />
-  );
-}
-function SessionPicker({
-  userId,
-  concept,
-}: {
-  userId: number;
-  concept: Concept;
-}) {
-  const router = useRouter();
-  const query = usePracticeList(userId);
-  const activity = usePracticeOperation(userId);
-  const { saved, operation } = activity;
-  useEffect(() => {
-    if (saved?.change.kind !== 'start' || saved.change.conceptId !== concept.id)
-      return;
-    router.replace({
-      pathname: '/learning/concepts/[id]/discuss',
-      params: { id: concept.id, practice_session: saved.result.session_id },
-    });
-    operation.consumeSaved();
-  }, [saved, operation, router, concept.id]);
-  const sessions =
-    query.data?.sessions.filter((s) => s.concept_id === concept.id) ?? [];
-  return (
-    <Screen>
-      <ConceptHeader concept={concept} mode="discuss" />
-      <ThemedText>
-        Clarify the problem, propose a design, and defend your decisions with an
-        AI interviewer.
-      </ThemedText>
-      <PracticeRecovery
-        activity={activity}
-        reload={() => void query.refetch()}
-      />
-      {query.isError || query.isPaused ? (
-        <InlineError
-          message="Connect to refresh your saved conversations."
-          onRetry={() => void query.refetch()}
-        />
-      ) : null}
-      {sessions.length ? (
-        <ThemedText type="subtitle">Pick up where you left off</ThemedText>
-      ) : null}
-      {sessions.map((s, i) => (
-        <NavRow
-          key={s.id}
-          title={
-            i === 0 ? 'Continue latest conversation' : 'Open saved conversation'
-          }
-          subtitle={`${s.status === 'paused' ? 'Paused' : 'Active'} · ${new Date(s.updated_at).toLocaleString()} · ${s.id.slice(-8)}`}
-          href={{
-            pathname: '/learning/concepts/[id]/discuss',
-            params: { id: concept.id, practice_session: s.id },
-          }}
-        />
-      ))}
-      {query.isPending ? (
-        <ThemedText>Loading saved conversations…</ThemedText>
-      ) : !sessions.length && !query.isError ? (
-        <ThemedText themeColor="textSecondary">
-          Your web and phone share the same saved conversations.
-        </ThemedText>
-      ) : null}
-      <NativeAction
-        secondary={sessions.length > 0}
-        label="Start a new conversation"
-        disabled={
-          !activity.ready ||
-          !!activity.pending ||
-          !query.isSuccess ||
-          !concept.content.exercise_ids?.length
-        }
-        onPress={() =>
-          void operation.begin({
-            kind: 'start',
-            conceptId: concept.id,
-            exerciseId: concept.content.exercise_ids[0],
-            request_id: Crypto.randomUUID(),
-          })
-        }
-      />
-      <ThemedText type="small" themeColor="textSecondary">
-        Up to 20 recent open conversations. Saved work and spending limits are
-        shared with the web.
-      </ThemedText>
-    </Screen>
+    <PracticeSessionPicker userId={userId} concept={query.data.concept} />
   );
 }
 const messageKey = (m: PracticeMessage) => String(m.sequence);
@@ -206,6 +115,7 @@ function Conversation({
   const query = usePracticeDetail(userId, id);
   const activity = usePracticeOperation(userId);
   const draft = usePracticeDraft(userId, id);
+  const work = usePracticeWork(userId, id);
   const theme = useTheme();
   const router = useRouter();
   const list = useRef<FlatList<PracticeMessage>>(null);
@@ -480,10 +390,42 @@ function Conversation({
               {count > MESSAGE_LIMIT ? (
                 <InlineError message="This message is too long. Shorten it to 8 KiB before sending." />
               ) : null}
+              {!work.ready || work.error || work.edits.length ? (
+                <View style={styles.footer}>
+                  <ThemedText>
+                    {work.error ??
+                      (!work.ready
+                        ? 'Checking for unfinished Build edits…'
+                        : 'You have unfinished Build edits. Save or discard them before sending so the interviewer sees your intended work.')}
+                  </ThemedText>
+                  <NativeAction
+                    secondary
+                    label="Open Build"
+                    onPress={() =>
+                      router.replace({
+                        pathname: '/learning/concepts/[id]/build',
+                        params: { id: concept.id, practice_session: id },
+                      })
+                    }
+                  />
+                  {work.error ? (
+                    <NativeAction
+                      secondary
+                      label="Check Build drafts"
+                      onPress={() =>
+                        work.ready
+                          ? work.drafts.retrySave(id)
+                          : void work.drafts.load(id)
+                      }
+                    />
+                  ) : null}
+                </View>
+              ) : null}
               <NativeAction
                 label={paused ? 'Resume to send a message' : 'Send message'}
                 disabled={
                   blocked ||
+                  workBlocksSend(work) ||
                   outdated ||
                   draft.saving ||
                   !!draft.error ||

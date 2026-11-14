@@ -15,6 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/lib/auth-context';
 import { practiceKeys, validSessionId } from '@/lib/practice-model';
 import { practiceApi } from '@/lib/practice-runtime';
+import { validArtifactId } from '@/lib/practice-work-model';
 
 export default function SavedArtifact() {
   const { user } = useAuth();
@@ -25,8 +26,7 @@ export default function SavedArtifact() {
   }>();
   if (
     !validSessionId(session) ||
-    typeof artifact !== 'string' ||
-    !/^[a-z0-9-]{1,128}$/.test(artifact) ||
+    !validArtifactId(artifact) ||
     !/^\d{1,10}$/.test(revision ?? '') ||
     Number(revision) > 2147483647
   )
