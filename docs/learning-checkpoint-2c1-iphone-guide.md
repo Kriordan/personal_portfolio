@@ -2,7 +2,8 @@
 
 This checkpoint is implemented locally. The installed build 10 does not yet
 include it; deployment and a new standalone preview need approval.
-The last maximum-text visual recheck awaits an unlocked Mac.
+The maximum-text simulator review passed November 14, including a fix for tabs
+that crowded their labels when text size changed while the app was open.
 
 ## Five-minute phone walkthrough
 
@@ -18,6 +19,22 @@ The last maximum-text visual recheck awaits an unlocked Mac.
    Make a phone edit, then save a different web edit. Back on the phone, compare
    the newer saved version. Keeping the phone draft only updates its starting
    revision; you still explicitly Save. Discarding affects only the local draft.
+
+## Two-minute large-text regression check
+
+1. With Build open, use iPhone **Settings → Accessibility → Display & Text Size →
+   Larger Text**. Enable the larger accessibility sizes and move the slider to
+   the maximum. Return to the app: all four tab names should remain readable,
+   wrapping onto additional rows. Switch Discuss → Build and confirm the same
+   session remains selected.
+2. In Build, open an artifact and inspect its notation choices, text field, draft
+   status, and Save action. Open a note, change its type, and toggle **Pin this
+   note**: its label should wrap beside the visible switch. Save and reopen the
+   work; its saved revision should advance. These saves do not request AI.
+3. Restore your previous text size. The tabs should reflow without restarting the
+   app. The simulator check used the default `large` and the maximum
+   `accessibility-extra-extra-extra-large`; repeat on the signed preview when it
+   is available. This is a layout check, not a full VoiceOver audit.
 
 ## Practice with a REPL and HTTPie/Postman
 

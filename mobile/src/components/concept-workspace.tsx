@@ -36,7 +36,7 @@ export function ConceptHeader({
           Private Learning pilot · Draft content
         </ThemedText>
       ) : null}
-      <View accessibilityRole="tablist" style={styles.tabs}>
+      <View key={fontScale} accessibilityRole="tablist" style={styles.tabs}>
         {(['learn', 'review', 'discuss', 'build'] as const).map((view) => (
           <Pressable
             key={view}
@@ -72,7 +72,6 @@ export function ConceptHeader({
             style={[
               styles.tab,
               {
-                flexBasis: 68 * fontScale,
                 backgroundColor:
                   mode === view ? theme.accentSoft : theme.backgroundElement,
               },
@@ -155,8 +154,11 @@ export function StudyStatus({
 const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tab: {
+    // Let native text measurement choose each tab's width before wrapping.
+    // A numeric basis can keep scaled labels trapped in narrow columns.
     flexGrow: 1,
     flexShrink: 0,
+    minWidth: 68,
     minHeight: 48,
     paddingVertical: 12,
     paddingHorizontal: 6,

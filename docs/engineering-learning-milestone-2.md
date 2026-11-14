@@ -372,14 +372,26 @@ evaluation material remain server-side and are not imported into the app.
   another PUT. A 65,536-byte pseudocode draft survived process termination and
   then saved successfully through the native journal and Keychain.
 - The native walkthrough prompted a compact Build heading and full-width work
-  choices. Maximum text size exposed cramped tab labels; tabs now allocate width
-  according to font scale and wrap, and the note's pin label can wrap beside its
-  switch. **The final visual recheck of that last tab-sizing change is pending:**
-  the Mac locked before it could run. TypeScript, lint, and export passed for the
-  final source. Finish that native recheck before requesting deployment approval.
-  Normal simulator text size was restored to `large` before the lock. A full
-  software-keyboard pass and native sign-out repeat remain manual release checks;
-  account cleanup and late-write fencing are covered by deterministic tests.
+  choices. **The maximum-text recheck completed November 14.** It exposed a
+  remaining issue when changing Dynamic Type while the app was open: the numeric
+  tab widths could still crowd scaled labels. Tabs now use native text measurement
+  before wrapping; the tab list remounts when font scale changes so iOS measures
+  it again. At `accessibility-extra-extra-extra-large`, all four labels fit in
+  two readable rows, including after switching Discuss → Build in the same
+  session. Restoring `large` returns the tabs to one row.
+- At maximum text size, the API notation choices and editor, note type choices,
+  wrapped pin label beside its switch, draft status, Save actions, and note-removal
+  confirmation remained readable. Artifact and pinned-note saves advanced their
+  revisions and remained visible after returning to the Build overview. The
+  simulator's original `large` text size was restored and keyboard capture was
+  turned off. The final source passed all **179 mobile tests**, TypeScript, ESLint,
+  and a fresh production Hermes export. No backend behavior changed in this
+  visual-review follow-up; the PostgreSQL results above belong to the main
+  checkpoint verification.
+- A full software-keyboard pass and native sign-out repeat remain manual release
+  checks; account cleanup and late-write fencing are covered by deterministic
+  tests. See the guide's maximum-text regression steps for repeating this review
+  on the signed iPhone preview.
 
 The **$5 lifetime allowance, $1 verification portion, $50 monthly cap, and per-call/
 context limits are unchanged**. All checkpoint AI responses are mocked/fake;

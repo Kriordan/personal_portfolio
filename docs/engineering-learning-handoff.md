@@ -34,9 +34,13 @@ and the same operation journal. Tests and verification are in the
 [Milestone 2 log](engineering-learning-milestone-2.md#checkpoint-2c1--build-editing-on-iphone)
 and [hands-on guide](learning-checkpoint-2c1-iphone-guide.md). Deployment and a new
 signed preview still require approval. Native feedback (2c.2) and additional
-concepts remain unapproved. The final maximum-text simulator recheck is pending
-because the Mac locked; finish it before requesting deployment approval. Core
-native save/conflict/restart checks and all automated checks passed.
+concepts remain unapproved. The maximum-text simulator recheck completed November
+14 and caught a remaining live-resizing problem in the tabs. They now size from
+their labels and remeasure when font scale changes. Maximum-size tabs, artifact
+and note controls, pinning, and saves passed the visual check; normal text size
+was restored. All 179 mobile tests, TypeScript, lint, and the production Hermes
+export passed for the revised source. Core native save/conflict/restart checks
+and PostgreSQL verification from the main checkpoint remain recorded in the log.
 
 This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2c.1, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
