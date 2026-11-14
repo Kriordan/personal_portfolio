@@ -130,6 +130,30 @@ class PracticeApiReplyTests(PracticeApiCase):
         replayed = self.call("POST", f"/sessions/{session_id}/turns", payload)
         self.assertEqual((replayed.status_code, "reply" in replayed.get_json()), (201, False))
 
+    def test_phone_retry_pins_turn_and_replays_after_reply_arrives(self):
+        sid = self.start()
+        with patch.dict(self.app.config, LEARNING_AI_ENABLED=False):
+            self.turn(sid)
+            self.turn(sid, expected=2)  # a newer message from the website
+        before = AIRequest.query.count()
+        old = {"request_id": str(uuid4()), "expected_sequence": 2}
+        response = self.call("POST", f"/sessions/{sid}/reply", old)
+        self.assertEqual((response.status_code, response.get_json()["code"]), (409, "stale_transcript"))
+        self.assertEqual(AIRequest.query.count(), before)
+        current = {"request_id": str(uuid4()), "expected_sequence": 3}
+        asked = self.call("POST", f"/sessions/{sid}/reply", current)
+        self.assertEqual(asked.status_code, 202)
+        self.work()
+        replay = self.call("POST", f"/sessions/{sid}/reply", current)
+        self.assertEqual(replay.get_json(), asked.get_json())
+        changed = self.call("POST", f"/sessions/{sid}/reply", dict(current, expected_sequence=4))
+        self.assertEqual(changed.get_json()["code"], "request_conflict")
+        for invalid in (None, True, -1, "3", 2147483648):
+            with self.subTest(invalid=invalid):
+                result = self.call("POST", f"/sessions/{sid}/reply", {
+                    "request_id": str(uuid4()), "expected_sequence": invalid})
+                self.assertEqual(result.status_code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()

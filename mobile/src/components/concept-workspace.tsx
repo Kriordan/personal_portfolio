@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { InlineError, NativeAction, PageHeading } from './screen';
 import { ThemedText } from './themed-text';
@@ -11,9 +11,10 @@ export function ConceptHeader({
   mode,
 }: {
   concept: Concept;
-  mode: 'learn' | 'review';
+  mode: 'learn' | 'review' | 'discuss';
 }) {
   const router = useRouter();
+  const { practice_session } = useLocalSearchParams<{ practice_session?: string }>();
   const theme = useTheme();
   return (
     <>
@@ -24,20 +25,20 @@ export function ConceptHeader({
         </ThemedText>
       ) : null}
       <View accessibilityRole="tablist" style={styles.tabs}>
-        {(['learn', 'review'] as const).map((view) => (
+        {(['learn', 'review', 'discuss'] as const).map((view) => (
           <Pressable
             key={view}
             accessibilityRole="tab"
             accessibilityState={{ selected: mode === view }}
-            accessibilityLabel={view === 'learn' ? 'Learn' : 'Review'}
+            accessibilityLabel={view === 'learn' ? 'Learn' : view === 'review' ? 'Review' : 'Discuss'}
             onPress={() => {
               if (view !== mode)
                 router.replace({
                   pathname:
                     view === 'learn'
                       ? '/learning/concepts/[id]'
-                      : '/learning/concepts/[id]/review',
-                  params: { id: concept.id },
+                      : view === 'review' ? '/learning/concepts/[id]/review' : '/learning/concepts/[id]/discuss',
+                  params: { id: concept.id, ...(practice_session ? { practice_session } : {}) },
                 });
             }}
             style={[
@@ -52,7 +53,7 @@ export function ConceptHeader({
               type="smallBold"
               themeColor={mode === view ? 'accent' : 'textSecondary'}
             >
-              {view === 'learn' ? 'Learn' : 'Review'}
+              {view === 'learn' ? 'Learn' : view === 'review' ? 'Review' : 'Discuss'}
             </ThemedText>
           </Pressable>
         ))}

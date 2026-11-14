@@ -19,10 +19,13 @@ needed. See the [Milestone 2 log](engineering-learning-milestone-2.md) and
 release: **Heroku v173** and [standalone iPhone build 9](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/eb7be266-9a98-484d-b4fa-8bdc4f75e836)
 use application source `eee8b9e`. Downloaded-bundle and read-only hosted checks
 passed; the unchanged shared allowance has **$4.923975** remaining at verification.
-Physical installation/first review remain pending. 2b/2c and additional concepts
-remain unapproved.
+Keith subsequently reported that Learn/Review look good on his iPhone and approved
+**2b: native Discuss and conversation continuity**. Its local implementation,
+draft-persistence decision, verification, and deployment gate are recorded in the
+[Milestone 2 log](engineering-learning-milestone-2.md#checkpoint-2b--discuss-and-conversation-continuity).
+2c and additional concepts remain unapproved. No 2b deployment is authorized yet.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2a, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2b, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -39,7 +42,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a is now authorized**, limited to native Learn/Review and shared progress/recovery. Do not start 2b/2c, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a is released and 2b is authorized**, limited to native Discuss, shared sessions/recovery, and read-only work references. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Do not start 2c, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
@@ -48,7 +51,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
 | 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Local implementation and delegated technical review complete through 5g. Codex recommends local pilot acceptance. Production publication remains separately gated. |
-| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review approved November 13; implementation and release gate in the Milestone 2 log. Later slices still require approval. |
+| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review released; 2b Discuss implemented locally. Deployment and 2c still require approval; see the Milestone 2 log. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
 

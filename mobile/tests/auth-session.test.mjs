@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import ts from 'typescript';
 import { createSessionTokens } from '../src/lib/session-tokens.ts';
+import { createPracticeClient } from '../src/lib/practice-client.ts';
 
 const deferred = () => {
   let resolve;
@@ -54,6 +55,23 @@ test('a delayed 401 cannot replay an old save under the new account', async (con
   gate.resolve(new Response('{}', { status: 401 }));
   await rejected;
   assert.equal(calls.length, 1, 'no refresh or write may use account B');
+});
+
+test('practice token refresh replays exactly the same pinned request and correlation ID', async context => {
+  const api = await client(context), calls = [];
+  context.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url.endsWith('/auth/refresh')) return Response.json({ access_token: 'renewed-a' });
+    calls.push(options);
+    return calls.length === 1 ? new Response('{}', { status: 401 }) : Response.json({ session_id: 'fixture' });
+  });
+  const requestId = randomUUID();
+  await createPracticeClient(api.apiRequest).change({ kind: 'send', conceptId: 'idempotency', sessionId: randomUUID(),
+    request_id: requestId, body: 'What happens after a timeout?', expected_sequence: 7, artifact_revisions: { api: 2 }, brief_revision: 3 });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].body, calls[1].body);
+  assert.equal(calls[0].headers['X-Request-ID'], requestId);
+  assert.equal(calls[1].headers['X-Request-ID'], requestId);
+  assert.equal(calls[1].headers.Authorization, 'Bearer renewed-a');
 });
 
 test('a late refresh cannot replace the new account token or log it out', async (context) => {

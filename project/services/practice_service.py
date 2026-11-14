@@ -1138,7 +1138,7 @@ def _latest_learner_turn(session_id):
     ).order_by(SessionMessage.sequence.desc()).limit(1)).scalar_one_or_none()
 
 
-def request_reply(user, session_id, *, request_id, edits=None, brief=None, context=None, now=None):
+def request_reply(user, session_id, *, request_id, edits=None, brief=None, context=None, expected_sequence=None, now=None):
     """Ask for a reply to the latest learner turn: a retry, or a turn saved while AI was unavailable.
 
     The website also saves the page's artifacts and brief in the same transaction, so asking
@@ -1157,6 +1157,12 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, conte
     normalized = _normalize_edits([] if edits is None else edits, minimum=0)
     normalized_brief = _normalize_brief(brief) if brief is not None else None
     payload = {"edits": normalized, "brief": normalized_brief}
+    # Phone retries pin the conversation they displayed. A different device may
+    # have sent a newer turn while this request was offline. Legacy callers omit
+    # this field; their existing receipt digests and behavior remain unchanged.
+    if expected_sequence is not None:
+        _check_expected_sequence(expected_sequence)
+        payload["expected_sequence"] = expected_sequence
     if context is not None:
         payload["context"] = context
     digest = _digest("reply", session_id, payload)
@@ -1168,6 +1174,8 @@ def request_reply(user, session_id, *, request_id, edits=None, brief=None, conte
             db.session.commit()
             return replay
         session = _owned_session(user.id, session_id)
+        if expected_sequence is not None and _latest_turn(session.id) != expected_sequence:
+            raise StaleViewError(latest_turn=_latest_turn(session.id))
         live = _settle_stale_reply(session, now)
         if live is not None:
             _raise_pending(live)

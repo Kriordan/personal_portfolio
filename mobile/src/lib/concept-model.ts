@@ -26,6 +26,7 @@ export interface Concept {
     summary: string;
     learning_objectives: string[];
     prerequisite_knowledge: string[];
+    exercise_ids: string[];
     sections: { id: string; title: string; markdown: string }[];
     references: { title: string; url: string }[];
   };

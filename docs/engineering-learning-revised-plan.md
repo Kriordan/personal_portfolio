@@ -1,6 +1,6 @@
 # Engineering Learning & Mastery Platform — refined implementation plan
 
-> Approved planning snapshot, preserved from the revision discussion before implementation began. Statements about implementation being unstarted describe that point in time. For current progress, see the [engineering handoff](engineering-learning-handoff.md), [Milestone 1 checkpoint log](engineering-learning-milestone-1.md), and [Milestone 2 checkpoint log](engineering-learning-milestone-2.md). Keith approved Milestone 2a (iPhone Learn/Review) on November 13; subsequent mobile checkpoints still need approval.
+> Approved planning snapshot, preserved from the revision discussion before implementation began. Statements about implementation being unstarted describe that point in time. For current progress, see the [engineering handoff](engineering-learning-handoff.md), [Milestone 1 checkpoint log](engineering-learning-milestone-1.md), and [Milestone 2 checkpoint log](engineering-learning-milestone-2.md). Keith approved Milestone 2a (iPhone Learn/Review) and 2b (Discuss and shared session continuity) on November 13; deployment and subsequent mobile checkpoints still need approval.
 
 Background: [the original project vision](engineering-learning-original-vision.md), preserved verbatim from Keith's opening request.
 

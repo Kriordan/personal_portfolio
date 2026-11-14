@@ -103,6 +103,29 @@ class PracticeReplyPostgresTests(unittest.TestCase):
         seq = service.save_and_submit(self.user(), sid, **submission_input(service.session_detail(1, sid), '{}'))["submission"]["sequence"]
         return sid, seq
 
+    def test_phone_retry_racing_web_send_never_answers_a_different_turn(self):
+        # Both operations use the same owner lock. Whichever wins, the retry
+        # cannot silently attach to the other device's newer learner turn.
+        sid, reply_id = self.queue()
+        service.set_status(self.user(), sid, status="paused", request_id=str(uuid4()))
+        def retry():
+            return service.request_reply(self.user(), sid, expected_sequence=2, request_id=str(uuid4()))
+        def send():
+            return service.send_turn(self.user(), sid, body="How long do keys live?", expected_sequence=2,
+                                     artifact_revisions=ALL_AT_ZERO, brief_revision=0, request_id=str(uuid4()))
+        retried, sent = self.race(retry, send)
+        if isinstance(retried, dict):
+            self.assertIsInstance(sent, service.ReplyPendingError)
+        else:
+            self.assertIsInstance(retried, service.StaleViewError)
+            self.assertIsInstance(sent, dict)
+        db.session.expire_all()
+        live = AIRequest.query.filter(AIRequest.status.in_(service.LIVE)).all()
+        self.assertEqual(len(live), 1)
+        turn = db.session.get(SessionMessage, live[0].turn_message_id)
+        self.assertEqual(turn.sequence, 2 if isinstance(retried, dict) else 3)
+        self.assertEqual(practice_budget.committed(), 0)  # no provider calls in the race
+
     def feedback_queue(self, sid, seq, request_id=None):
         return feedback.request_feedback(self.user(), sid, seq, request_id=request_id or str(uuid4()))
 

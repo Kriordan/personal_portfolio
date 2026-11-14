@@ -297,13 +297,14 @@ def ask_for_reply(session_id):
     user, payload, failure = _user_and_payload()
     if failure:
         return failure
-    if "request_id" not in payload or set(payload) - {"request_id", "context"}:
+    if ("request_id" not in payload or set(payload) - {"request_id", "context", "expected_sequence"}
+            or ("expected_sequence" in payload and payload["expected_sequence"] is None)):
         return _error('Send request_id, and context "recent" to continue with recent messages.', 400,
                       "invalid_request")
 
     def ask():
         result = practice.request_reply(user, session_id, request_id=payload["request_id"],
-                                        context=payload.get("context"))
+                                        context=payload.get("context"), expected_sequence=payload.get("expected_sequence"))
         return jsonify(result), 202 if result["reply"]["status"] == "pending" else 200
     return _call(ask)
 

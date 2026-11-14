@@ -9,8 +9,8 @@ still requires explicit approval.
 
 | Checkpoint | Scope | Status |
 | --- | --- | --- |
-| 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; physical-device acceptance remains. |
-| 2b | Native interviewer conversation and web/phone session continuity. | Proposed; not authorized yet. |
+| 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
+| 2b | Native interviewer conversation and web/phone session continuity. | Implemented and verified locally November 13. Deployment requires approval. |
 | 2c | Native saved artifacts and feedback within the same practice session. | Proposed; not authorized yet. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
@@ -123,8 +123,129 @@ See [artifact evidence](assets/learning-2a-iphone-2026-11-13/release.json).
 Raw archives, provisioning identifiers, and operator records stay under the
 ignored private `.local/learning-pilot/iphone-2a-deployment/` directory.
 
-**Physical-device installation and a deliberate review are still pending.**
-Build/download verification does not substitute for Keith trying the phone app.
-Future deployments, 2b/2c, and content expansion require separate approval.
+At release verification, physical installation and a deliberate review were
+still pending; build/download verification did not substitute for phone use.
+Keith subsequently reported that Learn/Review look good on his iPhone and approved
+checkpoint 2b. Future deployments, 2c, and content expansion require separate approval.
 
 See the [phone and hands-on engineering guide](learning-checkpoint-2a-iphone-guide.md).
+
+## Checkpoint 2b — Discuss and conversation continuity
+
+The native concept workspace now has Learn, Review, and Discuss tabs. Discuss
+lists the account's recent active/paused sessions, starts an explicit new session,
+and opens the exact shared web session. Switching to Learn/Review preserves that
+session selection. A virtualized transcript shows the interviewer conversation,
+with a multiline composer and pause/resume controls. Scenario, revealed
+requirements, learner assumptions/decisions, spending status, and saved artifacts
+are available separately for reference. Artifact citations open the exact saved
+revision, with a notice when a newer revision exists. Native editing and feedback
+remain checkpoint 2c.
+
+Keith explicitly chose **device-persistent unsent drafts**, scoped to the account
+and session and cleared on sign-out. iOS uses the existing SecureStore/Keychain
+dependency with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`; no transcript or reference
+packet is persisted locally. A small index tracks at most 20 draft-bearing
+sessions for cleanup. The UI distinguishes saving, saved, and failed local saves.
+Oversized messages remain editable but cannot bypass the existing 8 KiB send
+limit. Drafts retain their original transcript, brief, and artifact revisions.
+If the web changes those inputs, the learner must review and explicitly adopt
+the updates before sending. Drafts do not sync across devices and are never sent
+automatically.
+
+All mutations use one durable pending-operation journal and an immutable UUID.
+Automatic recovery only reads the existing receipt API. A missing receipt never
+proves a send failed; only an explicit retry replays the original payload and ID.
+Device-storage failure prevents the network write. Confirmation removes only a
+matching draft before dropping the journal, so a cleanup interruption remains
+recoverable. Account disposal fences late callbacks; serialized cleanup cannot
+be undone by a late draft write. Existing JWT refresh and account-keyed query
+caches are reused. Foreground reads refresh shared work; backgrounded screens
+do not poll for AI replies.
+
+One additive backend safeguard was needed: `POST .../reply` accepts optional
+`expected_sequence`. Under the existing owner lock, a phone retry aimed at an old
+conversation returns `409 stale_transcript`, instead of requesting a reply to a
+newer web message. The expectation participates in the receipt digest; replays
+still return their original result after a reply arrives. Legacy callers that
+omit it retain their existing behavior and receipt hashes. Deploy this compatible
+backend change before distributing the new phone build. **No migration,
+dependency, worker, provider, prompt, content, or spending configuration changes.**
+
+The 24-turn check-in remains advisory. Long conversations offer the existing
+explicit recent-messages continuation, explaining that older messages stay saved
+but are no longer read by the interviewer. Oversized essential context is
+reported without silent omission. Budget exhaustion preserves reading and
+message saving; retries still pass through the existing server budget/lease
+controls. The original $5 lifetime allowance, its $1 verification portion,
+monthly cap, and per-call/context limits are unchanged. Verification uses fake AI
+only and consumes **no paid allowance**.
+
+### Verification and release gate
+
+- Mobile controller/client/auth tests cover immutable sends, lost responses,
+  restart, duplicate taps, exact citations, explicit retry/continuation,
+  offline/storage failures, account disposal, token refresh, and draft cleanup.
+  **162 mobile tests passed**, including 20 new recovery/draft/auth cases.
+  TypeScript, ESLint, and a production iOS Hermes export passed.
+- The 21 PostgreSQL durable-reply tests passed, including the new retry-versus-web
+  send race. The 56 API/web/privacy/session/migration checks also passed after
+  rerunning the three migration checks with matching PostgreSQL 16 backup tools.
+  An initial restore failed with the default mismatched backup utility; no
+  application change was needed. There is no new schema migration.
+- Native iOS 27 walkthrough with disposable accounts verified session start,
+  conversation/reply, exact v1 artifact citations after another client saved v2,
+  scenario/work reading, Learn-to-Discuss continuity, pause/resume, and a send
+  whose response was lost while recovery reads failed. Foreground recovery
+  restored one learner turn and one reply without resending. The other account's
+  data stayed empty. Fake-provider ledger entries are simulated charges, not
+  paid usage.
+- Native draft checks confirmed saving on the device, recovery after terminating
+  and relaunching the app, and retaining the text while disabling Send after a
+  different client changed its cited artifact. Sign-out followed by sign-in
+  removed the local draft while preserving all seven saved transcript messages.
+  Recovery notices sit beside the composer, and initial scrolling follows the
+  latest conversation until the learner scrolls to older messages.
+- An isolated source copy and its own committed dependencies exclude unrelated
+  interval-timer/security work in the checkout. Using the working tree's evolving
+  dependency installation initially failed a dependency test; installing the
+  committed lockfile in the disposable copy resolved it. Production Hermes export
+  passed and the actual bundle was checked for the fixture origin and private
+  reference markers. Native QA reuses a compatible simulator binary; signed
+  physical-device acceptance, VoiceOver, and Android acceptance remain release
+  checks, not claims of this walkthrough.
+
+**No deployment, signed iPhone build, or live AI call has been made for 2b.**
+After the separate checkpoint commit, ask Keith before deploying that exact
+commit or creating the installable preview. Preserve all hosted pilot settings
+and use the existing release/backup/bundle-verification procedure.
+
+### Hands-on engineering checks
+
+Use a disposable fixture (`scripts/learning-preview-fixture.py --concept`) for
+experiments. Its two documented test accounts and fake AI keep real progress and
+paid usage untouched. Point a local phone QA build at that fixture; never put a
+local origin into the distributed preview.
+
+1. In HTTPie/Postman, sign in to the fixture, keep its JWT in a local variable,
+   and inspect `GET /api/v1/learning/practice/sessions`. Compare its session ID
+   with the phone's session label. Inspect `GET .../sessions/<id>`: messages,
+   artifact revisions, brief, reply state, and revealed requirements are distinct.
+2. Save an API artifact through the existing web workspace. Send a message on
+   the phone, then edit that artifact again on the web. Open the phone message's
+   citation: it must show the original revision, while Scenario & work shows the
+   latest. In browser DevTools, inspect the existing web requests and compare
+   the revisions with the phone API response.
+3. In Postman, POST the same `/turns` body twice with the **same** `request_id`,
+   `expected_sequence`, `artifact_revisions`, and `brief_revision`. Then GET
+   `/receipts/<request_id>` and the session. There should be one saved learner
+   turn and one reply request. Change the body while reusing that ID: expect
+   `409 request_conflict`. These are mutation experiments: use the fixture only.
+4. Type an unsent phone draft and wait for its saved notice. Close/reopen the app,
+   resume that session, then change its work from the web. Inspect how the phone
+   preserves the draft and requires reviewing the new context. Sign out and back
+   in: the unsent local draft should be gone; sent server work remains.
+5. For recovery, set the fixture's `practice` mode to `lost`. It commits the
+   mutation and loses the response. Observe the receipt read, not a second POST.
+   `reads: failure` also blocks receipt reads; restore `reads: success` and reopen
+   the app to recover. Keep tokens and private bodies out of screenshots/logs.

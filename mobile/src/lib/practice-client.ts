@@ -1,0 +1,58 @@
+import type { PracticeApi } from './practice-model.ts';
+type Request = <T>(
+  path: string,
+  options?: {
+    method?: 'GET' | 'POST';
+    body?: unknown;
+    timeoutMs?: number;
+    requestId?: string;
+  },
+) => Promise<T>;
+const root = '/learning/practice';
+const session = (id: string) => `${root}/sessions/${encodeURIComponent(id)}`;
+export function createPracticeClient(request: Request): PracticeApi {
+  const read = <T>(path: string) => request<T>(path, { timeoutMs: 20_000 });
+  return {
+    list: () => read(`${root}/sessions`),
+    detail: (id) => read(session(id)),
+    revision: (id, artifact, revision) =>
+      read(
+        `${session(id)}/artifacts/${encodeURIComponent(artifact)}/revisions/${revision}`,
+      ),
+    receipt: (id) => read(`${root}/receipts/${encodeURIComponent(id)}`),
+    change: (change) => {
+      const { kind, conceptId, request_id } = change;
+      let path = `${root}/sessions`;
+      let body: object = {
+        request_id,
+        concept_id: conceptId,
+        ...(kind === 'start' ? { exercise_id: change.exerciseId } : {}),
+      };
+      if (kind !== 'start') {
+        path = `${session(change.sessionId)}/${kind === 'send' ? 'turns' : kind}`;
+        body =
+          kind === 'send'
+            ? {
+                request_id,
+                body: change.body,
+                expected_sequence: change.expected_sequence,
+                artifact_revisions: change.artifact_revisions,
+                brief_revision: change.brief_revision,
+              }
+            : kind === 'reply'
+              ? {
+                  request_id,
+                  expected_sequence: change.expected_sequence,
+                  ...(change.context ? { context: change.context } : {}),
+                }
+              : { request_id };
+      }
+      return request(path, {
+        method: 'POST',
+        body,
+        timeoutMs: 20_000,
+        requestId: request_id,
+      });
+    },
+  };
+}
