@@ -6,6 +6,10 @@ concepts are not part of this mobile slice. The website keeps those features.
 
 ## Try it on your phone
 
+**Latest preview:** [build 10](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/45ce8b80-8d63-415f-a0d7-887d77b09aef)
+adds Discuss and shared-session recovery while retaining this Learn/Review flow.
+Use that install link for the current app. See the [2b release and walkthrough](engineering-learning-milestone-2.md#approved-2b-release--november-13).
+
 **Released with Keith's approval on November 13:** Heroku **v173** and standalone
 iPhone preview **build 9**, both from application commit `eee8b9e`.
 

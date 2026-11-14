@@ -10,7 +10,7 @@ still requires explicit approval.
 | Checkpoint | Scope | Status |
 | --- | --- | --- |
 | 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
-| 2b | Native interviewer conversation and web/phone session continuity. | Implemented and verified locally November 13. Deployment requires approval. |
+| 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Physical-device acceptance pending. |
 | 2c | Native saved artifacts and feedback within the same practice session. | Proposed; not authorized yet. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
@@ -215,10 +215,56 @@ only and consumes **no paid allowance**.
   physical-device acceptance, VoiceOver, and Android acceptance remain release
   checks, not claims of this walkthrough.
 
-**No deployment, signed iPhone build, or live AI call has been made for 2b.**
-After the separate checkpoint commit, ask Keith before deploying that exact
-commit or creating the installable preview. Preserve all hosted pilot settings
-and use the existing release/backup/bundle-verification procedure.
+Implementation was committed separately as **`a905098`**. Keith subsequently
+explicitly approved deploying that exact commit and creating the standalone
+iPhone preview. The release below preserves the existing pilot settings.
+
+### Approved 2b release — November 13
+
+Application source **`a905098961b1e64611d4d21f56eef8a5674d6a38`** is live on
+Heroku. Backup **b014** completed before code release **v174**; **v175** updated
+only the existing error-monitoring release tag. The schema is still
+`e4f5a6b7c8d9`. No infrastructure, Learning configuration, or signing access changed.
+
+Checks on both hosted origins verified owner access, anonymous 401, non-owner
+404, private cache headers, draft labels, lesson/review/progress reads, and the
+phone's session and exact-artifact-revision reads. A deliberately stale reply
+request returned `409 stale_transcript` without creating a receipt, saved turn,
+or AI request. Before/after fingerprints matched for learning progress, saved
+practice work, feedback, and the AI ledger. Verification made **zero paid AI calls**.
+
+The **$5 lifetime allowance**, **$1 verification portion**, **$50 monthly cap**,
+and call/context limits are unchanged. Counted spending plus carried usage was
+**$0.076025**, leaving **$4.923975** at release verification. No AI requests were
+pending or running; local paid AI remains frozen.
+
+Standalone [iPhone build 10](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/45ce8b80-8d63-415f-a0d7-887d77b09aef)
+finished on November 13 at **7:50:27 p.m. EST**. Its 920 uploaded source files
+matched the approved commit and excluded unfinished interval-timer/security
+work, local settings, databases, and credentials. Caches were cleared and
+existing signing credentials were frozen and reused. The same provisioning
+profile still includes the registered iPhone.
+
+The downloaded 17,014,307-byte IPA is an `iPhoneOS` archive for
+`com.kriordan.personalportfolio`, version 1.0.0/build 10. Its packaged config
+records the exact source commit. The Hermes bundle contains Learn, Review,
+Discuss, local-draft status, and the hosted API origin; fixture origins and
+private reference/evaluation markers are absent. Sentry's completed source-map
+upload has the same debug ID as the downloaded bundle. No test error event,
+App Store/TestFlight submission, or OTA update was created.
+
+See [release evidence](assets/learning-2b-iphone-2026-11-13/release.json).
+Raw archives, provisioning identifiers, and operator records remain under the
+ignored private `.local/learning-pilot/iphone-2b-deployment/` directory.
+Physical installation and use of build 10 remain Keith's acceptance step;
+archive verification does not substitute for that check.
+
+Open the build link in Safari on the registered iPhone and tap **Install**.
+In the app, open **Tools → Learning → Idempotency → Discuss**. Resume an existing
+session, inspect **Scenario & work**, and type a draft to try closing/reopening
+the app before sending. Sent messages use the same session as the website and
+the existing shared allowance. Native artifact editing and feedback remain 2c,
+which requires separate approval.
 
 ### Hands-on engineering checks
 
