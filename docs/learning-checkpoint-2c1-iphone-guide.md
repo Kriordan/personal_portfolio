@@ -1,9 +1,16 @@
 # Checkpoint 2c.1: try Build and inspect its saves
 
-This checkpoint is implemented locally. The installed build 10 does not yet
-include it; deployment and a new standalone preview need approval.
+Released with Keith's approval on November 14: **Heroku v177** and standalone
+**iPhone build 11**, from `8e3bff8`.
+
+[Install the Build iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/077bde85-d29e-448b-9855-9d61a7b2635e).
+Open the link in Safari on the registered iPhone and tap **Install**. Update
+build 10 to get Build editing; sign in with the existing website account. The
+app uses the hosted API and runs without your Mac. Spending limits are unchanged.
+
 The maximum-text simulator review passed November 14, including a fix for tabs
 that crowded their labels when text size changed while the app was open.
+Physical iPhone acceptance and a full VoiceOver audit are still separate checks.
 
 ## Five-minute phone walkthrough
 
@@ -33,8 +40,8 @@ that crowded their labels when text size changed while the app was open.
    work; its saved revision should advance. These saves do not request AI.
 3. Restore your previous text size. The tabs should reflow without restarting the
    app. The simulator check used the default `large` and the maximum
-   `accessibility-extra-extra-extra-large`; repeat on the signed preview when it
-   is available. This is a layout check, not a full VoiceOver audit.
+   `accessibility-extra-extra-extra-large`; repeat on the signed preview above.
+   This is a layout check, not a full VoiceOver audit.
 
 ## Practice with a REPL and HTTPie/Postman
 
