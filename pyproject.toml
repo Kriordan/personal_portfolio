@@ -19,7 +19,7 @@ dependencies = [
     "flask-wtf (>=1.2.2,<2.0.0)",
     "email-validator (>=2.2.0,<3.0.0)",
     # Security floor for email-validator's DNS parser (CVE-2026-114605).
-    "dnspython (>=2.9.0,<3.0.0)",
+    "dnspython (>=2.9.2,<3.0.0)",
     "flask-login (>=0.6.3,<0.7.0)",
     "flask-migrate (>=4.1.0,<5.0.0)",
     "flask-limiter (>=4.1.0,<5.0.0)",
