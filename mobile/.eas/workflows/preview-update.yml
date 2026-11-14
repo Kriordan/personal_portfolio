@@ -1,0 +1,33 @@
+name: iPhone preview update
+run_name: ${{ inputs.message }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        type: string
+        required: true
+        description: Describe the tested UI or JavaScript change.
+
+concurrency:
+  group: iphone-preview-updates
+  cancel_in_progress: false
+
+defaults:
+  tools:
+    node: '24.22.1'
+
+jobs:
+  publish:
+    name: Publish iPhone preview
+    type: update
+    environment: preview
+    params:
+      channel: preview
+      platform: ios
+      message: ${{ inputs.message }}
+      upload_sentry_sourcemaps: true
+    hooks:
+      before_update:
+        - name: Check preview configuration
+          run: node scripts/check-preview-update.cjs

@@ -1,6 +1,23 @@
 # Validation status and follow-ups
 
-Updated October 28, 2026. This is the current index for mobile/Jobwizard/Sentry acceptance. Feature smoke-test files retain their detailed scenarios and dated evidence. Only an explicitly tested scenario is closed; general device approval does not imply every failure, accessibility or concurrency case passed.
+Updated November 14, 2026. This is the current index for mobile/Jobwizard/Sentry acceptance. Feature smoke-test files retain their detailed scenarios and dated evidence. Only an explicitly tested scenario is closed; general device approval does not imply every failure, accessibility or concurrency case passed.
+
+## Dependency follow-up — November 13
+
+The [deepmerge security update](security/deepmerge-2026-11-13.md) removes the
+vulnerable dependency through Expo config 57.0.11 and removes its expired
+exception. Additional findings from the fresh scans are patched. Both npm audit
+gates pass with zero findings and zero exceptions. This is local source and
+build validation; the previously installed previews do not acquire these changes.
+The subsequently requested [iPhone preview 12](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/28622d1b-c763-4fc6-bd87-ee35638538e7)
+now includes them alongside the interval timer and current Learning screens. Its
+signed artifact and Sentry source-map match are verified; physical-device
+acceptance remains pending. See the [interval timer record](interval-timer.md)
+for the build receipt and the newer SDK patch recommendations from Expo Doctor.
+The subsequent [update-enabled iPhone preview 13](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/df923f54-6209-4350-906a-5ef4c2eea9b5)
+supersedes it. Preview publication, required Sentry uploads, and download/activation
+in an isolated Release simulator are verified in the [EAS Update record](preview-updates.md).
+The October approvals and deployment evidence below remain historical records.
 
 ## Chat closeout — October 27
 

@@ -86,6 +86,7 @@ async function loadMonitoring({ enabled = '1', platform = 'ios', development = f
       const __DEV__ = ${development};
     `)
     .replace("import Constants from 'expo-constants';", "const Constants = { expoConfig: { extra: { monitoringCommit: 'abcdef1234567' } } };")
+    .replace("import * as Updates from 'expo-updates';", `const Updates = { isEmbeddedLaunch: false, updateId: '${id}' };`)
     .replace("import { Platform } from 'react-native';", `const Platform = { OS: ${JSON.stringify(platform)} };`)
     .replace("'./monitoring-policy'", JSON.stringify(new URL('../src/lib/monitoring-policy.ts', import.meta.url).href))
     .replaceAll('process.env.EXPO_PUBLIC_SENTRY_ENABLED', JSON.stringify(enabled))
@@ -128,4 +129,13 @@ test('a throwing monitoring transport does not escape to the operation caller', 
   const runtime = await loadMonitoring({ failCapture: true });
   runtime.initializeMonitoring();
   assert.doesNotThrow(() => runtime.reportOperationFailure({ phase: 'summary', requestId: id, status: 500, code: 'provider_auth' }));
+});
+
+test('update identifiers survive scrubbing without accepting arbitrary update metadata', () => {
+  const event = scrubMobileEvent({ tags: { expo_update_id: id, expo_update_source: 'ota',
+    expo_update_url: 'https://example.test/private-token' } });
+  assert.deepEqual(event.tags, { expo_update_id: id, expo_update_source: 'ota' });
+  const invalid = scrubMobileEvent({ tags: { expo_update_id: 'private@example.test',
+    expo_update_source: 'private note' } });
+  assert.deepEqual(invalid.tags, {});
 });

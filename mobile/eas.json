@@ -14,7 +14,9 @@
       "node": "24.22.1",
       "distribution": "internal",
       "environment": "preview",
+      "channel": "preview",
       "env": {
+        "APP_VARIANT": "preview",
         "EXPO_PUBLIC_API_URL": "https://keithriordan.herokuapp.com"
       }
     },

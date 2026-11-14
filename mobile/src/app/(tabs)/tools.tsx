@@ -45,8 +45,7 @@ export default function ToolsScreen() {
       ))}
       {tools.length === 0 ? (
         <ThemedText themeColor="textSecondary">
-          No tools match “{filter}”. Try Grocery, Wishlist, Library, Learning,
-          Jobwizard, Scratch-offs, or Draw planner.
+          No tools match “{filter}”. Try {mobileTools.map((tool) => tool.title).join(', ')}.
         </ThemedText>
       ) : null}
     </Screen>

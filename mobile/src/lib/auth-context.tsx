@@ -18,6 +18,7 @@ import {
 import { disconnectListSocket } from '@/lib/list-socket';
 import { clearJobSession } from '@/lib/jobwizard-runtime';
 import { clearLearningSession } from '@/lib/learning-runtime';
+import { clearIntervalSession } from '@/lib/interval-runtime';
 import { queryClient } from '@/lib/query-client';
 import { tokenStorage } from '@/lib/token-storage';
 
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // If a request 401s even after refresh, the session is unrecoverable.
     // Registered before session restoration so a failed restore is caught too.
     setUnauthorizedListener(() => {
+      void clearIntervalSession().catch(() => {});
       void clearLearningSession().catch(() => {});
       void clearJobSession().catch(() => {});
       disconnectListSocket();
@@ -91,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A late cleanup must not clear credentials belonging to the next login.
       const tokenCleanup = tokenStorage.clear();
       const version = tokenStorage.getSessionVersion();
+      await clearIntervalSession().catch(() => {});
       await clearLearningSession().catch(() => {});
       await clearJobSession().catch(() => {});
       await tokenCleanup;
@@ -111,11 +114,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Flask logout is stateless. Invalidate local requests immediately rather
     // than waiting for a network response before clearing this session.
     const tokenCleanup = tokenStorage.clear();
+    const intervalCleanup = clearIntervalSession().catch(() => {});
     const learningCleanup = clearLearningSession().catch(() => {});
     const jobCleanup = clearJobSession().catch(() => {});
     disconnectListSocket();
     queryClient.clear();
     await tokenCleanup;
+    await intervalCleanup;
     await learningCleanup;
     await jobCleanup;
     setIsAuthenticated(false);

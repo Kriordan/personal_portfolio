@@ -9,7 +9,6 @@ const expo = createRequire(require.resolve('expo/package.json'));
 const cli = createRequire(expo.resolve('@expo/cli/package.json'));
 const router = createRequire(require.resolve('expo-router/package.json'));
 const query = router('query-string');
-const z = cli('zod');
 
 test('Router query parsing preserves normal, Unicode, duplicate and malformed values', () => {
   assert.deepEqual({ ...query.parse('name=hello+world&emoji=%F0%9F%9A%80&tag=a&tag=b&empty=&flag') }, {
@@ -36,80 +35,45 @@ test('Router malformed-percent decoding completes within a bounded subprocess', 
   assert.equal(child.status, 0, child.stderr);
 });
 
-test('Expo Zod rejects oversized constrained arrays and sets before visiting elements', async () => {
+test('Expo JSON Schema rejects oversized arrays before visiting their elements', () => {
+  const { validate, ValidationError } = cli('@expo/schema-utils');
   let visited = 0;
-  let refined = 0;
-  const element = z.any().transform(value => { visited++; return value; });
-  for (const schema of [z.array(element).max(1), z.array(element).length(1)]) {
-    const result = schema.refine(() => { refined++; return true; }).safeParse([1, 2]);
-    assert.equal(result.success, false);
-    assert.equal(result.error.issues.length, 1);
-    assert.equal(result.error.issues[0].code, 'too_big');
-    assert.equal((await schema.safeParseAsync([1, 2])).success, false);
-  }
-  assert.equal(z.set(element).max(1).safeParse(new Set([1, 2])).success, false);
+  const values = [1, 2];
+  Object.defineProperty(values, 0, { get() { visited++; return 1; } });
+  assert.throws(() => validate({ type: 'array', maxItems: 1, items: { type: 'number' } }, values), ValidationError);
   assert.equal(visited, 0);
-  assert.equal(refined, 0);
-  const nested = z.object({ values: z.array(element).max(1, 'bounded') }).safeParse({ values: [1, 2] });
-  assert.deepEqual(nested.error.issues[0].path, ['values']);
-  assert.equal(nested.error.issues[0].message, 'bounded');
-  assert.deepEqual(z.array(z.string().transform(value => value.toUpperCase())).max(2).parse(['a']), ['A']);
-  assert.equal(z.array(z.string()).safeParse('wrong type').error.issues[0].code, 'invalid_type');
+  assert.doesNotThrow(() => validate({ type: 'array', maxItems: 1, items: { type: 'number' } }, [1]));
 });
 
-test('Expo tooling bounds unconstrained and nested collection work with a fresh budget per parse', async () => {
-  let visited = 0;
-  const element = z.any().transform(value => { visited++; return value; });
-  for (const [schema, input] of [
-    [z.array(element), Array(1001).fill(0)],
-    [z.set(element), new Set(Array.from({ length: 1001 }, (_, i) => i))],
-    [z.map(element, element), new Map(Array.from({ length: 1001 }, (_, i) => [i, i]))],
-  ]) {
-    assert.equal(schema.safeParse(input).success, false);
-    assert.equal((await schema.safeParseAsync(input)).success, false);
-  }
-  assert.equal(visited, 0);
-  assert.equal(z.array(z.array(element)).safeParse([Array(600).fill(0), Array(600).fill(0)]).success, false);
-  assert.equal(visited, 600);
-  for (let attempt = 0; attempt < 3; attempt++) {
-    assert.equal(z.array(z.number()).parse(Array(1000).fill(1)).length, 1000);
-  }
-  let alternateVisits = 0;
-  const union = z.union([
-    z.array(z.number().refine(() => false)),
-    z.array(z.number().transform(value => { alternateVisits++; return value; })),
-  ]);
-  assert.equal(union.safeParse(Array(600).fill(1)).success, false);
-  assert.equal((await union.safeParseAsync(Array(600).fill(1))).success, false);
-  assert.equal(alternateVisits, 0);
-  const caught = z.object({
-    first: z.array(z.number()).catch([]),
-    second: z.array(z.number()),
-  });
-  assert.equal(caught.safeParse({ first: Array(600).fill(1), second: Array(600).fill(1) }).success, false);
-});
-
-test('real Expo plugin and MCP schemas preserve the Zod 3 interface and reject oversized output', () => {
-  const { PluginSchema, DevToolsPluginOutputSchema } = cli('./build/src/start/server/DevToolsPlugin.schema.js');
-  const { createMCPDevToolsExtensionSchema } = cli('./build/src/start/server/createMCPDevToolsExtensionSchema.js');
-  const plugin = PluginSchema.parse({
+test('real Expo JSON and MCP schemas accept valid plugin data and reject malformed data', () => {
+  const { PluginSchema, DevToolsPluginOutputSchema } = cli('./build/src/start/server/devtools/DevToolsPlugin.schema.js');
+  const { createMCPDevToolsExtensionSchema } = cli('./build/src/start/server/mcp/createMCPDevToolsExtensionSchema.js');
+  const { validate, ValidationError } = cli('@expo/schema-utils');
+  const plugin = {
     packageName: 'fixture-plugin', packageRoot: '/tmp/fixture-plugin',
     cliExtensions: {
       description: 'Fixture', entryPoint: './commands.js',
       commands: [{ name: 'inspect', title: 'Inspect', environments: ['cli', 'mcp'],
         parameters: [{ name: 'limit', type: 'number' }, { name: 'confirm', type: 'confirm' }] }],
     },
-  });
-  const schema = createMCPDevToolsExtensionSchema(plugin);
-  assert.equal(schema._def.typeName, 'ZodObject');
+  };
+  assert.doesNotThrow(() => validate(PluginSchema, plugin));
+  assert.throws(() => validate(PluginSchema, { ...plugin, packageName: '' }), ValidationError);
+  assert.throws(() => validate(PluginSchema, {
+    ...plugin, cliExtensions: { ...plugin.cliExtensions, commands: [] },
+  }), ValidationError);
+  // The new CLI accepts Zod from an optional MCP provider; it no longer installs Zod 3.
+  const hooks = createRequire(require.resolve('eslint-plugin-react-hooks/package.json'));
+  const schema = createMCPDevToolsExtensionSchema(plugin, hooks('zod/v4'));
   assert.deepEqual(schema.parse({ command: 'inspect', limit: 3, confirm: true }), { command: 'inspect', limit: 3, confirm: true });
   for (const invalid of [{ command: 'unknown' }, { command: 'inspect', limit: '3' }, { command: 'inspect', extra: true }]) {
     assert.equal(schema.safeParse(invalid).success, false);
   }
   const lines = [{ type: 'text', text: 'ok', level: 'info' }, { type: 'image', url: 'https://example.com/pixel.png' }];
-  assert.deepEqual(DevToolsPluginOutputSchema.parse(lines), lines);
-  assert.equal(DevToolsPluginOutputSchema.safeParse(Array(1001).fill(lines[0])).success, false);
-  assert.equal(PluginSchema.safeParse({ ...plugin, cliExtensions: { ...plugin.cliExtensions, commands: Array(1001).fill(plugin.cliExtensions.commands[0]) } }).success, false);
+  assert.doesNotThrow(() => validate(DevToolsPluginOutputSchema, lines));
+  for (const invalid of [[{ type: 'text', text: 'missing level' }], [{ type: 'image', url: 'invalid url' }]]) {
+    assert.throws(() => validate(DevToolsPluginOutputSchema, invalid), ValidationError);
+  }
 });
 
 test('ESLint uses fixed Zod 4 and rejects constrained oversized collections without visiting entries', () => {
@@ -146,5 +110,46 @@ test('Expo signing tools reject extra nested DigestAlgorithm elements with real 
     ]);
     const signature = privateEncrypt({ key: privateKey, padding: constants.RSA_PKCS1_PADDING }, Buffer.from(asn1.toDer(malformed).getBytes(), 'binary'));
     assert.throws(() => key.verify(digest, signature.toString('binary')), /DigestInfo/);
+  }
+});
+
+test('Expo signing tools reject forged Ed25519 signatures using an identity public key', () => {
+  const { ed25519 } = cli('node-forge');
+  const message = Buffer.from('signature fixture');
+  const keys = ed25519.generateKeyPair();
+  const signature = ed25519.sign({ message, privateKey: keys.privateKey });
+  assert.equal(ed25519.verify({ message, signature, publicKey: keys.publicKey }), true);
+  const identityKey = Buffer.alloc(32);
+  identityKey[0] = 1;
+  const forgedSignature = Buffer.alloc(64);
+  forgedSignature[0] = 1;
+  assert.equal(ed25519.verify({ message, signature: forgedSignature, publicKey: identityKey }), false);
+});
+
+test('scoped minimatch updates preserve fingerprint ignores and parser path matching', () => {
+  const fingerprint = createRequire(expo.resolve('@expo/fingerprint/package.json'));
+  const parser = createRequire(require.resolve('@typescript-eslint/typescript-estree/package.json'));
+  const { isIgnoredPath, buildPathMatchObjects, buildDirMatchObjects } = fingerprint('./build/utils/Path.js');
+  const patterns = ['**/node_modules/**', 'assets/**', '!assets/keep.png'];
+  assert.equal(isIgnoredPath('../node_modules/pkg/index.js', patterns), true);
+  assert.equal(isIgnoredPath('assets/image.png', patterns), true);
+  assert.equal(isIgnoredPath('assets/keep.png', patterns), false);
+  assert.equal(isIgnoredPath('src/app/index.tsx', patterns), false);
+  assert.ok(buildDirMatchObjects(buildPathMatchObjects(['build/**'])).some(match => match.match('build')));
+  for (const consumer of [fingerprint, parser]) {
+    assert.equal(consumer('minimatch/package.json').version, '11.0.8');
+    const { minimatch } = consumer('minimatch');
+    assert.equal(minimatch('src/.hidden.ts', 'src/*.ts', { dot: true }), true);
+    assert.equal(minimatch('src/app/index.tsx', 'src/**/*.{ts,tsx}'), true);
+    assert.equal(minimatch('src/app/image.png', 'src/**/*.{ts,tsx}'), false);
+    const child = spawnSync(process.execPath, ['--input-type=commonjs', '-e', `
+      const assert = require('node:assert/strict');
+      const { Minimatch } = require(${JSON.stringify(consumer.resolve('minimatch'))});
+      assert.throws(() => new Minimatch('**/../a/b/'.repeat(32) + 'x', {
+        optimizationLevel: 2, braceExpandMax: 100,
+      }), RangeError);
+    `], { timeout: 5000, encoding: 'utf8' });
+    assert.ifError(child.error);
+    assert.equal(child.status, 0, child.stderr);
   }
 });

@@ -1,4 +1,4 @@
-// Regression checks for the scoped UUID override and XML/Metro security updates.
+// Regression checks for Expo tooling and XML/Metro security updates.
 const assert = require('node:assert/strict');
 const { Buffer } = require('node:buffer');
 const fs = require('node:fs');

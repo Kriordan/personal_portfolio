@@ -6,6 +6,7 @@ __pycache__/
 *.log
 *.swp
 .vscode/
+.claude/
 .env
 .sentryclirc
 client_secret.json
