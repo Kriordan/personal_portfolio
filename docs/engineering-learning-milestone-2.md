@@ -11,8 +11,8 @@ still requires explicit approval.
 | --- | --- | --- |
 | 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
 | 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
-| 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Physical iPhone acceptance remains pending. |
-| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Proposed; not authorized. |
+| 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Keith subsequently reported that Build looks good on his iPhone. |
+| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Approved and implemented locally November 16; tests and native QA passed. Deployment and updated iPhone preview require approval. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -127,7 +127,7 @@ ignored private `.local/learning-pilot/iphone-2a-deployment/` directory.
 At release verification, physical installation and a deliberate review were
 still pending; build/download verification did not substitute for phone use.
 Keith subsequently reported that Learn/Review look good on his iPhone and approved
-checkpoint 2b. Future deployments, 2c.2, and content expansion require separate approval; 2c.1 is recorded below.
+checkpoint 2b. Future deployments and content expansion require separate approval; 2c.1 and 2c.2 are recorded below.
 
 See the [phone and hands-on engineering guide](learning-checkpoint-2a-iphone-guide.md).
 
@@ -265,7 +265,7 @@ In the app, open **Tools → Learning → Idempotency → Discuss**. Resume an e
 session, inspect **Scenario & work**, and type a draft to try closing/reopening
 the app before sending. Sent messages use the same session as the website and
 the existing shared allowance. Native artifact editing is now the approved 2c.1 checkpoint below. Native feedback
-remains 2c.2 and requires separate approval.
+is implemented in the separately approved 2c.2 checkpoint below.
 
 ### Hands-on engineering checks
 
@@ -450,5 +450,93 @@ See [release evidence](assets/learning-2c1-iphone-2026-11-14/release.json).
 Raw archives, provisioning identifiers, and operator records stay under the
 ignored private `.local/learning-pilot/iphone-2c1-deployment/` directory.
 Physical installation/acceptance and the remaining keyboard/VoiceOver checks
-are separate from archive verification. Native feedback (2c.2) still requires
-approval.
+are separate from archive verification. Keith subsequently reported that Build
+looks good on his iPhone and approved 2c.2 below; that does not establish a full
+VoiceOver audit.
+
+## Checkpoint 2c.2 — Feedback and revision on iPhone
+
+Keith approved implementation, tests, and a separate commit on November 16,
+2026, while retaining approval before deployment. The base is `b9727b4`, which
+already merged `origin/main` at `8034001`; the interval timer, preview-update
+configuration, and dependency-security work from main are preserved.
+
+Build now includes **Feedback & snapshots** in the existing shared session.
+Saving a snapshot freezes the displayed saved conversation boundary, all saved
+artifact revisions, and saved learner notes. It runs existing syntax checks
+without requesting AI. **Request feedback** is a separate explicit action.
+Saved findings show their evidence and next step, link to immutable artifact
+revisions or original learner turns/notes, and offer a return to the relevant
+lesson section or editable work. Learn/Review/Discuss/Build navigation preserves
+the selected session and snapshot. Older feedback remains available and is
+labelled when the current work has changed.
+
+### Decisions and boundaries
+
+- Reuse existing JWT submission/feedback endpoints and the approved editable
+  session lifecycle. There are **no backend runtime, schema, provider, prompt,
+  curriculum, dependency, or infrastructure changes**.
+- Reuse the account-scoped durable operation journal for `submit` and `feedback`.
+  Persist the immutable payload and UUID before POST, verify receipt operation,
+  session, snapshot boundary, and artifact/brief revisions, and recover by reads.
+  Only an explicit retry repeats the original POST. An explicit new evaluation
+  attempt warns that the previous attempt may count toward the allowance.
+- Block snapshot creation until local Build edits and unsent Discuss drafts are
+  resolved and protected. A newer web change is rejected by the existing server
+  freshness checks; it is never overwritten by a stale snapshot request.
+- Assess one complete snapshot per call. Oversize/budget refusals are visible;
+  there is no silent omission, automatic paid retry, or new context policy.
+  Work remains editable while evaluation runs. Poll only while the screen is
+  visible and the app is in the foreground; saved results resume after reopening.
+- Keep snapshot/feedback response caches in memory and scoped to account/session.
+  Original evidence is loaded from learner-safe endpoints, never from private
+  reference packets. The public repository caveat still applies: server-side
+  delivery boundaries are not a claim that authored source files are secret.
+- Existing review scheduling and user progress remain unchanged. Feedback is a
+  judgment to examine; a missing observation is not a failing grade. Native
+  agree/disagree annotations, adding follow-up recall cards, self-assessment,
+  export, and deletion UI remain separate scope decisions; existing web features
+  are preserved. This checkpoint does not declare all of Milestone 2 complete.
+
+### Verification
+
+- **208 mobile tests passed**, including 12 new deterministic contract, snapshot,
+  citation, stale-view, budget/size, duplicate-tap, account-switch, offline,
+  storage/cleanup, restart, and exact retry tests. TypeScript and ESLint passed.
+- **780 backend tests ran successfully (779 passed, one existing Linux-only
+  skip on macOS)**, including **225 integrated practice browser checks**. Five
+  new tests ran against real **PostgreSQL 16**, covering duplicate snapshots,
+  concurrent web editing, duplicate/lost feedback requests with one settled
+  charge, edits during evaluation, and budget reductions before/after queueing.
+  Existing migration tests ran against that isolated database; no migration was
+  added. The fixture provider is deterministic throughout.
+- A production-mode iOS Hermes export passed. Its bundle contains the intended
+  local QA origin and feedback screens; private reference/evaluation markers
+  are absent. Native QA used an existing compatible simulator binary with this
+  bundle, a separate QA identifier, and OTA updates disabled in that QA copy.
+  This is not a newly signed physical-device archive.
+- Native iPhone 18 Pro / iOS 27 walkthrough: open saved feedback, follow the
+  exact API revision, revise/save to revision 2, see the earlier-snapshot notice,
+  follow a lesson remediation link, and return to the same snapshot/session.
+- Saving snapshot 3 increased the fixture's snapshot/receipt counts by one,
+  leaving feedback count and simulated spending unchanged. The separate feedback
+  POST committed while its response and subsequent reads failed. After process
+  termination, reconnection, and resumption, the phone recovered its saved
+  feedback: exactly one additional feedback request, receipt, and simulated
+  charge, with the other account and review logs unchanged.
+- At maximum simulator Dynamic Type, the four tabs wrap into two readable rows;
+  snapshot choices, evidence text, and next steps remain readable. Normal text
+  size and keyboard capture were restored. The walkthrough led to shorter
+  introductory text, collapsed snapshot details, and resetting scroll position
+  when moving from feedback to an editor or the proposal overview.
+
+The **$5 lifetime allowance, $1 verification portion, $50 monthly cap, and all
+per-call/context limits remain unchanged**. This checkpoint used **zero paid
+AI calls**. Fixture ledger values are simulated; no hosted balance was queried
+or changed. Full VoiceOver interaction, Android, software-keyboard coverage,
+and the updated signed preview on Keith's physical iPhone remain release checks.
+
+No deployment, OTA update, signed preview build, or content expansion was
+performed. Next gate: approve deployment of the checkpoint commit and an updated
+iPhone preview, then verify the installed artifact and repeat the short phone
+walkthrough. See the [hands-on guide](learning-checkpoint-2c2-iphone-guide.md).

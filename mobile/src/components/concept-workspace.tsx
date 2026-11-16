@@ -1,5 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { InlineError, NativeAction, PageHeading } from './screen';
 import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,9 +21,10 @@ export function ConceptHeader({
   compact?: boolean;
 }) {
   const router = useRouter();
-  const { practice_session, work } = useLocalSearchParams<{
+  const { practice_session, work, snapshot } = useLocalSearchParams<{
     practice_session?: string;
     work?: string;
+    snapshot?: string;
   }>();
   const theme = useTheme();
   const { fontScale } = useWindowDimensions();
@@ -66,6 +72,7 @@ export function ConceptHeader({
                     id: concept.id,
                     ...(practice_session ? { practice_session } : {}),
                     ...(work ? { work } : {}),
+                    ...(snapshot ? { snapshot } : {}),
                   },
                 });
             }}

@@ -3,6 +3,15 @@ import {
   type BriefEntry,
   type WorkEdit,
 } from './practice-work-model.ts';
+import {
+  validSnapshotInput,
+  wholeRevision,
+  type FeedbackDetail,
+  type FeedbackRequest,
+  type PracticeSnapshot,
+  type SnapshotDetail,
+  type SnapshotInput,
+} from './practice-feedback-model.ts';
 
 export const validSessionId = (id: unknown): id is string =>
   typeof id === 'string' &&
@@ -71,7 +80,8 @@ export interface PracticeDetail {
   context_choices: { sequence: number; from_sequence: number }[];
   check_in_due: boolean;
   learner_turns: number;
-  feedback_pending: unknown;
+  feedback_pending: { sequence: number; status: string } | null;
+  submissions: PracticeSnapshot[];
   ai_budget: null | {
     exhausted: boolean;
     warning: boolean;
@@ -111,6 +121,8 @@ export type PracticeChange = { request_id: string; conceptId: string } & (
       context?: 'recent';
     }
   | { kind: 'pause' | 'resume'; sessionId: string }
+  | (SnapshotInput & { kind: 'submit'; sessionId: string })
+  | { kind: 'feedback'; sessionId: string; submission_sequence: number }
   | (WorkEdit & { sessionId: string })
 );
 export interface PracticeResult {
@@ -118,6 +130,9 @@ export interface PracticeResult {
   sequence?: number;
   artifacts?: Record<string, { revision: number; changed: boolean }>;
   brief?: { revision: number; changed: boolean };
+  submission?: PracticeSnapshot;
+  submission_sequence?: number;
+  request?: FeedbackRequest;
 }
 export interface PracticeReceipt {
   operation: string;
@@ -126,6 +141,8 @@ export interface PracticeReceipt {
 export interface PracticeApi {
   list: () => Promise<{ sessions: PracticeSessionInfo[] }>;
   detail: (id: string) => Promise<PracticeDetail>;
+  submission: (id: string, sequence: number) => Promise<SnapshotDetail>;
+  feedback: (id: string, sequence: number) => Promise<FeedbackDetail>;
   revision: (
     id: string,
     artifact: string,
@@ -139,8 +156,20 @@ export const practiceKeys = {
   list: (user: number) => ['learning', 'practice', user, 'list'] as const,
   detail: (user: number, id: string) =>
     ['learning', 'practice', user, 'session', id] as const,
+  submission: (user: number, id: string, sequence: number) =>
+    ['learning', 'practice', user, 'submission', id, sequence] as const,
+  feedback: (user: number, id: string, sequence: number) =>
+    ['learning', 'practice', user, 'feedback', id, sequence] as const,
   revision: (user: number, id: string, artifact: string, revision: number) =>
-    ['learning', 'practice', user, 'revision', id, artifact, revision] as const,
+    [
+      'learning',
+      'practice',
+      user,
+      'revision',
+      id,
+      artifact,
+      revision,
+    ] as const,
 };
 export const latestSequence = (detail: PracticeDetail) =>
   detail.messages.at(-1)?.sequence ?? 0;
@@ -182,6 +211,8 @@ export function isPracticeChange(value: unknown): value is PracticeChange {
     );
   if (!('sessionId' in c) || !validSessionId(c.sessionId)) return false;
   if (c.kind === 'pause' || c.kind === 'resume') return true;
+  if (c.kind === 'submit') return validSnapshotInput(c);
+  if (c.kind === 'feedback') return wholeRevision(c.submission_sequence, 1);
   if (c.kind === 'artifact' || c.kind === 'brief') return validWorkEdit(c);
   if (c.kind === 'reply')
     return (

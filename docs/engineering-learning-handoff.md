@@ -33,7 +33,7 @@ PUTs and save receipts, with private device drafts, explicit conflict comparison
 and the same operation journal. Tests and verification are in the
 [Milestone 2 log](engineering-learning-milestone-2.md#checkpoint-2c1--build-editing-on-iphone)
 and [hands-on guide](learning-checkpoint-2c1-iphone-guide.md). Native feedback
-(2c.2) and additional concepts remain unapproved. The maximum-text simulator recheck completed November
+(2c.2) was subsequently approved November 16; additional concepts remain unapproved. The maximum-text simulator recheck completed November
 14 and caught a remaining live-resizing problem in the tabs. They now size from
 their labels and remeasure when font scale changes. Maximum-size tabs, artifact
 and note controls, pinning, and saves passed the visual check; normal text size
@@ -47,11 +47,24 @@ are now released. Backup b015, hosted access/save-guard checks, source archive
 comparison, signed-device provisioning, bundle privacy, and matching Sentry
 source-map checks passed. Saved work and the spending ledger remained unchanged;
 the existing $5/$1/$50 limits remain in force, with **$4.923975** remaining at
-verification and no paid release-verification calls. Physical iPhone acceptance
-is pending; the preview can be installed without a running Mac. See the
+verification and no paid release-verification calls. Keith subsequently reported
+that Build looks good on his iPhone; the preview works without a running Mac. See the
 [2c.1 release record](engineering-learning-milestone-2.md#approved-2c1-release--november-14).
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2c.1, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+**November 16 update:** main through `8034001` is integrated in this feature
+branch by merge `b9727b4`. Keith approved **2c.2: feedback and revision on iPhone**.
+It is implemented and tested locally, reusing the existing snapshot/feedback APIs,
+immutable citations, operation journal, and spending limits. Saving a snapshot
+and requesting AI are separate actions; the session stays editable. Verification:
+208 mobile tests, TypeScript/lint, 780 backend tests (one platform skip), 225
+integrated browser checks, five new real PostgreSQL concurrency/accounting tests,
+production Hermes export, and native large-text/restart/revision walkthrough.
+No paid calls, deployment, OTA publication, or signed iPhone preview build occurred.
+See the [2c.2 record](engineering-learning-milestone-2.md#checkpoint-2c2--feedback-and-revision-on-iphone)
+and [hands-on guide](learning-checkpoint-2c2-iphone-guide.md). Deployment requires
+Keith's approval; physical iPhone and full VoiceOver checks remain separate.
+
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2c.2, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -68,7 +81,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b are released and accepted; 2c.1 is approved and implemented locally**, adding native artifact/learner-note editing to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Do not deploy 2c.1 or start 2c.2, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b/2c.1 are released and accepted; 2c.2 is approved and implemented locally**, adding native feedback and revision to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Do not deploy 2c.2, publish an OTA update, build its signed preview, expand to other concepts, or add other AI personalities without further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
@@ -77,7 +90,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
 | 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Local implementation and delegated technical review complete through 5g. Codex recommends local pilot acceptance. Production publication remains separately gated. |
-| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review and 2b Discuss released and accepted as iPhone build 10. 2c.1 Build implemented locally; deployment and 2c.2 feedback require separate approval. See the Milestone 2 log. |
+| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review, 2b Discuss, and 2c.1 Build released and accepted. 2c.2 feedback implemented locally; deployment/updated signed preview await approval. See the Milestone 2 log for verification and remaining scope. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
 
@@ -1051,11 +1064,14 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** use the [live private pilot](https://www.keithriordan.com/learning/)
-for a short idempotency learning trial, following its
-[hands-on guide](learning-checkpoint-7b-test-guide.md), with an
-optional baseline and later check-in. New concepts, personalities, lesson-schema
-changes, and Expo still require separate approval.
+**Next:** obtain approval to deploy the completed 2c.2 commit and prepare the
+updated standalone iPhone preview. Then repeat its
+[short feedback/revision walkthrough](learning-checkpoint-2c2-iphone-guide.md)
+on the installed build. The [private pilot](https://www.keithriordan.com/learning/)
+can then support a short phone-first learning trial with an optional baseline
+and later check-in. Native annotations/follow-up recall, self-assessment,
+export/delete UI, new concepts, personalities, and lesson-schema changes remain
+separate scope decisions; do not treat 2c.2 as full Milestone 2 sign-off.
 
 ### Checkpoint 7b: private hosted pilot deployed — November 13
 

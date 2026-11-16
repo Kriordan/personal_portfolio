@@ -29,34 +29,47 @@ export function PracticeRecovery({
     return activity.error ? <InlineError message={activity.error} /> : null;
   const busy = activity.phase === 'saving' || activity.phase === 'checking';
   const change = activity.pending;
+  const feedbackWork = change.kind === 'submit' || change.kind === 'feedback';
+  const buildWork =
+    feedbackWork || change.kind === 'artifact' || change.kind === 'brief';
   return (
     <Card>
       <ThemedText type="smallBold" accessibilityLiveRegion="polite">
-        {busy ? 'Confirming your change…' : 'A practice change needs attention'}
+        {busy
+          ? 'Confirming your change…'
+          : 'A practice change needs attention'}
       </ThemedText>
       {activity.error ? <ThemedText>{activity.error}</ThemedText> : null}
       {'sessionId' in change ? (
         <NativeAction
           secondary
           label={
-            change.kind === 'artifact' || change.kind === 'brief'
-              ? 'Open the affected work'
-              : 'Open the affected conversation'
+            feedbackWork
+              ? 'Open the affected feedback'
+              : buildWork
+                ? 'Open the affected work'
+                : 'Open the affected conversation'
           }
           onPress={() =>
             router.replace({
-              pathname:
-                change.kind === 'artifact' || change.kind === 'brief'
-                  ? '/learning/concepts/[id]/build'
-                  : '/learning/concepts/[id]/discuss',
+              pathname: buildWork
+                ? '/learning/concepts/[id]/build'
+                : '/learning/concepts/[id]/discuss',
               params: {
                 id: change.conceptId,
                 practice_session: change.sessionId,
-                ...(change.kind === 'artifact'
-                  ? { work: `artifact:${change.artifactId}` }
-                  : change.kind === 'brief'
-                    ? { work: 'brief' }
-                    : {}),
+                ...(feedbackWork
+                  ? {
+                      work: 'feedback',
+                      ...(change.kind === 'feedback'
+                        ? { snapshot: String(change.submission_sequence) }
+                        : {}),
+                    }
+                  : change.kind === 'artifact'
+                    ? { work: `artifact:${change.artifactId}` }
+                    : change.kind === 'brief'
+                      ? { work: 'brief' }
+                      : {}),
               },
             })
           }

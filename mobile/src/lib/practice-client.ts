@@ -15,6 +15,10 @@ export function createPracticeClient(request: Request): PracticeApi {
   return {
     list: () => read(`${root}/sessions`),
     detail: (id) => read(session(id)),
+    submission: (id, sequence) =>
+      read(`${session(id)}/submissions/${sequence}`),
+    feedback: (id, sequence) =>
+      read(`${session(id)}/submissions/${sequence}/feedback`),
     revision: (id, artifact, revision) =>
       read(
         `${session(id)}/artifacts/${encodeURIComponent(artifact)}/revisions/${revision}`,
@@ -22,6 +26,28 @@ export function createPracticeClient(request: Request): PracticeApi {
     receipt: (id) => read(`${root}/receipts/${encodeURIComponent(id)}`),
     change: (change) => {
       const { kind, conceptId, request_id } = change;
+      if (kind === 'submit' || kind === 'feedback')
+        return request(
+          `${session(change.sessionId)}/submissions${
+            kind === 'feedback'
+              ? `/${change.submission_sequence}/feedback`
+              : ''
+          }`,
+          {
+            method: 'POST',
+            body:
+              kind === 'submit'
+                ? {
+                    request_id,
+                    expected_sequence: change.expected_sequence,
+                    edits: change.edits,
+                    brief: change.brief,
+                  }
+                : { request_id },
+            timeoutMs: 20_000,
+            requestId: request_id,
+          },
+        );
       if (kind === 'artifact' || kind === 'brief')
         return request(
           `${session(change.sessionId)}/${kind === 'brief' ? 'brief' : `artifacts/${encodeURIComponent(change.artifactId)}`}`,

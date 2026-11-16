@@ -8,6 +8,7 @@ import {
   LearningUnavailable,
 } from '@/components/learning-content';
 import { PracticeRecovery } from '@/components/practice-content';
+import { PracticeFeedback } from '@/components/practice-feedback';
 import { PracticeSessionPicker } from '@/components/practice-session-picker';
 import {
   ArtifactEditor,
@@ -45,10 +46,11 @@ import {
 
 export default function BuildScreen() {
   const { user } = useAuth();
-  const { id, practice_session, work } = useLocalSearchParams<{
+  const { id, practice_session, work, snapshot } = useLocalSearchParams<{
     id: string;
     practice_session?: string;
     work?: string;
+    snapshot?: string;
   }>();
   if (
     !validNoteId(id) ||
@@ -62,6 +64,7 @@ export default function BuildScreen() {
       id={id}
       sessionId={practice_session}
       part={work}
+      selectedSnapshot={snapshot}
     />
   ) : (
     <LearningAccountState />
@@ -72,11 +75,13 @@ function Build({
   id,
   sessionId,
   part,
+  selectedSnapshot,
 }: {
   userId: number;
   id: string;
   sessionId?: string;
   part?: string;
+  selectedSnapshot?: string;
 }) {
   const query = useConcept(userId, id);
   if (
@@ -99,6 +104,7 @@ function Build({
       id={sessionId}
       concept={query.data.concept}
       part={part}
+      selectedSnapshot={selectedSnapshot}
     />
   ) : (
     <PracticeSessionPicker
@@ -113,11 +119,13 @@ function Workspace({
   id,
   concept,
   part,
+  selectedSnapshot,
 }: {
   userId: number;
   id: string;
   concept: Concept;
   part?: string;
+  selectedSnapshot?: string;
 }) {
   const query = usePracticeDetail(userId, id);
   const activity = usePracticeOperation(userId);
@@ -141,13 +149,13 @@ function Workspace({
     return <LearningUnavailable title="Choose this work from its concept" />;
   const current = part ? savedWork(detail, part) : null;
   return (
-    <Screen keyboardDismissMode="interactive">
+    <Screen key={part || 'proposal'} keyboardDismissMode="interactive">
       <ConceptHeader concept={concept} mode="build" compact />
       <ThemedText type="small" themeColor="textSecondary">
         Shared session · {id.slice(-8)} ·{' '}
         {detail.session.status === 'paused' ? 'Paused' : 'Active'}
       </ThemedText>
-      {!current ? (
+      {!current && part !== 'feedback' ? (
         <NavRow
           title="Scenario & work"
           subtitle="Requirements, saved decisions, and spending status"
@@ -176,7 +184,19 @@ function Workspace({
           }
         />
       ) : null}
-      {current ? (
+      {part === 'feedback' ? (
+        <PracticeFeedback
+          userId={userId}
+          detail={detail}
+          work={work}
+          activity={activity}
+          selected={selectedSnapshot}
+          blocked={
+            query.isError || query.isPaused || !query.isFetchedAfterMount
+          }
+          reload={() => void query.refetch()}
+        />
+      ) : current ? (
         <WorkPanel
           key={part}
           detail={detail}
@@ -209,7 +229,8 @@ function Workspace({
           {detail.artifacts.map((artifact) => {
             const draft = work.edits.some(
               (e) =>
-                e.kind === 'artifact' && e.artifactId === artifact.artifact_id,
+                e.kind === 'artifact' &&
+                e.artifactId === artifact.artifact_id,
             );
             return (
               <WorkChoice
@@ -221,7 +242,9 @@ function Workspace({
                     : `Saved revision ${artifact.revision}`
                 }
                 onPress={() =>
-                  router.setParams({ work: `artifact:${artifact.artifact_id}` })
+                  router.setParams({
+                    work: `artifact:${artifact.artifact_id}`,
+                  })
                 }
               />
             );
@@ -239,6 +262,24 @@ function Workspace({
             Build drafts stay on this device until saved or discarded and are
             cleared on sign-out. Saving work does not request AI feedback.
           </ThemedText>
+          <WorkChoice
+            title="Feedback & snapshots"
+            status={
+              detail.feedback_pending
+                ? 'Feedback is being prepared'
+                : detail.submissions?.length
+                  ? `${detail.submissions.length} saved ${detail.submissions.length === 1 ? 'snapshot' : 'snapshots'}`
+                  : 'Save a snapshot, then request design feedback'
+            }
+            onPress={() =>
+              router.setParams({
+                work: 'feedback',
+                snapshot: detail.feedback_pending
+                  ? String(detail.feedback_pending.sequence)
+                  : '',
+              })
+            }
+          />
         </>
       )}
       {current ? (
@@ -304,7 +345,9 @@ function WorkPanel({
   close: () => void;
 }) {
   const id = detail.session.id;
-  const [comparedRevision, setComparedRevision] = useState<number | null>(null);
+  const [comparedRevision, setComparedRevision] = useState<number | null>(
+    null,
+  );
   const [discardError, setDiscardError] = useState(false);
   const local = work.edits.find((e) => workKey(e) === workKey(current));
   const pending = activity.pending;
@@ -364,7 +407,9 @@ function WorkPanel({
       ) : null}
       <ThemedText type="small" themeColor="textSecondary">
         Saved revision {current.base_revision}
-        {local ? ` · Your draft began at revision ${local.base_revision}` : ''}
+        {local
+          ? ` · Your draft began at revision ${local.base_revision}`
+          : ''}
       </ThemedText>
       {edit.kind === 'artifact' ? (
         <ArtifactEditor
@@ -403,7 +448,9 @@ function WorkPanel({
       ) : null}
       {conflict ? (
         <View style={{ gap: 12 }}>
-          <ThemedText type="smallBold">Saved work changed elsewhere</ThemedText>
+          <ThemedText type="smallBold">
+            Saved work changed elsewhere
+          </ThemedText>
           <ThemedText>
             Your draft is intact. Compare the current saved version before
             deciding what to keep.

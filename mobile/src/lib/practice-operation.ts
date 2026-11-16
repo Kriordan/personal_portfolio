@@ -6,6 +6,7 @@ import {
   type PracticeResult,
 } from './practice-model.ts';
 import type { AttemptStorage } from './learning-session.ts';
+import { wholeRevision } from './practice-feedback-model.ts';
 
 interface Dependencies {
   storage: AttemptStorage;
@@ -138,7 +139,8 @@ export class PracticeOperation {
       journaled = true;
       if (!this.active) return;
       const result = await this.deps.api.change(change);
-      if (!this.matches(change, result)) throw new Error('Unrecognized result');
+      if (!this.matches(change, result))
+        throw new Error('Unrecognized result');
       await this.confirm(change, result);
     } catch (error) {
       const failure = error as {
@@ -155,7 +157,11 @@ export class PracticeOperation {
         error: !journaled
           ? 'Couldn’t protect this request on your device. Nothing was sent. Keep your draft and try again.'
           : rejected
-            ? 'This change was not accepted. Refresh the conversation and review your draft before sending again.'
+            ? change.kind === 'submit'
+              ? 'The snapshot was not accepted. Refresh and review the saved conversation and work before trying again.'
+              : change.kind === 'feedback'
+                ? 'Feedback was not requested. Refresh this snapshot before trying again.'
+                : 'This change was not accepted. Refresh the conversation and review your draft before sending again.'
             : 'The result is not confirmed. Your original request is retained; checking or retrying it won’t create a duplicate.',
       });
     } finally {
@@ -164,6 +170,56 @@ export class PracticeOperation {
     if (this.active && this.state.phase === 'uncertain') await this.check();
   }
   private matches(change: PracticeChange, result: PracticeResult) {
+    if (change.kind === 'submit') {
+      const snapshot = result?.submission;
+      if (
+        !snapshot ||
+        !wholeRevision(snapshot.sequence, 1) ||
+        snapshot.sequence <= change.expected_sequence ||
+        snapshot.turn_sequence !== change.expected_sequence ||
+        snapshot.through_sequence !== snapshot.sequence - 1 ||
+        !result.brief ||
+        !wholeRevision(result.brief.revision) ||
+        typeof result.brief.changed !== 'boolean' ||
+        result.brief.revision < change.brief.base_revision ||
+        result.brief.revision > change.brief.base_revision + 1 ||
+        snapshot.brief_revision !== result.brief.revision ||
+        !Array.isArray(snapshot.checks) ||
+        snapshot.checks.length !== change.edits.length ||
+        new Set(snapshot.checks.map((c) => c.artifact_id)).size !==
+          change.edits.length ||
+        !snapshot.checks.every((check) => {
+          const edit = change.edits.find(
+            (e) => e.artifact_id === check.artifact_id,
+          );
+          const outcome = result.artifacts?.[check.artifact_id];
+          return (
+            edit &&
+            outcome &&
+            typeof outcome.changed === 'boolean' &&
+            wholeRevision(check.revision) &&
+            check.revision === outcome.revision &&
+            check.revision >= edit.base_revision &&
+            check.revision <= edit.base_revision + 1 &&
+            check.language === edit.language
+          );
+        })
+      )
+        return false;
+    }
+    if (
+      change.kind === 'feedback' &&
+      (result?.submission_sequence !== change.submission_sequence ||
+        !result.request ||
+        !['pending', 'running', 'completed', 'unavailable'].includes(
+          result.request.status,
+        ) ||
+        (result.request.status === 'unavailable'
+          ? result.request.id !== null ||
+            typeof result.request.reason !== 'string'
+          : !validSessionId(result.request.id)))
+    )
+      return false;
     if (change.kind === 'artifact' || change.kind === 'brief') {
       const outcome =
         change.kind === 'brief'
@@ -218,7 +274,8 @@ export class PracticeOperation {
     } catch {
       this.update({
         phase: 'uncertain',
-        error: 'Couldn’t check the result. Your original request is retained.',
+        error:
+          'Couldn’t check the result. Your original request is retained.',
       });
     } finally {
       this.busy = false;
