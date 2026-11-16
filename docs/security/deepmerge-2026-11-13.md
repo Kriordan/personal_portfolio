@@ -96,3 +96,19 @@ Cloud Expo Doctor passed 20 of 21 checks; its remaining recommendation is to
 update 11 packages to newer SDK 57 patches. This is separate from the resolved
 audit findings. The validated dependency set was retained, and the native build
 succeeded. Physical iPhone playback and accessibility acceptance remain pending.
+
+## PR audit follow-up — November 14, 2026
+
+The fresh backend audit on [PR #149](https://github.com/Kriordan/personal_portfolio/pull/149)
+reported six advisories in the existing Python lockfile. Apply the audited patch
+releases and enforce their minimum versions in `pyproject.toml`:
+
+- [dnspython 2.9.2](https://pypi.org/project/dnspython/2.9.2/) fixes CVE-2026-128089.
+- [oauthlib 4.0.1](https://pypi.org/project/oauthlib/4.0.1/) fixes CVE-2026-49272.
+- [pyasn1 0.6.5](https://pypi.org/project/pyasn1/0.6.5/) fixes CVE-2026-119194,
+  CVE-2026-119195, CVE-2026-119196, and CVE-2026-119197.
+
+Only these three resolved Python package versions changed. A fresh Python 3.13.18
+installation passes the lockfile check, `pip check`, and `pip-audit` with no known
+vulnerabilities. The GitHub audit gate remains unchanged. This updates the PR's
+source dependencies; it does not deploy the backend or alter an installed preview.

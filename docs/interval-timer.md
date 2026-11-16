@@ -34,6 +34,11 @@ For isolated simulator UI checks, run `poetry run python scripts/interval-previe
 
 ## Acceptance record
 
+The dated preview/build evidence below was collected on the broader Learning
+branch. [PR #149](https://github.com/Kriordan/personal_portfolio/pull/149) isolates
+the interval timer, security fixes, and update setup on `main`; its mobile suite
+has 146 tests. The published previews are not exact builds of that focused PR.
+
 - Preview 13 adds EAS Update and supersedes preview 12. Its signature, registered iPhone, timer module, background audio, and Sentry source-map match are verified. An initial iOS update downloaded and activated after restart in an isolated Release simulator with the same native runtime; there are no forced mid-workout reloads. [Update verification](assets/preview-updates-2026-11-14.json). This does not close the physical workout checks below.
 - November 14 preview 12 finished at 9:40 a.m. Eastern. The downloaded IPA passes strict/deep signature verification, includes the existing registered iPhone, embeds the production API, and contains the IntervalTimer native module with background audio enabled. The Sentry source-map upload completed for release `com.kriordan.personalportfolio@1.0.0+12`; its debug ID matches the signed Hermes bundle. [Artifact verification](assets/interval-preview-2026-11-14.json).
 - The inspected upload archive matched 177 required source files, including every mobile source file, the native timer, and patched lockfile. Environment secrets, credentials, databases, generated native projects, and local editor files were excluded. EAS metadata records HEAD `9923253`; the uploaded working tree also contains the uncommitted interval and security changes. Existing signing credentials were reused without modification.

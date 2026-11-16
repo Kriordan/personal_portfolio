@@ -83,6 +83,11 @@ update group and restore or repair it rather than assuming nothing was published
 
 ## Validation
 
+The dated preview/build evidence below was collected on the broader Learning
+branch. [PR #149](https://github.com/Kriordan/personal_portfolio/pull/149) isolates
+the interval timer, security fixes, and update setup on `main`; its mobile suite
+has 146 tests. The published previews are not exact builds of that focused PR.
+
 - 196 mobile tests pass, including preview environment parity, rejected local API
   origins during publication, production/development isolation, and bounded Sentry
   update tags.
