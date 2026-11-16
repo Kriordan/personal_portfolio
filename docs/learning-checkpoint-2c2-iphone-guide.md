@@ -1,8 +1,13 @@
 # Checkpoint 2c.2: try feedback and inspect its evidence
 
-Implemented locally November 16, 2026. Deployment and an updated signed iPhone
-preview still need approval. The existing build 11 does not contain this feature.
-All spending limits are unchanged. These are hands-on exploration steps;
+Released with Keith's approval on November 16, 2026: **Heroku v179** and standalone
+**iPhone build 14**, from `8b508f3`.
+
+[Install the updated iPhone preview](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/a55838d8-8dd0-40c0-a9dd-f5d43c9fd3b7).
+Open the link in Safari on the registered iPhone and tap **Install**. Update your
+existing app, then sign in with the website account if needed. It uses the hosted
+API and works without your Mac. Existing saved sessions and all spending limits
+are unchanged. These are hands-on exploration steps;
 automated test results are in the [checkpoint log](engineering-learning-milestone-2.md#checkpoint-2c2--feedback-and-revision-on-iphone).
 
 ## Five-minute phone walkthrough

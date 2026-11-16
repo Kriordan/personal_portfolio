@@ -1,7 +1,9 @@
 # iPhone preview updates
 
-**Install once:** [iPhone preview 1.0.0 (13)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/df923f54-6209-4350-906a-5ef4c2eea9b5).
-It includes the interval timer and prior fixes, plus the native update client.
+**Current standalone preview:** [iPhone preview 1.0.0 (14)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/a55838d8-8dd0-40c0-a9dd-f5d43c9fd3b7).
+Released November 16 from `8b508f3`, it adds Learning feedback/revision while
+retaining the interval timer, prior fixes, and native update client. See the
+[release record](engineering-learning-milestone-2.md#approved-2c2-release--november-16).
 The [initial update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/edb797b5-3939-4e2b-a499-dc910b77d5d7)
 is published on `preview` for iOS.
 

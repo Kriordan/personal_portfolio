@@ -12,7 +12,7 @@ still requires explicit approval.
 | 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
 | 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
 | 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Keith subsequently reported that Build looks good on his iPhone. |
-| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Approved and implemented locally November 16; tests and native QA passed. Deployment and updated iPhone preview require approval. |
+| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Released November 16 as v179 / iPhone build 14 from `8b508f3`, with Keith's explicit approval. Physical iPhone acceptance remains pending. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -536,7 +536,56 @@ AI calls**. Fixture ledger values are simulated; no hosted balance was queried
 or changed. Full VoiceOver interaction, Android, software-keyboard coverage,
 and the updated signed preview on Keith's physical iPhone remain release checks.
 
-No deployment, OTA update, signed preview build, or content expansion was
-performed. Next gate: approve deployment of the checkpoint commit and an updated
-iPhone preview, then verify the installed artifact and repeat the short phone
-walkthrough. See the [hands-on guide](learning-checkpoint-2c2-iphone-guide.md).
+Implementation validation above preceded deployment. Keith subsequently approved
+deploying `8b508f3` and creating the updated standalone preview; the release is
+recorded below. See the [hands-on guide](learning-checkpoint-2c2-iphone-guide.md).
+
+### Approved 2c.2 release — November 16
+
+Application source **`8b508f3b66ec4221e030519e9102c34a8dcab326`** is live on
+Heroku. Backup **b016** completed before code release **v178**; **v179** updated
+only the existing Sentry release tag. Schema `e4f5a6b7c8d9`, the one Basic web
+dyno, owner policy, exact draft approval, and every Learning setting are unchanged.
+
+On both hosted origins, owner lesson/review/progress/session/snapshot/feedback
+reads, anonymous 401, non-owner 404, private cache headers, and draft labels passed.
+Saved feedback covered its complete original snapshot, and **eight evidence
+citations per origin** matched their original saved sources. Database fingerprints
+confirmed that progress, saved work, feedback, receipts, requests, and the spending
+ledger stayed unchanged throughout verification. No paid AI request was made.
+
+The **$5 lifetime allowance, $1 verification portion, $50 monthly cap, and
+per-call/context limits remain unchanged**. Counted spending including carryover
+remained **$0.076025**, leaving **$4.923975** at verification. No AI requests were
+pending or running; local paid AI remains frozen.
+
+Standalone [iPhone build 14](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/a55838d8-8dd0-40c0-a9dd-f5d43c9fd3b7)
+finished November 16 at **12:12:58 p.m. EST**. All **969 uploaded source files**
+match the approved commit, and the archive's Git metadata matches `8b508f3`.
+Three already-ignored legacy YouTube JSON files were excluded; there were no
+extra or modified source files. Local settings, credentials, and databases were
+excluded. Both existing dependency audits passed with zero findings/exceptions,
+and Expo native dependency compatibility passed. EAS caches were cleared and
+existing signing credentials were frozen and reused.
+
+The downloaded **17,539,601-byte IPA** passes strict/deep signature verification.
+It is an `iPhoneOS` archive for `com.kriordan.personalportfolio`, version 1.0.0 /
+build 14, with the same registered iPhone and provisioning profile. Its packaged
+commit and hosted API origin match the approved release. Learn/Review/Discuss,
+Build editing, and the new feedback/revision controls are present; local fixture
+origins and private reference/evaluation markers are absent.
+
+Main's native interval timer, background audio, and existing `preview` update
+channel are preserved. The runtime remains
+`77b0440fdf8c270adcb7939e8c162f453f8e5ad4`. Expo 57's `Expo.plist` records
+`file:fingerprint`; verification resolves that indirection through the packaged
+`EXUpdates.bundle/fingerprint`, rather than comparing the literal sentinel to the
+hash. The Sentry source-map upload completed, with its debug ID matching the
+packaged Hermes bundle. No OTA update, App Store/TestFlight submission, or test
+error event was created.
+
+See [release evidence](assets/learning-2c2-iphone-2026-11-16/release.json).
+Raw archives, provisioning identifiers, and operator records stay in the ignored
+private `.local/learning-pilot/iphone-2c2-deployment/` directory. The preview runs
+without the Mac. Physical installation/acceptance and the outstanding VoiceOver,
+keyboard, and Android checks remain separate from archive verification.
