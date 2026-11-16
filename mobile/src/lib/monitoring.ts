@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
 import { failureTags, scrubMobileEvent, type OperationFailure } from './monitoring-policy';
 
@@ -40,6 +41,8 @@ export function initializeMonitoring() {
         !['Breadcrumbs', 'HttpContext', 'ExpoConstants', 'ExpoContext', 'ModulesLoader'].includes(integration.name)),
     });
     Sentry.setUser({ ip_address: '0.0.0.0' });
+    Sentry.setTag('expo_update_source', Updates.isEmbeddedLaunch ? 'embedded' : 'ota');
+    if (Updates.updateId) Sentry.setTag('expo_update_id', Updates.updateId);
     const commit = Constants.expoConfig?.extra?.monitoringCommit;
     if (typeof commit === 'string' && /^[a-f0-9]{7,40}$/.test(commit))
       Sentry.setTag('commit', commit);

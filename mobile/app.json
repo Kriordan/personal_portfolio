@@ -3,6 +3,13 @@
     "name": "Personal Portfolio",
     "slug": "personal-portfolio",
     "version": "1.0.0",
+    "runtimeVersion": { "policy": "fingerprint" },
+    "updates": {
+      "enabled": false,
+      "url": "https://u.expo.dev/02007b1c-386b-4348-8e84-7cc98d6ae38d",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "personal-portfolio",
@@ -11,6 +18,7 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.kriordan.personalportfolio",
       "infoPlist": {
+        "UIBackgroundModes": ["audio"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },

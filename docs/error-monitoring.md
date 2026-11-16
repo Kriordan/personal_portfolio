@@ -4,6 +4,13 @@
 
 Sentry is opt-in and errors-only for the Expo iOS/Android app and Flask. Web and development clients do not report. The integration does not change extraction retries, chargeable provider work, saved jobs or authentication. Expo 57, Expo Router, @expo/ui, TanStack Query and Flask remain in place.
 
+**November 14 preview updates:** the [iPhone update workflow](preview-updates.md)
+reuses the preview environment's upload secret and requires Sentry source-map
+upload for each publication. The scrubber now also permits a validated Expo
+update UUID and the fixed `embedded`/`ota` source tag. Existing content and native
+crash restrictions remain in force. Build 13 and the initial update have matching
+uploaded debug IDs; local Release simulator download/activation passed.
+
 ## Scope and privacy
 
 - Automatic JavaScript errors, a React error boundary, and unhandled Flask exceptions retain stack locations, release/build information and basic OS/device model metadata.

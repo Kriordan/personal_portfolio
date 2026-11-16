@@ -1,6 +1,23 @@
 # Validation status and follow-ups
 
-Updated October 28, 2026. This is the current index for mobile/Jobwizard/Sentry acceptance. Feature smoke-test files retain their detailed scenarios and dated evidence. Only an explicitly tested scenario is closed; general device approval does not imply every failure, accessibility or concurrency case passed.
+Updated November 14, 2026. This is the current index for mobile/Jobwizard/Sentry acceptance. Feature smoke-test files retain their detailed scenarios and dated evidence. Only an explicitly tested scenario is closed; general device approval does not imply every failure, accessibility or concurrency case passed.
+
+## Dependency follow-up — November 13
+
+The [deepmerge security update](security/deepmerge-2026-11-13.md) removes the
+vulnerable dependency through Expo config 57.0.11 and removes its expired
+exception. Additional findings from the fresh scans are patched. Both npm audit
+gates pass with zero findings and zero exceptions. This is local source and
+build validation; the previously installed previews do not acquire these changes.
+The subsequently requested [iPhone preview 12](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/28622d1b-c763-4fc6-bd87-ee35638538e7)
+now includes them alongside the interval timer and current Learning screens. Its
+signed artifact and Sentry source-map match are verified; physical-device
+acceptance remains pending. See the [interval timer record](interval-timer.md)
+for the build receipt and the newer SDK patch recommendations from Expo Doctor.
+The subsequent [update-enabled iPhone preview 13](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/df923f54-6209-4350-906a-5ef4c2eea9b5)
+supersedes it. Preview publication, required Sentry uploads, and download/activation
+in an isolated Release simulator are verified in the [EAS Update record](preview-updates.md).
+The October approvals and deployment evidence below remain historical records.
 
 ## Chat closeout — October 27
 
@@ -215,7 +232,7 @@ Evidence: [precise results and limits](assets/jobwizard-accessibility-2026-10-27
 | Priority | Follow-up and completion evidence |
 | --- | --- |
 | CodeQL triage — deployed | [PR #139](https://github.com/Kriordan/personal_portfolio/pull/139) and focused [follow-up #140](https://github.com/Kriordan/personal_portfolio/pull/140) merged. Full main run `40672895792` has zero findings in all three languages; alerts 37/34/9/8/3 are fixed without dismissal. Deployed as v163/v164 while preserving v162 ancestry/settings. Local PostgreSQL suite: 296 passed/one Linux-only skip; deployed suite: 279 passed/18 PostgreSQL skips; 23 browser checks, live HTTP and 12 TLS checks pass. Real Ashby read/summary/replay/status recovery pass in an isolated deployed dyno. Greenhouse `page_blocked` and Workday `page_not_ready` remain explicit failed live-source checks. [Evidence, dispositions and limits](security/codeql-alerts-2026-10-27.md). No production data mutations, new native build or physical-device acceptance claimed; inherited follow-ups remain. |
-| Dependency exception — November 10 | Re-review low-severity deepmerge `GHSA-gcqx-w48m-w2h4` by November 10, 2026, or sooner if a patch, severity change or new use appears. The approved exact-version exception is not a fix; retain the open alert and remove the exception when remediation passes validation. The gate rejects it starting November 11 UTC. |
+| Dependency exception — resolved November 13 | Patched upstream Expo config removes deepmerge. The exception has been removed; both npm audit gates pass with zero findings and zero exceptions. See the [dependency follow-up](security/deepmerge-2026-11-13.md). |
 | Native breadth | PR #133 build 5, including #132, has overall physical iPhone acceptance. Android Release terminated-link checks above now pass on the emulator. Complete deleted-ID and other untested warm/cold, signed-in/out permutations; do not repeat the development-launcher investigation. Remaining timing coverage includes a committed save response arriving after an account switch and Android delayed refresh/save/capture switches. The precise iOS and Android cases above are closed only for their stated hosts; retain [Jobwizard smoke tests](jobwizard-smoke-test.md) and physical Android acceptance. |
 | Accessibility — deferred | The specific physical VoiceOver and emulator TalkBack flows above are closed at their stated scope. The user deferred the full spoken-label/announcement and sequential-focus audit, smaller-phone/software-keyboard and dark-mode combinations, maximum-text iOS scroll reachability, and physical acceptance of the new large-text layout. Review, source and viewer permutations remain open where untested. These are not blockers for #137; revisit with a future device build or reported issue. |
 | Other features | Retain [Grocery/shell reconnect and sharing checks](mobile-ui-validation.md), [Wishlist signed-image/upload lifecycle](wishlist-smoke-test.md), [Library sync/pin/watched behavior](library-smoke-test.md), and [Learning uncertain review/account switching](learning-smoke-test.md). Earlier disabled-reporting fixture smokes do not prove every enabled-device scenario or live YouTube sync. |
