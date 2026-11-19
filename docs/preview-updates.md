@@ -4,8 +4,14 @@
 Released November 16 from `8b508f3`, it adds Learning feedback/revision while
 retaining the interval timer, prior fixes, and native update client. See the
 [release record](engineering-learning-milestone-2.md#approved-2c2-release--november-16).
-The [initial update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/edb797b5-3939-4e2b-a499-dc910b77d5d7)
-is published on `preview` for iOS.
+**Latest preview update:** [Lotto and compact Home — November 19](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/de7f5743-ce1e-4e7a-9b31-c74907a72409),
+published from `7cf2b5e` on `preview` for iOS. It combines the lottery tools, starts
+scratch-off listings with three choices, simplifies Home to one upcoming drawing
+and one latest result across both games, adds the Monday popup, and removes
+“Ready for your next shop.” It matches build 14's native runtime; no new native
+installation is required. Backend deployment, live drawing-data refresh, runtime
+compatibility, and Sentry source-map upload passed. See the
+[release record](scratch-offs.md#november-19-lotto-and-home-preview).
 
 EAS Update is configured for the `preview` build profile and channel. The manual
 workflow in `mobile/.eas/workflows/preview-update.yml` publishes only iOS. Existing

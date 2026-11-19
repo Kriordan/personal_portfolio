@@ -118,3 +118,36 @@ The user accepted the overall preview. Individual checklist scenarios were not s
 3. Reopen the app and confirm the chosen filters persist for the signed-in account.
 4. Open the draw planner and check the weekly advance-play and three-stop routines. Confirm dates and cutoffs are readable.
 5. Check the existing Jobwizard flow still behaves as it did in accepted preview 5. Report any layout, navigation or sign-in issues before merging.
+
+## November 19 Lotto and Home preview
+
+Application source `7cf2b5e16ec489f2713c19d00a6c863d7491061c` is deployed in
+Heroku code release **v180**. Release **v181** updates the existing Sentry release
+tag to that commit. The release's schema and hosted-configuration checks passed;
+this change adds no database migration or native dependency.
+
+The normal `refresh-lottery --state ct` command saved 23 CT scratch-off games and
+both draw games. The draw snapshot was refreshed at **20:26 UTC**. Live,
+authenticated API checks verified one upcoming drawing (Mega Millions, November
+20) and the latest drawing's results (Powerball, November 18), the existing draw
+plan, and NY/CT scratch listings. Anonymous access remains 401 and authenticated
+lottery responses retain `private, no-store` caching.
+
+The [iPhone update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/de7f5743-ce1e-4e7a-9b31-c74907a72409)
+was published at **20:29 UTC** on the `preview` channel. The
+[publication workflow](https://expo.dev/accounts/kriordan/projects/personal-portfolio/workflows/01a1f57e-22dd-7bf4-8e99-8c7597a72f05)
+verified the existing native runtime
+`77b0440fdf8c270adcb7939e8c162f453f8e5ad4` and completed its required Sentry
+source-map upload. The update is compatible with standalone iPhone preview
+**1.0.0 (14)**. Open it online, allow the update to download, then fully close and
+reopen it between workouts.
+
+Validation passed all **215 mobile tests**, TypeScript, lint, Expo dependency
+compatibility, both npm audit gates with zero exceptions, and iOS/Android/web
+exports. The full backend suite passed **653 tests with 135 environment-dependent
+skips** (788 total), including the 33 lottery tests. Reminder tests cover Monday
+timing, Eastern daylight-saving transitions, repeat suppression, account changes,
+and delayed storage reads. Physical-iPhone acceptance of this update remains
+pending; the popup appears when Home is opened on Monday before 10 p.m. Eastern,
+once per account/device for that day. This is an in-app popup, not a background
+push notification. [Release receipt](assets/lottery/lotto-home-2026-11-19.json).
