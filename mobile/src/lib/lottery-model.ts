@@ -145,8 +145,37 @@ export interface DrawGame {
   saved_draw: string | null;
   url: string;
 }
+export interface HomeDraws {
+  upcoming: {
+    name: string;
+    date: string;
+    label: string;
+    jackpot: number | null;
+  };
+  latest: {
+    name: string;
+    date: string;
+    label: string;
+    result: {
+      date: string;
+      numbers: number[];
+      bonus: number;
+      bonus_label: string;
+      power_play: number | null;
+    } | null;
+  };
+}
+
+export function homeDrawsExpired(home: HomeDraws, now = Date.now()) {
+  const next = Date.parse(home.upcoming.date);
+  const last = Date.parse(home.latest.date);
+  return !Number.isFinite(next) || !Number.isFinite(last) || now >= next || now < last;
+}
+
 export interface DrawResponse {
   status: LotteryStatus;
+  // Older servers/snapshots can still provide the existing draw planner.
+  home?: HomeDraws;
   plan: {
     state: LotteryState;
     as_of: string;

@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Card, InlineError, NativeAction } from '@/components/screen';
+import { LotteryMondayReminder } from '@/components/lottery-monday-reminder';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -11,8 +12,7 @@ import {
 } from '@/hooks/use-lottery';
 import {
   dataIsStale,
-  dollars,
-  drawPlanExpired,
+  homeDrawsExpired,
   jackpotLabel,
   type LotteryState,
   type LotteryStatus,
@@ -163,93 +163,103 @@ export function DrawQuickReference() {
   const query = useLotteryDraws(prefs.preferences.state, prefs.ready);
   const now = useLotteryClock();
   const router = useRouter();
-  const expired = query.data ? drawPlanExpired(query.data.plan, now) : true;
+  const home = query.data?.home;
+  const expired = !home || homeDrawsExpired(home, now);
   return (
-    <Card>
-      <View style={styles.gap}>
-        <ThemedText type="smallBold" themeColor="accent">
-          LOTTERY QUICK REFERENCE
-        </ThemedText>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          At your next stop
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Next drawing only · skip tickets you already have.
-        </ThemedText>
-      </View>
-      <LotteryStates
-        state={prefs.preferences.state}
-        onChange={(state) => prefs.set({ state })}
-      />
-      {query.data && !expired ? (
-        <>
-          <ThemedText type="small" themeColor="textSecondary">
-            {query.data.plan.date_label} · Eastern time
+    <>
+      <Card>
+        <View style={styles.homeHeading}>
+          <ThemedText type="subtitle" accessibilityRole="header">
+            Lotto
           </ThemedText>
-          {query.data.plan.games.map((game) => (
-            <View key={game.name} style={styles.drawRow}>
-              <ThemedText type="smallBold">
-                {game.name} · {dollars(game.price)}
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push('/lotto')}
+            style={styles.textAction}
+          >
+            <ThemedText type="smallBold" themeColor="accent">
+              Open Lotto
+            </ThemedText>
+          </Pressable>
+        </View>
+        {home && !expired && query.data ? (
+          <>
+            <View style={styles.gap}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                NEXT DRAWING
               </ThemedText>
-              <ThemedText>
-                {game.next_draw.label} ·{' '}
+              <ThemedText>{home.upcoming.name}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {home.upcoming.label}
+              </ThemedText>
+              <ThemedText type="smallBold" themeColor="accent">
                 {dataIsStale(query.data.status, now)
                   ? 'Jackpot needs an update'
-                  : jackpotLabel(game.jackpot)}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {game.sales_closed
-                  ? 'Tonight’s sales are closed. Confirm when future-draw sales reopen.'
-                  : `Buy before ${game.cutoff} on draw day.`}
+                  : jackpotLabel(home.upcoming.jackpot)}
               </ThemedText>
             </View>
-          ))}
-          <ThemedText type="small" themeColor="textSecondary">
-            Checked {query.data.status.checked}.
+            <View style={styles.gap}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                LATEST RESULT
+              </ThemedText>
+              <ThemedText>{home.latest.name} · {home.latest.label}</ThemedText>
+              {home.latest.result ? (
+                <>
+                  <View style={styles.numbers}>
+                    <ThemedText type="smallBold">
+                      {home.latest.result.numbers.join(' · ')}
+                    </ThemedText>
+                    <ThemedText type="smallBold" themeColor="accent">
+                      {home.latest.result.bonus_label} {home.latest.result.bonus}
+                    </ThemedText>
+                  </View>
+                  {home.latest.result.power_play !== null ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Power Play {home.latest.result.power_play}×
+                    </ThemedText>
+                  ) : null}
+                </>
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Awaiting results.
+                </ThemedText>
+              )}
+            </View>
+          </>
+        ) : (
+          <ThemedText themeColor="textSecondary">
+            {query.isPending
+              ? 'Loading saved drawing details…'
+              : 'Pull to refresh drawing details, or open Lotto.'}
           </ThemedText>
-        </>
-      ) : (
-        <ThemedText themeColor="textSecondary">
-          {query.isPending
-            ? 'Loading saved drawing details…'
-            : 'Reload to update the next drawings. The weekly reference is still available below.'}
-        </ThemedText>
-      )}
-      {prefs.accountError ? (
-        <InlineError
-          message="Couldn’t load your account."
-          onRetry={prefs.retryAccount}
-        />
-      ) : null}
-      {query.isError ? (
-        <InlineError
-          message="Couldn’t reload drawing details."
-          onRetry={() => void query.refetch()}
-        />
-      ) : null}
-      <View style={styles.links}>
-        <View style={styles.link}>
-          <NativeAction
-            label="Draw planner"
-            onPress={() => router.push('/draw-games')}
-            secondary
+        )}
+        {prefs.accountError ? (
+          <InlineError
+            message="Couldn’t load your account."
+            onRetry={prefs.retryAccount}
           />
-        </View>
-        <View style={styles.link}>
-          <NativeAction
-            label="Scratch-offs"
-            onPress={() => router.push('/scratch-offs')}
-            secondary
+        ) : null}
+        {query.isError ? (
+          <InlineError
+            message="Couldn’t reload drawing details."
+            onRetry={() => void query.refetch()}
           />
-        </View>
-      </View>
-    </Card>
+        ) : null}
+      </Card>
+      <LotteryMondayReminder now={now} />
+    </>
   );
 }
 const styles = StyleSheet.create({
   gap: { gap: 6 },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  link: { flex: 1, minWidth: 130 },
+  homeHeading: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  numbers: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: {
     minHeight: 44,
@@ -265,5 +275,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'flex-start',
   },
-  drawRow: { gap: 4, paddingVertical: 6 },
 });

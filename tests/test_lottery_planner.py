@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from project.lottery.planner import draw_plan
+from project.lottery.planner import draw_home, draw_plan
 
 class DrawPlannerTests(unittest.TestCase):
     def plan(self, when, state='ny', **kwargs):
@@ -40,3 +40,46 @@ class DrawPlannerTests(unittest.TestCase):
         self.assertEqual(self.plan('2026-10-26T12:00:00-04:00', summaries=saved, stale=False)['games'][0]['jackpot'], 687000000)
         self.assertIsNone(self.plan('2026-10-26T22:00:00-04:00', summaries=saved, stale=False)['games'][0]['jackpot'])
         self.assertIsNone(self.plan('2026-10-26T12:00:00-04:00', summaries=saved, stale=True)['games'][0]['jackpot'])
+
+    def test_home_selects_one_upcoming_draw_and_one_latest_across_both_games(self):
+        home = draw_home(now=datetime.fromisoformat('2026-11-19T12:00:00-05:00'))
+        self.assertEqual(home['upcoming']['name'], 'Mega Millions')
+        self.assertEqual(home['upcoming']['date'], '2026-11-20T23:00:00-05:00')
+        self.assertEqual(home['latest']['name'], 'Powerball')
+        self.assertEqual(home['latest']['date'], '2026-11-18T22:59:00-05:00')
+        self.assertIsNone(home['latest']['result'])
+
+    def test_home_changes_at_drawing_time_instead_of_sales_cutoff(self):
+        before = draw_home(now=datetime.fromisoformat('2026-11-23T22:58:59-05:00'))
+        after = draw_home(now=datetime.fromisoformat('2026-11-23T22:59:00-05:00'))
+        self.assertEqual(before['upcoming']['name'], 'Powerball')
+        self.assertEqual(after['upcoming']['name'], 'Mega Millions')
+        self.assertEqual(after['latest']['date'], before['upcoming']['date'])
+
+    def test_home_matches_results_and_jackpot_to_their_exact_draws(self):
+        when = datetime.fromisoformat('2026-11-19T12:00:00-05:00')
+        result = dict(date='2026-11-18', numbers=[18, 31, 43, 51, 62], bonus=12)
+        saved = [dict(name='Powerball', next_draw='2026-11-21T22:59:00-05:00', jackpot=114000000, last_result=result),
+                 dict(name='Mega Millions', next_draw='2026-11-20T23:00:00-05:00', jackpot=629000000)]
+        home = draw_home(saved, stale=False, now=when)
+        self.assertEqual(home['upcoming']['jackpot'], 629000000)
+        self.assertEqual(home['latest']['result'], result)
+        stale = draw_home(saved, stale=True, now=when)
+        self.assertIsNone(stale['upcoming']['jackpot'])
+        self.assertEqual(stale['latest']['result'], result)
+        saved[0]['last_result'] = dict(result, date='2026-11-16')
+        saved[1]['next_draw'] = '2026-11-17T23:00:00-05:00'
+        home = draw_home(saved, stale=False, now=when)
+        self.assertIsNone(home['latest']['result'])
+        self.assertIsNone(home['upcoming']['jackpot'])
+        saved[0]['last_result'] = dict(result, date='2026-11-21')
+        self.assertIsNone(draw_home(saved, stale=False, now=when)['latest']['result'])
+
+    def test_home_calendar_handles_sunday_dst_and_year_boundaries(self):
+        for when, upcoming, latest in [
+            ('2026-11-01T12:00:00-05:00', '2026-11-02T22:59:00-05:00', '2026-10-31T22:59:00-04:00'),
+            ('2026-12-31T12:00:00-05:00', '2027-01-01T23:00:00-05:00', '2026-12-30T22:59:00-05:00'),
+        ]:
+            home = draw_home(now=datetime.fromisoformat(when))
+            self.assertEqual(home['upcoming']['date'], upcoming)
+            self.assertEqual(home['latest']['date'], latest)

@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl } from 'react-native';
 import {
-  Card,
   InlineError,
   NativeAction,
   NavRow,
@@ -11,7 +10,6 @@ import {
 } from '@/components/screen';
 import { DrawQuickReference } from '@/components/lottery-content';
 import { useQueryClient } from '@tanstack/react-query';
-import { ThemedText } from '@/components/themed-text';
 import { mobileTools } from '@/constants/tools';
 import { useListsOverview } from '@/hooks/use-lists';
 import { useAuth } from '@/lib/auth-context';
@@ -45,37 +43,6 @@ export default function HomeScreen() {
         subtitle="A little less to keep in your head."
       />
       <DrawQuickReference />
-      <Card>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          Ready for your next shop
-        </ThemedText>
-        {lists.data ? (
-          <View style={styles.counts}>
-            <View style={styles.count}>
-              <ThemedText type="title">{lists.data.owned.length}</ThemedText>
-              <ThemedText themeColor="textSecondary">Your lists</ThemedText>
-            </View>
-            <View style={styles.count}>
-              <ThemedText type="title">{lists.data.shared.length}</ThemedText>
-              <ThemedText themeColor="textSecondary">
-                Shared with you
-              </ThemedText>
-            </View>
-          </View>
-        ) : (
-          <ThemedText themeColor="textSecondary">
-            {lists.isPaused
-              ? 'Connect to load your lists.'
-              : lists.isPending
-                ? 'Loading your lists…'
-                : 'Your lists are unavailable right now.'}
-          </ThemedText>
-        )}
-        <NativeAction
-          label="Open Grocery"
-          onPress={() => router.push('/lists')}
-        />
-      </Card>
       {lists.isError ? (
         <InlineError
           message="Couldn’t refresh your lists."
@@ -122,12 +89,3 @@ export default function HomeScreen() {
     </Screen>
   );
 }
-const styles = StyleSheet.create({
-  counts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 28,
-    paddingVertical: 8,
-  },
-  count: { flex: 1, minWidth: 110, gap: 2 },
-});

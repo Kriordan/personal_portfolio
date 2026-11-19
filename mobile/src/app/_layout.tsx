@@ -38,9 +38,10 @@ function AppNavigation() {
           name="(tabs)"
           options={{ headerShown: false, title: 'Home' }}
         />
-        <Stack.Screen name="scratch-offs/index" options={{ title: 'Scratch-offs' }} />
+        <Stack.Screen name="lotto" options={{ title: 'Lotto' }} />
+        <Stack.Screen name="scratch-offs/index" options={{ title: 'Lotto' }} />
         <Stack.Screen name="scratch-offs/[id]" options={{ title: 'Game details' }} />
-        <Stack.Screen name="draw-games" options={{ title: 'Draw planner' }} />
+        <Stack.Screen name="draw-games" options={{ title: 'Lotto' }} />
         <Stack.Screen name="intervals/index" options={{ title: 'Intervals' }} />
         <Stack.Screen name="intervals/[id]" options={{ title: 'Workout' }} />
         <Stack.Screen name="intervals/run" options={{ title: 'Workout timer' }} />

@@ -5,7 +5,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from project.database import db
 from project.models import User
 from project.lottery.calculations import calculate, odds, utc
-from project.lottery.planner import draw_plan
+from project.lottery.planner import draw_home, draw_plan
 from project.lottery.views import comparison, source_stamp, stamp, status
 
 lottery_api_blueprint = Blueprint("api_lottery", __name__, url_prefix="/lottery")
@@ -45,7 +45,8 @@ def serialize_game(game, state):
 def draw_payload(state):
     info = status("draw")
     games = info["snapshot"].data["games"] if info["snapshot"] else []
-    return dict(plan=draw_plan(state, games, info["stale"]), status=serialize_status(info, "draw"))
+    return dict(plan=draw_plan(state, games, info["stale"]), home=draw_home(games, info["stale"]),
+                status=serialize_status(info, "draw"))
 
 
 @lottery_api_blueprint.get("/scratch-offs")

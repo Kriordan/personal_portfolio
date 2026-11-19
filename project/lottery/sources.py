@@ -2,7 +2,7 @@
 import json
 import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from email.utils import parsedate_to_datetime
 from html import unescape
 from urllib.parse import urlparse
@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from .calculations import PRICES
+from .planner import RULES
 
 NY_FEED = "https://data.ny.gov/resource/nzqa-7unk.json?$limit=5000"
 NY_INFO = "https://data.ny.gov/api/views/nzqa-7unk.json"
@@ -220,6 +221,33 @@ def ny_games(rows, metadata, source_at):
     return games
 
 
+def draw_result(html, slug):
+    """Read only the main drawing, never the separate Double Play numbers."""
+    candidates = [value for value in flight_values(html, "winningNumbers") if isinstance(value, dict)]
+    if not candidates:
+        return None
+    if len(candidates) != 1:
+        raise SourceError("Draw-game results ambiguous")
+    raw = candidates[0]
+    rule = next(rule for rule in RULES if rule["slug"] == slug)
+    try:
+        drawn = date.fromisoformat(raw["drawDate"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise SourceError("Draw-game result date invalid") from exc
+    white, bonus = raw.get("whiteBalls"), raw.get("powerball")
+    # CT uses the field name `powerball` for both games' bonus balls.
+    white_max, bonus_max = (69, 26) if slug == "powerball" else (70, 24)
+    if (drawn.weekday() not in rule["days"] or not isinstance(white, list) or len(white) != 5
+            or any(type(n) is not int or not 1 <= n <= white_max for n in white)
+            or len(set(white)) != 5 or type(bonus) is not int or not 1 <= bonus <= bonus_max):
+        raise SourceError("Draw-game winning numbers invalid")
+    multiplier = raw.get("powerPlayMultiplier") if slug == "powerball" else None
+    if multiplier is not None and (type(multiplier) is not int or multiplier not in (2, 3, 4, 5, 10)):
+        raise SourceError("Draw-game Power Play multiplier invalid")
+    return dict(date=drawn.isoformat(), numbers=white, bonus=bonus,
+                bonus_label="Powerball" if slug == "powerball" else "Mega Ball", power_play=multiplier)
+
+
 def draw_game(html, slug):
     identifier = slug.replace("-", "")
     statuses = [v for v in flight_values(html, "status") if isinstance(v, dict) and v.get("game") == identifier]
@@ -234,12 +262,15 @@ def draw_game(html, slug):
     cells = [v for v in flight_values(html, "cells") if isinstance(v, list) and "JACKPOT" in v]
     denominators = {int(m.group(1).replace(",", "")) for row in cells for v in row
                     if isinstance(v, str) and (m := re.fullmatch(r'1 in ([\d,]+)', v))}
-    if len(denominators) != 1 or not price or raw.get("jackpotPending"):
-        raise SourceError("Draw-game jackpot/odds awaiting publication")
-    jackpot, cash = raw["jackpot"], raw["cashValue"]
-    if not all(type(v) is int and v > 0 for v in (jackpot, cash)) or cash > jackpot:
+    if len(denominators) != 1 or not price:
+        raise SourceError("Draw-game price/odds awaiting publication")
+    jackpot, cash = raw.get("jackpot"), raw.get("cashValue")
+    if raw.get("jackpotPending"):
+        # Winning numbers can be published before the next jackpot is announced.
+        jackpot, cash = None, None
+    elif not all(type(v) is int and v > 0 for v in (jackpot, cash)) or cash > jackpot:
         raise SourceError("Draw-game amounts invalid")
     next_draw = datetime.fromisoformat(raw["nextDrawDate"]).replace(tzinfo=EASTERN).astimezone(timezone.utc)
     return dict(name="Powerball" if slug == "powerball" else "Mega Millions", price=price, jackpot=jackpot,
-                cash=cash, next_draw=next_draw.isoformat(), odds=denominators.pop(),
+                cash=cash, next_draw=next_draw.isoformat(), odds=denominators.pop(), last_result=draw_result(html, slug),
                 url=f"https://ctlottery.com/games/draw-games/{slug}")
