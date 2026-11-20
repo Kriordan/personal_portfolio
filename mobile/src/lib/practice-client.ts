@@ -1,4 +1,5 @@
 import type { PracticeApi } from './practice-model.ts';
+import { responsePath } from './feedback-response-model.ts';
 type Request = <T>(
   path: string,
   options?: {
@@ -19,6 +20,16 @@ export function createPracticeClient(request: Request): PracticeApi {
       read(`${session(id)}/submissions/${sequence}`),
     feedback: (id, sequence) =>
       read(`${session(id)}/submissions/${sequence}/feedback`),
+    focusedReview: (source) => read(`${responsePath(source)}/review`),
+    revealFocused: (source, card, requestId) =>
+      read(
+        `${responsePath(source)}/review?${new URLSearchParams({
+          card_id: card.card_id,
+          content_version: String(card.content_version),
+          expected_revision: String(card.progress_revision),
+          request_id: requestId,
+        })}`,
+      ),
     revision: (id, artifact, revision) =>
       read(
         `${session(id)}/artifacts/${encodeURIComponent(artifact)}/revisions/${revision}`,
@@ -26,12 +37,22 @@ export function createPracticeClient(request: Request): PracticeApi {
     receipt: (id) => read(`${root}/receipts/${encodeURIComponent(id)}`),
     change: (change) => {
       const { kind, conceptId, request_id } = change;
+      if (kind === 'annotate')
+        return request(`${responsePath(change)}/response`, {
+          method: 'PUT',
+          body: {
+            request_id,
+            expected_revision: change.base_revision,
+            decision: change.decision,
+            note: change.note,
+          },
+          timeoutMs: 20_000,
+          requestId: request_id,
+        });
       if (kind === 'submit' || kind === 'feedback')
         return request(
           `${session(change.sessionId)}/submissions${
-            kind === 'feedback'
-              ? `/${change.submission_sequence}/feedback`
-              : ''
+            kind === 'feedback' ? `/${change.submission_sequence}/feedback` : ''
           }`,
           {
             method: 'POST',

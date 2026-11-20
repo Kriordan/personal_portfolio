@@ -12,6 +12,7 @@ import {
   type SnapshotDetail,
 } from '@/lib/practice-feedback-model';
 import type { PracticeDetail } from '@/lib/practice-model';
+import { responseChoices, responseRoute } from '@/lib/feedback-response-model';
 
 export function FeedbackFindingCard({
   finding,
@@ -55,6 +56,18 @@ export function FeedbackFindingCard({
       ))}
       <ThemedText type="smallBold">Next step</ThemedText>
       <LearningText text={finding.next_step} />
+      <NavRow
+        title="Your response"
+        subtitle={
+          responseChoices.find((c) => c.value === finding.annotation.decision)
+            ?.label ?? 'Not reviewed'
+        }
+        href={responseRoute({
+          sessionId: detail.session.id,
+          submission_sequence: snapshot.submission.sequence,
+          findingId: finding.id,
+        })}
+      />
       {finding.kind !== 'strength'
         ? finding.remediation.map((link) => (
             <NavRow

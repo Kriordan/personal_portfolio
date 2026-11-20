@@ -1,3 +1,10 @@
+import {
+  validFeedbackSource,
+  responsePath,
+  responseRoute,
+  type FeedbackSource,
+} from './feedback-response-model.ts';
+
 export interface ReviewCard {
   card_id: string;
   note_id: string;
@@ -38,6 +45,7 @@ export interface RateCardInput {
   response_ms: number;
   session_id: string;
   content_version?: number;
+  feedback_source?: FeedbackSource;
 }
 export interface RateCardResponse {
   request_id: string;
@@ -84,21 +92,37 @@ export function validNoteId(value: unknown): value is string {
 }
 /** Preserve the kind of review when recovering a stale, persisted rating. */
 export function reviewRoute(
-  input: Pick<RateCardInput, 'card_id' | 'content_version'>,
+  input: Pick<RateCardInput, 'card_id' | 'content_version' | 'feedback_source'>,
 ) {
+  if (input.feedback_source) return responseRoute(input.feedback_source, true);
   const id = input.card_id.split(':')[0];
   return input.content_version !== undefined && validNoteId(id)
     ? { pathname: '/learning/concepts/[id]/review' as const, params: { id } }
     : { pathname: '/learning/review' as const };
 }
 export function ratingPath(
-  input: Pick<RateCardInput, 'card_id' | 'content_version'>,
+  input: Pick<RateCardInput, 'card_id' | 'content_version' | 'feedback_source'>,
 ) {
+  if (input.feedback_source)
+    return `${responsePath(input.feedback_source)}/review`;
   return input.content_version === undefined
     ? '/learning/rate'
     : '/learning/concepts/' +
         encodeURIComponent(input.card_id.split(':')[0]) +
         '/rate';
+}
+/** Local recovery metadata never becomes server request content. */
+export function ratingBody(input: RateCardInput) {
+  if (input.feedback_source)
+    return {
+      request_id: input.request_id,
+      card_id: input.card_id,
+      rating: input.rating,
+      content_version: input.content_version,
+      expected_revision: input.expected_revision,
+    };
+  const { feedback_source: _source, ...body } = input;
+  return body;
 }
 export function browseNotes(
   notes: readonly NoteSummary[],
@@ -160,6 +184,9 @@ export function isStoredAttempt(value: unknown): value is RateCardInput {
     input.response_ms <= 86_400_000 &&
     typeof input.session_id === 'string' &&
     input.session_id.length > 0 &&
-    input.session_id.length <= 64
+    input.session_id.length <= 64 &&
+    (input.feedback_source === undefined ||
+      (input.content_version !== undefined &&
+        validFeedbackSource(input.feedback_source)))
   );
 }

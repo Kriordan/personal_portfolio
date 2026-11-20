@@ -55,6 +55,8 @@ function AppNavigation() {
         <Stack.Screen name="learning/concepts/[id]/build" options={{ title: 'Build' }} />
         <Stack.Screen name="learning/practice/[session]/context" options={{ title: 'Scenario and work' }} />
         <Stack.Screen name="learning/practice/[session]/artifact" options={{ title: 'Saved artifact' }} />
+        <Stack.Screen name="learning/practice/[session]/response" options={{ title: 'Your response' }} />
+        <Stack.Screen name="learning/practice/[session]/focused-review" options={{ title: 'Focused review' }} />
         <Stack.Screen name="learning/[id]" options={{ title: 'Note' }} />
         <Stack.Screen name="learning/review" options={{ title: 'Review' }} />
         <Stack.Screen name="wishlist/index" options={{ title: 'Wishlist' }} />

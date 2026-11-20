@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api-client';
-import { ratingPath } from './learning-model';
+import { ratingPath, ratingBody } from './learning-model';
 import type {
   NoteDetail,
   NotesOverview,
@@ -22,7 +22,7 @@ export const learningApi = {
   rateCard: (input: RateCardInput) =>
     apiRequest<RateCardResponse>(ratingPath(input), {
       method: 'POST',
-      body: input,
+      body: ratingBody(input),
       timeoutMs: 30_000,
     }),
   getReceipt: (id: string) =>

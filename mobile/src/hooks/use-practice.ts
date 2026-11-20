@@ -8,6 +8,7 @@ import {
   practiceDrafts,
   practiceOperation,
   practiceWorkDrafts,
+  feedbackResponseDrafts,
 } from '@/lib/practice-runtime';
 
 export function usePracticeList(userId: number) {
@@ -88,6 +89,15 @@ export function usePracticeDraft(userId: number, id: string) {
 }
 export function usePracticeWork(userId: number, id: string) {
   const drafts = practiceWorkDrafts(userId);
+  const snapshot = useCallback(() => drafts.snapshot(id), [drafts, id]);
+  const state = useSyncExternalStore(drafts.subscribe, snapshot, snapshot);
+  useEffect(() => {
+    void drafts.load(id);
+  }, [drafts, id]);
+  return { ...state, drafts };
+}
+export function useFeedbackResponseDrafts(userId: number, id: string) {
+  const drafts = feedbackResponseDrafts(userId);
   const snapshot = useCallback(() => drafts.snapshot(id), [drafts, id]);
   const state = useSyncExternalStore(drafts.subscribe, snapshot, snapshot);
   useEffect(() => {

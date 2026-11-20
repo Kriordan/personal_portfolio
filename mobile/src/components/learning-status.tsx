@@ -50,14 +50,21 @@ export function LearningStatus({
             const destination = reviewRoute(activity.attempt!);
             void activity.session.dismissConflict().then((cleared) => {
               if (cleared) {
-                if (onFreshQueue) onFreshQueue();
-                else router.push(destination);
+                onFreshQueue?.();
+                router.replace(destination);
               }
             });
           }}
         />
       ) : (
         <View style={{ gap: 8 }}>
+          {activity.attempt.feedback_source ? (
+            <NativeAction
+              label="Open the affected focused review"
+              secondary
+              onPress={() => router.push(reviewRoute(activity.attempt!))}
+            />
+          ) : null}
           <NativeAction
             label="Check saved rating"
             disabled={busy}

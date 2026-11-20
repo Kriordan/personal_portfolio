@@ -1,4 +1,5 @@
 import type { PracticeChange, PracticeDetail } from './practice-model.ts';
+import type { FeedbackAnnotation } from './feedback-response-model.ts';
 import {
   copyWork,
   validWorkEdit,
@@ -71,6 +72,8 @@ export interface FeedbackFinding {
   next_step: string;
   evidence: FeedbackEvidence[];
   remediation: { concept_id: string; section_id: string }[];
+  annotation: FeedbackAnnotation;
+  practice_available: boolean;
 }
 export interface FeedbackDetail {
   submission_sequence: number;

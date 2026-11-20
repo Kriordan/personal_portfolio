@@ -12,6 +12,10 @@ import { practiceKeys } from './practice-model';
 import { PracticeOperation } from './practice-operation';
 import { queryClient } from './query-client';
 import {
+  FeedbackResponseDrafts,
+  responseDraftIndex,
+} from './feedback-response-drafts';
+import {
   clearStoredWorkDrafts,
   PracticeWorkDrafts,
 } from './practice-work-drafts';
@@ -67,18 +71,22 @@ let current: {
   operation: PracticeOperation;
   drafts: PracticeDrafts;
   work: PracticeWorkDrafts;
+  responses: FeedbackResponseDrafts;
 } | null = null;
 export function practiceOperation(userId: number) {
   if (current?.userId !== userId) {
     current?.operation.dispose();
     current?.drafts.dispose();
     current?.work.dispose();
+    current?.responses.dispose();
     const drafts = new PracticeDrafts(userId, draftStorage, serial);
     const work = new PracticeWorkDrafts(userId, draftStorage, serial);
+    const responses = new FeedbackResponseDrafts(userId, draftStorage, serial);
     current = {
       userId,
       drafts,
       work,
+      responses,
       operation: new PracticeOperation(userId, {
         storage,
         api: practiceApi,
@@ -86,6 +94,8 @@ export function practiceOperation(userId: number) {
         onConfirmed: async (change, _result, active) => {
           if (active() && change.kind === 'send')
             await drafts.clearIfMatches(change.sessionId, change.body);
+          if (active() && change.kind === 'annotate')
+            await responses.clearIfMatches(change.sessionId, change);
           if (
             active() &&
             (change.kind === 'artifact' || change.kind === 'brief')
@@ -109,14 +119,20 @@ export function practiceWorkDrafts(userId: number) {
   practiceOperation(userId);
   return current!.work;
 }
+export function feedbackResponseDrafts(userId: number) {
+  practiceOperation(userId);
+  return current!.responses;
+}
 export async function clearPracticeSession() {
   current?.operation.dispose();
   current?.drafts.dispose();
   current?.work.dispose();
+  current?.responses.dispose();
   current = null;
   await Promise.all([
     storage.clear(),
     serial(() => clearStoredDrafts(draftStorage)),
     serial(() => clearStoredWorkDrafts(draftStorage)),
+    serial(() => clearStoredWorkDrafts(draftStorage, responseDraftIndex)),
   ]);
 }

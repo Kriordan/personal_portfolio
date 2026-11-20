@@ -7,6 +7,7 @@ import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { usePracticeOperation } from '@/hooks/use-practice';
 import type { PracticeMessage } from '@/lib/practice-model';
+import { responseRoute } from '@/lib/feedback-response-model';
 
 export function PracticeRecovery({
   activity,
@@ -29,15 +30,16 @@ export function PracticeRecovery({
     return activity.error ? <InlineError message={activity.error} /> : null;
   const busy = activity.phase === 'saving' || activity.phase === 'checking';
   const change = activity.pending;
-  const feedbackWork = change.kind === 'submit' || change.kind === 'feedback';
+  const feedbackWork =
+    change.kind === 'submit' ||
+    change.kind === 'feedback' ||
+    change.kind === 'annotate';
   const buildWork =
     feedbackWork || change.kind === 'artifact' || change.kind === 'brief';
   return (
     <Card>
       <ThemedText type="smallBold" accessibilityLiveRegion="polite">
-        {busy
-          ? 'Confirming your change…'
-          : 'A practice change needs attention'}
+        {busy ? 'Confirming your change…' : 'A practice change needs attention'}
       </ThemedText>
       {activity.error ? <ThemedText>{activity.error}</ThemedText> : null}
       {'sessionId' in change ? (
@@ -51,27 +53,31 @@ export function PracticeRecovery({
                 : 'Open the affected conversation'
           }
           onPress={() =>
-            router.replace({
-              pathname: buildWork
-                ? '/learning/concepts/[id]/build'
-                : '/learning/concepts/[id]/discuss',
-              params: {
-                id: change.conceptId,
-                practice_session: change.sessionId,
-                ...(feedbackWork
-                  ? {
-                      work: 'feedback',
-                      ...(change.kind === 'feedback'
-                        ? { snapshot: String(change.submission_sequence) }
-                        : {}),
-                    }
-                  : change.kind === 'artifact'
-                    ? { work: `artifact:${change.artifactId}` }
-                    : change.kind === 'brief'
-                      ? { work: 'brief' }
-                      : {}),
-              },
-            })
+            router.replace(
+              change.kind === 'annotate'
+                ? responseRoute(change)
+                : {
+                    pathname: buildWork
+                      ? '/learning/concepts/[id]/build'
+                      : '/learning/concepts/[id]/discuss',
+                    params: {
+                      id: change.conceptId,
+                      practice_session: change.sessionId,
+                      ...(feedbackWork
+                        ? {
+                            work: 'feedback',
+                            ...(change.kind === 'feedback'
+                              ? { snapshot: String(change.submission_sequence) }
+                              : {}),
+                          }
+                        : change.kind === 'artifact'
+                          ? { work: `artifact:${change.artifactId}` }
+                          : change.kind === 'brief'
+                            ? { work: 'brief' }
+                            : {}),
+                    },
+                  },
+            )
           }
         />
       ) : null}

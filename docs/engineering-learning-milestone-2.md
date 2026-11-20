@@ -12,7 +12,8 @@ still requires explicit approval.
 | 2a | Native idempotency lesson, retry demonstration, explicit enrollment/bookmark, versioned recall review, shared schedule and recovery. | Released November 13 as v173 / iPhone build 9 from `eee8b9e`; Keith reported it looks good on his iPhone. |
 | 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
 | 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Keith subsequently reported that Build looks good on his iPhone. |
-| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Released November 16 as v179 / iPhone build 14 from `8b508f3`, with Keith's explicit approval. Physical iPhone acceptance remains pending. |
+| 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Released November 16 as v179 / iPhone build 14 from `8b508f3`, with Keith's explicit approval. Keith subsequently reported that feedback and revision look good on his iPhone. |
+| 2d | Responses to findings and focused recall practice on iPhone. | Approved and implemented locally November 20. Tests and native walkthrough passed; deployment and updated signed preview require Keith's approval. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -589,3 +590,96 @@ Raw archives, provisioning identifiers, and operator records stay in the ignored
 private `.local/learning-pilot/iphone-2c2-deployment/` directory. The preview runs
 without the Mac. Physical installation/acceptance and the outstanding VoiceOver,
 keyboard, and Android checks remain separate from archive verification.
+
+## Checkpoint 2d — responses and focused practice on iPhone
+
+Keith approved proceeding after the proposal to turn feedback into focused
+practice. Each finding now links to **Your response**, with optional Agree,
+Disagree, or Not reviewed and a note. Saving Agree on a concern with authored
+linked questions makes **Start focused review** available. The learner recalls,
+reveals, explicitly rates, and returns to that same finding/snapshot/session.
+There is one pass per finding; even Again completes that extra-practice pass,
+while the ordinary scheduler determines the question's next due date.
+
+The existing server already implements these semantics. This checkpoint changes
+no backend runtime, content, schema, scheduler, evaluator, or spending setting.
+It uses the existing JWT response PUT, linked-question GET/reveal/POST, practice
+receipts, and shared rating receipts. Private misconception mappings stay on the
+server; only authored question identities and learner-visible content reach the
+app. A response neither changes the immutable assessment nor requests AI.
+
+Implementation decisions stay within the approved architecture:
+
+- Responses have a dedicated screen so findings remain readable. A conflicting
+  web response is displayed alongside the retained phone draft. Adopting its
+  revision is explicit and does not save; **Save response** is another action.
+- The existing Build draft store now accepts a small typed codec. Build keeps its
+  original storage namespace, limits, and format. Response drafts have their own
+  namespace, keyed by account/session/snapshot/finding, with at most 50 responses
+  per session across 20 sessions. No eviction or automatic upload occurs. They
+  use the already-approved private SecureStore policy and sign-out cleanup.
+  Failed storage is visible and blocks sending; only matching drafts are cleared.
+- Annotation PUTs extend the existing account operation journal, retaining the
+  original UUID, payload, and base revision before sending. Metadata-only
+  receipts must match the session, snapshot, finding, and resulting revision.
+  Automatic recovery reads only; uncertain writes require an explicit retry.
+- Focused ratings extend the existing single pending-rating journal with an
+  optional public source identity. Both retry routing and recovery navigation use
+  it. The source is local metadata, never an extra server body field. Existing
+  ordinary concept/legacy-note ratings and stored records remain compatible.
+  Invalid source records fail closed instead of falling back to normal Review.
+- Ordinary concept Review and focused practice share the same question/reveal/
+  rating component. The focused queue remains pinned during an attempt and can
+  reload the server's remaining questions. A withdrawn agreement or a newer
+  rating is checked again by the server; exact committed UUID replays still work.
+
+The work starts from `4b49a12`, preserving the newer Lotto/Home changes and all
+previous main integration. No dependency or infrastructure was added. The
+**$5 lifetime allowance, $1 verification portion, $50 monthly cap, and per-call/
+context limits remain unchanged**. No paid AI call, hosted mutation, deployment,
+OTA publication, or signed iPhone build occurred during this checkpoint.
+
+### Verification
+
+- **227 mobile tests passed**, including 12 new deterministic tests covering
+  exact request bodies, source-aware routing, Unicode note limits, duplicate
+  taps, lost responses/restart, explicit retry, mismatched receipts, revision
+  conflicts, device storage failures, draft persistence, account isolation,
+  sign-out fencing, and legacy review compatibility. Existing Build draft and
+  ordinary review tests also pass after sharing their implementations.
+- **31 backend tests passed**, including **13 against PostgreSQL 16**: three new
+  JWT integration tests and ten existing concurrency tests. These exercise
+  competing decisions/ratings/deletion, metadata-only receipts, a lost annotation
+  followed by a newer web edit, and a lost focused rating recovered after
+  agreement is withdrawn. Revealing/annotating changes no schedule; a replay
+  creates no second log or receipt. The simulated AI charge ledger is unchanged.
+  No migration is required.
+- TypeScript, ESLint, whitespace checks, and production-mode iOS Hermes export
+  passed. The bundle contains the new screens and intended disposable fixture
+  origin; private reference/evaluation marker checks passed.
+- Native iPhone 18 Pro / iOS 27 walkthrough used an isolated QA identifier and an
+  existing compatible simulator binary with the new Hermes bundle. Unsent notes
+  survived process termination. A committed annotation with a lost response
+  recovered without a second write. A committed rating with failed receipt reads
+  survived process termination; Learning's recovery link opened the exact
+  finding, and restored reads produced **Focused review complete**.
+- The native conflict test kept the phone note after a competing API/web-client
+  save, showed both versions, required explicit revision adoption, and saved only
+  on a subsequent tap. Returning to Build preserved the original session and
+  snapshot and displayed the saved Agree response.
+- Maximum Dynamic Type was exercised for response choices/notes, question and
+  answer text, single-column ratings, and recovery controls. Normal text size and
+  keyboard capture were restored. Final fixture counters: one review log, one
+  rating receipt, one annotation row (three deliberate revisions), six practice
+  receipts including fixture setup, and unchanged simulated spending of 10,682
+  microdollars. The second account remained untouched.
+
+The simulator bundle is not a new signed physical-device archive. Full VoiceOver
+interaction, Android, and software-keyboard coverage remain unverified; Keith's
+updated physical-iPhone acceptance follows an explicitly approved release.
+See the [hands-on guide](learning-checkpoint-2d-iphone-guide.md).
+
+**Release gate:** ask Keith before deploying or creating/publishing an updated
+standalone preview. This is compatible with the existing hosted backend. There
+are no outstanding architectural decisions for 2d. Additional concepts, native
+self-assessment, and further milestones remain separate approvals.

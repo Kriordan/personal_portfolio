@@ -8,13 +8,13 @@ import {
   type WorkEdit,
 } from './practice-work-model.ts';
 
-export interface WorkDraftState {
+export interface WorkDraftState<T = WorkEdit> {
   ready: boolean;
-  edits: WorkEdit[];
+  edits: T[];
   saving: boolean;
   error: string | null;
 }
-const empty: WorkDraftState = {
+const empty: WorkDraftState<never> = {
   ready: false,
   edits: [],
   saving: false,
@@ -26,8 +26,6 @@ export function workBlocksSend(state: WorkDraftState) {
   );
 }
 export const workDraftIndex = 'learning.practice.work.v1';
-const key = (user: number, session: string) =>
-  `${workDraftIndex}.${user}.${session}`;
 function indexRecord(
   raw: string | null,
 ): { userId: number; ids: string[] } | null {
@@ -44,15 +42,28 @@ function indexRecord(
     throw new Error('Invalid work draft index');
   return record;
 }
-export async function clearStoredWorkDrafts(storage: DraftStorage) {
-  const index = indexRecord(await storage.get(workDraftIndex));
+export async function clearStoredWorkDrafts(
+  storage: DraftStorage,
+  namespace = workDraftIndex,
+) {
+  const index = indexRecord(await storage.get(namespace));
   if (index)
-    for (const id of index.ids) await storage.remove(key(index.userId, id));
-  await storage.remove(workDraftIndex);
+    for (const id of index.ids)
+      await storage.remove(`${namespace}.${index.userId}.${id}`);
+  await storage.remove(namespace);
+}
+export interface EditCodec<T> {
+  namespace: string;
+  label: string;
+  limit: number;
+  valid: (edit: unknown) => edit is T;
+  copy: (edit: T) => T;
+  key: (edit: T) => string;
+  same: (left: T, right: T) => boolean;
 }
 /** Unconfirmed edits only. The server remains the source of saved work and revisions. */
-export class PracticeWorkDrafts {
-  private values = new Map<string, WorkDraftState>();
+export class PracticeEditDrafts<T extends { base_revision: number }> {
+  private values = new Map<string, WorkDraftState<T>>();
   private listeners = new Set<() => void>();
   private active = true;
   private loading = new Map<string, Promise<void>>();
@@ -61,14 +72,18 @@ export class PracticeWorkDrafts {
   private userId: number;
   private storage: DraftStorage;
   private serial: <T>(run: () => Promise<T>) => Promise<T>;
+  private codec: EditCodec<T>;
+  private key = (id: string) => `${this.codec.namespace}.${this.userId}.${id}`;
   constructor(
     userId: number,
     storage: DraftStorage,
     serial: <T>(run: () => Promise<T>) => Promise<T>,
+    codec: EditCodec<T>,
   ) {
     this.userId = userId;
     this.storage = storage;
     this.serial = serial;
+    this.codec = codec;
   }
   snapshot = (id: string) => this.values.get(id) ?? empty;
   subscribe = (fn: () => void) => {
@@ -82,7 +97,7 @@ export class PracticeWorkDrafts {
     this.values.clear();
     this.listeners.clear();
   };
-  private update(id: string, patch: Partial<WorkDraftState>) {
+  private update(id: string, patch: Partial<WorkDraftState<T>>) {
     if (!this.active) return;
     this.values.set(id, { ...this.snapshot(id), ...patch });
     this.listeners.forEach((fn) => fn());
@@ -96,44 +111,45 @@ export class PracticeWorkDrafts {
         this.serial(async () => {
           if (!this.active) return;
           try {
-            const index = indexRecord(await this.storage.get(workDraftIndex));
+            const index = indexRecord(
+              await this.storage.get(this.codec.namespace),
+            );
             const raw =
               index?.userId === this.userId && index.ids.includes(id)
-                ? await this.storage.get(key(this.userId, id))
+                ? await this.storage.get(this.key(id))
                 : null;
-            const edits: WorkEdit[] = raw ? JSON.parse(raw) : [];
+            const edits: T[] = raw ? JSON.parse(raw) : [];
             if (
               !Array.isArray(edits) ||
-              edits.length > 21 ||
-              !edits.every((e) => validWorkEdit(e, true)) ||
-              new Set(edits.map(workKey)).size !== edits.length
+              edits.length > this.codec.limit ||
+              !edits.every(this.codec.valid) ||
+              new Set(edits.map(this.codec.key)).size !== edits.length
             )
               throw new Error('Invalid work draft');
             this.update(id, { ready: true, edits, error: null });
           } catch {
             this.update(id, {
-              error:
-                'Couldn’t load this device’s Build drafts. Try again before editing or sending.',
+              error: `Couldn’t load this device’s ${this.codec.label} drafts. Try again before editing or sending.`,
             });
           }
         }).finally(() => this.loading.delete(id)),
       );
     return this.loading.get(id)!;
   };
-  edit = (id: string, edit: WorkEdit) => {
-    if (!this.active || !this.snapshot(id).ready || !validWorkEdit(edit, true))
+  edit = (id: string, edit: T) => {
+    if (!this.active || !this.snapshot(id).ready || !this.codec.valid(edit))
       return;
     const edits = this.snapshot(id).edits.filter(
-      (old) => workKey(old) !== workKey(edit),
+      (old) => this.codec.key(old) !== this.codec.key(edit),
     );
-    if (edits.length >= 21) return;
-    this.replace(id, [...edits, copyWork(edit)]);
+    if (edits.length >= this.codec.limit) return;
+    this.replace(id, [...edits, this.codec.copy(edit)]);
     void this.flush(id);
   };
   /** Explicit comparison/confirmation changes the base; typing never adopts web changes. */
-  rebase = (id: string, current: WorkEdit) => {
+  rebase = (id: string, current: T) => {
     const draft = this.snapshot(id).edits.find(
-      (e) => workKey(e) === workKey(current),
+      (e) => this.codec.key(e) === this.codec.key(current),
     );
     if (draft)
       this.edit(id, { ...draft, base_revision: current.base_revision });
@@ -144,7 +160,7 @@ export class PracticeWorkDrafts {
       void this.flush(id);
     }
   };
-  private replace(id: string, edits: WorkEdit[]) {
+  private replace(id: string, edits: T[]) {
     this.versions.set(id, (this.versions.get(id) ?? 0) + 1);
     this.update(id, { edits, saving: true, error: null });
   }
@@ -157,9 +173,11 @@ export class PracticeWorkDrafts {
         try {
           await this.serial(async () => {
             if (!this.active) return;
-            let index = indexRecord(await this.storage.get(workDraftIndex));
+            let index = indexRecord(
+              await this.storage.get(this.codec.namespace),
+            );
             if (index && index.userId !== this.userId) {
-              await clearStoredWorkDrafts(this.storage);
+              await clearStoredWorkDrafts(this.storage, this.codec.namespace);
               index = null;
             }
             const ids = index?.ids ?? [];
@@ -168,18 +186,15 @@ export class PracticeWorkDrafts {
               if (!ids.includes(id)) {
                 if (ids.length >= 20) throw new Error('Draft session limit');
                 await this.storage.set(
-                  workDraftIndex,
+                  this.codec.namespace,
                   JSON.stringify({ userId: this.userId, ids: [...ids, id] }),
                 );
               }
-              await this.storage.set(
-                key(this.userId, id),
-                JSON.stringify(edits),
-              );
+              await this.storage.set(this.key(id), JSON.stringify(edits));
             } else {
-              await this.storage.remove(key(this.userId, id));
+              await this.storage.remove(this.key(id));
               await this.storage.set(
-                workDraftIndex,
+                this.codec.namespace,
                 JSON.stringify({
                   userId: this.userId,
                   ids: ids.filter((s) => s !== id),
@@ -194,8 +209,7 @@ export class PracticeWorkDrafts {
         } catch {
           this.update(id, {
             saving: false,
-            error:
-              'Build edits aren’t protected on this device yet. Keep the app open and try again. Up to 20 sessions can have local Build drafts.',
+            error: `${this.codec.label} edits aren’t protected on this device yet. Keep the app open and try again. Up to 20 sessions can have local drafts.`,
           });
           return;
         }
@@ -204,25 +218,48 @@ export class PracticeWorkDrafts {
     this.flushing.set(id, promise);
     return promise;
   }
-  clearIfMatches = async (id: string, saved: WorkEdit) => {
+  clearIfMatches = async (id: string, saved: T) => {
     await this.load(id);
     if (!this.active) return;
     if (!this.snapshot(id).ready) throw new Error('Work drafts unavailable');
     const old = this.snapshot(id).edits.find(
-      (e) => workKey(e) === workKey(saved),
+      (e) => this.codec.key(e) === this.codec.key(saved),
     );
-    if (!old || !sameWork(old, saved)) return;
+    if (!old || !this.codec.same(old, saved)) return;
     this.replace(
       id,
-      this.snapshot(id).edits.filter((e) => workKey(e) !== workKey(saved)),
+      this.snapshot(id).edits.filter(
+        (e) => this.codec.key(e) !== this.codec.key(saved),
+      ),
     );
     await this.flush(id);
     if (this.snapshot(id).error) {
-      if (!this.snapshot(id).edits.some((e) => workKey(e) === workKey(old)))
+      if (
+        !this.snapshot(id).edits.some(
+          (e) => this.codec.key(e) === this.codec.key(old),
+        )
+      )
         this.update(id, { edits: [...this.snapshot(id).edits, old] });
       throw new Error('Work draft cleanup failed');
     }
   };
+}
+export class PracticeWorkDrafts extends PracticeEditDrafts<WorkEdit> {
+  constructor(
+    userId: number,
+    storage: DraftStorage,
+    serial: <T>(run: () => Promise<T>) => Promise<T>,
+  ) {
+    super(userId, storage, serial, {
+      namespace: workDraftIndex,
+      label: 'Build',
+      limit: 21,
+      valid: (edit): edit is WorkEdit => validWorkEdit(edit, true),
+      copy: copyWork,
+      key: workKey,
+      same: sameWork,
+    });
+  }
 }
 export function savedWork(
   detail: PracticeDetail,

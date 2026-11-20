@@ -1,5 +1,17 @@
 # Engineering Learning Platform Handoff
 
+**Current checkpoint — November 20, 2026:** Keith accepted iPhone feedback and
+revision (2c.2) and approved **2d: responses and focused practice**. It is now
+implemented and tested locally, including saved decisions/notes, conflict
+comparison, linked recall, and restart recovery. It reuses the existing backend,
+private draft policy, and journals; there is no migration or new dependency.
+The work preserves the newer Lotto/Home baseline at `4b49a12`.
+**No deployment, OTA, signed preview, or paid AI use is authorized or performed
+for 2d yet.** Ask Keith before release; keep all existing spending limits.
+Read the [2d implementation/verification record](engineering-learning-milestone-2.md#checkpoint-2d--responses-and-focused-practice-on-iphone)
+and [hands-on exploration guide](learning-checkpoint-2d-iphone-guide.md).
+Historical implementation and release entries below retain their dates.
+
 As of November 7, 2026, **Milestone 1 and checkpoints 6a/6b are complete locally; checkpoint 7a provides the persistent personal pilot on port 5068.** Its approved $5 total allowance includes up to $1 for verification, which used $0.037859. Explicitly approved drafts are labelled and isolated; normal publication remains gated. Existing scheduling and practice recovery are preserved. See the [7a operating/exploration guide](learning-checkpoint-7a-test-guide.md), [6b guide](learning-checkpoint-6b-test-guide.md), and [Milestone 1 acceptance report](learning-milestone-1-acceptance.md). Production publication still needs an actual human-review attestation and rollout approval. VoiceOver/NVDA and standalone Safari/Firefox checks remain unverified. Continue on `feature/learning-content-foundation`.
 
 **November 13 update:** Keith approved deployment and checkpoint 7b is **live** at
@@ -72,9 +84,10 @@ exact source archive, signed-device provisioning, bundle privacy, and matching
 Sentry source-map checks passed. Main's interval timer and preview updates are
 preserved. All spending limits remain unchanged, with **$4.923975** remaining at
 verification and no paid release-verification calls. No OTA was published.
-Physical iPhone acceptance and a full VoiceOver review remain separate checks.
+Keith subsequently reported that feedback and revision look good on his iPhone.
+A full VoiceOver review remains a separate check.
 
-This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2c.2, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
+This handoff records the approved architecture and refinements, the implementation through checkpoint 7b and mobile checkpoint 2d, the Learning UI/login follow-ups, and the remaining learning-trial work. It complements the [approved revised plan](engineering-learning-revised-plan.md), [checkpoint log](engineering-learning-milestone-1.md), and [curriculum contract](../curriculum/README.md). The original and refined plans were approved in the Codex chat **Plan engineering learning platform**; the revised plan is now preserved in the repository, with relevant baseline decisions captured here. The refined milestone order and unified session model supersede the original early milestone order and separate Discuss/Build sessions.
 
 The [original project vision](engineering-learning-original-vision.md) preserves Keith's opening request verbatim. Its planning-only instructions describe the initial request; subsequent approval authorizes the Milestone 1 scope recorded here.
 
@@ -91,7 +104,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b/2c.1 are released and accepted; 2c.2 is released and awaiting physical iPhone acceptance**, adding native feedback and revision to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Future deployments, OTA publication, content expansion, and additional AI personalities need further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b/2c.1/2c.2 are released and accepted; 2d is implemented locally and awaits release approval**, adding optional responses and focused recall to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Future deployments, OTA publication, content expansion, and additional AI personalities need further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
