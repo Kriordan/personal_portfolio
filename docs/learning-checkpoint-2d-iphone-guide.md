@@ -1,7 +1,10 @@
 # Checkpoint 2d: respond, recall, and inspect recovery
 
-Implemented locally November 20, 2026; release and an updated signed iPhone
-preview await approval. Existing installed previews do not include this yet.
+Released November 20, 2026 from `a8b7499`.
+[Install iPhone preview 1.0.0 (15)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4)
+on your registered iPhone, open it, and sign in with your existing account.
+The Mac does not need to be running. Older previews need this installation to
+include 2d; no OTA was published for this checkpoint.
 
 ## Five-minute phone walkthrough
 
@@ -16,6 +19,10 @@ preview await approval. Existing installed previews do not include this yet.
 3. **Return to your response**, then **Back to saved feedback**. Check that you
    are in the same session and snapshot. Newer drafts never rewrite the original
    AI assessment. Optional responses are not mastery scores.
+
+If your saved feedback has no concerns with linked questions, skip step 2.
+Response saving still works; the disposable fixture below includes a concern
+for exploring the full focused-review flow.
 
 ## A Python REPL experiment
 

@@ -1,15 +1,17 @@
 # iPhone preview updates
 
-**Current standalone preview:** [iPhone preview 1.0.0 (14)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/a55838d8-8dd0-40c0-a9dd-f5d43c9fd3b7).
-Released November 16 from `8b508f3`, it adds Learning feedback/revision while
-retaining the interval timer, prior fixes, and native update client. See the
-[release record](engineering-learning-milestone-2.md#approved-2c2-release--november-16).
+**Current standalone preview:** [iPhone preview 1.0.0 (15)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4).
+Released November 20 from `a8b7499`, it adds Learning responses and focused recall
+while retaining the Lotto/Home changes, interval timer, and native update client.
+See the [release record](engineering-learning-milestone-2.md#approved-2d-release--november-20).
+Install this build for 2d; no OTA was published for that checkpoint.
 **Latest preview update:** [Lotto and compact Home — November 19](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/de7f5743-ce1e-4e7a-9b31-c74907a72409),
 published from `7cf2b5e` on `preview` for iOS. It combines the lottery tools, starts
 scratch-off listings with three choices, simplifies Home to one upcoming drawing
 and one latest result across both games, adds the Monday popup, and removes
 “Ready for your next shop.” It matches build 14's native runtime; no new native
-installation is required. Backend deployment, live drawing-data refresh, runtime
+installation is required for that Lotto update. Build 15 already includes it.
+Backend deployment, live drawing-data refresh, runtime
 compatibility, and Sentry source-map upload passed. See the
 [release record](scratch-offs.md#november-19-lotto-and-home-preview).
 

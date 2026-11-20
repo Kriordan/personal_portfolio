@@ -13,7 +13,7 @@ still requires explicit approval.
 | 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
 | 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Keith subsequently reported that Build looks good on his iPhone. |
 | 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Released November 16 as v179 / iPhone build 14 from `8b508f3`, with Keith's explicit approval. Keith subsequently reported that feedback and revision look good on his iPhone. |
-| 2d | Responses to findings and focused recall practice on iPhone. | Approved and implemented locally November 20. Tests and native walkthrough passed; deployment and updated signed preview require Keith's approval. |
+| 2d | Responses to findings and focused recall practice on iPhone. | Released November 20 as v183 / iPhone build 15 from `a8b7499`, with Keith's approval. Signed artifact and read-only hosted checks passed; physical-iPhone acceptance remains pending. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -637,7 +637,8 @@ The work starts from `4b49a12`, preserving the newer Lotto/Home changes and all
 previous main integration. No dependency or infrastructure was added. The
 **$5 lifetime allowance, $1 verification portion, $50 monthly cap, and per-call/
 context limits remain unchanged**. No paid AI call, hosted mutation, deployment,
-OTA publication, or signed iPhone build occurred during this checkpoint.
+OTA publication, or signed iPhone build occurred during implementation validation.
+The subsequent approved release is recorded below.
 
 ### Verification
 
@@ -679,7 +680,62 @@ interaction, Android, and software-keyboard coverage remain unverified; Keith's
 updated physical-iPhone acceptance follows an explicitly approved release.
 See the [hands-on guide](learning-checkpoint-2d-iphone-guide.md).
 
-**Release gate:** ask Keith before deploying or creating/publishing an updated
-standalone preview. This is compatible with the existing hosted backend. There
-are no outstanding architectural decisions for 2d. Additional concepts, native
-self-assessment, and further milestones remain separate approvals.
+**Release gate:** Keith subsequently approved deploying `a8b7499` and creating
+the updated standalone preview. That release is complete below; further releases
+still require approval. There are no outstanding architectural decisions for 2d.
+Additional concepts, native self-assessment, and further milestones remain
+separate approvals.
+
+
+## Approved 2d release — November 20
+
+Keith approved the recommendation to deploy `a8b7499` and create the updated
+standalone iPhone preview. **Heroku v182** deployed exact source
+`a8b74997e0706ae90a9ccf97f6b734c80b33e49b` after backup **b017**;
+**v183** changed only `SENTRY_RELEASE` to that commit. Both releases succeeded.
+The branch retains the November 19 Lotto/Home work. No schema, content, AI policy,
+or spending configuration changed; Alembic remains `e4f5a6b7c8d9`.
+
+**[Install iPhone preview 1.0.0 (15)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4)**.
+It is an internal physical-device build on the existing `preview` channel, using
+the same signing profile and one registered device. The downloaded IPA passed
+strict/deep codesign validation, provisioning and embedded-source checks, and
+inspection for the hosted API origin, new response/focused-review screens, and
+absence of fixture origins/private evaluator material. The interval native
+module and background audio remain present. The uploaded Sentry debug ID matches
+the packaged bundle. The runtime remains
+`77b0440fdf8c270adcb7939e8c162f453f8e5ad4`. No OTA was published;
+the November 19 update remains available to older compatible previews, while
+build 15 embeds the newer 2d source. The Mac is not needed to run this preview.
+
+Release verification:
+
+- Compared all **988 uploaded source files** with the exact commit, including
+  Git source metadata. No untracked/private operator files were uploaded. The
+  three historically ignored legacy YouTube JSON files remain excluded.
+- Owner reads succeeded on both hosted origins; anonymous requests received
+  401 and another identity received 404. Draft labels, private cache headers,
+  saved snapshots, five response projections, five focused-review routes, and eight
+  exact evidence citations per origin passed. The existing hosted feedback has
+  no concern findings; the full agreed-concern/rating path is validated by the
+  implementation's deterministic fixture, native simulator, and PostgreSQL tests.
+  No synthetic learner response, rating, or AI request was created on hosting.
+- Before/after fingerprints match for learner progress, saved work, feedback,
+  annotations, receipts, AI requests, and the ledger. The **$5 total / $1
+  verification portion / $50 monthly** limits and per-call/context bounds remain
+  unchanged. Counted spending is **$0.076025**, leaving **$4.923975**, at verification.
+  Local paid AI remains frozen; release verification made **zero paid AI calls**.
+- Both dependency audit gates passed with zero findings/exceptions, and installed
+  packages match the locked Expo SDK's compatibility ranges. Cloud Expo Doctor
+  passed **20/21** checks: its package-version check recommends newer patches for
+  11 packages. The approved lockfile was retained; those updates need their own
+  tested maintenance change. The signed build completed successfully.
+
+The [sanitized release receipt](assets/learning-2d-iphone-2026-11-20/release.json)
+records the archive hashes and verification results. Sensitive logs, signing
+details, and operator fingerprints remain only in the ignored private
+`.local/learning-pilot/iphone-2d-deployment/` directory. Physical installation,
+the [five-minute phone walkthrough](learning-checkpoint-2d-iphone-guide.md), and
+full VoiceOver/software-keyboard/Android coverage remain unverified. Next, use
+the installed preview for a short phone-first learning trial before content
+expansion; do not treat the release as full Milestone 2 sign-off.
