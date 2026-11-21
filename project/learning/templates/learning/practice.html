@@ -1,0 +1,51 @@
+{% extends 'learning/concept_shell.html' %}
+{% block title %}Practice · {{ detail.session.exercise_title }}{% endblock %}
+{% block workspace_classes %}practice practice-workspace{% endblock %}
+{% block workspace_attributes %}aria-labelledby="concept-workspace-title" data-practice-workspace{% endblock %}
+{% block concept_content %}
+  {% include 'learning/_practice_notices.html' %}
+
+  <form method="post" action="{{ url_for('learning.practice_workspace', session_id=detail.session.id) }}" data-practice-form{% if unsaved %} data-unsaved{% endif %}>
+    {{ form.csrf_token }}{{ form.request_id }}{{ form.expected_sequence }}{{ form.brief_revision }}
+    {# Enter in a non-message field must still Save, never Send. #}
+    <button class="practice-default-action" name="action" value="save" tabindex="-1" aria-hidden="true">Save work</button>
+    <div class="practice-layout" id="practice-layout">
+      <section class="practice-build" id="work" aria-labelledby="build-heading">
+        <h2 id="build-heading" class="practice-pane-heading">Your work</h2>
+        <div class="practice-work-tabs" data-work-tabs hidden>
+          <button type="button" id="work-tab-requirements" data-work-target="requirements">Brief <span data-requirements-new hidden>· new</span></button>
+          {% for artifact in detail.artifacts %}
+            <button type="button" id="work-tab-{{ artifact.artifact_id }}" data-work-target="artifact-{{ artifact.artifact_id }}">{{ {'api': 'API', 'schema': 'Schema', 'algorithm': 'Pseudocode'}.get(artifact.artifact_id, artifact.title) }}</button>
+          {% endfor %}
+          <button type="button" id="work-tab-notes" data-work-target="session-brief">Notes</button>
+          <button type="button" id="work-tab-checks" data-work-target="work-checks">Checks</button>
+        </div>
+        <div class="practice-work-panels">
+          {% include 'learning/_practice_requirements.html' %}
+          {% include 'learning/_practice_artifacts.html' %}
+          {% include 'learning/_practice_notes.html' %}
+          {% include 'learning/_practice_checks.html' %}
+        </div>
+      </section>
+      <section class="practice-discuss" aria-labelledby="conversation">
+        <div class="practice-conversation-heading"><h2 id="conversation">Interviewer</h2><span>Explain your reasoning. Ask to clarify.</span></div>
+        {% include 'learning/_practice_conversation.html' %}
+      </section>
+    </div>
+    <div class="practice-work-actions">
+      <p id="practice-save-state" role="status">{% if unsaved %}Your work needs attention.{% else %}No unsaved changes.{% endif %}</p>
+      <div class="concept-controls">
+        <button class="button button--secondary" name="action" value="save">Save work</button>
+        {% if paused %}<button class="button button--secondary" name="action" value="resume">Resume session</button>
+        {% else %}<button class="button button--secondary" name="action" value="pause">Save and pause</button>{% endif %}
+      </div>
+    </div>
+  </form>
+  <details class="practice-session-details"><summary>Session details</summary>
+    <p>Exercise version {{ detail.session.exercise_version }} · {{ status_label }}</p>
+    <p>Discuss and Build use the same conversation, artifacts, and notes. Saving and sending record your work; switching views does not send a message.</p>
+    {% set export_session_id = detail.session.id %}{% include 'learning/_practice_export_links.html' %}
+    <p class="practice-delete"><a href="{{ url_for('learning.practice_delete', session_id=detail.session.id) }}">Delete this practice session</a></p>
+  </details>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/learning-workspace.js') }}"></script><script src="{{ url_for('static', filename='js/learning-practice.js') }}"></script>{% endblock %}

@@ -7,9 +7,13 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from project.database import db
 from project.models import User
-from project.services import learning_service
+from project.learning.access import private_response, require_api_access
+from project.services import concept_progress_service, curriculum_service, learning_service, self_assessment_service
+from sqlalchemy.exc import SQLAlchemyError
 
 learning_api_blueprint = Blueprint("api_learning", __name__, url_prefix="/learning")
+learning_api_blueprint.before_request(require_api_access)
+learning_api_blueprint.after_request(private_response)
 
 
 @learning_api_blueprint.after_request
@@ -131,3 +135,191 @@ def api_get_rating(request_id: str):
         return jsonify({"error": "Invalid request ID."}), 400
     # No receipt is not proof that an in-flight transaction cannot commit.
     return jsonify({"receipt": receipt}), 200
+
+
+def _concept_call(operation):
+    """Mobile adapters use the web curriculum/scheduler and the same owner boundary."""
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify(error="Unauthorized."), 401
+    try:
+        return jsonify(operation(user))
+    except learning_service.NotFoundError:
+        return jsonify(error="Concept or question not found."), 404
+    except learning_service.ValidationError:
+        return jsonify(error="Invalid concept request."), 400
+    except learning_service.ConflictError:
+        return jsonify(error="This view changed elsewhere. Reload before continuing.", code="stale_progress"), 409
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Concept API operation unconfirmed: %s", type(exc).__name__)
+        return jsonify(error="The result could not be confirmed. Retry the same request."), 503
+
+
+@learning_api_blueprint.get("/concepts")
+@jwt_required()
+def api_concepts():
+    def read(user):
+        return {"concepts": [dict(id=item["id"], title=item["title"], version=item["version"],
+            summary=item["content"]["summary"],
+            draft=bool(item.get("private_pilot_draft") or item.get("local_draft")),
+            progress=concept_progress_service.progress(user.id, item["id"]),
+            due_count=len(curriculum_service.concept_review_queue(item, user_id=user.id)))
+            for item in curriculum_service.published_concepts()]}
+    return _concept_call(read)
+
+
+@learning_api_blueprint.get("/concepts/<concept_id>")
+@jwt_required()
+def api_concept(concept_id):
+    def read(user):
+        item = concept_progress_service.published_concept(concept_id)
+        return dict(concept=item, progress=concept_progress_service.progress(user.id, concept_id),
+                    due_count=len(curriculum_service.concept_review_queue(item, user_id=user.id)))
+    return _concept_call(read)
+
+
+@learning_api_blueprint.get("/concepts/<concept_id>/review")
+@jwt_required()
+def api_concept_review(concept_id):
+    def read(user):
+        item = concept_progress_service.published_concept(concept_id)
+        cards = curriculum_service.concept_review_queue(item, user_id=user.id)
+        return dict(cards=cards, total_due=len(cards), progress=concept_progress_service.progress(user.id, concept_id))
+    return _concept_call(read)
+
+
+@learning_api_blueprint.get("/concepts/<concept_id>/review/reveal")
+@jwt_required()
+def api_concept_reveal(concept_id):
+    def read(user):
+        concept_progress_service.published_concept(concept_id)
+        keys = {"card_id", "content_version", "expected_revision"}
+        if set(request.args) != keys or any(len(request.args.getlist(key)) != 1 for key in keys):
+            raise learning_service.ValidationError("Invalid reveal request.")
+        values = {}
+        for key, minimum in (("content_version", 1), ("expected_revision", 0)):
+            raw = request.args[key]
+            if not raw.isascii() or not raw.isdecimal() or len(raw) > 10:
+                raise learning_service.ValidationError("Invalid reveal version.")
+            values[key] = int(raw)
+            if not minimum <= values[key] <= 2147483647:
+                raise learning_service.ValidationError("Invalid reveal version.")
+        card = curriculum_service.published_review_question(concept_id, request.args["card_id"],
+            version=values["content_version"], reveal_answer=True)
+        saved = learning_service.progress_map([card["card_id"]], user.id).get(card["card_id"])
+        if values["expected_revision"] != (saved.revision if saved else 0) or (saved and saved.is_suspended):
+            raise learning_service.StaleReviewError()
+        return dict(card=card)
+    return _concept_call(read)
+
+
+@learning_api_blueprint.post("/concepts/<concept_id>/rate")
+@jwt_required()
+def api_rate_concept(concept_id):
+    def rate(user):
+        concept_progress_service.published_concept(concept_id)
+        payload = request.get_json(silent=True)
+        required = {"card_id", "content_version", "rating", "expected_revision", "request_id"}
+        if (not isinstance(payload, dict) or not required <= set(payload)
+                or set(payload) - required - {"response_ms", "session_id"}
+                or not isinstance(payload["card_id"], str)
+                or payload["card_id"].split(":", 1)[0] != concept_id
+                or type(payload["content_version"]) is not int
+                or type(payload["expected_revision"]) is not int
+                or not isinstance(payload["request_id"], str)):
+            raise learning_service.ValidationError("Invalid rating request.")
+        return learning_service.rate_card_for_user(
+            user=user,
+            notes_dir=learning_service.notes_dir_for_root(current_app.root_path),
+            card_id=payload["card_id"],
+            content_version=payload["content_version"],
+            rating=payload["rating"],
+            expected_revision=payload["expected_revision"],
+            request_id=payload["request_id"],
+            response_ms=payload.get("response_ms"),
+            session_id=payload.get("session_id"),
+        )
+    return _concept_call(rate)
+
+
+def _concept_progress_response(concept_id, operation):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify(error="Unauthorized."), 401
+    try:
+        concept_progress_service.published_concept(concept_id)
+        if operation == "get":
+            saved = concept_progress_service.progress(user.id, concept_id)
+        else:
+            payload = request.get_json(silent=True)
+            required = {"content_version", "section_id", "expected_revision", "request_id"}
+            if not isinstance(payload, dict) or set(payload) != (required if operation == "position" else set()):
+                raise learning_service.ValidationError("Invalid progress request.")
+            saved = (concept_progress_service.enroll(user.id, concept_id) if operation == "enroll" else
+                     concept_progress_service.save_position(user.id, concept_id, **payload))
+        return jsonify(progress=saved)
+    except learning_service.NotFoundError:
+        return jsonify(error="Concept not found."), 404
+    except learning_service.ValidationError:
+        return jsonify(error=concept_progress_service.INVALID_PROGRESS_MESSAGE), 400
+    except learning_service.ConflictError:
+        return jsonify(error=concept_progress_service.PROGRESS_CONFLICT_MESSAGE), 409
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Concept progress operation failed")
+        return jsonify(error="Progress could not be confirmed. Retry the same request."), 503
+
+
+@learning_api_blueprint.get("/concepts/<concept_id>/progress")
+@jwt_required()
+def api_concept_progress(concept_id):
+    return _concept_progress_response(concept_id, "get")
+
+
+@learning_api_blueprint.post("/concepts/<concept_id>/enrollment")
+@jwt_required()
+def api_enroll_concept(concept_id):
+    return _concept_progress_response(concept_id, "enroll")
+
+
+@learning_api_blueprint.put("/concepts/<concept_id>/reading-position")
+@jwt_required()
+def api_reading_position(concept_id):
+    return _concept_progress_response(concept_id, "position")
+
+
+@learning_api_blueprint.route("/concepts/<concept_id>/self-assessments", methods=["GET", "POST", "DELETE"])
+@jwt_required()
+def api_self_assessments(concept_id):
+    user = _current_user_from_jwt()
+    if user is None:
+        return jsonify(error="Unauthorized."), 401
+    try:
+        if request.method == "GET":
+            raw = request.args.get("before")
+            if raw is not None and (not raw.isascii() or not raw.isdecimal() or len(raw) > 10):
+                raise learning_service.ValidationError("Invalid history cursor.")
+            return jsonify(self_assessment_service.history(user.id, concept_id, before=int(raw) if raw is not None else None))
+        payload = request.get_json(silent=True)
+        keys = {"expected_revision", "request_id"}
+        if request.method == "POST":
+            keys |= {"content_version", "ratings"}
+        if not isinstance(payload, dict) or set(payload) != keys:
+            raise learning_service.ValidationError("Invalid self-assessment request.")
+        if request.method == "DELETE":
+            return jsonify(self_assessment_service.clear_history(user.id, concept_id, **payload))
+        return jsonify(checkin=self_assessment_service.save(user.id, concept_id, **payload))
+    except learning_service.NotFoundError:
+        return jsonify(error="Concept not found."), 404
+    except learning_service.ValidationError:
+        return jsonify(error=self_assessment_service.INVALID_ASSESSMENT_MESSAGE), 400
+    except self_assessment_service.AssessmentConflict as exc:
+        return jsonify(error=self_assessment_service.AssessmentConflict.public_message,
+                       revision=exc.revision, current=exc.current), 409
+    except learning_service.ConflictError:
+        return jsonify(error="This request belongs to another change. Open your latest check-in history before trying again."), 409
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Self-assessment operation unconfirmed: %s", type(exc).__name__)
+        return jsonify(error="Self-assessment could not be confirmed. Retry the same request."), 503

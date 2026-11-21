@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, InlineError, NativeAction } from '@/components/screen';
+import { LotteryMondayReminder } from '@/components/lottery-monday-reminder';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -10,10 +11,13 @@ import {
   useLotteryPreferences,
 } from '@/hooks/use-lottery';
 import {
+  compactDrawDate,
   dataIsStale,
   dollars,
-  drawPlanExpired,
-  jackpotLabel,
+  homeDrawsExpired,
+  homeJackpotLabel,
+  spokenDrawDate,
+  type HomeDraws,
   type LotteryState,
   type LotteryStatus,
 } from '@/lib/lottery-model';
@@ -158,98 +162,190 @@ export function OfficialLotteryLink({
     </View>
   );
 }
+
+const gameCodes: Readonly<Record<string, string>> = {
+  Powerball: 'PB',
+  'Mega Millions': 'MM',
+};
+
+function HomeDrawRow({
+  draw,
+  heading,
+  valueLabel,
+  children,
+}: {
+  draw: { name: string; date: string };
+  heading: string;
+  valueLabel: string;
+  children: ReactNode;
+}) {
+  const date = spokenDrawDate.format(new Date(draw.date));
+  return (
+    <View style={styles.drawGroup}>
+      <ThemedText
+        accessibilityRole="header"
+        type="smallBold"
+        themeColor="textSecondary"
+        style={styles.drawHeading}
+      >
+        {heading}
+      </ThemedText>
+      <View
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`${draw.name}, ${date}. ${valueLabel}.`}
+        style={styles.drawRow}
+      >
+        <ThemedText type="small" themeColor="textSecondary" style={styles.digits}>
+          <Text style={styles.gameCode}>{gameCodes[draw.name] ?? draw.name}</Text>
+          {'  '}
+          {compactDrawDate(draw.date)}
+        </ThemedText>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function HomeDrawRows({ home, stale }: { home: HomeDraws; stale: boolean }) {
+  const theme = useTheme();
+  const { upcoming, latest } = home;
+  const { result } = latest;
+  const bonusColor =
+    latest.name === 'Powerball' ? theme.powerball : theme.megaBall;
+  const jackpot = homeJackpotLabel(upcoming.jackpot, stale);
+
+  return (
+    <View style={styles.gap}>
+      <HomeDrawRow
+        draw={upcoming}
+        heading="Upcoming"
+        valueLabel={
+          stale || upcoming.jackpot === null
+            ? jackpot
+            : `${dollars(upcoming.jackpot)} jackpot`
+        }
+      >
+        <ThemedText type="smallBold" style={styles.digits}>
+          {jackpot}
+        </ThemedText>
+      </HomeDrawRow>
+      <HomeDrawRow
+        draw={latest}
+        heading="Latest"
+        valueLabel={result
+          ? `${result.numbers.join(', ')}. ${result.bonus_label} ${result.bonus}`
+          : 'Results pending'}
+      >
+        {result ? (
+          <View style={[styles.numberGroup, styles.numbers]}>
+            <ThemedText type="smallBold" style={styles.digits}>
+              {result.numbers.join(' · ')}
+            </ThemedText>
+            <View style={styles.numberGroup}>
+              <ThemedText type="smallBold">·</ThemedText>
+              <View style={[styles.bonusBall, { borderColor: bonusColor }]}>
+                <ThemedText
+                  type="smallBold"
+                  style={[styles.digits, { color: bonusColor }]}
+                >
+                  {result.bonus}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <ThemedText type="small" themeColor="textSecondary">
+            Results pending
+          </ThemedText>
+        )}
+      </HomeDrawRow>
+    </View>
+  );
+}
+
 export function DrawQuickReference() {
   const prefs = useLotteryPreferences();
   const query = useLotteryDraws(prefs.preferences.state, prefs.ready);
   const now = useLotteryClock();
   const router = useRouter();
-  const expired = query.data ? drawPlanExpired(query.data.plan, now) : true;
+  const home = query.data?.home;
+  const expired = !home || homeDrawsExpired(home, now);
   return (
-    <Card>
-      <View style={styles.gap}>
-        <ThemedText type="smallBold" themeColor="accent">
-          LOTTERY QUICK REFERENCE
-        </ThemedText>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          At your next stop
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Next drawing only · skip tickets you already have.
-        </ThemedText>
-      </View>
-      <LotteryStates
-        state={prefs.preferences.state}
-        onChange={(state) => prefs.set({ state })}
-      />
-      {query.data && !expired ? (
-        <>
-          <ThemedText type="small" themeColor="textSecondary">
-            {query.data.plan.date_label} · Eastern time
+    <>
+      <Card>
+        <View style={styles.homeHeading}>
+          <ThemedText type="subtitle" accessibilityRole="header">
+            Lotto
           </ThemedText>
-          {query.data.plan.games.map((game) => (
-            <View key={game.name} style={styles.drawRow}>
-              <ThemedText type="smallBold">
-                {game.name} · {dollars(game.price)}
-              </ThemedText>
-              <ThemedText>
-                {game.next_draw.label} ·{' '}
-                {dataIsStale(query.data.status, now)
-                  ? 'Jackpot needs an update'
-                  : jackpotLabel(game.jackpot)}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {game.sales_closed
-                  ? 'Tonight’s sales are closed. Confirm when future-draw sales reopen.'
-                  : `Buy before ${game.cutoff} on draw day.`}
-              </ThemedText>
-            </View>
-          ))}
-          <ThemedText type="small" themeColor="textSecondary">
-            Checked {query.data.status.checked}.
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push('/lotto')}
+            style={styles.textAction}
+          >
+            <ThemedText type="smallBold" themeColor="accent">
+              Open Lotto
+            </ThemedText>
+          </Pressable>
+        </View>
+        {home && !expired && query.data ? (
+          <HomeDrawRows home={home} stale={dataIsStale(query.data.status, now)} />
+        ) : (
+          <ThemedText themeColor="textSecondary">
+            {query.isPending
+              ? 'Loading saved drawing details…'
+              : 'Pull to refresh drawing details, or open Lotto.'}
           </ThemedText>
-        </>
-      ) : (
-        <ThemedText themeColor="textSecondary">
-          {query.isPending
-            ? 'Loading saved drawing details…'
-            : 'Reload to update the next drawings. The weekly reference is still available below.'}
-        </ThemedText>
-      )}
-      {prefs.accountError ? (
-        <InlineError
-          message="Couldn’t load your account."
-          onRetry={prefs.retryAccount}
-        />
-      ) : null}
-      {query.isError ? (
-        <InlineError
-          message="Couldn’t reload drawing details."
-          onRetry={() => void query.refetch()}
-        />
-      ) : null}
-      <View style={styles.links}>
-        <View style={styles.link}>
-          <NativeAction
-            label="Draw planner"
-            onPress={() => router.push('/draw-games')}
-            secondary
+        )}
+        {prefs.accountError ? (
+          <InlineError
+            message="Couldn’t load your account."
+            onRetry={prefs.retryAccount}
           />
-        </View>
-        <View style={styles.link}>
-          <NativeAction
-            label="Scratch-offs"
-            onPress={() => router.push('/scratch-offs')}
-            secondary
+        ) : null}
+        {query.isError ? (
+          <InlineError
+            message="Couldn’t reload drawing details."
+            onRetry={() => void query.refetch()}
           />
-        </View>
-      </View>
-    </Card>
+        ) : null}
+      </Card>
+      <LotteryMondayReminder now={now} />
+    </>
   );
 }
 const styles = StyleSheet.create({
   gap: { gap: 6 },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  link: { flex: 1, minWidth: 130 },
+  homeHeading: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  drawGroup: { gap: 2 },
+  drawHeading: { fontSize: 12, lineHeight: 16 },
+  drawRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    columnGap: 8,
+    rowGap: 2,
+  },
+  gameCode: { fontWeight: '700' },
+  digits: { fontVariant: ['tabular-nums'] },
+  numberGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  numbers: { flexWrap: 'wrap', maxWidth: '100%' },
+  bonusBall: {
+    minWidth: 24,
+    minHeight: 24,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 99,
+    borderWidth: 1,
+  },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: {
     minHeight: 44,
@@ -265,5 +361,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'flex-start',
   },
-  drawRow: { gap: 4, paddingVertical: 6 },
 });

@@ -16,6 +16,36 @@ RULES = (
 )
 
 
+def draw_home(summaries=(), stale=True, now=None):
+    """One next draw and one latest result across both games, by drawing time.
+
+    Retail cutoffs affect purchases, not whether tonight's drawing is upcoming.
+    Only attach results to their exact draw; older snapshots leave results pending.
+    """
+    now = utc(now or datetime.now(timezone.utc)).astimezone(EASTERN)
+    saved = {game["name"]: game for game in summaries}
+    drawings = []
+    for offset in range(-7, 8):
+        day = now.date() + timedelta(days=offset)
+        for rule in RULES:
+            if day.weekday() in rule["days"]:
+                drawings.append((datetime.combine(day, rule["draw"], EASTERN), rule["name"]))
+    next_at, next_name = min(draw for draw in drawings if draw[0] > now)
+    last_at, last_name = max(draw for draw in drawings if draw[0] <= now)
+    next_source, last_source = saved.get(next_name), saved.get(last_name)
+    jackpot = None
+    if next_source and not stale and utc(next_source["next_draw"]) == next_at:
+        jackpot = next_source["jackpot"]
+    result = last_source.get("last_result") if last_source else None
+    if not result or result.get("date") != last_at.date().isoformat():
+        result = None
+    return dict(
+        upcoming=dict(name=next_name, date=next_at.isoformat(),
+                      label=next_at.strftime("%a, %b %-d · %-I:%M %p ET"), jackpot=jackpot),
+        latest=dict(name=last_name, date=last_at.isoformat(), label=last_at.strftime("%a, %b %-d"), result=result),
+    )
+
+
 def draw_plan(state="ny", summaries=(), stale=True, now=None):
     state = state if state in ("ny", "ct") else "ny"
     now = utc(now or datetime.now(timezone.utc)).astimezone(EASTERN)

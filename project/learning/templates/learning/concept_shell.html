@@ -1,0 +1,10 @@
+{% extends 'learning/shell.html' %}
+{% block container_class %} concept-container{% endblock %}
+{% block learning_header_class %} concept-shell-header{% endblock %}
+{% block learning_content %}
+<div class="concept-workspace {% block workspace_classes %}{% endblock %}" {% block workspace_attributes %}{% endblock %}>
+  {% include 'learning/_concept_workspace_header.html' %}
+  {% if config.get('LEARNING_PREVIEW_FIXTURE') %}<p class="concept-demo">Local demo · disposable progress · draft content for review</p>{% endif %}
+  {% block concept_content %}{% endblock %}
+</div>
+{% endblock %}

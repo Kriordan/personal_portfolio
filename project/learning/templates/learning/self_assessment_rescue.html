@@ -1,0 +1,18 @@
+{% from 'learning/_self_assessment_fields.html' import hidden_fields, choices, checkin %}
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Self-assessment · Check your save</title><link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head><body class="learning-private"><main class="concept-workspace concept-assessment assessment-rescue">
+  <h1>Check your {{ 'deletion' if delete else 'check-in' }}</h1><p role="alert">{{ message }}</p>
+  {% if compare %}<section aria-label="Latest saved check-in"><h2>Latest saved check-in</h2>
+    {% if latest %}{{ checkin(latest, dimensions, rating_labels) }}{% else %}<p>The history was cleared. No ratings are currently saved.</p>{% endif %}
+  </section>{% endif %}
+  {% for errors in form.errors.values() %}{% for error in errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+  <form method="post" action="{{ action_url }}"{% if not delete %} data-self-assessment-form data-unsaved="true"{% endif %}>
+    {{ hidden_fields(form) }}
+    {% if not delete %}<h2>Your choices</h2>{{ choices(form, dimensions) }}{% endif %}
+    {% if can_retry %}<button class="button button--primary">{{ 'Retry deletion' if delete else ('Save as a new check-in' if compare else 'Retry this check-in') }}</button>{% endif %}
+  </form>
+  {% if delete and not can_retry %}<p><a href="{{ confirmation_url }}">Review deletion again</a></p>{% endif %}
+  <p><a href="{{ back_url }}">Open latest self-assessment</a></p>
+</main><script defer src="{{ url_for('static', filename='js/learning-self-assessment.js') }}"></script></body></html>

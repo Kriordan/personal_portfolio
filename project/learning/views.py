@@ -1,36 +1,192 @@
-from flask import abort, current_app, jsonify, render_template, request
-from flask_login import current_user, login_required
+from uuid import uuid4
 
-from project.services import learning_service
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy.exc import SQLAlchemyError
+
+from project.database import db
+from project.models import CurriculumItem
+from project.services import concept_progress_service, curriculum_service, learning_service, practice_service
 
 from . import learning_blueprint
+from .forms import ConceptEnrollmentForm, ConceptRatingForm
+from .navigation import selected_session, workspace_navigation
+from .practice_views import start_form
+from .progress_views import study_context
 
 
 @learning_blueprint.after_request
 def private_study_response(response):
-    if current_user.is_authenticated or request.endpoint in {
-        "learning.rate_card", "learning.rating_receipt", "learning.review", "learning.note"
-    }:
-        response.headers["Cache-Control"] = "private, no-store"
+    response.headers["Cache-Control"] = "private, no-store"
     return response
 
 
 @learning_blueprint.route("/", strict_slashes=False)
 def index():
-    notes = []
-    total_due = 0
+    concepts = []
+    continue_session = None
     if current_user.is_authenticated:
-        notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
-        notes = learning_service.load_notes(notes_dir)
-        notes, total_due = learning_service.summarize_notes_for_user(
-            notes,
-            user_id=current_user.id,
-        )
+        concepts = curriculum_service.published_concepts()
+        for concept in concepts:
+            concept["due_count"] = len(curriculum_service.concept_review_queue(concept, user_id=current_user.id))
+            concept["progress"] = concept_progress_service.progress(current_user.id, concept["id"])
+            concept["resume_section"] = concept_progress_service.resume_section(concept, concept["progress"])
+        # No practice query at all while the feature is off (e.g. before its migration).
+        if practice_service.enabled():
+            sessions = practice_service.list_sessions(current_user.id, limit=1)
+            continue_session = sessions[0] if sessions else None
+    # A pinned session remains resumable even if its concept is no longer published.
+    featured_concept = next((item for item in concepts
+        if continue_session and item["id"] == continue_session["concept_id"]), None)
+    if not continue_session and concepts:
+        featured_concept = concepts[0]
+    enrolled = sorted((item for item in concepts if item["progress"]),
+                      key=lambda item: item["progress"]["updated_at"], reverse=True)
+    if enrolled:
+        featured_concept = enrolled[0]
+        if practice_service.enabled():
+            sessions = practice_service.list_sessions(current_user.id,
+                exercise_ids=featured_concept["content"]["exercise_ids"], limit=1)
+            continue_session = sessions[0] if sessions else None
     return render_template(
         "learning/index.html",
-        notes=notes,
-        total_due=total_due,
+        concepts=concepts,
+        featured_concept=featured_concept,
+        continue_session=continue_session,
+        enrollment_form=ConceptEnrollmentForm(formdata=None),
     )
+
+
+@learning_blueprint.get("/references")
+def references():
+    return render_template("learning/references.html")
+
+
+@learning_blueprint.get("/flashcards")
+@login_required
+def flashcards():
+    notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    notes, total_due = learning_service.summarize_notes_for_user(
+        learning_service.load_notes(notes_dir), user_id=current_user.id)
+    query = request.args.get("q", "").strip()
+    if len(query) > 200:
+        abort(400)
+    matches = [note for note in notes if query.casefold() in note["title"].casefold()]
+    # Bound the rendered list without introducing a new catalog or client-side state.
+    page_size = 25
+    pages = max(1, (len(matches) + page_size - 1) // page_size)
+    page = max(1, min(request.args.get("page", 1, type=int), pages))
+    return render_template("learning/flashcards.html", total_due=total_due,
+        notes=matches[(page - 1) * page_size:page * page_size], query=query,
+        match_count=len(matches), note_count=len(notes), page=page, pages=pages)
+
+
+def _published_concept(concept_id):
+    concept = curriculum_service.published_learner_item(concept_id)
+    if concept is None or concept["kind"] != "concept":
+        abort(404)
+    return concept
+
+
+@learning_blueprint.get("/concepts/<concept_id>")
+@login_required
+def concept(concept_id):
+    item = _published_concept(concept_id)
+    queue = curriculum_service.concept_review_queue(item, user_id=current_user.id)
+    exercises = practice_service.concept_exercises(item, user_id=current_user.id) if practice_service.enabled() else []
+    for exercise in exercises:
+        exercise["start_form"] = start_form(exercise["id"], item["id"])
+    workspace = workspace_navigation(concept_id, mode="learn", session=selected_session(item))
+    return render_template("learning/concept.html", concept=item, due_count=len(queue),
+                           exercises=exercises, workspace=workspace, **study_context(item, workspace))
+
+
+@learning_blueprint.get("/concepts/<concept_id>/practice")
+@login_required
+def concept_practice(concept_id):
+    """Opening a mode is a read; starting practice still requires a CSRF-protected POST."""
+    if not practice_service.enabled():
+        abort(404)
+    mode = request.args.get("view", "discuss")
+    if mode not in {"discuss", "build"}:
+        abort(400)
+    item = _published_concept(concept_id)
+    selected = selected_session(item)
+    workspace = workspace_navigation(concept_id, mode=mode, session=selected)
+    if selected:
+        return redirect(workspace[f"{mode}_url"])
+    exercises = practice_service.concept_exercises(item, user_id=current_user.id)
+    for exercise in exercises:
+        exercise["start_form"] = start_form(exercise["id"], item["id"])
+    return render_template("learning/concept_practice.html", concept=item, workspace=workspace, exercises=exercises)
+
+
+@learning_blueprint.route("/concepts/<concept_id>/review", methods=["GET", "POST"])
+@login_required
+def concept_review(concept_id):
+    item = _published_concept(concept_id)
+    workspace = workspace_navigation(concept_id, mode="review", session=selected_session(item))
+    study = study_context(item, workspace)  # No new DB reads after a failed rating save.
+    notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    form = ConceptRatingForm()
+    error, status, card, revealed = None, 200, None, False
+    if request.method == "POST":
+        if not form.validate_on_submit():
+            abort(400)
+        try:
+            card = curriculum_service.published_review_question(concept_id, form.card_id.data,
+                version=form.content_version.data, notes_dir=notes_dir, reveal_answer=True)
+            result = learning_service.rate_card_for_user(user=current_user, notes_dir=notes_dir,
+                card_id=card["card_id"], content_version=form.content_version.data, rating=form.rating.data,
+                request_id=form.request_id.data, expected_revision=form.expected_revision.data)
+        except learning_service.ValidationError:
+            abort(400)
+        except learning_service.NotFoundError:
+            abort(404)
+        except learning_service.ConflictError:
+            error, status = "This review changed elsewhere. Load the current questions before rating again.", 409
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Concept review save could not be confirmed")
+            error, status, revealed = "Your save could not be confirmed. Retry the same rating below.", 503, True
+        else:
+            flash("Review saved. " + result["next_review_display"], "concept-review")
+            return redirect(workspace["review_url"], code=303)
+    elif any(key != "practice_session" for key in request.args):
+        # A reveal URL pins the original question and progress revision. It does
+        # not write progress, even on refresh, back navigation, or link preview.
+        try:
+            for key in ("content_version", "expected_revision"):
+                value = request.args.get(key, "")
+                if not value.isascii() or not value.isdecimal() or len(value) > 10:
+                    raise ValueError
+            version, revision = int(request.args["content_version"]), int(request.args["expected_revision"])
+            if not 1 <= version <= 2147483647 or not 0 <= revision <= 2147483647:
+                raise ValueError
+            attempt = learning_service.validate_request_id(request.args.get("request_id"))
+            card = curriculum_service.published_review_question(concept_id, request.args.get("card_id"),
+                version=version, notes_dir=notes_dir, reveal_answer=True)
+            progress = learning_service.progress_map([card["card_id"]], current_user.id).get(card["card_id"])
+            if revision != (progress.revision if progress else 0) or (progress and progress.is_suspended):
+                raise learning_service.StaleReviewError()
+            form = ConceptRatingForm(card_id=card["card_id"], content_version=version,
+                expected_revision=revision, request_id=attempt)
+            revealed = True
+        except (ValueError, learning_service.ValidationError):
+            abort(400)
+        except learning_service.NotFoundError:
+            abort(404)
+        except learning_service.ConflictError:
+            error, status = "This review changed elsewhere. Load the current questions before rating again.", 409
+    else:
+        queue = curriculum_service.concept_review_queue(item, user_id=current_user.id)
+        if queue:
+            card = queue[0]
+            form = ConceptRatingForm(card_id=card["card_id"], content_version=card["content_version"],
+                expected_revision=card["progress_revision"], request_id=str(uuid4()))
+    return render_template("learning/concept_review.html", concept=item, card=card, form=form,
+        revealed=revealed, error=error, retry_same=status == 503, stale=status == 409, workspace=workspace,
+        **study), status
 
 
 @learning_blueprint.route(
@@ -129,6 +285,10 @@ def create_incident():
     prevention = payload.get("prevention", "")
     tags = payload.get("tags", [])
     notes_dir = learning_service.notes_dir_for_root(current_app.root_path)
+    # The legacy authoring endpoint must not reuse a curriculum review namespace.
+    candidate = note_id or learning_service.slugify(title or "")
+    if isinstance(candidate, str) and db.session.get(CurriculumItem, candidate) is not None:
+        return jsonify({"error": "This ID belongs to a curriculum concept."}), 409
     try:
         resolved_note_id, card_id = learning_service.create_incident_card(
             notes_dir=notes_dir,

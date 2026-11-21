@@ -1,0 +1,13 @@
+<!doctype html>
+{# Standalone: no database reads after an ambiguous commit. #}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feedback request not confirmed</title>
+  <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head><body class="learning-private"><main class="practice practice-narrow">
+  <h1>Feedback request not confirmed</h1>
+  <p>Your snapshot is already saved. We could not confirm whether feedback started. Retry this request safely: it will not start a duplicate.</p>
+  <form method="post" action="{{ url_for('learning.practice_feedback', session_id=session_id, sequence=sequence) }}">
+    {{ form.hidden_tag() }}<button class="button button--primary">Retry the same request</button>
+  </form>
+  <p><a href="{{ url_for('learning.practice_submission', session_id=session_id, sequence=sequence) }}">Check the saved snapshot</a></p>
+</main></body></html>

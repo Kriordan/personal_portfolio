@@ -12,3 +12,5 @@ __pycache__/
 client_secret.json
 project/data/jsonfiles
 project/data/youtube_token.json
+# Private local Learning pilot settings, credentials, logs, and database backups.
+/.local/learning-pilot/

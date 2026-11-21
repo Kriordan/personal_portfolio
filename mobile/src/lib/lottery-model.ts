@@ -30,6 +30,44 @@ export const jackpotLabel = (value: number | null) =>
   value === null
     ? 'Awaiting updated jackpot'
     : `${compactCurrency.format(value / 1000000)}M est. jackpot`;
+
+const easternTime = 'America/New_York';
+const drawDate = new Intl.DateTimeFormat('en-US', {
+  timeZone: easternTime,
+  weekday: 'short',
+  month: 'numeric',
+  day: 'numeric',
+});
+export function compactDrawDate(instant: string) {
+  const parts = Object.fromEntries(
+    drawDate
+      .formatToParts(new Date(instant))
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.weekday} ${parts.month}-${parts.day}`;
+}
+export const spokenDrawDate = new Intl.DateTimeFormat('en-US', {
+  timeZone: easternTime,
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+});
+const compactAmount = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+export function homeJackpotLabel(value: number | null, stale: boolean) {
+  if (stale) return 'Refresh jackpot';
+  if (value === null) return 'Jackpot pending';
+  // The iOS runtime can silently ignore Intl's compact notation.
+  if (value >= 1_000_000_000) return `${compactAmount.format(value / 1_000_000_000)}B`;
+  if (value >= 1_000_000) return `${compactAmount.format(value / 1_000_000)}M`;
+  if (value >= 1_000) return `${compactAmount.format(value / 1_000)}K`;
+  return compactAmount.format(value);
+}
+
 export function readLotteryPreferences(raw: string | null): LotteryPreferences {
   try {
     const value = JSON.parse(raw ?? '{}');
@@ -145,8 +183,37 @@ export interface DrawGame {
   saved_draw: string | null;
   url: string;
 }
+export interface HomeDraws {
+  upcoming: {
+    name: string;
+    date: string;
+    label: string;
+    jackpot: number | null;
+  };
+  latest: {
+    name: string;
+    date: string;
+    label: string;
+    result: {
+      date: string;
+      numbers: number[];
+      bonus: number;
+      bonus_label: string;
+      power_play: number | null;
+    } | null;
+  };
+}
+
+export function homeDrawsExpired(home: HomeDraws, now = Date.now()) {
+  const next = Date.parse(home.upcoming.date);
+  const last = Date.parse(home.latest.date);
+  return !Number.isFinite(next) || !Number.isFinite(last) || now >= next || now < last;
+}
+
 export interface DrawResponse {
   status: LotteryStatus;
+  // Older servers/snapshots can still provide the existing draw planner.
+  home?: HomeDraws;
   plan: {
     state: LotteryState;
     as_of: string;

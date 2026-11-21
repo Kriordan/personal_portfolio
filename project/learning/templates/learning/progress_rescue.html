@@ -1,0 +1,17 @@
+{% extends 'learning/concept_shell.html' %}
+{% from 'learning/_progress_fields.html' import hidden_fields %}
+{% block title %}Save your place · {{ concept.title }}{% endblock %}
+{% block concept_content %}
+<section class="concept-study">
+  <h2>Save your place</h2>
+  <p role="alert">{{ error }}</p>
+  {% if not conflict %}
+  <form method="post" action="{{ url_for('learning.enroll_concept' if enrollment else 'learning.save_reading_position', concept_id=concept.id) }}">
+    {{ hidden_fields(form) }}
+    {% if not enrollment %}<p>{{ form.section_id.label }} {{ form.section_id() }}</p>{% endif %}
+    <button class="button" type="submit">{{ 'Retry Start learning' if enrollment else 'Retry save' }}</button>
+  </form>
+  {% endif %}
+  <p><a href="{{ workspace.learn_url }}">Reload the lesson and saved position</a></p>
+</section>
+{% endblock %}

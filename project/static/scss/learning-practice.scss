@@ -1,0 +1,127 @@
+.practice {
+  max-width: 1200px;
+  margin: 2rem auto 4rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+
+  h1 { font-size: clamp(1.6rem, 4.5vw, 2.4rem); line-height: 1.2; }
+  h2 { line-height: 1.3; }
+  .button {
+    display: inline-block; min-height: 44px; box-sizing: border-box; white-space: normal;
+    padding: .65rem 1rem; border: 2px solid #17675a; border-radius: 6px;
+    background: #17675a; color: white; font: inherit; line-height: 1.35; cursor: pointer;
+    text-align: center; text-decoration: none;
+  }
+  .button--secondary { background: white; color: #165448; }
+  .button--danger { background: #8a1f11; border-color: #8a1f11; }
+  :focus-visible { outline: 3px solid #17675a; outline-offset: 3px; }
+  label { display: block; margin: .75rem 0 .35rem; font-weight: bold; }
+  select { max-width: 100%; padding: .6rem; min-height: 44px; font: inherit; }
+  summary { cursor: pointer; font-weight: bold; }
+}
+.practice-narrow { max-width: 800px; }
+.practice-layout { display: grid; gap: 2rem; margin-top: 1.5rem; }
+@media (min-width: 960px) {
+  .practice-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: start; }
+}
+.practice-brief { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; }
+.practice-transcript { list-style: none; padding: 0; }
+.practice-turn { padding: .75rem 1rem; border-radius: 8px; background: #eaf3f0; margin-bottom: .75rem; }
+.practice-turn--learner { background: #f3f4f4; }
+.practice-speaker { font-weight: bold; margin: 0 0 .25rem; }
+.practice-text { white-space: pre-wrap; margin: 0; }
+.practice-note { color: #444; border-left: 4px solid #bbb; padding-left: .75rem; }
+.practice-artifact { border: 1px solid #bbb; border-radius: 10px; padding: 1rem; margin: 0 0 1.5rem; min-width: 0; }
+.practice-artifact legend { font-weight: bold; padding: 0 .25rem; }
+.practice-artifact.has-conflict { border: 3px solid #a15c00; }
+.practice-instructions { margin-top: 0; }
+.practice-editor {
+  display: block; width: 100%; box-sizing: border-box; min-height: 14rem; padding: .75rem;
+  border: 1px solid #767676; border-radius: 6px; font-family: monospace; font-size: .95rem;
+  line-height: 1.5; tab-size: 4; resize: vertical;
+}
+.practice-meta { font-size: .9rem; color: #444; display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
+.practice-meta output.is-over { color: #8a1f11; font-weight: bold; }
+.practice-error { color: #8a1f11; font-weight: bold; }
+.practice-alert { margin: 1rem 0; padding: 1rem; border-left: 6px solid #8a1f11; background: #fbeeee; }
+.practice-alert:focus { outline: 3px solid #8a1f11; outline-offset: 2px; }
+.practice-conflict { margin-top: 1rem; padding: 1rem; border-left: 4px solid #a15c00; background: #fff4e5; }
+.practice-conflict h3 { margin-top: 0; }
+.practice-conflict pre, .practice-revision {
+  white-space: pre-wrap; overflow-x: auto; max-height: 24rem; padding: .75rem; background: #f3f4f4;
+}
+.practice-sessions { padding-left: 1.25rem; }
+.practice-continue { margin: 1rem 0; }
+.practice-paused { padding: .75rem 1rem; border-left: 4px solid #555; background: #f3f4f4; }
+.practice-notes { border: 1px solid #bbb; border-radius: 10px; padding: 1rem; margin: 1.5rem 0; min-width: 0; }
+.practice-notes > legend { font-weight: bold; padding: 0 .25rem; }
+.practice-notes.has-conflict { border: 3px solid #a15c00; }
+.practice-entry { border: 0; border-top: 1px solid #ddd; padding: .5rem 0 0; margin: .75rem 0 0; min-width: 0; }
+.practice-entry > legend { font-weight: bold; padding: 0; }
+.practice-entry-text {
+  display: block; width: 100%; box-sizing: border-box; padding: .5rem; border: 1px solid #767676;
+  border-radius: 6px; font: inherit; resize: vertical;
+}
+.practice-checks { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; }
+.practice .practice-check { display: inline-flex; align-items: center; gap: .4rem; font-weight: normal; min-height: 44px; margin: .25rem 0; }
+.practice-check input { width: 1.2rem; height: 1.2rem; margin: 0; }
+.practice-conflict-entries li { white-space: pre-wrap; }
+.practice-refreshed { padding: .5rem .75rem; border-left: 4px solid #17675a; background: #eaf3f0; }
+.practice-new { display: inline-block; margin-left: .35rem; padding: 0 .4rem; border: 1px solid #17675a; border-radius: 4px; font-size: .85rem; }
+.practice-message { min-height: 7rem; font-family: inherit; }
+.practice-delete { margin-top: 2rem; }
+.practice-cited { font-size: .9rem; color: #444; margin: .35rem 0 0; }
+.practice-reply:has(p) { margin: 0 0 1rem; padding: .5rem .75rem; border-left: 4px solid #17675a; background: #eaf3f0; }
+.practice-reply p { margin: .25rem 0; }
+.practice-budget { padding: .75rem 1rem; border-left: 4px solid #a15c00; background: #fff4e5; }
+.practice-revealed { margin: 1rem 0; padding: .75rem 1rem; border-left: 4px solid #17675a; background: #eaf3f0; }
+.practice-revealed h3 { margin: 0 0 .5rem; }
+.practice-revealed-list { margin: 0; padding-left: 1.25rem; }
+.practice-revealed-list li { margin-bottom: .5rem; }
+.practice-revealed-source { font-size: .9rem; }
+.practice-hint {
+  display: inline-block; margin-left: .35rem; padding: 0 .4rem; border: 1px solid #a15c00; border-radius: 4px;
+  font-size: .85rem; color: #7a4500;
+}
+.practice-reads-from { margin: 0 0 .75rem; padding: .5rem .75rem; border-top: 2px dashed #767676; color: #444; font-size: .9rem; }
+.practice-checkin { padding: .5rem .75rem; border-left: 4px solid #555; background: #f3f4f4; }
+.practice-default-action {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0; padding: 0; margin: -1px;
+}
+.practice-feedback-page {
+  h1 { font-size: clamp(1.5rem, 4vw, 2rem); }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+  .practice-history li { margin-bottom: .65rem; }
+  .practice-meta { display: block; }
+  .practice-meta a { margin-left: .25rem; }
+}
+.practice-feedback {
+  margin-top: 2rem;
+  border-top: 1px solid #d3dae3;
+  padding-top: 1.5rem;
+}
+.practice-finding {
+  margin: 1.5rem 0;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #d3dae3;
+  overflow-wrap: anywhere;
+  h3 { margin-top: .4rem; }
+}
+.practice-evidence {
+  margin: 1rem 0;
+  border-left: 3px solid #96a6b8;
+  padding-left: 1rem;
+  blockquote { margin: 0 0 .5rem; padding: 0; border: 0; color: inherit; white-space: pre-wrap; }
+  figcaption { font-size: .9rem; }
+}
+.practice-annotation {
+  margin-top: 1rem;
+  summary { min-height: 44px; padding: .5rem 0; }
+  form { padding: .25rem 1rem 1rem; background: #f3f5f7; border-radius: 8px; }
+}
+[data-annotation-form] textarea {
+  display: block; width: 100%; box-sizing: border-box; padding: .6rem;
+  border: 1px solid #767676; border-radius: 6px; font: inherit; resize: vertical;
+}

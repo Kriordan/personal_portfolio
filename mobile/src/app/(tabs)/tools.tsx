@@ -10,7 +10,9 @@ export default function ToolsScreen() {
   const [filter, setFilter] = useState('');
   const theme = useTheme();
   const tools = mobileTools.filter((tool) =>
-    tool.title.toLowerCase().includes(filter.trim().toLowerCase()),
+    `${tool.title} ${tool.description}`
+      .toLowerCase()
+      .includes(filter.trim().toLowerCase()),
   );
   return (
     <Screen tab>
@@ -21,7 +23,7 @@ export default function ToolsScreen() {
       <Host matchContents={{ vertical: true }} seedColor={theme.accent}>
         <TextInput
           {...fillWidth}
-          placeholder="Filter tools by name"
+          placeholder="Find a tool"
           onChangeText={setFilter}
           autoCorrect={false}
           returnKeyType="done"

@@ -1,0 +1,18 @@
+{% extends 'learning/shell.html' %}
+{% block title %}Reference articles{% endblock %}
+{% block meta_description %}Long-form technical references by Keith Riordan, covering web development concepts from first principles.{% endblock %}
+{% block learning_content %}
+<div class="learning-hub">
+  <a class="learning-breadcrumb" href="{{ url_for('learning.index') }}">← Learning</a>
+  <header class="learning-page-heading"><h1>Reference articles</h1><p>Deeper explanations, ready when you need them.</p></header>
+  <section aria-labelledby="web-performance-heading">
+    <h2 class="learning-section-label" id="web-performance-heading">Web Performance</h2>
+    <article class="learning-article-entry">
+      <p class="learning-entry-meta">Reference · Reviewed August 7, 2026</p>
+      <h3><a href="{{ url_for('learning.web_performance_media') }}">Modern Images, Video, Lazy Loading &amp; Responsive Media</a></h3>
+      <p>A first-principles guide to image formats, video codecs and containers, responsive selection, and loading strategy.</p>
+      <a class="learning-text-action" href="{{ url_for('learning.web_performance_media') }}">Read article <span aria-hidden="true">→</span></a>
+    </article>
+  </section>
+</div>
+{% endblock %}

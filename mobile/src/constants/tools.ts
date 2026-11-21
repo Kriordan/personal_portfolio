@@ -8,16 +8,10 @@ export const mobileTools = [
     badge: 'I',
   } as const] : []),
   {
-    title: 'Scratch-offs',
-    description: 'Compare NY and CT ticket odds.',
-    href: '/scratch-offs',
-    badge: 'S',
-  },
-  {
-    title: 'Draw planner',
-    description: 'Powerball, Mega Millions, and fewer stops.',
-    href: '/draw-games',
-    badge: 'D',
+    title: 'Lotto',
+    description: 'Scratch-offs and a draw planner for NY and CT.',
+    href: '/lotto',
+    badge: 'L',
   },
   {
     title: 'Grocery',

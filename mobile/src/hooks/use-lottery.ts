@@ -1,10 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from 'expo-router';
+import { focusManager, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect, useIsFocused } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { lotteryApi } from '@/lib/lottery-api';
+import { createMondayLotteryReminder, mondayLotteryDay } from '@/lib/lottery-reminder';
 import {
   lotteryDefaults,
   readLotteryPreferences,
@@ -100,4 +101,45 @@ export function useLotteryClock() {
     return () => clearInterval(timer);
   }, []);
   return now;
+}
+
+const mondayReminder = createMondayLotteryReminder({
+  get: async (key) => Platform.OS === 'web'
+    ? globalThis.localStorage?.getItem(key) ?? null
+    : SecureStore.getItemAsync(key),
+  set: async (key, value) => {
+    if (Platform.OS === 'web') globalThis.localStorage?.setItem(key, value);
+    else await SecureStore.setItemAsync(key, value);
+  },
+});
+const subscribeToFocus = (notify: () => void) => focusManager.subscribe(notify);
+const appIsFocused = () => focusManager.isFocused();
+const serverIsFocused = () => false;
+
+export function useMondayLotteryReminder(now: number) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const focused = useIsFocused();
+  const foreground = useSyncExternalStore(subscribeToFocus, appIsFocused, serverIsFocused);
+  const day = mondayLotteryDay(now);
+  const [visibleFor, setVisibleFor] = useState<string | null>(null);
+  const occurrence = userId && day ? `${userId}:${day}` : null;
+
+  useEffect(() => {
+    if (!userId || !day || !focused || !foreground) return;
+    let active = true;
+    void mondayReminder
+      .claim(userId, () => active && day === mondayLotteryDay())
+      .then((show) => {
+        if (active && show) setVisibleFor(`${userId}:${day}`);
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId, day, focused, foreground]);
+
+  return {
+    visible: !!occurrence && visibleFor === occurrence && focused && foreground,
+    dismiss: () => setVisibleFor(null),
+  };
 }

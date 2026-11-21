@@ -1,0 +1,5 @@
+{# Older local previews reload templates without reloading Python routes. #}
+{% if export_available|default(false) %}
+<p>Download saved work: <a data-export-format="json" href="{{ url_for('learning.practice_export', session_id=export_session_id, format='json') }}" target="_blank" rel="noopener">JSON</a> · <a data-export-format="md" href="{{ url_for('learning.practice_export', session_id=export_session_id, format='md') }}" target="_blank" rel="noopener">Markdown</a></p>
+<p class="practice-meta">Includes the conversation, revision history, saved checks, feedback, and your responses. Save your edits first; unsaved text and unfinished AI output aren't included. Opens separately so your workspace stays here.</p>
+{% endif %}

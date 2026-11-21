@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends "learning/shell.html" %}
 
 {% block title %}{{ note.title }}{% endblock title %}
 
-{% block body %}
+{% block learning_content %}
   <section class="learning-note">
-    <a class="learning-back" href="{{ url_for('learning.index') }}">← Back to notes</a>
+    <a class="learning-back" href="{{ url_for('learning.flashcards') }}">← My flashcards</a>
     <h1>{{ note.title }}</h1>
     {% if note.summary %}
       <div class="learning-summary" data-markdown>{{ note.summary }}</div>
@@ -51,7 +51,7 @@
       <p>No flashcards for this note yet.</p>
     {% endif %}
   </section>
-{% endblock body %}
+{% endblock learning_content %}
 
 {% block scripts %}
   <script type="application/json" id="note-cards-data">{{ note.flashcards|tojson }}</script>

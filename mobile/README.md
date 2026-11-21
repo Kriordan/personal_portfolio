@@ -178,8 +178,9 @@ workout behavior, offline storage, native audio checks, and device acceptance.
 | `src/app/wishlist/` | Wishlist gift list, create/edit forms (optional image upload), detail |
 | `src/app/library/` | Library playlist browsing, playlist detail with videos, sync trigger |
 | `src/app/jobwizard/` | Job list, create form, and job detail |
-| `src/app/scratch-offs/` | Private NY/CT comparison, saved filters, prize-table detail |
-| `src/app/draw-games.tsx` | Drawing dates, state sales cutoffs, and fewer-trip reference |
+| `src/app/lotto.tsx` | Lotto with persistent Scratch-offs / Draw planner sections and three-at-a-time scratch results |
+| `src/app/scratch-offs/` | Prize-table detail; legacy index redirects to Lotto |
+| `src/app/draw-games.tsx` | Legacy link redirects to Lotto’s Draw planner section |
 | `src/lib/config.ts` | Environment/API URL configuration |
 | `src/lib/api-client.ts` | Fetch wrapper with JWT attachment, 401 refresh-and-retry, auth endpoints |
 

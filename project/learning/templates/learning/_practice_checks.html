@@ -1,0 +1,25 @@
+<section data-work-panel="work-checks" id="work-checks" aria-labelledby="checks-heading">
+  <h2 id="checks-heading">Check your work</h2>
+  <p>Check JSON/YAML syntax and save a snapshot. Keep editing afterward.</p>
+  <button class="button button--secondary" name="action" value="submit">Save and check</button>
+  {% if detail.submissions %}
+    {% set snapshot = detail.submissions[0] %}
+    <h3>Latest saved check</h3>
+    <p class="practice-meta">{{ snapshot.created_at|practice_time }} · Snapshot {{ snapshot.sequence }}</p>
+    {% include 'learning/_practice_check_results.html' %}
+    <p><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=snapshot.sequence) }}">View this snapshot and request feedback</a></p>
+    {% if detail.submissions|length > 1 %}
+      <details><summary>Earlier checks ({{ detail.submissions|length - 1 }})</summary>
+        <ol class="practice-history">
+          {% for previous in detail.submissions[1:] %}
+            <li><a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=previous.sequence) }}">Snapshot {{ previous.sequence }}</a> · {{ previous.created_at|practice_time }}</li>
+          {% endfor %}
+        </ol>
+      </details>
+    {% endif %}
+  {% else %}<p>No checks saved yet. Choose JSON or YAML notation in the API tab to check structured content.</p>{% endif %}
+  <details><summary>About these checks</summary>
+    <p>Each snapshot preserves your saved artifacts, notes, and conversation. An unsent message stays in the composer and is not included.</p>
+    <p>These checks assess syntax only, not reasoning, design quality, or whether your API meets the requirements. SQL and pseudocode are saved but not checked. Nothing is executed or sent to AI.</p>
+  </details>
+</section>

@@ -1,13 +1,14 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import BigInteger, Boolean, Column, Float, ForeignKey, Integer, String, Table, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from project.database import db
+from project.curriculum_terms import ARTIFACT_FORMATS, ARTIFACT_LANGUAGES, INTERACTION_STYLES
 
 COMPLETED_DISPLAY_MODES = {
     "inline_bottom": "Inline at Bottom",
@@ -502,6 +503,106 @@ class ReviewProgress(db.Model):
     user: Mapped["User"] = relationship("User")
 
 
+class CurriculumItem(db.Model):
+    """Stable identity, independent of content revisions and learner progress."""
+
+    __tablename__ = "curriculum_item"
+    __table_args__ = (db.CheckConstraint(
+        "kind IN ('concept', 'question', 'exercise')", name="ck_curriculum_item_kind"
+    ),)
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16))
+
+
+class ContentRevision(db.Model):
+    """Immutable content snapshot; publication metadata is recorded separately."""
+
+    __tablename__ = "content_revision"
+    __table_args__ = (
+        db.CheckConstraint("version > 0", name="ck_content_revision_version"),
+        db.CheckConstraint("schema_version > 0", name="ck_content_revision_schema_version"),
+        db.CheckConstraint(
+            "(published_at IS NULL AND reviewed_by IS NULL AND reviewed_on IS NULL) OR "
+            "(published_at IS NOT NULL AND reviewed_by IS NOT NULL AND reviewed_on IS NOT NULL)",
+            name="ck_content_revision_review",
+        ),
+    )
+
+    item_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer)
+    checksum: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(db.JSON)
+    imported_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    published_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(120))
+    reviewed_on: Mapped[Optional[date]] = mapped_column(db.Date)
+
+
+class UserConceptProgress(db.Model):
+    """Explicit enrollment and a bookmark; neither is evidence of mastery."""
+
+    __tablename__ = "user_concept_progress"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["concept_id", "reading_version"],
+            ["content_revision.item_id", "content_revision.version"], name="fk_concept_progress_reading"),
+        db.CheckConstraint("revision > 0", name="ck_concept_progress_revision"),
+        db.CheckConstraint(
+            "(reading_version IS NULL AND reading_section IS NULL AND last_request_id IS NULL) OR "
+            "(reading_version IS NOT NULL AND reading_section IS NOT NULL AND last_request_id IS NOT NULL)",
+            name="ck_concept_progress_reading"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    concept_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    enrolled_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    revision: Mapped[int] = mapped_column(Integer)
+    reading_version: Mapped[Optional[int]] = mapped_column(Integer)
+    reading_section: Mapped[Optional[str]] = mapped_column(String(128))
+    last_request_id: Mapped[Optional[str]] = mapped_column(String(36))
+
+
+class ConceptSelfAssessment(db.Model):
+    """Dated personal check-ins, independent of enrollment and assessed evidence.
+
+    Explicit history deletion removes ratings but keeps content-free request
+    identities and a new clear marker, fencing stale retries and old forms.
+    """
+
+    __tablename__ = "concept_self_assessment"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "request_id", name="uq_self_assessment_request"),
+        db.ForeignKeyConstraint(["concept_id", "content_version"],
+            ["content_revision.item_id", "content_revision.version"], name="fk_self_assessment_content"),
+        db.CheckConstraint("revision > 0 AND scale_version = 1", name="ck_self_assessment_revision"),
+        db.CheckConstraint("kind IN ('checkin', 'clear')", name="ck_self_assessment_kind"),
+        db.CheckConstraint("(kind = 'checkin' AND content_version IS NOT NULL) OR "
+                           "(kind = 'clear' AND content_version IS NULL)", name="ck_self_assessment_content"),
+        *[db.CheckConstraint(
+            f"((kind = 'clear' OR deleted) AND {dimension} IS NULL) OR "
+            f"(kind = 'checkin' AND NOT deleted AND {dimension} IS NOT NULL AND "
+            f"{dimension} IN ('not_assessed', 'not_yet', 'with_help', 'without_help'))",
+            name=f"ck_self_assessment_{dimension}")
+          for dimension in ("recognition", "understanding", "application", "judgment")],
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    concept_id: Mapped[str] = mapped_column(ForeignKey("curriculum_item.id"), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36))
+    kind: Mapped[str] = mapped_column(String(16))
+    scale_version: Mapped[int] = mapped_column(Integer)
+    content_version: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    recognition: Mapped[Optional[str]] = mapped_column(String(16))
+    understanding: Mapped[Optional[str]] = mapped_column(String(16))
+    application: Mapped[Optional[str]] = mapped_column(String(16))
+    judgment: Mapped[Optional[str]] = mapped_column(String(16))
+
+
 class ReviewReceipt(db.Model):
     """A rating and its response commit together, scoped to the signed-in user."""
 
@@ -515,10 +616,15 @@ class ReviewReceipt(db.Model):
 
 class ReviewLog(db.Model):
     __tablename__ = "review_log"
+    __table_args__ = (db.ForeignKeyConstraint(
+        ["card_id", "content_version"], ["content_revision.item_id", "content_revision.version"],
+        name="fk_review_log_content_revision",
+    ),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
     card_id: Mapped[str] = mapped_column(String(128), index=True)
+    content_version: Mapped[Optional[int]] = mapped_column(Integer)
     reviewed_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), index=True
     )
@@ -558,3 +664,248 @@ class ReviewLog(db.Model):
     session_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     user: Mapped["User"] = relationship("User")
+
+
+def _one_of(column, values):
+    return f"{column} IN ({', '.join(repr(value) for value in values)})"
+
+
+# Practice records deliberately have no ORM relationships: deletes cascade in the
+# database, and every query is explicit and owner-scoped in practice_service.
+class PracticeSession(db.Model):
+    """One learner's attempt at a pinned exercise revision: conversation and artifacts."""
+
+    __tablename__ = "practice_session"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["exercise_id", "exercise_version"],
+                                ["content_revision.item_id", "content_revision.version"],
+                                name="fk_practice_session_exercise"),
+        db.CheckConstraint(_one_of("interaction_style", INTERACTION_STYLES), name="ck_practice_session_style"),
+        db.CheckConstraint("status IN ('active', 'paused', 'completed')", name="ck_practice_session_status"),
+        db.Index("ix_practice_session_user_exercise", "user_id", "exercise_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_session_user"))
+    exercise_id: Mapped[str] = mapped_column(String(128))
+    exercise_version: Mapped[int] = mapped_column(Integer)
+    interaction_style: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(16))
+    # The interviewer behaviour this session uses, pinned at start. Versions are immutable.
+    profile_version: Mapped[str] = mapped_column(String(32), default="interviewer-1", server_default="interviewer-1")
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class ArtifactRevision(db.Model):
+    """Immutable learner work. Revisions of one artifact share its stable artifact ID."""
+
+    __tablename__ = "artifact_revision"
+    __table_args__ = (
+        db.UniqueConstraint("practice_session_id", "artifact_id", "revision", name="uq_artifact_revision_number"),
+        # Target for composite foreign keys that keep citations inside one session.
+        db.UniqueConstraint("practice_session_id", "id", name="uq_artifact_revision_session_id"),
+        db.CheckConstraint("revision > 0", name="ck_artifact_revision_revision"),
+        db.CheckConstraint(_one_of("format", ARTIFACT_FORMATS), name="ck_artifact_revision_format"),
+        db.CheckConstraint(_one_of("language", ARTIFACT_LANGUAGES), name="ck_artifact_revision_language"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(
+        ForeignKey("practice_session.id", ondelete="CASCADE", name="fk_artifact_revision_session"))
+    artifact_id: Mapped[str] = mapped_column(String(128))
+    revision: Mapped[int] = mapped_column(Integer)
+    title: Mapped[str] = mapped_column(Text)
+    format: Mapped[str] = mapped_column(String(32))
+    language: Mapped[str] = mapped_column(String(16))
+    body: Mapped[str] = mapped_column(Text)
+    body_sha256: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class SessionMessage(db.Model):
+    """Ordered session record: conversation turns plus structured system records."""
+
+    __tablename__ = "session_message"
+    __table_args__ = (
+        db.UniqueConstraint("practice_session_id", "sequence", name="uq_session_message_sequence"),
+        db.UniqueConstraint("practice_session_id", "id", name="uq_session_message_session_id"),
+        db.CheckConstraint("sequence > 0", name="ck_session_message_sequence"),
+        db.CheckConstraint("role IN ('learner', 'interviewer', 'system')", name="ck_session_message_role"),
+        db.CheckConstraint("kind IN ('turn', 'brief', 'context', 'submission', 'assistance')",
+                           name="ck_session_message_kind"),
+        db.CheckConstraint("modality IN ('text')", name="ck_session_message_modality"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(
+        ForeignKey("practice_session.id", ondelete="CASCADE", name="fk_session_message_session"))
+    sequence: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(16))
+    kind: Mapped[str] = mapped_column(String(16))
+    modality: Mapped[str] = mapped_column(String(16))
+    body: Mapped[str] = mapped_column(Text)
+    data: Mapped[Optional[dict]] = mapped_column(db.JSON)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class SessionMessageArtifact(db.Model):
+    """The exact artifact revisions a record cites, constrained to the record's session."""
+
+    __tablename__ = "session_message_artifact"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["practice_session_id", "message_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_session_message_artifact_message"),
+        db.ForeignKeyConstraint(["practice_session_id", "artifact_revision_id"],
+                                ["artifact_revision.practice_session_id", "artifact_revision.id"],
+                                ondelete="CASCADE", name="fk_session_message_artifact_revision"),
+    )
+
+    message_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    artifact_revision_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(String(36))
+
+
+class PracticeReceipt(db.Model):
+    """A practice mutation's recorded result. It stores a payload hash, never learner text."""
+
+    __tablename__ = "practice_receipt"
+    __table_args__ = (db.CheckConstraint(
+        "operation IN ('start', 'save', 'send', 'pause', 'resume', 'reply', 'submit', 'feedback', 'annotate')", name="ck_practice_receipt_operation"),)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_practice_receipt_user"), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(
+        ForeignKey("practice_session.id", ondelete="CASCADE", name="fk_practice_receipt_session"), index=True)
+    operation: Mapped[str] = mapped_column(String(16))
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    response: Mapped[dict] = mapped_column(db.JSON)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+REPLY_STATUSES = ("pending", "running", "completed", "failed", "interrupted", "cancelled")
+LIVE_REPLY = "status IN ('pending', 'running')"
+
+
+class AIRequest(db.Model):
+    """One generation for a practice session, tracked in the database so it survives restarts.
+
+    The id is the public request ID. turn_message_id pins the learner turn it answers,
+    or the immutable submission for kind='feedback'. A claim token and lease fence late
+    writers; nothing here ever holds learner text or model output.
+    """
+
+    __tablename__ = "ai_request"
+    __table_args__ = (
+        db.UniqueConstraint("practice_session_id", "id", name="uq_ai_request_session_id"),
+        db.ForeignKeyConstraint(["practice_session_id", "turn_message_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_ai_request_turn"),
+        db.ForeignKeyConstraint(["practice_session_id", "reply_message_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_ai_request_reply"),
+        db.CheckConstraint("kind IN ('reply', 'feedback')", name="ck_ai_request_kind"),
+        db.CheckConstraint(_one_of("status", REPLY_STATUSES), name="ck_ai_request_status"),
+        db.CheckConstraint("context_from_sequence > 0", name="ck_ai_request_context_from"),
+        # One live generation per session, and at most one completed reply per turn.
+        db.Index("uq_ai_request_live", "practice_session_id", unique=True,
+                 postgresql_where=text(LIVE_REPLY), sqlite_where=text(LIVE_REPLY)),
+        db.Index("uq_ai_request_completed_turn", "turn_message_id", unique=True,
+                 postgresql_where=text("status = 'completed'"), sqlite_where=text("status = 'completed'")),
+        db.Index("ix_ai_request_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(
+        ForeignKey("practice_session.id", ondelete="CASCADE", name="fk_ai_request_session"))
+    turn_message_id: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(16))
+    error_code: Mapped[Optional[str]] = mapped_column(String(32))
+    context_from_sequence: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    profile_version: Mapped[str] = mapped_column(String(32))
+    provider: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(64))
+    selector_model: Mapped[str] = mapped_column(String(64))
+    claim_token: Mapped[Optional[str]] = mapped_column(String(64))
+    lease_expires_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    reply_message_id: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))
+
+
+class PracticeFeedback(db.Model):
+    """Validated feedback on one immutable submission, separate from the conversation."""
+
+    __tablename__ = "practice_feedback"
+    __table_args__ = (
+        db.ForeignKeyConstraint(["practice_session_id", "request_id"],
+                                ["ai_request.practice_session_id", "ai_request.id"],
+                                ondelete="CASCADE", name="fk_practice_feedback_request"),
+        db.ForeignKeyConstraint(["practice_session_id", "submission_id"],
+                                ["session_message.practice_session_id", "session_message.id"],
+                                ondelete="CASCADE", name="fk_practice_feedback_submission"),
+        db.UniqueConstraint("submission_id", name="uq_practice_feedback_submission"),
+    )
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    practice_session_id: Mapped[str] = mapped_column(String(36))
+    submission_id: Mapped[int] = mapped_column(Integer)
+    data: Mapped[dict] = mapped_column(db.JSON)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class PracticeFeedbackAnnotation(db.Model):
+    """The learner's revisable response; never overwrites the evaluated snapshot."""
+
+    __tablename__ = "practice_feedback_annotation"
+    __table_args__ = (
+        db.CheckConstraint("decision IN ('unreviewed', 'agree', 'disagree')", name="ck_feedback_annotation_decision"),
+        db.CheckConstraint("revision > 0", name="ck_feedback_annotation_revision"),
+        db.CheckConstraint("length(note) <= 2000", name="ck_feedback_annotation_note"),
+    )
+    feedback_request_id: Mapped[str] = mapped_column(String(36), ForeignKey(
+        "practice_feedback.request_id", ondelete="CASCADE", name="fk_feedback_annotation_feedback"), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(16))
+    note: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+
+
+class LearningAICharge(db.Model):
+    """What a Learning AI call cost, or may have cost. Content-free.
+
+    No foreign key to sessions or requests: deleting practice work keeps the accounting.
+    A reservation still unsettled after `expires_at` is an uncertain charge and keeps counting.
+    """
+
+    __tablename__ = "learning_ai_charge"
+    __table_args__ = (
+        db.CheckConstraint("purpose IN ('select', 'reply', 'feedback')", name="ck_learning_ai_charge_purpose"),
+        db.CheckConstraint("state IN ('reserved', 'settled', 'released')", name="ck_learning_ai_charge_state"),
+        db.CheckConstraint("reserved_microusd >= 0 AND (cost_microusd IS NULL OR cost_microusd >= 0)",
+                           name="ck_learning_ai_charge_amounts"),
+        db.Index("ix_learning_ai_charge_period", "period"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", name="fk_learning_ai_charge_user"))
+    reply_id: Mapped[str] = mapped_column(String(36))
+    purpose: Mapped[str] = mapped_column(String(16))
+    period: Mapped[str] = mapped_column(String(7))
+    provider: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(64))
+    service_tier: Mapped[str] = mapped_column(String(16))
+    pricing_version: Mapped[str] = mapped_column(String(32))
+    state: Mapped[str] = mapped_column(String(16))
+    reserved_microusd: Mapped[int] = mapped_column(BigInteger)
+    cost_microusd: Mapped[Optional[int]] = mapped_column(BigInteger)
+    input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    cached_input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    cache_write_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    output_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True))
+    settled_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime(timezone=True))

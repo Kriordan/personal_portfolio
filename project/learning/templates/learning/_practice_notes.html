@@ -1,0 +1,46 @@
+<div data-work-panel="session-brief" id="session-brief">
+<fieldset class="practice-notes{% if brief_conflict %} has-conflict{% endif %}" aria-describedby="brief-help{% if errors.brief %} brief-error{% endif %}{% if brief_conflict %} brief-conflict{% endif %}">
+  <legend>Your brief</legend>
+  <p class="practice-instructions" id="brief-help">Track your assumptions, open questions, decisions, and next step. Pin the entries that matter most. To drop an entry, clear its text or tick Remove.</p>
+  <p class="practice-meta">{% if detail.session_brief.revision %}Saved revision {{ detail.session_brief.revision }}, {{ detail.session_brief.saved_at|practice_time }}{% else %}Not saved yet{% endif %}</p>
+  {% if brief_refreshed %}<p class="practice-refreshed">Updated elsewhere: these entries are the latest saved brief.</p>{% endif %}
+  {% if errors.brief %}<p class="practice-error" id="brief-error">{{ errors.brief }}</p>{% endif %}
+  {% for row in form.brief %}
+    {% set filled = row.text.data and row.text.data.strip() %}
+    {% set text_attributes = {} %}
+    {% if errors.brief %}{% set _ = text_attributes.update({"aria-describedby": "brief-error"}) %}{% endif %}
+    {% if errors.brief and errors.brief_entry and errors.brief_entry == row.entry_id.data %}{% set _ = text_attributes.update({"aria-invalid": "true"}) %}{% endif %}
+    <fieldset class="practice-entry"{% if not filled %} data-blank-note{% endif %} id="brief-entry-{{ row.entry_id.data }}">
+      <legend>{% if filled %}Entry {{ loop.index }}{% else %}New entry{% endif %}{% if row.pinned.data %} · pinned{% endif %}</legend>
+      {{ row.entry_id }}{{ row.sources }}
+      <label for="{{ row.kind.id }}">Kind</label>
+      {{ row.kind() }}
+      <label for="{{ row.text.id }}">Text</label>
+      {{ row.text(rows=2, class="practice-entry-text", **text_attributes) }}
+      {% if sources[row.entry_id.data] %}
+        <p class="practice-cited">From
+          {% for source in sources[row.entry_id.data] %}
+            {%- if source.turn is defined %}<a href="#turn-{{ source.turn }}">turn {{ source.turn }}</a>
+            {%- elif source.artifact_id in artifacts %}<a href="{{ url_for('learning.practice_revision', session_id=detail.session.id, artifact_id=source.artifact_id, revision=source.revision) }}">{{ artifacts[source.artifact_id].title }} revision {{ source.revision }}</a>
+            {%- endif %}{% if not loop.last %}, {% endif %}
+          {%- endfor %}
+        </p>
+      {% endif %}
+      <div class="practice-checks">
+        <label class="practice-check">{{ row.pinned() }} Pin</label>
+        {% if filled %}<label class="practice-check">{{ row.remove() }} Remove</label>{% endif %}
+      </div>
+    </fieldset>
+  {% endfor %}
+  {% if brief_conflict %}
+    <div class="practice-conflict">
+      <h3>Saved elsewhere: brief revision {{ brief_conflict.revision }}</h3>
+      <p id="brief-conflict">Your entries above are not saved. Saving again makes them revision {{ brief_conflict.revision + 1 }}; the version below stays in the session record.</p>
+      {% if brief_conflict.entries %}
+        <ul class="practice-conflict-entries">{% for item in brief_conflict.entries %}<li><strong>{{ type_labels[item.type] }}{% if item.pinned %} (pinned){% endif %}:</strong> {{ item.text }}</li>{% endfor %}</ul>
+      {% else %}<p>That version has no entries.</p>{% endif %}
+    </div>
+  {% endif %}
+  <button type="button" class="button button--secondary" data-add-note hidden>Add a note</button>
+</fieldset>
+</div>

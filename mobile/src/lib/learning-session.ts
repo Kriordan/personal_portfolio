@@ -4,6 +4,7 @@ import {
   type RateCardResponse,
   type ReviewCard,
 } from './learning-model.ts';
+import type { FeedbackSource } from './feedback-response-model.ts';
 
 export interface ConfirmedRating {
   input: RateCardInput;
@@ -104,10 +105,11 @@ export class LearningSession {
     }
   }
   begin = async (
-    card: ReviewCard,
+    card: Pick<ReviewCard, 'card_id' | 'progress_revision' | 'content_version'>,
     rating: number,
     responseMs: number,
     sessionId: string,
+    source?: FeedbackSource,
   ) => {
     if (
       !this.active ||
@@ -130,8 +132,19 @@ export class LearningSession {
       request_id: this.deps.uuid(),
       expected_revision: card.progress_revision,
       session_id: sessionId,
+      ...(source ? { feedback_source: { ...source } } : {}),
       response_ms: Math.min(86_400_000, Math.max(0, Math.round(responseMs))),
+      ...(card.content_version === undefined
+        ? {}
+        : { content_version: card.content_version }),
     };
+    if (!isStoredAttempt(input)) {
+      this.update({
+        error:
+          'This review could not be identified. Load the current questions.',
+      });
+      return;
+    }
     this.update({ attempt: input });
     await this.submit(input);
   };
@@ -223,6 +236,7 @@ export class LearningSession {
       result.request_id !== input.request_id ||
       result.card_id !== input.card_id ||
       result.rating !== input.rating ||
+      result.content_version !== input.content_version ||
       typeof result.next_review_display !== 'string'
     )
       throw new Error('Unrecognized receipt');

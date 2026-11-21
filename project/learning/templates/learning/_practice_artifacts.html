@@ -1,0 +1,40 @@
+{% for entry in form.artifacts %}
+  {% set artifact = artifacts[entry.artifact_id.data] %}
+  {% set conflict = conflicts.get(artifact.artifact_id) %}
+  {% set error = (errors.artifacts or {}).get(artifact.artifact_id) %}
+  {% set attributes = {"aria-describedby": entry.body.id ~ "-help " ~ entry.body.id ~ "-meta"} %}
+  {% if error or conflict %}{% set _ = attributes.update({"aria-invalid": "true"}) %}{% endif %}
+  {% if error %}{% set _ = attributes.update({"aria-describedby": attributes['aria-describedby'] ~ " " ~ entry.body.id ~ "-error"}) %}{% endif %}
+  {% if conflict %}{% set _ = attributes.update({"aria-describedby": attributes['aria-describedby'] ~ " " ~ entry.body.id ~ "-conflict"}) %}{% endif %}
+  <div data-work-panel="artifact-{{ artifact.artifact_id }}" id="artifact-{{ artifact.artifact_id }}">
+  <fieldset class="practice-artifact{% if conflict %} has-conflict{% endif %}">
+    <legend>{{ artifact.title }}</legend>
+    <div class="practice-artifact-tools">
+    <details class="practice-artifact-help"><summary>What to include</summary><p class="practice-instructions" id="{{ entry.body.id }}-help">{{ artifact.instructions }}</p></details>
+    {{ entry.artifact_id }}{{ entry.base_revision }}
+    {% if artifact.languages|length > 1 %}
+      <label class="practice-notation" for="{{ entry.language.id }}">Notation {{ entry.language() }}</label>
+    {% else %}
+      <input type="hidden" name="{{ entry.language.name }}" value="{{ artifact.languages[0] }}">
+      <p class="practice-meta">Notation: {{ language_labels[artifact.languages[0]] }}</p>
+    {% endif %}
+    </div>
+    {% if artifact.artifact_id in refreshed %}<p class="practice-refreshed">Updated elsewhere: this box now shows saved revision {{ artifact.revision }}.</p>{% endif %}
+    <label class="practice-editor-label" for="{{ entry.body.id }}">{{ artifact.title }} draft</label>
+    {{ entry.body(rows=12, class="practice-editor", spellcheck="false", autocapitalize="off", **attributes) }}
+    <p class="practice-meta" id="{{ entry.body.id }}-meta">
+      {% if artifact.revision %}Saved revision {{ artifact.revision }}, {{ artifact.saved_at|practice_time }}{% else %}Not saved yet{% endif %}
+      <output data-byte-count="{{ entry.body.id }}" data-limit="{{ limits.artifact }}"></output>
+      {% if artifact.revision %}<a href="{{ url_for('learning.practice_history', session_id=detail.session.id, artifact_id=artifact.artifact_id) }}">History</a>{% endif %}
+    </p>
+    {% if error %}<p class="practice-error" id="{{ entry.body.id }}-error">{{ error }}</p>{% endif %}
+    {% if conflict %}
+      <div class="practice-conflict">
+        <h3>Saved elsewhere: revision {{ conflict.revision }} ({{ language_labels[conflict.language] }})</h3>
+        <p id="{{ entry.body.id }}-conflict">Your text is still in the box above and is not saved. Saving again makes your text revision {{ conflict.revision + 1 }}; this version stays in the history.</p>
+        <pre tabindex="0" aria-label="{{ artifact.title }} saved elsewhere, revision {{ conflict.revision }}">{{ conflict.body }}</pre>
+      </div>
+    {% endif %}
+  </fieldset>
+  </div>
+{% endfor %}

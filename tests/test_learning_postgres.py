@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from threading import Barrier
 from unittest.mock import patch
 from uuid import uuid4
@@ -125,6 +125,60 @@ with create_app({self.config!r}).app_context():
             child.communicate(timeout=10)
         self.assertEqual(self.rate(request_id)["progress_revision"], 1)
         self.assertEqual(ReviewLog.query.count(), 1)
+
+    def publish_curriculum(self):
+        from project.learning.content_schema import load_catalog
+        from project.services.curriculum_service import import_catalog
+        catalog = load_catalog(Path(__file__).resolve().parents[1] / "curriculum/idempotency/catalog.json")
+        import_catalog(catalog, dry_run=False, publish=True,
+                       reviewed_by="Fixture reviewer", reviewed_on=date(2026, 10, 1))
+
+    def test_curriculum_concurrent_replays_pin_one_content_revision(self):
+        self.publish_curriculum()
+        barrier = Barrier(2)
+        request_id = str(uuid4())
+
+        def rate():
+            with self.app.app_context():
+                user = db.session.get(User, 1)
+                barrier.wait(timeout=10)
+                return service.rate_card_for_user(user=user, notes_dir=self.notes,
+                    card_id="idempotency:timeout", content_version=1, rating=4,
+                    expected_revision=0, request_id=request_id)
+
+        with ThreadPoolExecutor(2) as pool:
+            futures = [pool.submit(rate) for _ in range(2)]
+            results = [future.result(timeout=15) for future in futures]
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(results[0]["content_version"], 1)
+        self.assertEqual(ReviewProgress.query.one().revision, 1)
+        self.assertEqual(ReviewLog.query.one().content_version, 1)
+        self.assertEqual(ReviewReceipt.query.count(), 1)
+
+    def test_curriculum_failure_rolls_back_and_does_not_touch_legacy_progress(self):
+        self.rate(str(uuid4()))
+        before = ReviewProgress.query.filter_by(card_id="fixture:q").one().next_review
+        self.publish_curriculum()
+        apply = service._apply_rating
+
+        def fail_after_writes(**kwargs):
+            apply(**kwargs)
+            db.session.flush()
+            raise RuntimeError("fixture failure before commit")
+
+        request_id = str(uuid4())
+        kwargs = dict(user=db.session.get(User, 1), notes_dir=self.notes, card_id="idempotency:timeout",
+                      content_version=1, rating=4, expected_revision=0, request_id=request_id)
+        with patch.object(service, "_apply_rating", side_effect=fail_after_writes):
+            with self.assertRaisesRegex(RuntimeError, "before commit"):
+                service.rate_card_for_user(**kwargs)
+        self.assertEqual(ReviewLog.query.count(), 1)
+        self.assertEqual(ReviewReceipt.query.count(), 1)
+        self.assertEqual(ReviewProgress.query.one().next_review, before)
+        service.rate_card_for_user(**kwargs)
+        self.assertEqual(ReviewLog.query.count(), 2)
+        self.assertEqual(ReviewLog.query.filter_by(card_id="fixture:q").one().content_version, None)
+        self.assertEqual(ReviewProgress.query.filter_by(card_id="fixture:q").one().next_review, before)
 
     def test_migration_preserves_history_and_rejects_duplicate_progress(self):
         self.rate(str(uuid4()))

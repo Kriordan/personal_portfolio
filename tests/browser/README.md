@@ -25,3 +25,68 @@ Chrome Canary on macOS); Linux CI uses `google-chrome`. `npm test` also checks t
 the locked DOMPurify version, both CDN references, and SHA-384 integrity match the
 installed browser bundle. The [October dependency review](../../docs/security/dependabot-2026-10-05.md)
 documents the audit exceptions and remaining exposure.
+
+The same command now runs `run-concept-check.cjs`: 29 checks against the actual
+lesson renderer and retry simulation. It verifies the Markdown allowlist, unsafe
+links, remote-media removal, missing-sanitizer fallback, all six combinations of
+failure position/key reuse, reset/end states, and keyboard focus on completion
+without stealing unrelated focus. Dependencies load locally; no
+AI service or external website is contacted by these fixtures.
+
+`run-practice-check.cjs` runs the practice workspace script on small isolated pages
+(43 checks, including polling, retries, and reply states): the leave-page prompt appears only for unsaved changes (text,
+notation, ticked boxes, and an unsent message, including one kept after saving
+or re-rendered after a rejected or failed request) and not while saving; byte
+counts use UTF-8 like the server limit; and the error summary receives focus,
+with or without the workspace form. Saving, sending, conflicts, and recovery do
+not depend on this script.
+
+## Full practice workspace regression
+
+```sh
+PYTHON_DOTENV_DISABLED=1 AWS_EC2_METADATA_DISABLED=true \
+  poetry run python -m unittest tests.test_practice_browser
+```
+
+This test runs 225 checks against the real Flask templates and native forms inside headless Chrome,
+with a temporary localhost server, disposable SQLite data, CSRF enabled, and a
+scripted AI provider. It checks shared tabs/drafts, focus and scroll continuity,
+keyboard operation, pause/resume, hidden-panel conflicts, an unconfirmed save and
+receipt replay, failed-send recovery, mobile layout, blocked browser storage, and
+saving without JavaScript. Feedback, learner responses, follow-up review, private
+exports, native tab/fieldset semantics, error descriptions, evidence links, and
+focus during feedback completion and responsive reflow are also covered.
+External resources are blocked by the fixture CSP.
+It is discovered by the backend CI suite. Chrome is required in CI; local runs
+without Chrome skip with an explicit reason. Set `CHROME_BIN` to override its path.
+No new npm dependency is needed. PostgreSQL races/migrations have separate tests.
+
+## Learning home and library navigation
+
+`poetry run python -m unittest tests.test_learning_hub_browser` runs two
+walkthroughs against real Flask pages in Chrome. The first has 60 checks covering
+the continuation link and saved
+artifact, practice tab restoration, authenticated articles and flashcards,
+search/pagination, escaped note titles, the existing rating endpoint and receipt,
+progress after reload, independent concept review counts, 390/320-pixel layouts,
+skip-link focus, and navigation with scripts blocked. The fixture seeds the
+review queue's randomness and blocks external resources. It uses the same
+disposable database/browser approach as the practice regression and runs in
+backend unittest discovery. Route and isolation checks live in
+`tests/test_learning_hub.py`; interactive developer exercises are in the
+[Learning home guide](../../docs/learning-home-test-guide.md).
+
+The second, `concept-workspace-checks.js`, has **70 checks** for the shared
+Learn/Review/Discuss/Build workspace. It deliberately selects an older session,
+then checks lesson section links/focus, the colocated retry simulation, reveal
+and remediation, unsaved-work protection, an artifact save, a discussion turn,
+all four ratings and their receipts, completion, mobile layouts, and no-JavaScript
+reading. It confirms that reading/revealing does not write progress or start a
+session, and that evaluator sentinels never enter the page. Route-level ownership,
+failed/stale rating, and start replay coverage lives in `test_concept_workspace.py`.
+The [concept guide](../../docs/learning-concept-workspace-test-guide.md) provides
+interactive developer exercises.
+
+Both integrated browser fixtures apply their local-only CSP after Talisman's
+response hook and assert the resulting header. This keeps external assets out
+of the walkthroughs; the separate renderer fixtures use local sanitizer bundles.

@@ -27,6 +27,7 @@
       rel="stylesheet"
     />
     <!-- Google tag (gtag.js) -->
+    {% if not config.get('LEARNING_LOCAL_PILOT') and not (request.blueprint == 'learning' and current_user.is_authenticated) and not (config.get('LEARNING_HOSTED_PILOT') and request.blueprint == 'account') %}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZHE36BSYDX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -48,11 +49,14 @@
           a.appendChild(r);
       })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
     </script>
+    {% endif %}
   </head>
-  <body>
-    {% block header %}{% include "_header.html" %}{% endblock header %}
+  <body{% if request.blueprint == 'learning' and current_user.is_authenticated %} class="learning-private"{% endif %}>
+    {% if config.get('LEARNING_LOCAL_PILOT') %}<p class="learning-pilot-notice">Personal local Learning pilot · Saved on this computer · {% if config.get('LEARNING_LOCAL_DRAFT_REVISIONS') %}Draft idempotency content · {% endif %}{% if config.get('LEARNING_AI_ENABLED') %}AI enabled{% else %}AI disabled{% endif %}</p>{% endif %}
+    {% if config.get('LEARNING_HOSTED_PILOT') and request.blueprint == 'learning' and learning_access_allowed(current_user) %}<p class="learning-pilot-notice">Private Learning pilot · Draft idempotency content · {% if config.get('LEARNING_HOSTED_AI_MODE') == 'verification' %}AI verification{% elif config.get('LEARNING_AI_ENABLED') %}AI enabled{% else %}AI disabled{% endif %}</p>{% endif %}
+    {% block header %}{% if config.get('LEARNING_LOCAL_PILOT') %}<header class="learning-shell-header"><a class="learning-brand" href="{{ url_for('learning.index') }}">Learning</a></header>{% else %}{% include "_header.html" %}{% endif %}{% endblock header %}
     
-    <div class="container">{% block body %}{% endblock body %}</div>
+    <div class="container{% block container_class %}{% endblock %}">{% block body %}{% endblock body %}</div>
     
     {% block footer %}{% include "_footer.html" %}{% endblock footer %}
     

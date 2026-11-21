@@ -1,0 +1,34 @@
+{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+{% if notice %}<p class="concept-notice" role="status">{{ notice }}</p>{% endif %}
+{% if detail.feedback_pending %}
+  <p class="concept-notice">Feedback is being prepared for <a href="{{ url_for('learning.practice_submission', session_id=detail.session.id, sequence=detail.feedback_pending.sequence, _anchor='feedback') }}">snapshot {{ detail.feedback_pending.sequence }}</a>. You can save edits; sending and new checks resume when it finishes.</p>
+{% endif %}
+{% if detail.ai_budget and detail.ai_budget.total %}
+  <p class="practice-budget">Pilot AI allowance: {{ money(detail.ai_budget.total.spent_microusd) }} committed of {{ money(detail.ai_budget.total.cap_microusd) }} total, including pending or uncertain calls. This allowance does not reset each month.{% if detail.ai_budget.exhausted %} There is no room for another call. Reading, saving, and sending still work.{% endif %}</p>
+{% elif detail.ai_budget and (detail.ai_budget.warning or detail.ai_budget.exhausted) %}
+  <p class="practice-budget">{% if detail.ai_budget.exhausted %}This month's AI budget is used up: replies resume next month. Reading, saving, and sending still work.{% else %}AI spending this month: {{ money(detail.ai_budget.spent_microusd) }} of {{ money(detail.ai_budget.cap_microusd) }}.{% endif %}</p>
+{% endif %}
+{% if paused %}<p class="practice-paused">This session is paused. Saving, sending, or resuming picks it up again.</p>{% endif %}
+{% if alert %}
+  <div class="practice-alert" id="practice-alert" role="alert" tabindex="-1">
+    <p>{{ alert }}</p>
+    {% if errors or conflicts or brief_conflict or refreshed or brief_refreshed or new_after is not none %}
+      <ul>
+        {% for artifact_id, message in (errors.artifacts or {}).items() %}
+          <li><a href="#artifact-{{ artifact_id }}">{{ artifacts[artifact_id].title if artifact_id in artifacts else 'Artifact' }}: {{ message }}</a></li>
+        {% endfor %}
+        {% if errors.brief %}<li><a href="#session-brief">Your brief: {{ errors.brief }}</a></li>{% endif %}
+        {% if errors.message %}<li><a href="#message">Your message: {{ errors.message }}</a></li>{% endif %}
+        {% for artifact in detail.artifacts if artifact.artifact_id in conflicts %}
+          <li><a href="#artifact-{{ artifact.artifact_id }}">{{ artifact.title }} changed elsewhere</a></li>
+        {% endfor %}
+        {% if brief_conflict %}<li><a href="#session-brief">Your brief changed elsewhere</a></li>{% endif %}
+        {% for artifact in detail.artifacts if artifact.artifact_id in refreshed %}
+          <li><a href="#artifact-{{ artifact.artifact_id }}">{{ artifact.title }} was updated elsewhere and is now shown</a></li>
+        {% endfor %}
+        {% if brief_refreshed %}<li><a href="#session-brief">Your brief was updated elsewhere and is now shown</a></li>{% endif %}
+        {% if new_after is not none %}<li><a href="#conversation">New messages arrived</a></li>{% endif %}
+      </ul>
+    {% endif %}
+  </div>
+{% endif %}

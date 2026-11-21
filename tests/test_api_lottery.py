@@ -7,7 +7,8 @@ from project.database import db
 from project.models import User
 from project.lottery.models import LotterySnapshot, LotteryRefreshRun
 from project.lottery.calculations import rank
-from test_lottery import example
+from test_lottery import example, fixture
+from project.lottery.sources import draw_game
 
 class LotteryApiTests(unittest.TestCase):
     def setUp(self):
@@ -76,3 +77,21 @@ class LotteryApiTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn('One stop a week', response.text)
             self.assertIn('private, no-store', response.headers['Cache-Control'])
+
+    def test_home_summary_reads_saved_results_without_upstream_requests(self):
+        now = datetime.now(timezone.utc)
+        games = [draw_game(fixture('ct_powerball_results.html'), 'powerball'),
+                 draw_game(fixture('ct_mega_results.html'), 'mega-millions')]
+        db.session.add(LotterySnapshot(source='draw', source_at=now, fetched_at=now,
+                                       digest='draw-results', data={'games': games}))
+        db.session.commit()
+        with patch('requests.sessions.Session.request', side_effect=AssertionError('No upstream I/O')) as http:
+            with patch('project.lottery.planner.datetime', wraps=datetime) as clock:
+                clock.now.return_value = datetime.fromisoformat('2026-11-19T12:00:00-05:00')
+                response = self.get('/api/v1/lottery/draws?state=ct')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.headers['Cache-Control'], 'private, no-store')
+            self.assertEqual(response.json['home']['upcoming']['name'], 'Mega Millions')
+            self.assertEqual(response.json['home']['latest']['result']['numbers'], [18, 31, 43, 51, 62])
+            self.assertEqual(response.json['plan']['state'], 'ct')
+            http.assert_not_called()

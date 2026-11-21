@@ -18,34 +18,10 @@ from project.learning.scheduler_config import get_effective_target_recall
 from project.learning.schedulers import ScheduleInput
 from project.learning.schedulers.factory import get_scheduler
 from project.models import ReviewLog, ReviewProgress, ReviewReceipt, User
-
-
-class LearningServiceError(Exception):
-    """Base learning service exception."""
-
-
-class NotFoundError(LearningServiceError):
-    """Raised when requested learning content does not exist."""
-
-
-class ValidationError(LearningServiceError):
-    """Raised when service input fails validation."""
-
-
-class InvalidRatingError(ValidationError):
-    """Raised when a review rating is outside the supported range."""
-
-
-class InvalidCardIdError(ValidationError):
-    """Raised when a review card ID does not use the expected format."""
-
-
-class ConflictError(LearningServiceError):
-    """Raised when a resource conflict occurs."""
-
-
-class StaleReviewError(ConflictError):
-    """Another client changed this card after the queue was loaded."""
+from project.services.learning_errors import (  # noqa: F401 (re-exported)
+    ConflictError, InvalidCardIdError, InvalidRatingError, LearningServiceError, NotFoundError,
+    StaleReviewError, ValidationError,
+)
 
 
 def _ensure_aware(value: datetime) -> datetime:
@@ -262,8 +238,14 @@ def review_cards_for_user(
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Return due cards in queue order for review."""
-    review_now = now or datetime.now(timezone.utc)
     cards = build_cards(notes)
+    return due_cards_for_user(cards, user_id=user_id, now=now)
+
+
+def due_cards_for_user(cards: list[dict[str, Any]], *, user_id: int,
+                       now: datetime | None = None) -> list[dict[str, Any]]:
+    """Shared eligibility and ordering for legacy cards and published questions."""
+    review_now = now or datetime.now(timezone.utc)
     progress_by_card = progress_map([card["card_id"] for card in cards], user_id)
     due_cards = []
     for card in cards:
@@ -324,7 +306,7 @@ def rating_receipt(user: User, request_id: str) -> dict | None:
 def rate_card_for_user(*, user: User, notes_dir: Path, card_id: str, rating: int,
                        response_ms: int | None = None, session_id: str | None = None,
                        request_id: str | None = None, expected_revision: int | None = None,
-                       now: datetime | None = None) -> dict[str, Any]:
+                       now: datetime | None = None, content_version: int | None = None) -> dict[str, Any]:
     """Serialize ratings, committing progress, a log, and its receipt atomically."""
     if type(rating) is not int or not 0 <= rating <= 5:
         raise InvalidRatingError("rating must be an integer between 0 and 5")
@@ -340,8 +322,13 @@ def rate_card_for_user(*, user: User, notes_dir: Path, card_id: str, rating: int
         validate_request_id(request_id)
         if expected_revision is None:
             raise ValidationError("expected_revision required with request_id")
+    if content_version is not None:
+        if type(content_version) is not int or not 1 <= content_version <= 2_147_483_647 or request_id is None:
+            raise ValidationError("curriculum reviews require a content version and request ID")
     payload = dict(card_id=card_id, rating=rating, response_ms=response_ms,
                    session_id=session_id, expected_revision=expected_revision)
+    if content_version is not None:
+        payload["content_version"] = content_version
     try:
         # The user row exists before a first review. Locking only a progress row
         # would leave concurrent first reviews unprotected. SQLite fixtures need
@@ -360,7 +347,7 @@ def rate_card_for_user(*, user: User, notes_dir: Path, card_id: str, rating: int
                 return result
         result = _apply_rating(user=user, notes_dir=notes_dir, card_id=card_id, rating=rating,
                                response_ms=response_ms, session_id=session_id,
-                               expected_revision=expected_revision, now=now)
+                               expected_revision=expected_revision, now=now, content_version=content_version)
         if request_id:
             result["request_id"] = request_id
             db.session.add(ReviewReceipt(user_id=user.id, request_id=request_id, payload=payload,
@@ -382,6 +369,7 @@ def _apply_rating(
     session_id: str | None = None,
     expected_revision: int | None = None,
     now: datetime | None = None,
+    content_version: int | None = None,
 ) -> dict[str, Any]:
     """Apply a rating to a card and persist progress/log records."""
     if rating < 0 or rating > 5:
@@ -395,13 +383,13 @@ def _apply_rating(
         raise InvalidCardIdError("invalid card_id format")
     note_id, _ = parts
 
-    note = load_note(notes_dir, note_id)
-    if note is None:
-        raise NotFoundError("card not found")
-
-    cards = build_cards([note])
-    card_lookup = {card["card_id"]: card for card in cards}
-    card = card_lookup.get(card_id)
+    if content_version is not None:
+        from project.services.curriculum_service import published_review_question
+        card = published_review_question(note_id, card_id, version=content_version, notes_dir=notes_dir)
+    else:
+        note = load_note(notes_dir, note_id)
+        cards = build_cards([note]) if note else []
+        card = next((entry for entry in cards if entry["card_id"] == card_id), None)
     if card is None:
         raise NotFoundError("card not found")
 
@@ -484,6 +472,7 @@ def _apply_rating(
             user_id=user.id,
             card_id=card_id,
             reviewed_at=review_now,
+            content_version=content_version,
             rating=rating,
             scheduler_version=progress.scheduler_version,
             learning_state_before=before["learning_state"],
@@ -527,6 +516,8 @@ def _apply_rating(
         "saved_at": review_now.isoformat(),
         "rating": rating,
     }
+    if content_version is not None:
+        response_data["content_version"] = content_version
 
     if user.is_admin:
         debug_info = schedule_output.debug_info or {}

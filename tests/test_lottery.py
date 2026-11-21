@@ -134,6 +134,43 @@ class SourceTests(unittest.TestCase):
         self.assertEqual((mega["price"],mega["odds"]),(5,290472336))
         self.assertEqual(mega["next_draw"],"2026-10-28T03:00:00+00:00")
 
+    def test_saved_official_results_are_the_main_drawing(self):
+        power = draw_game(fixture("ct_powerball_results.html"), "powerball")
+        mega = draw_game(fixture("ct_mega_results.html"), "mega-millions")
+        self.assertEqual(power["last_result"], dict(date="2026-11-18", numbers=[18, 31, 43, 51, 62],
+                                                  bonus=12, bonus_label="Powerball", power_play=2))
+        self.assertEqual(mega["last_result"], dict(date="2026-11-17", numbers=[3, 10, 19, 28, 33],
+                                                 bonus=21, bonus_label="Mega Ball", power_play=None))
+        self.assertIsNone(draw_game(fixture("ct_powerball.html"), "powerball")["last_result"])
+
+    def test_results_can_publish_while_the_next_jackpot_is_pending(self):
+        html = fixture("ct_powerball_results.html")
+        values = {key: next(v for v in flight_values(html, key) if isinstance(v, (list, dict)))
+                  for key in ("status", "games", "cells", "winningNumbers")}
+        values["status"].update(jackpotPending=True, jackpot=None, cashValue=None)
+        document = '<script>self.__next_f.push(' + json.dumps([1, '0:' + json.dumps(values)]) + ')</script>'
+        game = draw_game(document, "powerball")
+        self.assertIsNone(game["jackpot"])
+        self.assertIsNone(game["cash"])
+        self.assertEqual(game["last_result"]["numbers"], [18, 31, 43, 51, 62])
+
+    def test_invalid_or_ambiguous_winning_numbers_are_rejected(self):
+        html = fixture("ct_powerball_results.html")
+        values = {key: next(v for v in flight_values(html, key) if isinstance(v, (list, dict)))
+                  for key in ("status", "games", "cells", "winningNumbers")}
+        for change in [dict(whiteBalls=[1, 1, 2, 3, 4]), dict(whiteBalls=[1, 2, 3, 4, 70]),
+                       dict(whiteBalls=[True, 2, 3, 4, 5]), dict(powerball=27),
+                       dict(drawDate="2026-11-17"), dict(drawDate="not-a-date"),
+                       dict(powerPlayMultiplier=6)]:
+            broken = copy.deepcopy(values)
+            broken["winningNumbers"].update(change)
+            document = '<script>self.__next_f.push(' + json.dumps([1, '0:' + json.dumps(broken)]) + ')</script>'
+            with self.subTest(change=change), self.assertRaises(SourceError):
+                draw_game(document, "powerball")
+        extra = '<script>self.__next_f.push(' + json.dumps([1, '1:' + json.dumps({"winningNumbers": values["winningNumbers"]})]) + ')</script>'
+        with self.assertRaises(SourceError):
+            draw_game(html + extra, "powerball")
+
     def test_timeouts_blocks_backoff_spacing(self):
         session=Mock(); sleep=Mock(); client=PublicClient(session,sleep=sleep,clock=lambda:1)
         session.get.side_effect=[requests.Timeout(),Mock(status_code=200,text="ok",headers={})]

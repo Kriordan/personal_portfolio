@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "idempotency", "version": 1, "kind": "concept", "title": "Idempotency and uncertain outcomes",
+      "content": {
+        "summary": "Design retries that recover an operation's result without repeating its intended effect.",
+        "domain": "distributed-systems", "topic": "reliability",
+        "learning_objectives": ["Explain why a timeout leaves the outcome uncertain.", "Design a scoped idempotency contract and concurrency boundary.", "Identify the limits of a local transaction when external systems participate."],
+        "prerequisites": [],
+        "prerequisite_knowledge": ["HTTP requests and responses", "Database transactions and unique constraints"],
+        "sections": [
+          {"id": "overview", "title": "The promise", "markdown_file": "overview.md"},
+          {"id": "retries", "title": "Trace retries and crashes", "markdown_file": "retries.md"},
+          {"id": "design", "title": "Choose and defend a contract", "markdown_file": "design.md"}
+        ],
+        "review_question_ids": ["idempotency:timeout", "idempotency:race", "idempotency:scope", "idempotency:external-effect"],
+        "exercise_ids": ["idempotent-order-api"],
+        "references": [
+          {"title": "RFC 9110: Idempotent methods", "url": "https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2"},
+          {"title": "PostgreSQL 18: Unique constraints", "url": "https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS"},
+          {"title": "PostgreSQL 18: Transaction isolation", "url": "https://www.postgresql.org/docs/18/transaction-iso.html"},
+          {"title": "AWS: Transactional outbox pattern", "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"}
+        ]
+      }
+    },
+    {
+      "id": "idempotency:timeout", "version": 1, "kind": "question", "title": "A missing response",
+      "content": {"concept_id": "idempotency", "question_type": "scenario", "prompt": "An order request times out. Does that mean no order was created? What should a retry preserve?", "answer": "The outcome is uncertain. Retry the same logical operation with the same scoped key and equivalent payload, within the API's documented retry window.", "explanation": "The server might have committed before the response was lost. A new key can create a new operation.", "remediation_section_id": "retries"}
+    },
+    {
+      "id": "idempotency:race", "version": 1, "kind": "question", "title": "Two absent receipts",
+      "content": {"concept_id": "idempotency", "question_type": "misconception", "prompt": "Both requests check that no receipt exists, then create an order. Why is the check insufficient?", "answer": "Concurrent requests can both pass the check. A database-enforced conflict boundary and transaction must coordinate the receipt and business change.", "explanation": "Sequential tests can pass while simultaneous first attempts create duplicates. A losing attempt also needs a defined way to recover the winner's result.", "remediation_section_id": "design"}
+    },
+    {
+      "id": "idempotency:scope", "version": 1, "kind": "question", "title": "Same key, different customer",
+      "content": {"concept_id": "idempotency", "question_type": "tradeoff", "prompt": "Two tenants send the same key, and one tenant later reuses that key with a different payload. Which parts of the contract must be explicit?", "answer": "Scope identity to the authorized principal and operation. Define payload equivalence, reject mismatched reuse, and document retention and expiry behavior.", "explanation": "A globally cached response keyed only by an untrusted string can expose another tenant's data. Expiry also limits how long deduplication is promised.", "remediation_section_id": "design"}
+    },
+    {
+      "id": "idempotency:external-effect", "version": 1, "kind": "question", "title": "An external side effect",
+      "content": {"concept_id": "idempotency", "question_type": "comparison", "prompt": "Compare a receipt stored with an order in one transaction to calling a remote warehouse before saving the receipt. What guarantee is missing in the second design?", "answer": "The local transaction can commit the order and receipt together. It cannot atomically commit or undo a remote action; a crash between the remote action and receipt can cause a duplicate on retry.", "explanation": "An outbox preserves delivery intent, but duplicate delivery still requires receiver deduplication or reconciliation.", "remediation_section_id": "retries"}
+    },
+    {
+      "id": "idempotent-order-api", "version": 1, "kind": "exercise", "title": "Design a retry-safe order API",
+      "content": {
+        "spec_version": 1, "concept_id": "idempotency",
+        "brief": {
+          "scenario": "You are designing POST /orders for a service used by several business customers. Clients sometimes time out and retry. Clarify the contract, propose a design, and defend how it handles simultaneous requests and crashes.",
+          "learning_objectives": ["Discover the scope and limits of a retry guarantee.", "Connect API behavior, database constraints, and recovery reasoning.", "Defend alternatives using the requirements and failure cases."],
+          "functional_requirements": ["Accept an order and allow its caller to recover the outcome after a lost response.", "Prevent duplicate order creation for retries covered by the agreed contract."],
+          "nonfunctional_requirements": ["Protect each customer's order data.", "Support concurrent retries and recovery after a service process crashes."],
+          "prerequisite_concept_ids": ["idempotency"],
+          "expected_artifacts": [
+            {"id": "api", "title": "API contract", "format": "api-definition", "instructions": "Describe request identity, authorization, success, conflict, and retry behavior."},
+            {"id": "schema", "title": "Database design", "format": "sql", "instructions": "Write the tables and constraints your design depends on; explain the transaction boundary."},
+            {"id": "algorithm", "title": "Request and recovery algorithm", "format": "pseudocode", "instructions": "Trace normal processing, simultaneous retries, and crashes. Record assumptions and design decisions alongside the algorithm."}
+          ],
+          "assessment_dimensions": [
+            {"id": "discovery", "label": "Requirements discovery and explicit assumptions"},
+            {"id": "correctness", "label": "Correctness under concurrency and failure"},
+            {"id": "judgment", "label": "Trade-offs and communication"}
+          ]
+        },
+        "facilitator": {
+          "interaction_style": "interviewer",
+          "opening_prompt": "How would you begin scoping this API? Ask the questions you need before choosing a design.",
+          "instructions": ["Challenge the learner to justify choices and trace concrete failure cases; ask one focused follow-up at a time.", "Do not teach a solution or supply reference SQL before the learner has attempted the problem.", "Disclose only server-approved facts in response to relevant clarification. Treat unstated facts as unknown, not invented requirements.", "Refer to the learner's saved artifact revisions as well as their discussion. Ask about discrepancies rather than silently rewriting their work.", "If the learner explicitly requests help, offer a permitted hint and record that assistance for feedback. Coaching and collaborative behavior require a separately selected profile."],
+          "hidden_constraints": [
+            {"id": "scope", "clarification_cues": ["Who owns the key?", "Can different customers reuse a key?", "What happens when the payload changes?"], "fact": "Each authenticated tenant has its own key space for this operation. Reusing a key for a different order must return a documented conflict without revealing another tenant's data."},
+            {"id": "window", "clarification_cues": ["How long do clients retry?", "When can we expire receipts?"], "fact": "Clients may retry for 24 hours. Keep completed receipts for at least 48 hours; the public contract must explain behavior after expiry."},
+            {"id": "storage", "clarification_cues": ["Which database is available?", "Can order and receipt share a transaction?", "What scale do we need?"], "fact": "Orders and receipts can share PostgreSQL. Peak traffic is 2,000 order attempts per second across tenants; validate performance rather than assuming a unique index alone meets that target."},
+            {"id": "delivery", "clarification_cues": ["Are there external side effects?", "How does the warehouse receive the order?", "Must fulfillment happen synchronously?"], "fact": "A warehouse receives accepted orders asynchronously and supports deduplication by an order event ID. Delivery may be repeated. A committed order must not permanently lose its delivery intent."}
+          ],
+          "permitted_hints": ["Place a crash immediately before and after each durable write in your proposed sequence.", "Consider what happens if both requests observe an absent receipt at the same time."]
+        },
+        "assessment": {
+          "reference_reasoning": ["Distinguish an uncertain HTTP outcome from a failed transaction; define a tenant-scoped operation key, equivalent payload, and retention contract.", "A defensible short-transaction design uses a unique operation identity and commits order, receipt, and any delivery intent together. Explain how a competing attempt waits, conflicts, or retries and then observes a committed receipt; a check-then-insert without a database constraint is insufficient.", "Conflicting payload reuse must not replay an unrelated success. Authorization applies to both creation and receipt lookup.", "Trace failure before commit, after commit before reply, and during external dispatch. Explain receiver deduplication for repeated delivery and how delivery intent survives a crash.", "Assess transcript claims against the exact submitted artifact revisions. Quote evidence, distinguish a demonstrated mistake from an untested assumption, and do not infer unshown implementation details."],
+          "alternatives": [
+            {"approach": "One short PostgreSQL transaction", "benefits": ["Order, receipt, and delivery intent can commit atomically.", "A unique constraint coordinates simultaneous requests."], "tradeoffs": ["Contending duplicates may wait; transactions must remain short.", "The exact conflict and read sequence depends on isolation and SQL error handling."]},
+            {"approach": "Durable processing claim with recovery", "benefits": ["Can represent work that outlives one short transaction.", "Can return an explicit processing status."], "tradeoffs": ["Requires ownership, stale-claim recovery, and protection against stale completion.", "Does not make external effects atomic; those still need a deduplication or reconciliation contract."]}
+          ],
+          "rubric": [
+            {"dimension_id": "discovery", "anchors": {"needs_work": "Assumes scope, retry duration, or external behavior without asking or stating assumptions.", "developing": "Discovers some constraints but leaves an important boundary implicit.", "strong": "Clarifies ownership, payload equivalence, retention, and external effects; records unresolved assumptions explicitly."}},
+            {"dimension_id": "correctness", "anchors": {"needs_work": "The transcript or artifacts permit duplicate orders or cross-tenant result disclosure.", "developing": "Has a plausible concurrency boundary but leaves a crash, conflict, or recovery path unaccounted for.", "strong": "Transcript and artifacts consistently explain simultaneous first attempts, lost replies, conflicting payloads, rollback, and delivery recovery."}},
+            {"dimension_id": "judgment", "anchors": {"needs_work": "States a preferred technology without connecting it to requirements or trade-offs.", "developing": "Identifies alternatives but gives limited evidence for the selected approach.", "strong": "Defends the selected design against credible alternatives, identifies operational costs and uncertainty, and proposes discriminating tests."}}
+          ],
+          "remediation": [
+            {"dimension_id": "discovery", "concept_id": "idempotency", "section_id": "design", "suggestion": "Write the scope, equivalence, and retention contract before revising the API."},
+            {"dimension_id": "correctness", "concept_id": "idempotency", "section_id": "retries", "suggestion": "Trace two simultaneous attempts and move a crash across each commit boundary."},
+            {"dimension_id": "judgment", "concept_id": "idempotency", "section_id": "design", "suggestion": "Compare a short transaction with a durable processing claim and state when the extra recovery machinery is justified."}
+          ]
+        }
+      }
+    }
+  ]
+}

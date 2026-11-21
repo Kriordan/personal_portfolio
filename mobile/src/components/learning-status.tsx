@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Card, InlineError, NativeAction } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import type { useLearningActivity } from '@/hooks/use-learning';
+import { reviewRoute } from '@/lib/learning-model';
 
 export function LearningStatus({
   activity,
@@ -46,16 +47,24 @@ export function LearningStatus({
         <NativeAction
           label="Load a fresh queue"
           onPress={() => {
+            const destination = reviewRoute(activity.attempt!);
             void activity.session.dismissConflict().then((cleared) => {
               if (cleared) {
-                if (onFreshQueue) onFreshQueue();
-                else router.push('/learning/review');
+                onFreshQueue?.();
+                router.replace(destination);
               }
             });
           }}
         />
       ) : (
         <View style={{ gap: 8 }}>
+          {activity.attempt.feedback_source ? (
+            <NativeAction
+              label="Open the affected focused review"
+              secondary
+              onPress={() => router.push(reviewRoute(activity.attempt!))}
+            />
+          ) : null}
           <NativeAction
             label="Check saved rating"
             disabled={busy}

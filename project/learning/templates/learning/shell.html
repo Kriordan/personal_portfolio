@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block container_class %} learning-container{% endblock %}
+{% block header %}
+<a class="learning-skip" href="#learning-main">Skip to content</a>
+<header class="learning-shell-header{% block learning_header_class %}{% endblock %}">
+  <a class="learning-brand" href="{{ url_for('learning.index') }}"{% if request.endpoint == 'learning.index' %} aria-current="page"{% endif %}>Learning</a>
+  <nav aria-label="Account and portfolio">
+    {% if not config.get('LEARNING_LOCAL_PILOT') %}<a href="{{ url_for('foyer.home') }}">Portfolio</a>{% endif %}
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('account.logout') }}">Log out</a>
+    {% else %}
+      <a href="{{ url_for('account.login') }}">Sign in</a>
+    {% endif %}
+  </nav>
+</header>
+{% endblock %}
+{% block body %}
+<main id="learning-main" tabindex="-1">{% block learning_content %}{% endblock %}</main>
+{% endblock %}
+{% block footer %}{% endblock %}

@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-19",
+  "source_commit": "7cf2b5e16ec489f2713c19d00a6c863d7491061c",
+  "backend": {
+    "app": "keithriordan",
+    "code_release": 180,
+    "monitoring_tag_release": 181,
+    "status": "succeeded",
+    "database_migration_added": false,
+    "refresh": {
+      "ct": {
+        "status": "success",
+        "games": 23,
+        "requests": 24
+      },
+      "draw": {
+        "status": "success",
+        "games": 2,
+        "requests": 2
+      }
+    },
+    "live_readback": {
+      "schema_and_hosted_readiness": "passed",
+      "hosted_home_status": 200,
+      "anonymous_draw_status": 401,
+      "authenticated_draw_status": 200,
+      "cache_control": "private, no-store",
+      "home": {
+        "latest": {
+          "date": "2026-11-18T22:59:00-05:00",
+          "label": "Wed, Nov 18",
+          "name": "Powerball",
+          "result": {
+            "bonus": 12,
+            "bonus_label": "Powerball",
+            "date": "2026-11-18",
+            "numbers": [
+              18,
+              31,
+              43,
+              51,
+              62
+            ],
+            "power_play": 2
+          }
+        },
+        "upcoming": {
+          "date": "2026-11-20T23:00:00-05:00",
+          "jackpot": 629000000,
+          "label": "Fri, Nov 20 \u00b7 11:00 PM ET",
+          "name": "Mega Millions"
+        }
+      },
+      "draw_source_at": "2026-11-19T20:26:00.519954+00:00",
+      "scratch_game_counts": {
+        "ny": 32,
+        "ct": 23
+      },
+      "sentry_release": "7cf2b5e16ec489f2713c19d00a6c863d7491061c"
+    }
+  },
+  "preview": {
+    "workflow_id": "01a1f57e-22dd-7bf4-8e99-8c7597a72f05",
+    "workflow_status": "SUCCESS",
+    "workflow_url": "https://expo.dev/accounts/kriordan/projects/personal-portfolio/workflows/01a1f57e-22dd-7bf4-8e99-8c7597a72f05",
+    "job_id": "01a1f57e-2401-7a24-ae84-07d6c0daefe2",
+    "job_status": "SUCCESS",
+    "channel": "preview",
+    "update": {
+      "id": "01a1f57f-c74e-7bb3-b8ec-95864c430574",
+      "createdAt": "2026-11-19T20:29:14.446Z",
+      "group": "de7f5743-ce1e-4e7a-9b31-c74907a72409",
+      "branch": "preview",
+      "message": "Lotto sections, compact Home results, and Monday reminder",
+      "runtimeVersion": "77b0440fdf8c270adcb7939e8c162f453f8e5ad4",
+      "platform": "ios",
+      "manifestPermalink": "https://u.expo.dev/update/01a1f57f-c74e-7bb3-b8ec-95864c430574",
+      "isRollBackToEmbedded": false,
+      "gitCommitHash": "7cf2b5e16ec489f2713c19d00a6c863d7491061c"
+    },
+    "update_url": "https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/de7f5743-ce1e-4e7a-9b31-c74907a72409",
+    "native_runtime_guard": "passed",
+    "sentry_source_map_upload": "succeeded",
+    "compatible_iphone_build": {
+      "id": "a55838d8-8dd0-40c0-a9dd-f5d43c9fd3b7",
+      "version": "1.0.0",
+      "build_number": "14"
+    },
+    "new_native_build_created": false
+  },
+  "validation": {
+    "backend": {
+      "passed": 653,
+      "skipped": 135,
+      "total": 788
+    },
+    "lottery_backend_tests": 33,
+    "mobile_tests": 215,
+    "typescript": "passed",
+    "lint": "passed",
+    "dependency_compatibility": "passed",
+    "npm_audits": {
+      "web": "passed",
+      "mobile": "passed",
+      "documented_exceptions": 0
+    },
+    "expo_exports": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "physical_iphone_acceptance": "pending user testing"
+  }
+}

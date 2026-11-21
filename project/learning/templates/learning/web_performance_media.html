@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "learning/shell.html" %}
 
 {% block title %}Modern Images, Video, Lazy Loading &amp; Responsive Media{% endblock title %}
 {% block meta_description %}A practical web performance reference covering modern image formats, responsive images, native lazy loading, video containers, and codecs.{% endblock meta_description %}
@@ -11,12 +11,12 @@
     <meta property="article:modified_time" content="2026-08-07" />
 {% endblock metadata %}
 
-{% block body %}
+{% block learning_content %}
   <article class="reference-page">
     <nav class="reference-breadcrumbs" aria-label="Breadcrumb">
       <ol>
         <li><a href="{{ url_for('learning.index') }}">Learning</a></li>
-        <li><a href="{{ url_for('learning.index') }}#web-performance-heading">Web Performance</a></li>
+        <li><a href="{{ url_for('learning.references') }}#web-performance-heading">Web Performance</a></li>
         <li aria-current="page">Responsive media</li>
       </ol>
     </nav>
@@ -447,4 +447,4 @@ AAC audio</code></pre>
       </div>
     </div>
   </article>
-{% endblock body %}
+{% endblock learning_content %}

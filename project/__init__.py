@@ -68,6 +68,9 @@ def create_app(test_config=None):
         app.config.from_pyfile("_config.py")
     else:
         app.config.from_mapping(test_config)
+    # SQL parameters can contain private text (learner work, lists, jobs). Keep
+    # them out of exception messages and logs in every environment.
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {}).setdefault("hide_parameters", True)
 
     from .monitoring import configure_monitoring
     configure_monitoring(app)
@@ -154,11 +157,18 @@ def register_commands(app):
     app.cli.add_command(sync_yt_subs)
     app.cli.add_command(eval_scheduler)
     app.cli.add_command(purge_attempts)
+    from project.services.curriculum_service import import_curriculum, validate_curriculum
+    app.cli.add_command(import_curriculum)
+    app.cli.add_command(validate_curriculum)
     from project.services.jobwizard_extraction import prune_extractions
     app.cli.add_command(prune_extractions)
     from project.lottery.commands import import_ny_metadata, refresh_lottery
     app.cli.add_command(import_ny_metadata)
     app.cli.add_command(refresh_lottery)
+    from project.services.practice_worker import learning_worker_command
+    app.cli.add_command(learning_worker_command)
+    from project.learning.interviewer_eval import learning_eval_command
+    app.cli.add_command(learning_eval_command)
 
 
 def register_jinja_env(app):
@@ -171,9 +181,11 @@ def register_jinja_env(app):
     Returns:
         None
     """
+    from project.learning.access import allowed
     app.jinja_env.globals.update(
         {
             "now": datetime.datetime.now().strftime("%Y"),
+            "learning_access_allowed": allowed,
         }
     )
 

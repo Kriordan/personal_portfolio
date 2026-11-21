@@ -1,0 +1,9 @@
+{% from 'learning/_progress_fields.html' import hidden_fields %}
+<form class="concept-reading-position" method="post" action="{{ url_for('learning.save_reading_position', concept_id=concept.id) }}"
+      data-reading-position data-saved-section="{{ concept_progress.reading_section or '' }}" data-saved-version="{{ concept_progress.reading_version or '' }}">
+  {{ hidden_fields(position_form) }}
+  <div data-position-picker><label for="reading-position-section">Reading position</label> {{ position_form.section_id(id='reading-position-section') }}</div>
+  <p data-position-status role="status" aria-atomic="true" tabindex="-1">{% if resume_section %}Reading position saved · {{ resume_section.title }}{% else %}Your reading position will be saved as you move between sections.{% endif %}</p>
+  <button class="button button--secondary" type="submit" data-position-save>Save reading position</button>
+  <a href="{{ workspace.learn_url }}" data-position-reload hidden>Reload saved position</a>
+</form>

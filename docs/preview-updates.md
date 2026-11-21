@@ -1,9 +1,22 @@
 # iPhone preview updates
 
-**Install once:** [iPhone preview 1.0.0 (13)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/df923f54-6209-4350-906a-5ef4c2eea9b5).
-It includes the interval timer and prior fixes, plus the native update client.
-The [initial update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/edb797b5-3939-4e2b-a499-dc910b77d5d7)
-is published on `preview` for iOS.
+**Current standalone preview:** [iPhone preview 1.0.0 (15)](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4).
+Released November 20 from `a8b7499`, it adds Learning responses and focused recall
+while retaining the Lotto/Home changes, interval timer, and native update client.
+See the [release record](engineering-learning-milestone-2.md#approved-2d-release--november-20).
+
+The latest [iPhone preview update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/28b4af89-103c-41e1-bb60-57a6760ecd91)
+was published November 21 from `0849edb`. Home opens with Learning and a shortcut
+to the most recently saved lesson. In Lotto, **Upcoming** shows the next jackpot
+as a dollar amount such as **$118M**. **Latest** shows the winning numbers with
+centered dots between them and the bonus ball in color. Both draws fit on one
+line each at the default text size on an iPhone 13 mini simulator.
+
+On build 15, open the preview online to download the update, then fully close and
+reopen the app. The [publication workflow](https://expo.dev/accounts/kriordan/projects/personal-portfolio/workflows/01a1fe72-23e9-7072-abd5-c6407f2d9350)
+verified compatibility and uploaded the source maps. The iOS preview channel
+served the expected update and its bundle used the hosted API. The November 19
+backend and original Lotto release are recorded in the [Lotto release history](scratch-offs.md#november-19-lotto-and-home-preview).
 
 EAS Update is configured for the `preview` build profile and channel. The manual
 workflow in `mobile/.eas/workflows/preview-update.yml` publishes only iOS. Existing

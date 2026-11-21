@@ -4,6 +4,7 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
+from sqlalchemy import text
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -96,7 +97,13 @@ def run_migrations_online():
 
     connectable = get_engine()
 
-    with connectable.connect() as connection:
+    # A release/config change can overlap another release. Hold the lock and all
+    # DDL in one transaction, including Alembic's version-table update. Waiting
+    # migrations inspect the committed revision only after acquiring the lock.
+    with connectable.begin() as connection:
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("SET LOCAL lock_timeout = '30s'"))
+            connection.execute(text("SELECT pg_advisory_xact_lock(1427870284, 3)"))
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),

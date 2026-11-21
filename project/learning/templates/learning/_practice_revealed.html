@@ -1,0 +1,11 @@
+{#- Requirements the interviewer has revealed, in the order revealed. Shared by the workspace and the reply-polling
+    endpoint. Needs: revealed (the service's revealed_requirements). -#}
+{% if revealed %}
+  <ul class="practice-revealed-list">
+    {% for requirement in revealed %}
+      <li>{{ requirement.fact }} <a class="practice-revealed-source" href="#turn-{{ requirement.sequence }}">Show the reply</a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="practice-meta">None yet. The interviewer reveals more when you ask about what the scenario leaves open.</p>
+{% endif %}

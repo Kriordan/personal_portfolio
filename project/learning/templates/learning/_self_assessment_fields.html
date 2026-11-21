@@ -1,0 +1,17 @@
+{% macro hidden_fields(form) -%}
+  {% for field in form if field.type in ('HiddenField', 'CSRFTokenField', 'IntegerField') %}{{ field(id='assessment-' + field.name) }}{% endfor %}
+{%- endmacro %}
+{% macro choices(form, dimensions) -%}
+  <div class="assessment-choices">
+  {% for key, label, description in dimensions %}
+    <div class="assessment-choice">
+      <div><label for="assessment-{{ key }}">{{ label }}</label><p id="assessment-{{ key }}-help">{{ description }}</p></div>
+      {{ form[key](id='assessment-' + key, aria_describedby='assessment-' + key + '-help') }}
+    </div>
+  {% endfor %}
+  </div>
+{%- endmacro %}
+{% macro checkin(entry, dimensions, labels) -%}
+  <p><time datetime="{{ entry.created_at }}">{{ entry.created_at[:16]|replace('T', ' ') }} UTC</time> · Lesson v{{ entry.content_version }}</p>
+  <dl class="assessment-ratings">{% for key, label, _ in dimensions %}<div><dt>{{ label }}</dt><dd>{{ labels[entry.ratings[key]] }}</dd></div>{% endfor %}</dl>
+{%- endmacro %}

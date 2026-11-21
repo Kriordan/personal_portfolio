@@ -1,75 +1,78 @@
-{% extends "base.html" %}
+{% extends 'learning/shell.html' %}
+{% from 'learning/_progress_fields.html' import hidden_fields %}
+{% block title %}Learning{% endblock %}
+{% block meta_description %}Build engineering understanding through lessons, recall, and technical practice. Explore reference articles and personal flashcards.{% endblock %}
+{% block learning_content %}
+<div class="learning-hub">
+  <header class="learning-page-heading">
+    <h1>{{ 'Continue learning' if continue_session or (featured_concept and featured_concept.progress) else 'Make understanding stick' }}</h1>
+    <p>Learn a concept. Recall it. Put it to work.</p>
+  </header>
 
-{% block title %}Learning{% endblock title %}
-{% block meta_description %}Learning notes and durable technical references by Keith Riordan, covering web development concepts from first principles.{% endblock meta_description %}
-
-{% block body %}
-  <section class="learning-hero">
-    <p class="learning-eyebrow">Learning</p>
-    <h1>Notes for building on the web</h1>
-    <p class="learning-intro">
-      Long-lived technical references, written from first principles and reviewed as the platform evolves.
-    </p>
-  </section>
-
-  <section class="learning-library" aria-labelledby="web-performance-heading">
-    <div class="learning-topic-heading">
-      <p class="learning-topic-number" aria-hidden="true">01</p>
-      <div>
-        <h2 id="web-performance-heading">Web Performance</h2>
-        <p>Practical mental models for shipping fast, resilient web experiences.</p>
-      </div>
-    </div>
-
-    <article class="learning-reference-card">
-      <div>
-        <p class="learning-reference-meta">Reference · Reviewed August 7, 2026</p>
-        <h3>
-          <a href="{{ url_for('learning.web_performance_media') }}">
-            Modern Images, Video, Lazy Loading &amp; Responsive Media
-          </a>
-        </h3>
-        <p>
-          A first-principles guide to image formats, video codecs and containers,
-          responsive selection, and loading strategy.
-        </p>
-      </div>
-      <a class="learning-reference-arrow" href="{{ url_for('learning.web_performance_media') }}" aria-label="Read Modern Images, Video, Lazy Loading and Responsive Media">Read <span aria-hidden="true">→</span></a>
-    </article>
-  </section>
-
-  {% if current_user.is_authenticated %}
-    <section class="learning-study" aria-labelledby="study-notes-heading">
-      <div class="learning-study-heading">
+  <section aria-labelledby="engineering-heading">
+    <h2 class="learning-section-label" id="engineering-heading">Engineering learning</h2>
+    {% if config.get('LEARNING_PRACTICE_ENABLED') %}{% for message in get_flashed_messages(category_filter=['practice']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}{% endif %}
+    {% if featured_concept or continue_session %}
+      <article class="learning-feature" aria-labelledby="featured-concept-title">
         <div>
-          <p class="learning-eyebrow">Private study area</p>
-          <h2 id="study-notes-heading">Flashcard notes</h2>
-          <p class="learning-subtitle">
-            {{ total_due }} card{{ "s" if total_due != 1 }} due
-          </p>
+          <p class="learning-path">Learn <span aria-hidden="true">→</span> Review <span aria-hidden="true">→</span> Discuss &amp; Build</p>
+          <h3 id="featured-concept-title">{{ featured_concept.title if featured_concept else continue_session.exercise_title }}</h3>
+          {% if featured_concept %}<p class="learning-feature-summary">{{ featured_concept.content.summary }}</p>{% endif %}
+          {% if featured_concept and featured_concept.progress %}
+            <p class="learning-reading-state">Your learning · {% if featured_concept.resume_section %}Saved at {{ featured_concept.resume_section.title }}{% else %}Ready to begin reading{% endif %}</p>
+          {% elif featured_concept %}
+            <p class="learning-reading-state">Start learning to save your place and include this concept in review.</p>
+          {% endif %}
+          {% if continue_session %}
+            <p class="learning-resume-state">{{ 'Paused' if continue_session.status == 'paused' else 'In progress' }} · {{ continue_session.exercise_title }}<br>Saved {{ continue_session.updated_at|practice_time }}</p>
+          {% endif %}
+          <div class="learning-hub-actions">
+            {% if featured_concept and featured_concept.progress %}
+              <a class="learning-primary" data-learning-lesson href="{{ url_for('learning.concept', concept_id=featured_concept.id, _anchor=featured_concept.resume_section.id if featured_concept.resume_section else None) }}">Continue lesson <span aria-hidden="true">→</span></a>
+              {% if continue_session %}<a data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice</a>{% endif %}
+            {% elif featured_concept %}
+              <form method="post" action="{{ url_for('learning.enroll_concept', concept_id=featured_concept.id) }}">{{ hidden_fields(enrollment_form) }}<button class="learning-primary" type="submit">Start learning</button></form>
+              <a href="{{ url_for('learning.concept', concept_id=featured_concept.id) }}">Explore the concept <span aria-hidden="true">→</span></a>
+              {% if continue_session %}<a data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice</a>{% endif %}
+            {% else %}
+              <a class="learning-primary" data-learning-continue href="{{ url_for('learning.practice_workspace', session_id=continue_session.id) }}">Continue practice <span aria-hidden="true">→</span></a>
+            {% endif %}
+            {% if featured_concept %}
+              <a href="{{ url_for('learning.concept_review', concept_id=featured_concept.id) }}">Review{% if featured_concept.due_count %} · {{ featured_concept.due_count }} due{% endif %}</a>
+            {% endif %}
+          </div>
         </div>
-        <a class="button" href="{{ url_for('learning.review') }}">Start review</a>
-      </div>
+        <div class="learning-feature-aside" aria-hidden="true">
+          <span>01 <strong>Understand</strong></span>
+          <span>02 <strong>Recall</strong></span>
+          <span>03 <strong>Apply</strong></span>
+        </div>
+      </article>
+      {% for concept in concepts if concept != featured_concept %}
+        <p class="learning-other-concept"><a href="{{ url_for('learning.concept', concept_id=concept.id, _anchor=concept.resume_section.id if concept.resume_section else None) }}">{{ concept.title }}</a>{% if concept.progress %} · Learning{% endif %}{% if concept.due_count %} · {{ concept.due_count }} due for review{% endif %}</p>
+      {% endfor %}
+    {% elif current_user.is_authenticated %}
+      <div class="learning-feature"><div><h3>Your next concept will appear here</h3><p>No concepts are published yet. You can explore the reference articles or review your flashcards below.</p></div></div>
+    {% else %}
+      <div class="learning-feature"><div>
+        <h3>From understanding to practice</h3>
+        <p class="learning-feature-summary">Work through an engineering concept, test your recall, and defend your decisions in a technical conversation.</p>
+        <a class="learning-primary" href="{{ url_for('account.login', next=url_for('learning.index')) }}">Sign in to learn <span aria-hidden="true">→</span></a>
+      </div></div>
+    {% endif %}
+  </section>
 
-      {% if notes %}
-        <ul class="learning-note-list">
-          {% for note in notes %}
-            <li class="learning-note-item">
-              <a class="learning-note-link" href="{{ url_for('learning.note', note_id=note.id) }}">
-                {{ note.title }}
-              </a>
-              <span class="learning-note-meta">
-                {{ note.flashcard_count }} cards
-                {% if note.due_count %}
-                  · {{ note.due_count }} due
-                {% endif %}
-              </span>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No flashcard notes yet.</p>
-      {% endif %}
-    </section>
-  {% endif %}
-{% endblock body %}
+  <div class="learning-destinations">
+    <a class="learning-destination" href="{{ url_for('learning.references') }}">
+      <h2>Reference articles</h2>
+      <p>Long-form guides to revisit when you need a deeper explanation.</p>
+      <span class="learning-destination-label">Browse articles <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="learning-destination" href="{{ url_for('learning.flashcards') }}">
+      <h2>My flashcards</h2>
+      <p>Your personal notes and scheduled recall practice.</p>
+      <span class="learning-destination-label">{{ 'Open flashcards' if current_user.is_authenticated else 'Sign in to review' }} <span aria-hidden="true">→</span></span>
+    </a>
+  </div>
+</div>
+{% endblock %}

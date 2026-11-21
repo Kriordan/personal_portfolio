@@ -1,0 +1,25 @@
+{% extends 'learning/concept_shell.html' %}
+{% block title %}Review · {{ concept.title }}{% endblock %}
+{% block concept_content %}
+<div class="concept-study concept-review-panel">
+  {% if not concept_progress %}{% include 'learning/_concept_enrollment.html' %}{% endif %}
+  {% for message in get_flashed_messages(category_filter=['concept-review']) %}<p class="concept-notice" role="status">{{ message }}</p>{% endfor %}
+  {% if error %}<p class="concept-notice" role="alert">{{ error }}</p>{% endif %}
+  {% if stale %}
+    <a class="button" href="{{ workspace.review_url }}">Load current questions</a>
+  {% elif card %}
+    {% include 'learning/_concept_review_question.html' %}
+  {% else %}
+    <section class="concept-review-complete">
+      <p class="learning-eyebrow">{{ 'Review complete for now' if concept_progress else 'Choose when to begin' }}</p>
+      <h2>No questions due right now</h2>
+      <p>{% if concept_progress %}Your saved ratings determine when these questions return. Completing reviews is practice, not a measurement of mastery.{% else %}Start learning to include this concept’s new questions. Your existing rated cards keep their schedules.{% endif %}</p>
+      <div class="concept-controls">
+        {% if workspace.practice_enabled %}<a class="button" href="{{ workspace.discuss_url }}">{{ 'Return to your conversation' if workspace.session else 'Put it into practice' }}</a>{% endif %}
+        <a class="button button--secondary" href="{{ workspace.learn_url }}">Revisit the lesson</a>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% include 'learning/_concept_scripts.html' %}{% endblock %}

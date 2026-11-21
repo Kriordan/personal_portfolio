@@ -1,0 +1,9 @@
+<!doctype html>
+{# Standalone so a failed export never needs another database read to explain itself. #}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download unavailable</title><link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head><body class="learning-private"><main class="practice practice-narrow">
+  <h1>Download unavailable</h1><p role="alert">{{ message }}</p>
+  <p><a class="button" href="{{ retry_url }}">Retry download</a></p>
+  <p>Your original workspace is still open. No partial file was created.</p>
+</main></body></html>

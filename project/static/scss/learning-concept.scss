@@ -1,0 +1,48 @@
+.concept-study {
+  max-width: 800px;
+  margin: 2rem auto 4rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+
+  h1 { font-size: clamp(1.8rem, 5vw, 2.7rem); line-height: 1.2; }
+  h2 { line-height: 1.3; }
+  section, details { margin-top: 1.5rem; }
+  details { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; }
+  summary { cursor: pointer; font-weight: bold; }
+  .button {
+    display: inline-block; min-height: 44px; box-sizing: border-box; white-space: normal;
+    padding: .65rem 1rem; border: 2px solid #17675a; border-radius: 6px;
+    background: #17675a; color: white; font: inherit; line-height: 1.35; cursor: pointer;
+    text-align: center; text-decoration: none;
+  }
+  .button--secondary { background: white; color: #165448; }
+  .button:disabled { cursor: default; opacity: .6; }
+  :focus-visible { outline: 3px solid #17675a; outline-offset: 3px; }
+  select { max-width: 100%; padding: .6rem; min-height: 44px; }
+  label { display: block; margin: .75rem 0; }
+  input[type='checkbox'] { width: 1.2rem; height: 1.2rem; vertical-align: middle; }
+  fieldset { border: 0; padding: 0; margin: 1.5rem 0 0; min-width: 0; }
+  legend { margin-bottom: .75rem; font-weight: bold; }
+  pre { overflow-x: auto; background: #f3f4f4; padding: .75rem; }
+  code { font-family: monospace; }
+}
+.concept-lead { font-size: 1.15rem; }
+.concept-markdown { white-space: pre-wrap; }
+.concept-markdown.is-rendered { white-space: normal; }
+.concept-notice { padding: 1rem; background: #eaf3f0; border-left: 4px solid #17675a; }
+.learning-pilot-notice {
+  margin: 0; padding: .5rem 1rem; background: #f6f1df; color: #463c20;
+  text-align: center; font-size: .875rem; line-height: 1.5;
+}
+.concept-question, .concept-next, .retry-lab { padding: 1.25rem; border: 1px solid #bbb; border-radius: 10px; }
+.concept-controls { display: flex; flex-wrap: wrap; gap: .75rem; }
+.concept-ratings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.concept-ratings span { display: block; font-size: .9rem; font-weight: normal; }
+.retry-lanes { display: flex; justify-content: space-between; gap: .5rem; margin-top: 1.5rem; font-weight: bold; }
+.retry-lanes span { background: #eaf3f0; padding: .5rem; border-radius: 4px; }
+#retry-steps { padding-left: 1.5rem; }
+#retry-steps li { padding: .5rem; }
+#retry-steps .is-pending { color: #666; }
+#retry-steps [aria-current='step'] { background: #eaf3f0; outline: 2px solid #17675a; border-radius: 4px; }
+@media (max-width: 420px) { .concept-ratings { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .learning-private .Header-user { position: static; } }

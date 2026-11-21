@@ -6,7 +6,9 @@ from unittest.mock import patch
 from flask import Flask, abort, jsonify
 import sentry_sdk
 from sentry_sdk.transport import Transport
-from project.monitoring import configure_monitoring, report_extraction_failure, scrub_event, valid_request_id
+from project.monitoring import (
+    configure_monitoring, report_extraction_failure, report_learning_failure, scrub_event, valid_request_id,
+)
 
 ID = "12345678-1234-1234-1234-123456789012"
 SECRET = "PRIVATE_CANARY_9472"
@@ -117,6 +119,23 @@ class MonitoringTests(unittest.TestCase):
         self.assertEqual(response.status_code, 502)
         self.assertEqual(response.json, {"code": "provider_auth"})
         self.assertEqual(response.headers["X-Request-ID"], ID)
+
+    def test_learning_reply_reports_carry_only_fixed_codes(self):
+        app, transport = self.enabled_app()
+        with app.app_context():
+            report_learning_failure(SECRET, reply_id=ID)
+            report_learning_failure("budget", reply_id=ID)  # an expected outcome, never an error report
+            self.assertEqual(transport.events, [])
+            report_learning_failure("timeout", reply_id=ID)
+            report_learning_failure("worker", reply_id=SECRET)
+        self.assertEqual(len(transport.events), 2)
+        first, second = transport.events
+        self.assertEqual(first["tags"], {"operation": "learning.reply", "code": "timeout", "request_id": ID})
+        self.assertEqual(first["message"], "Learning reply failed")
+        self.assertNotIn("request_id", second["tags"])
+        self.assertNotIn(SECRET, json.dumps(transport.events))
+        self.assertEqual(scrub_event({"tags": {"operation": "jobwizard.extraction"}}, {})["message"],
+                         "Jobwizard extraction failed")
 
     def test_scrubber_drops_attachments_context_and_arbitrary_metadata(self):
         hint = {"attachments": [SECRET]}
