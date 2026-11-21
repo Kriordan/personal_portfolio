@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, InlineError, NativeAction } from '@/components/screen';
 import { LotteryMondayReminder } from '@/components/lottery-monday-reminder';
 import { ThemedText } from '@/components/themed-text';
@@ -11,9 +11,13 @@ import {
   useLotteryPreferences,
 } from '@/hooks/use-lottery';
 import {
+  compactDrawDate,
   dataIsStale,
+  dollars,
   homeDrawsExpired,
-  jackpotLabel,
+  homeJackpotLabel,
+  spokenDrawDate,
+  type HomeDraws,
   type LotteryState,
   type LotteryStatus,
 } from '@/lib/lottery-model';
@@ -158,6 +162,95 @@ export function OfficialLotteryLink({
     </View>
   );
 }
+
+const gameCodes: Readonly<Record<string, string>> = {
+  Powerball: 'PB',
+  'Mega Millions': 'MM',
+};
+
+function HomeDrawRow({
+  draw,
+  heading,
+  valueLabel,
+  children,
+}: {
+  draw: { name: string; date: string };
+  heading: string;
+  valueLabel: string;
+  children: ReactNode;
+}) {
+  const date = spokenDrawDate.format(new Date(draw.date));
+  return (
+    <View
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`${heading}. ${draw.name}, ${date}. ${valueLabel}.`}
+      style={styles.drawRow}
+    >
+      <ThemedText type="small" themeColor="textSecondary" style={styles.digits}>
+        <Text style={styles.gameCode}>{gameCodes[draw.name] ?? draw.name}</Text>
+        {'  '}
+        {compactDrawDate(draw.date)}
+      </ThemedText>
+      {children}
+    </View>
+  );
+}
+
+function HomeDrawRows({ home, stale }: { home: HomeDraws; stale: boolean }) {
+  const theme = useTheme();
+  const { upcoming, latest } = home;
+  const { result } = latest;
+  const bonusColor =
+    latest.name === 'Powerball' ? theme.powerball : theme.megaBall;
+  const jackpot = homeJackpotLabel(upcoming.jackpot, stale);
+
+  return (
+    <View style={styles.gap}>
+      <HomeDrawRow
+        draw={upcoming}
+        heading="Next drawing"
+        valueLabel={
+          stale || upcoming.jackpot === null
+            ? jackpot
+            : `${dollars(upcoming.jackpot)} jackpot`
+        }
+      >
+        <ThemedText type="smallBold" style={styles.digits}>
+          {jackpot}
+        </ThemedText>
+      </HomeDrawRow>
+      <HomeDrawRow
+        draw={latest}
+        heading="Latest result"
+        valueLabel={result
+          ? `${result.numbers.join(', ')}. ${result.bonus_label} ${result.bonus}`
+          : 'Results pending'}
+      >
+        {result ? (
+          <View style={styles.numbers}>
+            <ThemedText type="smallBold" style={styles.digits}>
+              {result.numbers.join(' ')}
+            </ThemedText>
+            <View style={[styles.bonusBall, { borderColor: bonusColor }]}>
+              <ThemedText
+                type="smallBold"
+                style={[styles.digits, { color: bonusColor }]}
+              >
+                {result.bonus}
+              </ThemedText>
+            </View>
+          </View>
+        ) : (
+          <ThemedText type="small" themeColor="textSecondary">
+            Results pending
+          </ThemedText>
+        )}
+      </HomeDrawRow>
+    </View>
+  );
+}
+
 export function DrawQuickReference() {
   const prefs = useLotteryPreferences();
   const query = useLotteryDraws(prefs.preferences.state, prefs.ready);
@@ -183,49 +276,7 @@ export function DrawQuickReference() {
           </Pressable>
         </View>
         {home && !expired && query.data ? (
-          <>
-            <View style={styles.gap}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                NEXT DRAWING
-              </ThemedText>
-              <ThemedText>{home.upcoming.name}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {home.upcoming.label}
-              </ThemedText>
-              <ThemedText type="smallBold" themeColor="accent">
-                {dataIsStale(query.data.status, now)
-                  ? 'Jackpot needs an update'
-                  : jackpotLabel(home.upcoming.jackpot)}
-              </ThemedText>
-            </View>
-            <View style={styles.gap}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                LATEST RESULT
-              </ThemedText>
-              <ThemedText>{home.latest.name} · {home.latest.label}</ThemedText>
-              {home.latest.result ? (
-                <>
-                  <View style={styles.numbers}>
-                    <ThemedText type="smallBold">
-                      {home.latest.result.numbers.join(' · ')}
-                    </ThemedText>
-                    <ThemedText type="smallBold" themeColor="accent">
-                      {home.latest.result.bonus_label} {home.latest.result.bonus}
-                    </ThemedText>
-                  </View>
-                  {home.latest.result.power_play !== null ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Power Play {home.latest.result.power_play}×
-                    </ThemedText>
-                  ) : null}
-                </>
-              ) : (
-                <ThemedText type="small" themeColor="textSecondary">
-                  Awaiting results.
-                </ThemedText>
-              )}
-            </View>
-          </>
+          <HomeDrawRows home={home} stale={dataIsStale(query.data.status, now)} />
         ) : (
           <ThemedText themeColor="textSecondary">
             {query.isPending
@@ -259,7 +310,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  numbers: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  drawRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    columnGap: 8,
+    rowGap: 2,
+  },
+  gameCode: { fontWeight: '700' },
+  digits: { fontVariant: ['tabular-nums'] },
+  numbers: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: '100%',
+  },
+  bonusBall: {
+    minWidth: 24,
+    minHeight: 24,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 99,
+    borderWidth: 1,
+  },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: {
     minHeight: 44,

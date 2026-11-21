@@ -69,12 +69,26 @@ export type StudyChange =
     };
 export const conceptKeys = {
   all: ['learning', 'concepts'] as const,
-  list: (userId: number) => ['learning', 'concepts', userId, 'list'] as const,
+  list: (userId: number | undefined) => ['learning', 'concepts', userId, 'list'] as const,
   detail: (userId: number, id: string) =>
     ['learning', 'concepts', userId, 'detail', id] as const,
   review: (userId: number, id: string) =>
     ['learning', 'concepts', userId, 'review', id] as const,
 };
+export function mostRecentLesson(concepts: readonly ConceptSummary[]) {
+  let latest: ConceptSummary | undefined;
+  let latestTime = -Infinity;
+  for (const concept of concepts) {
+    if (!concept.progress) continue;
+    const savedAt = Date.parse(concept.progress.updated_at);
+    if (savedAt > latestTime) {
+      latest = concept;
+      latestTime = savedAt;
+    }
+  }
+  return latest;
+}
+
 export function initialSection(
   concept: Concept,
   progress: ConceptProgress | null,

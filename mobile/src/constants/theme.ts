@@ -16,6 +16,8 @@ export const Colors = {
     border: '#DEE4EA',
     danger: '#B42332',
     success: '#247047',
+    powerball: '#AA2840',
+    megaBall: '#805600',
   },
   dark: {
     text: '#F2F5F8',
@@ -28,6 +30,8 @@ export const Colors = {
     border: '#33404B',
     danger: '#FFA3AA',
     success: '#8DD7AD',
+    powerball: '#FFA8B3',
+    megaBall: '#FFD16B',
   },
 } as const;
 

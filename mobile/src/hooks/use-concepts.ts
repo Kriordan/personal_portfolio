@@ -7,17 +7,18 @@ import { conceptStudy } from '@/lib/concept-runtime';
 import { learningRefreshOptions } from '@/lib/learning-cache';
 import { validNoteId } from '@/lib/learning-model';
 
-export function useConcepts(userId: number) {
+export function useConcepts(userId: number | undefined) {
   const query = useQuery({
     ...learningRefreshOptions,
     queryKey: conceptKeys.list(userId),
     queryFn: conceptApi.list,
+    enabled: userId !== undefined,
   });
   const { refetch } = query;
   useFocusEffect(
     useCallback(() => {
-      void refetch();
-    }, [refetch]),
+      if (userId !== undefined) void refetch({ cancelRefetch: false });
+    }, [userId, refetch]),
   );
   return query;
 }

@@ -30,6 +30,41 @@ export const jackpotLabel = (value: number | null) =>
   value === null
     ? 'Awaiting updated jackpot'
     : `${compactCurrency.format(value / 1000000)}M est. jackpot`;
+
+const easternTime = 'America/New_York';
+const drawDate = new Intl.DateTimeFormat('en-US', {
+  timeZone: easternTime,
+  weekday: 'short',
+  month: 'numeric',
+  day: 'numeric',
+});
+export function compactDrawDate(instant: string) {
+  const parts = Object.fromEntries(
+    drawDate
+      .formatToParts(new Date(instant))
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.weekday} ${parts.month}-${parts.day}`;
+}
+export const spokenDrawDate = new Intl.DateTimeFormat('en-US', {
+  timeZone: easternTime,
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+});
+const compactAmount = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+});
+export function homeJackpotLabel(value: number | null, stale: boolean) {
+  if (stale) return 'Refresh jackpot';
+  if (value === null) return 'Jackpot pending';
+  // The iOS runtime can silently ignore Intl's compact notation.
+  if (value >= 1_000_000_000) return `${compactAmount.format(value / 1_000_000_000)}B`;
+  if (value >= 1_000_000) return `${compactAmount.format(value / 1_000_000)}M`;
+  if (value >= 1_000) return `${compactAmount.format(value / 1_000)}K`;
+  return compactAmount.format(value);
+}
+
 export function readLotteryPreferences(raw: string | null): LotteryPreferences {
   try {
     const value = JSON.parse(raw ?? '{}');

@@ -7,6 +7,7 @@ import {
   conceptKeys,
   initialSection,
   isStudyChange,
+  mostRecentLesson,
 } from '../src/lib/concept-model.ts';
 import { LearningSession } from '../src/lib/learning-session.ts';
 import {
@@ -112,6 +113,16 @@ test('concept API pins reveal and rating versions, and never fetches an answer w
   assert.equal(calls[2][1].method, 'PUT');
   await api.save({ kind: 'enroll', conceptId: 'idempotency' });
   assert.deepEqual(calls[3][1].body, {});
+});
+
+test('Home resumes the most recently saved lesson, independent of catalog order and UTC offset', () => {
+  const untouched = { id: 'unstarted', progress: null };
+  const earlier = { id: 'earlier', progress: { updated_at: '2026-11-21T13:00:00Z' } };
+  const latest = { id: 'latest', progress: { updated_at: '2026-11-21T09:00:00-05:00' } };
+  assert.equal(mostRecentLesson([]), undefined);
+  assert.equal(mostRecentLesson([untouched]), undefined);
+  assert.equal(mostRecentLesson([untouched, earlier, latest]), latest);
+  assert.equal(mostRecentLesson([latest, untouched, earlier]), latest);
 });
 
 test('saved section survives content updates; explicit remediation wins and removed sections fall back', () => {

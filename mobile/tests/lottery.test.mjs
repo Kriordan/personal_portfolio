@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dataIsStale, drawPlanExpired, homeDrawsExpired, lotteryDefaults, readLotteryPreferences, scratchQuery } from '../src/lib/lottery-model.ts';
+import { compactDrawDate, dataIsStale, drawPlanExpired, homeDrawsExpired, homeJackpotLabel, lotteryDefaults, readLotteryPreferences, scratchQuery } from '../src/lib/lottery-model.ts';
 import { createMondayLotteryReminder, mondayLotteryDay } from '../src/lib/lottery-reminder.ts';
 
 test('preferences validate corrupt data and preserve separate empty selections', () => {
@@ -37,6 +37,19 @@ test('compact Home reference lasts until the drawing, including after sales clos
   assert.equal(homeDrawsExpired(home, Date.parse('2026-11-23T22:59:00-05:00')), true);
   assert.equal(homeDrawsExpired(home, Date.parse('2026-11-20T23:00:00-05:00')), true);
   assert.equal(homeDrawsExpired({ ...home, upcoming: { date: 'invalid' } }), true);
+});
+
+test('Home dates use the Eastern drawing day and unpadded month and day', () => {
+  assert.equal(compactDrawDate('2026-11-21T22:59:00-05:00'), 'Sat 11-21');
+  assert.equal(compactDrawDate('2026-12-06T03:59:00Z'), 'Sat 12-5');
+  assert.equal(compactDrawDate('2026-07-07T02:59:00Z'), 'Mon 7-6');
+});
+
+test('Home jackpots are compact and only display a fresh amount', () => {
+  assert.equal(homeJackpotLabel(118_000_000, false), '118M');
+  assert.equal(homeJackpotLabel(1_180_000_000, false), '1.18B');
+  assert.equal(homeJackpotLabel(null, false), 'Jackpot pending');
+  assert.equal(homeJackpotLabel(118_000_000, true), 'Refresh jackpot');
 });
 
 test('weekly reminder uses Monday in Eastern time and stops at the purchase cutoff', () => {
