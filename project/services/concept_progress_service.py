@@ -8,6 +8,9 @@ from project.models import User, UserConceptProgress
 from project.services import curriculum_service
 from project.services.learning_errors import ConflictError, NotFoundError, ValidationError
 
+INVALID_PROGRESS_MESSAGE = "Reload the lesson to see its current sections, then try again."
+PROGRESS_CONFLICT_MESSAGE = "Check your saved position in the lesson before trying again. Choose Start learning if prompted."
+
 
 def published_concept(concept_id, *, version=None):
     item = curriculum_service.published_learner_item(concept_id, version=version)

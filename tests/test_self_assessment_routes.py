@@ -146,6 +146,24 @@ class SelfAssessmentRouteTests(PracticeWebCase):
         self.assertEqual(failed.status_code, 503)
         self.assertNotIn("secret fixture", failed.get_data(as_text=True) + str(logs.output))
 
+    def test_validation_and_conflict_details_stay_private_across_api_and_web(self):
+        current = service.save(1, "idempotency", **checkin(recognition="with_help"))
+        fields = self.fields()
+        private_detail = "internal assessment fixture detail"
+        stale = service.AssessmentConflict(current["revision"], current)
+        stale.args = (private_detail,)
+        for error, status in ((service.ValidationError(private_detail), 400),
+                              (service.ConflictError(private_detail), 409), (stale, 409)):
+            with self.subTest(error=type(error)), patch.object(service, "save", side_effect=error):
+                api = self.api("POST", checkin(1))
+                page = self.post(PATH, fields)
+                self.assertEqual((api.status_code, page.status_code), (status, status))
+                self.assertTrue(api.json["error"])
+                self.assertNotIn(private_detail, api.get_data(as_text=True) + page.get_data(as_text=True))
+                self.assertEqual(self.fields(page)["recognition"], "with_help")
+                if error is stale:
+                    self.assertEqual((api.json["revision"], api.json["current"]), (current["revision"], current))
+
     def test_withdrawn_lesson_shows_only_owned_history_and_deletion(self):
         service.save(1, "idempotency", **checkin())
         row = db.session.get(ContentRevision, ("idempotency", 1))

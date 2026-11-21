@@ -82,9 +82,10 @@ def save_reading_position(concept_id):
             section_id=form.section_id.data, expected_revision=form.expected_revision.data, request_id=form.request_id.data)
     except NotFoundError:
         abort(404)
-    except (ValidationError, ConflictError) as exc:
-        return _error(str(exc), 409 if isinstance(exc, ConflictError) else 400,
-                      concept=concept, workspace=workspace, form=form)
+    except ValidationError:
+        return _error(progress_service.INVALID_PROGRESS_MESSAGE, 400, concept=concept, workspace=workspace, form=form)
+    except ConflictError:
+        return _error(progress_service.PROGRESS_CONFLICT_MESSAGE, 409, concept=concept, workspace=workspace, form=form)
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("Reading position could not be confirmed")

@@ -13,14 +13,19 @@ from .forms import ConceptRatingForm, FeedbackAnnotationForm
 from .navigation import workspace_navigation
 
 
+REVIEW_ATTEMPT_FIELDS = ("card_id", "content_version", "expected_revision", "request_id")
+
+
 def _snapshot_url(session_id, sequence, finding_id):
     return url_for("learning.practice_submission", session_id=session_id, sequence=sequence, _anchor="finding-" + finding_id)
 
 
 def _rescue(form, session_id, sequence, finding_id, *, kind, heading, message, status, latest=None):
+    endpoint = "learning.practice_feedback_annotation" if kind == "annotation" else "learning.practice_feedback_review"
+    attempt = {key: request.args.get(key) for key in REVIEW_ATTEMPT_FIELDS} if kind == "read" else {}
+    action_url = url_for(endpoint, session_id=session_id, sequence=sequence, finding_id=finding_id, **attempt)
     return render_template("learning/feedback_response_rescue.html", form=form, kind=kind,
-        heading=heading, message=message, latest=latest,
-        action_url=request.full_path.rstrip("?") if kind == "read" else request.path,
+        heading=heading, message=message, latest=latest, action_url=action_url,
         snapshot_url=_snapshot_url(session_id, sequence, finding_id)), status
 
 
@@ -48,9 +53,9 @@ def practice_feedback_annotation(session_id, sequence, finding_id):
         form.request_id.data = str(uuid4())
         return _rescue(form, session_id, sequence, finding_id, kind="annotation", status=409,
             heading="Check your response", message="This request was used for another change. Your draft is below; review it before saving.")
-    except learning_service.ValidationError as exc:
+    except learning_service.ValidationError:
         return _rescue(form, session_id, sequence, finding_id, kind="annotation", status=400,
-            heading="Your response is still here", message=str(exc))
+            heading="Your response is still here", message="Check your choice and note before saving again.")
     except SQLAlchemyError as exc:
         db.session.rollback()
         current_app.logger.warning("Feedback response unconfirmed: %s", practice.describe_failure(exc))
@@ -61,7 +66,7 @@ def practice_feedback_annotation(session_id, sequence, finding_id):
 
 
 def _attempt():
-    values = {key: request.args.get(key) for key in ("card_id", "content_version", "expected_revision", "request_id")}
+    values = {key: request.args.get(key) for key in REVIEW_ATTEMPT_FIELDS}
     for key in ("content_version", "expected_revision"):
         raw = values[key] or ""
         if not raw.isascii() or not raw.isdecimal() or len(raw) > 10:
@@ -74,6 +79,7 @@ def _attempt():
 @login_required
 def practice_feedback_review(session_id, sequence, finding_id):
     form = ConceptRatingForm()
+    review_url = url_for("learning.practice_feedback_review", session_id=session_id, sequence=sequence, finding_id=finding_id)
     error, status, card, revealed = None, 200, None, False
     if request.method == "POST":
         if not form.validate_on_submit():
@@ -97,7 +103,7 @@ def practice_feedback_review(session_id, sequence, finding_id):
                 heading="Rating not confirmed", message="Retry the same rating safely. If it was saved, this request will recover that result.")
         else:
             flash("Review saved. " + result["next_review_display"], "concept-review")
-            return redirect(request.path, code=303)
+            return redirect(review_url, code=303)
     try:
         detail = review.review_detail(current_user.id, session_id, sequence, finding_id)
         if request.method == "GET" and request.args:
@@ -122,7 +128,7 @@ def practice_feedback_review(session_id, sequence, finding_id):
         return _rescue(form, session_id, sequence, finding_id, kind="read", status=503,
             heading="Practice is temporarily unavailable", message="Your saved responses and ratings have not been changed. Reload to continue.")
     workspace = workspace_navigation(detail["session"]["concept_id"], mode="review", session=detail["session"])
-    workspace["review_url"] = request.path
+    workspace["review_url"] = review_url
     remediation_url = url_for("learning.concept", concept_id=card["note_id"],
         practice_session=session_id if card["note_id"] == detail["session"]["concept_id"] else None,
         _anchor=card["remediation_section_id"]) if card else None

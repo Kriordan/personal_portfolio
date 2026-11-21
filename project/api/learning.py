@@ -229,8 +229,17 @@ def api_rate_concept(concept_id):
                 or type(payload["expected_revision"]) is not int
                 or not isinstance(payload["request_id"], str)):
             raise learning_service.ValidationError("Invalid rating request.")
-        return learning_service.rate_card_for_user(user=user,
-            notes_dir=learning_service.notes_dir_for_root(current_app.root_path), **payload)
+        return learning_service.rate_card_for_user(
+            user=user,
+            notes_dir=learning_service.notes_dir_for_root(current_app.root_path),
+            card_id=payload["card_id"],
+            content_version=payload["content_version"],
+            rating=payload["rating"],
+            expected_revision=payload["expected_revision"],
+            request_id=payload["request_id"],
+            response_ms=payload.get("response_ms"),
+            session_id=payload.get("session_id"),
+        )
     return _concept_call(rate)
 
 
@@ -252,10 +261,10 @@ def _concept_progress_response(concept_id, operation):
         return jsonify(progress=saved)
     except learning_service.NotFoundError:
         return jsonify(error="Concept not found."), 404
-    except learning_service.ValidationError as exc:
-        return jsonify(error=str(exc)), 400
-    except learning_service.ConflictError as exc:
-        return jsonify(error=str(exc)), 409
+    except learning_service.ValidationError:
+        return jsonify(error=concept_progress_service.INVALID_PROGRESS_MESSAGE), 400
+    except learning_service.ConflictError:
+        return jsonify(error=concept_progress_service.PROGRESS_CONFLICT_MESSAGE), 409
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("Concept progress operation failed")
@@ -303,12 +312,13 @@ def api_self_assessments(concept_id):
         return jsonify(checkin=self_assessment_service.save(user.id, concept_id, **payload))
     except learning_service.NotFoundError:
         return jsonify(error="Concept not found."), 404
-    except learning_service.ValidationError as exc:
-        return jsonify(error=str(exc)), 400
+    except learning_service.ValidationError:
+        return jsonify(error=self_assessment_service.INVALID_ASSESSMENT_MESSAGE), 400
     except self_assessment_service.AssessmentConflict as exc:
-        return jsonify(error=str(exc), revision=exc.revision, current=exc.current), 409
-    except learning_service.ConflictError as exc:
-        return jsonify(error=str(exc)), 409
+        return jsonify(error=self_assessment_service.AssessmentConflict.public_message,
+                       revision=exc.revision, current=exc.current), 409
+    except learning_service.ConflictError:
+        return jsonify(error="This request belongs to another change. Open your latest check-in history before trying again."), 409
     except SQLAlchemyError as exc:
         db.session.rollback()
         current_app.logger.warning("Self-assessment operation unconfirmed: %s", type(exc).__name__)

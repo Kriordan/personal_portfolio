@@ -1,5 +1,7 @@
+import re
+from html import unescape
 from unittest.mock import patch
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlsplit
 from uuid import uuid4
 
 from flask import g
@@ -8,6 +10,7 @@ from sqlalchemy.exc import OperationalError
 from project.database import db
 from project.models import PracticeFeedbackAnnotation, ReviewLog, User
 from project.services import feedback_service, feedback_review_service as review, practice_service
+from project.services.learning_errors import ValidationError
 from tests.curriculum_v2_fixtures import PRIVATE_V2, publish_feedback_catalog
 from tests.test_feedback_review import completed_feedback
 from tests.test_feedback_routes import enable
@@ -118,8 +121,10 @@ class FeedbackReviewWebTests(Fixture, PracticeWebCase):
         page = self.get(path).get_data(as_text=True)
         self.assertIn(f'/practice/{self.sid}?view=build', page)
         self.assertIn("Extra practice from feedback", page)
-        for _ in range(2):
-            self.assertEqual(self.post(path, dict(attempt, rating="4")).status_code, 303)
+        padded_path = f"/learning/practice/{self.sid}/submissions/{self.seq:04d}/feedback/f2/review"
+        for submitted_path in (padded_path, path):
+            response = self.post(submitted_path + "?from=lesson", dict(attempt, rating="4"))
+            self.assertEqual((response.status_code, response.location), (303, path))
         self.assertIn("Extra practice saved", self.get(path).get_data(as_text=True))
         self.assertEqual(ReviewLog.query.count(), 1)
 
@@ -172,6 +177,15 @@ class FeedbackReviewWebTests(Fixture, PracticeWebCase):
         g.pop('_login_user', None)
         self.assertEqual(self.get(self.path + '/feedback/f2/review').status_code, 302)
 
+    def test_validation_keeps_the_response_draft_and_hides_internal_error_text(self):
+        fields = dict(self.fields_for_response(), **{"annotation-f2-note": "My draft"})
+        with patch.object(review, "annotate", side_effect=ValidationError("internal feedback fixture detail")):
+            response = self.annotation(fields)
+        self.assertEqual(response.status_code, 400)
+        page = response.get_data(as_text=True)
+        self.assertNotIn("internal feedback fixture detail", page)
+        self.assertEqual(FormFields(page).values, fields)
+
     def test_rating_recovery_and_stale_forms_do_not_duplicate_history(self):
         self.agree()
         path, attempt = self.review_attempt()
@@ -193,7 +207,12 @@ class FeedbackReviewWebTests(Fixture, PracticeWebCase):
 
     def test_read_failure_has_a_standalone_reload_without_shared_layout_queries(self):
         self.agree()
+        path, fields = self.review_attempt()
+        attempt = {key: fields[key] for key in ("card_id", "content_version", "expected_revision", "request_id")}
         with patch.object(review, "review_detail", side_effect=OperationalError("", {}, Exception("fixture"))):
-            response = self.get(self.path + '/feedback/f2/review')
+            response = self.get(path + "?" + urlencode(dict(attempt, from_page="lesson")))
         self.assertEqual(response.status_code, 503)
-        self.assertIn("Reload extra practice", response.get_data(as_text=True))
+        href = re.search(r'href="([^"]+)">Reload extra practice</a>', response.get_data(as_text=True)).group(1)
+        target = urlsplit(unescape(href))
+        self.assertEqual((target.scheme, target.netloc, target.path), ("", "", path))
+        self.assertEqual(parse_qs(target.query), {key: [value] for key, value in attempt.items()})

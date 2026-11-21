@@ -64,8 +64,8 @@ def _write(concept_id, *, delete=False):
     except ConflictError:
         return _rescue(concept_id, form, "This request belongs to another change or a deleted check-in. Your choices are still here. Open your latest history before making another change.",
             409, delete=delete, can_retry=False)
-    except ValidationError as exc:
-        return _rescue(concept_id, form, str(exc), 400, delete=delete)
+    except ValidationError:
+        return _rescue(concept_id, form, assessment.INVALID_ASSESSMENT_MESSAGE, 400, delete=delete)
     except SQLAlchemyError as exc:
         db.session.rollback()
         current_app.logger.warning("Self-assessment write unconfirmed: %s", type(exc).__name__)

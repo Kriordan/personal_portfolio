@@ -119,3 +119,20 @@ class ConceptProgressRouteTests(PracticeWebCase):
             failed = self.api("PUT", "/reading-position", position(2))
         self.assertEqual(failed.status_code, 503)
         self.assertNotIn("progress", failed.json)
+
+    def test_reading_position_errors_are_safe_in_jwt_json_and_web_forms(self):
+        service.enroll(1, "idempotency")
+        fields = form_fields(self.get(LESSON), "data-reading-position")
+        private_detail = "internal progress fixture detail"
+        for error, status in ((service.ValidationError, 400), (service.ConflictError, 409)):
+            with self.subTest(status=status), patch.object(service, "save_position", side_effect=error(private_detail)):
+                api = self.api("PUT", "/reading-position", position())
+                web_json = self.client.post(LESSON + "/reading-position", data=fields,
+                    headers={"Accept": "application/json"}, base_url="https://localhost")
+                page = self.post(LESSON + "/reading-position", fields)
+                self.assertEqual((api.status_code, web_json.status_code, page.status_code), (status,) * 3)
+                self.assertEqual(api.json, web_json.json)
+                self.assertNotIn(private_detail, api.json["error"])
+                self.assertIn(api.json["error"], page.get_data(as_text=True))
+                self.assertNotIn(private_detail, page.get_data(as_text=True))
+        self.assertEqual(service.progress(1, "idempotency")["revision"], 1)

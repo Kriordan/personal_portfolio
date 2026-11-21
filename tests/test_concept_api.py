@@ -56,7 +56,7 @@ class ConceptApiTests(PracticeServiceCase):
 
     def test_mobile_rating_and_web_share_one_receipt_and_progress_revision(self):
         self.call('POST', CONCEPT + '/enrollment', {})
-        body = self.rate_input()
+        body = self.rate_input(response_ms=2500, session_id='phone-review')
         first = self.call('POST', CONCEPT + '/rate', body)
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.json['content_version'], 1)
@@ -66,6 +66,8 @@ class ConceptApiTests(PracticeServiceCase):
         self.assertEqual(first.json, same)
         receipt = self.call('GET', '/api/v1/learning/ratings/' + body['request_id'])
         self.assertEqual(receipt.json['receipt'], first.json)
+        saved_payload = ReviewReceipt.query.one().payload
+        self.assertEqual((saved_payload['response_ms'], saved_payload['session_id']), (2500, 'phone-review'))
         self.assertIsNone(self.call('GET', '/api/v1/learning/ratings/' + body['request_id'], user=2).json['receipt'])
         self.assertEqual(ReviewLog.query.count(), 1)
         self.assertEqual(ReviewProgress.query.one().revision, 1)
@@ -74,6 +76,18 @@ class ConceptApiTests(PracticeServiceCase):
         self.assertEqual(self.call('GET', CONCEPT + '/review/reveal?' + urlencode({
             'card_id': body['card_id'], 'content_version': 1, 'expected_revision': 0})).status_code, 409)
         self.assertEqual(self.call('GET', CONCEPT).json['due_count'], 3)
+
+    def test_rating_keeps_server_arguments_out_of_the_request_contract(self):
+        body = self.rate_input(response_ms=125, session_id='practice')
+        with patch.object(learning_service, 'rate_card_for_user', return_value={'saved': True}) as rate:
+            for field in ('notes_dir', 'user', 'now'):
+                with self.subTest(field=field):
+                    response = self.call('POST', CONCEPT + '/rate', {**body, field: 'fixture'})
+                    self.assertEqual(response.status_code, 400)
+            rate.assert_not_called()
+            self.assertEqual(self.call('POST', CONCEPT + '/rate', body).status_code, 200)
+        rate.assert_called_once_with(user=self.user, notes_dir=learning_service.notes_dir_for_root(self.app.root_path),
+                                     **body)
 
     def test_explicit_revision_remains_pinned_after_a_new_publication(self):
         item = deepcopy(self.catalog['items'][1])

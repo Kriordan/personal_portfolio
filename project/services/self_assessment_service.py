@@ -18,11 +18,14 @@ FIELDS = tuple(d[0] for d in DIMENSIONS)
 VALUES = frozenset(r[0] for r in RATINGS)
 PAGE_SIZE = 10
 MAX_INT = 2147483647
+INVALID_ASSESSMENT_MESSAGE = "Open the latest self-assessment to check your choices and try again."
 
 
 class AssessmentConflict(ConflictError):
+    public_message = "A newer self-assessment change was saved. Compare it with your choices before saving a new check-in."
+
     def __init__(self, revision, current):
-        super().__init__("A newer self-assessment change was saved. Compare it with your choices before saving a new check-in.")
+        super().__init__(self.public_message)
         self.revision, self.current = revision, current
 
 
