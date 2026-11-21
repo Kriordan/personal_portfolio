@@ -46,8 +46,8 @@ test('Home dates use the Eastern drawing day and unpadded month and day', () => 
 });
 
 test('Home jackpots are compact and only display a fresh amount', () => {
-  assert.equal(homeJackpotLabel(118_000_000, false), '118M');
-  assert.equal(homeJackpotLabel(1_180_000_000, false), '1.18B');
+  assert.equal(homeJackpotLabel(118_000_000, false), '$118M');
+  assert.equal(homeJackpotLabel(1_180_000_000, false), '$1.18B');
   assert.equal(homeJackpotLabel(null, false), 'Jackpot pending');
   assert.equal(homeJackpotLabel(118_000_000, true), 'Refresh jackpot');
 });

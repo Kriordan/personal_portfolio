@@ -53,6 +53,9 @@ export const spokenDrawDate = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
 });
 const compactAmount = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
 export function homeJackpotLabel(value: number | null, stale: boolean) {

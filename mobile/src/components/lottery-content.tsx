@@ -181,18 +181,28 @@ function HomeDrawRow({
 }) {
   const date = spokenDrawDate.format(new Date(draw.date));
   return (
-    <View
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={`${heading}. ${draw.name}, ${date}. ${valueLabel}.`}
-      style={styles.drawRow}
-    >
-      <ThemedText type="small" themeColor="textSecondary" style={styles.digits}>
-        <Text style={styles.gameCode}>{gameCodes[draw.name] ?? draw.name}</Text>
-        {'  '}
-        {compactDrawDate(draw.date)}
+    <View style={styles.drawGroup}>
+      <ThemedText
+        accessibilityRole="header"
+        type="smallBold"
+        themeColor="textSecondary"
+        style={styles.drawHeading}
+      >
+        {heading}
       </ThemedText>
-      {children}
+      <View
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`${draw.name}, ${date}. ${valueLabel}.`}
+        style={styles.drawRow}
+      >
+        <ThemedText type="small" themeColor="textSecondary" style={styles.digits}>
+          <Text style={styles.gameCode}>{gameCodes[draw.name] ?? draw.name}</Text>
+          {'  '}
+          {compactDrawDate(draw.date)}
+        </ThemedText>
+        {children}
+      </View>
     </View>
   );
 }
@@ -209,7 +219,7 @@ function HomeDrawRows({ home, stale }: { home: HomeDraws; stale: boolean }) {
     <View style={styles.gap}>
       <HomeDrawRow
         draw={upcoming}
-        heading="Next drawing"
+        heading="Upcoming"
         valueLabel={
           stale || upcoming.jackpot === null
             ? jackpot
@@ -222,23 +232,26 @@ function HomeDrawRows({ home, stale }: { home: HomeDraws; stale: boolean }) {
       </HomeDrawRow>
       <HomeDrawRow
         draw={latest}
-        heading="Latest result"
+        heading="Latest"
         valueLabel={result
           ? `${result.numbers.join(', ')}. ${result.bonus_label} ${result.bonus}`
           : 'Results pending'}
       >
         {result ? (
-          <View style={styles.numbers}>
+          <View style={[styles.numberGroup, styles.numbers]}>
             <ThemedText type="smallBold" style={styles.digits}>
-              {result.numbers.join(' ')}
+              {result.numbers.join(' · ')}
             </ThemedText>
-            <View style={[styles.bonusBall, { borderColor: bonusColor }]}>
-              <ThemedText
-                type="smallBold"
-                style={[styles.digits, { color: bonusColor }]}
-              >
-                {result.bonus}
-              </ThemedText>
+            <View style={styles.numberGroup}>
+              <ThemedText type="smallBold">·</ThemedText>
+              <View style={[styles.bonusBall, { borderColor: bonusColor }]}>
+                <ThemedText
+                  type="smallBold"
+                  style={[styles.digits, { color: bonusColor }]}
+                >
+                  {result.bonus}
+                </ThemedText>
+              </View>
             </View>
           </View>
         ) : (
@@ -310,6 +323,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
+  drawGroup: { gap: 2 },
+  drawHeading: { fontSize: 12, lineHeight: 16 },
   drawRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -320,13 +335,8 @@ const styles = StyleSheet.create({
   },
   gameCode: { fontWeight: '700' },
   digits: { fontVariant: ['tabular-nums'] },
-  numbers: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 6,
-    maxWidth: '100%',
-  },
+  numberGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  numbers: { flexWrap: 'wrap', maxWidth: '100%' },
   bonusBall: {
     minWidth: 24,
     minHeight: 24,
