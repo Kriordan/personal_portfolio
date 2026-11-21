@@ -13,7 +13,7 @@ still requires explicit approval.
 | 2b | Native interviewer conversation and web/phone session continuity. | Released November 13 as v175 / iPhone build 10 from `a905098`, with Keith's explicit approval. Keith subsequently reported that Discuss looks good on his iPhone. |
 | 2c.1 | Native artifact and learner-note editing within the existing shared session. | Released November 14 as v177 / iPhone build 11 from `8e3bff8`, with Keith's explicit approval. Keith subsequently reported that Build looks good on his iPhone. |
 | 2c.2 | Native feedback snapshots, findings, citations, and revision loop. | Released November 16 as v179 / iPhone build 14 from `8b508f3`, with Keith's explicit approval. Keith subsequently reported that feedback and revision look good on his iPhone. |
-| 2d | Responses to findings and focused recall practice on iPhone. | Released November 20 as v183 / iPhone build 15 from `a8b7499`, with Keith's approval. Signed artifact and read-only hosted checks passed; physical-iPhone acceptance remains pending. |
+| 2d | Responses to findings and focused recall practice on iPhone. | Released November 20 as v183 / iPhone build 15 from `a8b7499`. Keith accepted the physical-iPhone walkthrough on November 21. |
 
 Do not add concepts, voice, new personalities, an offline sync system, or an
 editor platform to these checkpoints. Mobile self-assessment is a later scope
@@ -734,8 +734,11 @@ Release verification:
 The [sanitized release receipt](assets/learning-2d-iphone-2026-11-20/release.json)
 records the archive hashes and verification results. Sensitive logs, signing
 details, and operator fingerprints remain only in the ignored private
-`.local/learning-pilot/iphone-2d-deployment/` directory. Physical installation,
-the [five-minute phone walkthrough](learning-checkpoint-2d-iphone-guide.md), and
-full VoiceOver/software-keyboard/Android coverage remain unverified. Next, use
-the installed preview for a short phone-first learning trial before content
-expansion; do not treat the release as full Milestone 2 sign-off.
+`.local/learning-pilot/iphone-2d-deployment/` directory.
+
+**November 21 physical-iPhone acceptance.** Keith completed the
+[five-minute walkthrough](learning-checkpoint-2d-iphone-guide.md) and reported
+“Draft survived, web matched, focused review worked.” He confirmed that the
+unsaved response survived reopening the app, its saved version matched on the
+web, and focused review worked on the phone. Full VoiceOver, software-keyboard,
+and Android validation remain open.

@@ -1,16 +1,16 @@
 # Engineering Learning Platform Handoff
 
-**Current checkpoint — November 20, 2026:** Keith accepted iPhone feedback and
-revision (2c.2), approved **2d: responses and focused practice**, then approved its
-release. **Heroku v183** and [standalone iPhone build 15](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4)
-now use application source `a8b7499`. Saved decisions/notes, conflict comparison,
-linked recall, and restart recovery reuse the existing backend and journals;
-there is no migration or new dependency. The newer Lotto/Home work is retained.
-Signed-artifact and read-only hosted checks passed, with no learner-data changes
-or paid AI calls. The $5/$1/$50 limits remain unchanged, with **$4.923975**
-remaining at verification. No OTA was published. Physical-iPhone acceptance and
-full VoiceOver remain pending; further releases and scope changes need approval.
-Read the [2d release record](engineering-learning-milestone-2.md#approved-2d-release--november-20)
+**November 21, 2026 — Keith accepted checkpoint 2d on his iPhone.** His feedback
+draft survived closing and reopening the app, the saved response matched on the
+web, and focused review worked. This completes the phone walkthrough for
+responses and focused practice. Full VoiceOver, software-keyboard, and Android
+validation remain open.
+
+**Heroku v183** and [standalone iPhone build 15](https://expo.dev/accounts/kriordan/projects/personal-portfolio/builds/ca355617-b873-443d-a246-328086d973c4)
+shipped 2d from `a8b7499`. The release checks recorded **$4.923975** remaining
+in the shared $5 allowance, which includes $1 for verification and is also
+subject to a $50 monthly cap. The subsequent [Home and Lotto preview update](preview-updates.md)
+uses the same signed build. See the [2d release and acceptance record](engineering-learning-milestone-2.md#approved-2d-release--november-20)
 and [hands-on exploration guide](learning-checkpoint-2d-iphone-guide.md).
 Historical implementation and release entries below retain their dates.
 
@@ -106,7 +106,7 @@ The immediate deliverable is one complete **idempotency** experience on the exis
 5. Revise work after challenges, pause, close the app, and resume with confirmed work intact.
 6. Receive feedback citing original conversation and exact artifact revisions, follow remediation, and revisit/export/delete saved work.
 
-**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Milestone 2a/2b/2c.1/2c.2 are released and accepted; 2d is released as iPhone build 15 and awaits physical-iPhone acceptance**, adding optional responses and focused recall to shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Future deployments, OTA publication, content expansion, and additional AI personalities need further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
+**Milestone 1 and checkpoints 6a/6b/7a/7b** are authorized and implemented; 7b is privately hosted. The $5 shared allowance and labelled exact drafts remain unchanged. Keith chose four separate optional ratings and dated check-in history for 6b. **Keith has accepted the released iPhone checkpoints through 2d**, including optional responses and focused recall in shared sessions. Keith approved device-persistent drafts scoped to account/session and cleared on sign-out. Future deployments, OTA publication, content expansion, and additional AI personalities need further approval. No executable sandbox, full IDE, voice, recording, vector database, CMS, or agent framework is needed. Important architectural decisions not covered below must go back to Keith.
 
 Work in small, cohesive checkpoints with separate commits. Report changes, meaningful verification, and unresolved limitations. Keith's requested testing guides are hands-on engineering practice: Python REPL and debugger experiments, DevTools Network/Console/Sources/Performance, and HTTPie/Postman requests. Keep those separate from automated test evidence.
 
@@ -115,7 +115,7 @@ Work in small, cohesive checkpoints with separate commits. Report changes, meani
 | Milestone | Scope and gate | Status |
 | --- | --- | --- |
 | 1 | One complete concept on web, including continuity, feedback, privacy, budgets, export/delete, and a runnable demonstration. | Local implementation and delegated technical review complete through 5g. Codex recommends local pilot acceptance. Production publication remains separately gated. |
-| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | 2a Learn/Review, 2b Discuss, 2c.1 Build, and 2c.2 feedback released and accepted. 2d responses/focused practice released as iPhone build 15; physical acceptance pending. See the Milestone 2 log for verification and remaining scope. |
+| 2 | Same experience in Expo; resume across web/mobile without losing or overwriting confirmed work. | Keith accepted the iPhone checkpoints through 2d. His draft survived reopening, the saved response matched across phone and web, and focused review worked. See the Milestone 2 log for the remaining validation. |
 | 3 | Fourteen production-systems concepts, about 42 questions, representative Build work, remaining discussion styles, and a short diagnostic. | Requires separate approval; content breadth must not delay the first experience. |
 | 4 | Four-week personal trial with unaided baseline and delayed transfer probes, including roughly 7- and 21-day checks. Evaluate usefulness, misleading feedback, usability, and cost. | Later. |
 
@@ -1089,9 +1089,9 @@ unsaved work and recovery. `tests/test_learning_hub_browser.py` now runs separat
 60-check hub and 70-check concept walkthroughs. See the checkpoint log for all
 verification. Safari, Firefox, and screen-reader validation are still pending.
 
-**Next:** install iPhone build 15 and try the
-[response/focused-review walkthrough](learning-checkpoint-2d-iphone-guide.md).
-Then use the [private pilot](https://www.keithriordan.com/learning/) for a short
+Keith completed the [2d phone walkthrough](learning-checkpoint-2d-iphone-guide.md)
+on November 21. The released Learning, Home, and Lotto changes are ready for
+merge review. The [private pilot](https://www.keithriordan.com/learning/) can support a short
 phone-first learning trial with an optional baseline and later check-in. Native
 self-assessment, export/delete UI, new concepts, personalities, and lesson-schema
 changes remain separate scope decisions. Expo's newer patch recommendations are
