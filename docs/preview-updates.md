@@ -4,16 +4,18 @@
 Released November 20 from `a8b7499`, it adds Learning responses and focused recall
 while retaining the Lotto/Home changes, interval timer, and native update client.
 See the [release record](engineering-learning-milestone-2.md#approved-2d-release--november-20).
-Install this build for 2d; no OTA was published for that checkpoint.
-**Latest preview update:** [Lotto and compact Home — November 19](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/de7f5743-ce1e-4e7a-9b31-c74907a72409),
-published from `7cf2b5e` on `preview` for iOS. It combines the lottery tools, starts
-scratch-off listings with three choices, simplifies Home to one upcoming drawing
-and one latest result across both games, adds the Monday popup, and removes
-“Ready for your next shop.” It matches build 14's native runtime; no new native
-installation is required for that Lotto update. Build 15 already includes it.
-Backend deployment, live drawing-data refresh, runtime
-compatibility, and Sentry source-map upload passed. See the
-[release record](scratch-offs.md#november-19-lotto-and-home-preview).
+
+The latest [iPhone preview update](https://expo.dev/accounts/kriordan/projects/personal-portfolio/updates/4670d7bc-7b79-4913-976b-b1c4ffce26bf)
+was published November 21 from `c4a8a84`. Home opens with Learning and a shortcut
+to the most recently saved lesson. Lotto follows with one row for the next jackpot
+and one for the latest winning numbers. An iPhone 13 mini simulator verified both
+rows, the saved reading section, the lesson library, and the Lotto link.
+
+On build 15, open the preview online to download the update, then fully close and
+reopen the app. The [publication workflow](https://expo.dev/accounts/kriordan/projects/personal-portfolio/workflows/01a1fe56-6eb1-7d6d-8824-0ad9d5122a5f)
+verified compatibility and uploaded the source maps. The iOS preview channel
+served the expected update and its bundle used the hosted API. The November 19
+backend and original Lotto release are recorded in the [Lotto release history](scratch-offs.md#november-19-lotto-and-home-preview).
 
 EAS Update is configured for the `preview` build profile and channel. The manual
 workflow in `mobile/.eas/workflows/preview-update.yml` publishes only iOS. Existing
